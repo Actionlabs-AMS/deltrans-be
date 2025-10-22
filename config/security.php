@@ -16,7 +16,6 @@ return [
 
     'headers' => [
         'enabled' => env('SECURITY_HEADERS_ENABLED', true),
-        'csp_enabled' => env('SECURITY_CSP_ENABLED', true),
         'hsts_enabled' => env('SECURITY_HSTS_ENABLED', true),
     ],
 

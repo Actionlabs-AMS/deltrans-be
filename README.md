@@ -1300,9 +1300,11 @@ The BaseCode application is **secure and optimized for development**! 🎉
 
 ## 🔒 Frontend Security Implementation
 
-### Content Security Policy (CSP)
+### Content Security Policy (CSP) - Frontend Only
 
-Since this is a backend API that works with separate frontend applications (React.js/Vue.js), the Content Security Policy (CSP) should be implemented in the frontend application, not in this Laravel backend.
+**IMPORTANT**: Since this is a backend API that works with separate frontend applications (React.js/Vue.js), the Content Security Policy (CSP) should **ONLY** be implemented in the frontend application, **NOT** in this Laravel backend.
+
+**⚠️ CSP in Backend API Causes Conflicts**: If CSP is implemented in the Laravel backend, it will block frontend API requests and cause integration issues.
 
 ### Frontend CSP Implementation
 
@@ -1356,6 +1358,26 @@ This Laravel backend provides the following security headers:
 -   **Strict-Transport-Security** - HTTPS enforcement
 -   **Referrer-Policy** - Referrer information control
 -   **Permissions-Policy** - Feature permissions control
+
+### Backend CSP Removal (Required)
+
+**To prevent conflicts with frontend API requests, you should:**
+
+1. **Disable CSP middleware** for API routes
+2. **Remove CSP configuration** from backend
+3. **Focus on CORS** for frontend integration
+
+```php
+// In app/Http/Kernel.php - Remove CSP middleware from API routes
+protected $middlewareGroups = [
+    'api' => [
+        // Remove SecurityHeadersMiddleware from here
+        \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        'throttle:api',
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+    ],
+];
+```
 
 ### Frontend Security Responsibilities
 

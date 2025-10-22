@@ -11,7 +11,6 @@ use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\NavigationController;
-use App\Http\Controllers\CSPReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -246,25 +245,4 @@ Route::prefix('2fa')->group(function () {
         Route::get('/status', [TwoFactorAuthController::class, 'status']);
         Route::post('/generate-backup-codes', [TwoFactorAuthController::class, 'generateBackupCodes']);
     });
-});
-
-// CSP Report endpoint (no authentication required)
-Route::post('/csp-report', [CSPReportController::class, 'report']);
-
-// Test CSP endpoint (for development testing)
-Route::get('/test-csp', function (Request $request) {
-    $nonce = $request->attributes->get('csp_nonce', 'no-nonce');
-    
-    return response()->json([
-        'message' => 'CSP Test Endpoint',
-        'nonce' => $nonce,
-        'csp_enabled' => config('csp.enabled', true),
-        'csp_report_only' => config('csp.report_only', false),
-        'headers' => [
-            'Content-Security-Policy' => 'Check response headers',
-            'X-Content-Type-Options' => 'nosniff',
-            'X-Frame-Options' => 'DENY',
-            'X-XSS-Protection' => '1; mode=block'
-        ]
-    ]);
 });
