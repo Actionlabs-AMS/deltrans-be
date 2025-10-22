@@ -44,6 +44,15 @@ A comprehensive, enterprise-ready Laravel base project with advanced security fe
 -   **Microsoft Graph Integration** for email services
 -   **Comprehensive Logging** with structured data
 
+### 📚 API Documentation
+
+-   **Interactive Swagger UI** with real-time testing
+-   **Comprehensive OpenAPI 3.0** specifications
+-   **Complete endpoint documentation** with examples
+-   **Authentication integration** with Swagger UI
+-   **Request/Response schemas** for all endpoints
+-   **Error handling documentation** with status codes
+
 ## 🛠️ Technology Stack
 
 -   **Laravel 10.x** - PHP Framework
@@ -52,6 +61,8 @@ A comprehensive, enterprise-ready Laravel base project with advanced security fe
 -   **Intervention Image** - Image Processing
 -   **Pawlox Video Thumbnail** - Video Processing
 -   **Microsoft Graph API** - Email Services
+-   **L5-Swagger** - OpenAPI Documentation
+-   **Swagger UI** - Interactive API Documentation
 
 ## 📋 Requirements
 
@@ -87,6 +98,22 @@ A comprehensive, enterprise-ready Laravel base project with advanced security fe
     ```bash
     php artisan migrate:fresh --seed
     ```
+
+5. **Generate API documentation**
+
+    ```bash
+    php artisan l5-swagger:generate
+    ```
+
+6. **Start the development server**
+
+    ```bash
+    php artisan serve
+    ```
+
+7. **Access the API documentation**
+
+    Open your browser and navigate to: `http://127.0.0.1:8000/api/documentation`
 
 ## 🔧 Configuration
 
@@ -208,37 +235,189 @@ php artisan test --testsuite=Feature
 
 ## 📚 API Documentation
 
-### Authentication Endpoints
+### 🔗 Interactive API Documentation
 
--   `POST /api/signup` - User registration
--   `POST /api/login` - User login
+The BaseCode project includes comprehensive **Swagger/OpenAPI documentation** with interactive testing capabilities:
+
+**📖 Swagger UI**: `http://127.0.0.1:8000/api/documentation`
+
+### 🔧 Swagger Documentation Features
+
+#### Interactive Testing
+
+-   **Try it out** functionality for all endpoints
+-   **Authentication integration** with Laravel Sanctum
+-   **Real-time request/response** testing
+-   **Parameter validation** and examples
+
+#### Comprehensive Documentation
+
+-   **Complete API coverage** for all controllers
+-   **Request/Response schemas** with examples
+-   **Error handling** with status codes
+-   **Authentication requirements** clearly marked
+-   **Parameter descriptions** and validation rules
+
+#### Development Benefits
+
+-   **Auto-generated documentation** from code annotations
+-   **Consistent API documentation** across all endpoints
+-   **Easy maintenance** with code-first approach
+-   **Team collaboration** with shared documentation
+
+### 📋 Documented Controllers
+
+#### Core Controllers
+
+-   **AuthController** - Authentication and user management
+-   **TwoFactorAuthController** - 2FA operations
+-   **UserController** - Complete user CRUD with advanced operations
+-   **RoleController** - Role and permission management
+-   **CategoryController** - Category management with hierarchy
+-   **TagController** - Tag management system
+-   **NavigationController** - Navigation and menu management
+-   **SecurityDashboardController** - Security monitoring and metrics
+
+#### BaseController Integration
+
+-   **Inherited methods** documented in all child controllers
+-   **Consistent patterns** across all CRUD operations
+-   **Bulk operations** for efficient data management
+-   **Trash management** with restore capabilities
+-   **Permanent deletion** with force delete options
+
+### 🚀 Complete API Endpoints
+
+#### Authentication & Security
+
+-   `POST /api/signup` - User registration with email verification
+-   `POST /api/login` - User login with 2FA support
 -   `POST /api/logout` - User logout
--   `GET /api/user` - Get current user
+-   `GET /api/user/me` - Get current authenticated user
+-   `POST /api/activate-user` - Activate user account
+-   `POST /api/gen-temp-password` - Generate temporary password
 
-### Two-Factor Authentication
+#### Two-Factor Authentication (2FA)
 
--   `POST /api/2fa/send-code` - Send 2FA code
+-   `POST /api/2fa/send-code` - Send 2FA code via email
 -   `POST /api/2fa/verify-code` - Verify 2FA code
--   `POST /api/2fa/enable` - Enable 2FA
--   `POST /api/2fa/disable` - Disable 2FA
+-   `POST /api/2fa/enable` - Enable 2FA for user
+-   `POST /api/2fa/disable` - Disable 2FA for user
+-   `GET /api/2fa/status` - Get 2FA status
+-   `POST /api/2fa/generate-backup-codes` - Generate backup codes
 
-### User Management
+#### User Management (Complete CRUD + Advanced Operations)
 
--   `GET /api/user-management/users` - List users
--   `POST /api/user-management/users` - Create user
+-   `GET /api/user-management/users` - List users with pagination
+-   `POST /api/user-management/users` - Create new user
+-   `GET /api/user-management/users/{id}` - Get specific user
 -   `PUT /api/user-management/users/{id}` - Update user
--   `DELETE /api/user-management/users/{id}` - Delete user
+-   `DELETE /api/user-management/users/{id}` - Soft delete user
+-   `POST /api/user-management/users/bulk/delete` - Bulk delete users
+-   `GET /api/user-management/archived/users` - Get trashed users
+-   `PATCH /api/user-management/archived/users/restore/{id}` - Restore user
+-   `POST /api/user-management/users/bulk/restore` - Bulk restore users
+-   `DELETE /api/user-management/archived/users/{id}` - Permanently delete user
+-   `POST /api/user-management/users/bulk/force-delete` - Bulk permanent delete
+-   `POST /api/user-management/users/bulk/password` - Bulk change passwords
+-   `POST /api/user-management/users/bulk/role` - Bulk change roles
+-   `POST /api/profile` - Update user profile
 
-### Content Management
+#### Role Management (Complete CRUD + Advanced Operations)
 
--   `GET /api/content-management/categories` - List categories
--   `GET /api/content-management/tags` - List tags
--   `GET /api/content-management/media-library` - List media files
+-   `GET /api/user-management/roles` - List roles with pagination
+-   `POST /api/user-management/roles` - Create new role
+-   `GET /api/user-management/roles/{id}` - Get specific role
+-   `PUT /api/user-management/roles/{id}` - Update role
+-   `DELETE /api/user-management/roles/{id}` - Soft delete role
+-   `POST /api/user-management/roles/bulk/delete` - Bulk delete roles
+-   `GET /api/user-management/archived/roles` - Get trashed roles
+-   `PATCH /api/user-management/archived/roles/restore/{id}` - Restore role
+-   `POST /api/user-management/roles/bulk/restore` - Bulk restore roles
+-   `DELETE /api/user-management/archived/roles/{id}` - Permanently delete role
+-   `POST /api/user-management/roles/bulk/force-delete` - Bulk permanent delete
+-   `GET /api/options/roles` - Get roles for dropdowns
 
-### System Settings
+#### Category Management (Complete CRUD + Advanced Operations)
 
--   `GET /api/system-settings/navigation` - List navigation items
--   `GET /api/security/metrics` - Security dashboard metrics
+-   `GET /api/content-management/categories` - List categories with pagination
+-   `POST /api/content-management/categories` - Create new category
+-   `GET /api/content-management/categories/{id}` - Get specific category
+-   `PUT /api/content-management/categories/{id}` - Update category
+-   `DELETE /api/content-management/categories/{id}` - Soft delete category
+-   `POST /api/content-management/categories/bulk/delete` - Bulk delete categories
+-   `GET /api/content-management/archived/categories` - Get trashed categories
+-   `PATCH /api/content-management/archived/categories/restore/{id}` - Restore category
+-   `POST /api/content-management/categories/bulk/restore` - Bulk restore categories
+-   `DELETE /api/content-management/archived/categories/{id}` - Permanently delete category
+-   `POST /api/content-management/categories/bulk/force-delete` - Bulk permanent delete
+-   `GET /api/options/categories` - Get categories for dropdowns
+-   `GET /api/options/sub-categories` - Get sub-categories for dropdowns
+
+#### Tag Management (Complete CRUD + Advanced Operations)
+
+-   `GET /api/content-management/tags` - List tags with pagination
+-   `POST /api/content-management/tags` - Create new tag
+-   `GET /api/content-management/tags/{id}` - Get specific tag
+-   `PUT /api/content-management/tags/{id}` - Update tag
+-   `DELETE /api/content-management/tags/{id}` - Soft delete tag
+-   `POST /api/content-management/tags/bulk/delete` - Bulk delete tags
+-   `GET /api/content-management/archived/tags` - Get trashed tags
+-   `PATCH /api/content-management/archived/tags/restore/{id}` - Restore tag
+-   `POST /api/content-management/tags/bulk/restore` - Bulk restore tags
+-   `DELETE /api/content-management/archived/tags/{id}` - Permanently delete tag
+-   `POST /api/content-management/tags/bulk/force-delete` - Bulk permanent delete
+-   `GET /api/options/tags` - Get tags for dropdowns
+
+#### Navigation Management (Complete CRUD + Advanced Operations)
+
+-   `GET /api/system-settings/navigation` - List navigation items with pagination
+-   `POST /api/system-settings/navigation` - Create new navigation item
+-   `GET /api/system-settings/navigation/{id}` - Get specific navigation item
+-   `PUT /api/system-settings/navigation/{id}` - Update navigation item
+-   `DELETE /api/system-settings/navigation/{id}` - Soft delete navigation item
+-   `POST /api/system-settings/navigation/bulk/delete` - Bulk delete navigation items
+-   `GET /api/system-settings/archived/navigation` - Get trashed navigation items
+-   `PATCH /api/system-settings/archived/navigation/restore/{id}` - Restore navigation item
+-   `POST /api/system-settings/navigation/bulk/restore` - Bulk restore navigation items
+-   `DELETE /api/system-settings/archived/navigation/{id}` - Permanently delete navigation item
+-   `POST /api/system-settings/navigation/bulk/force-delete` - Bulk permanent delete
+-   `GET /api/options/navigations` - Get navigation items for dropdowns
+-   `GET /api/options/sub-navigations` - Get sub-navigation items for dropdowns
+-   `GET /api/options/routes` - Get routes for dropdowns
+
+#### Security Dashboard
+
+-   `GET /api/security/metrics` - Get security metrics
+-   `POST /api/security/scan` - Run security scan
+-   `GET /api/security/events` - Get security events
+-   `GET /api/security/blocked-ips` - Get blocked IPs
+-   `POST /api/security/unblock-ip` - Unblock IP address
+-   `GET /api/security/config` - Get security configuration
+-   `POST /api/security/config` - Update security configuration
+
+### 🔧 API Features
+
+#### Authentication
+
+-   **Laravel Sanctum** token-based authentication
+-   **Two-Factor Authentication (2FA)** with email codes
+-   **Rate limiting** on all endpoints
+-   **Secure password hashing** with salt and pepper
+
+#### Data Management
+
+-   **Soft deletes** with trash management
+-   **Bulk operations** for efficient data handling
+-   **Pagination** for large datasets
+-   **Advanced filtering** and search capabilities
+
+#### Security
+
+-   **Input sanitization** to prevent XSS and SQL injection
+-   **Comprehensive audit logging** for all operations
+-   **Role-based access control** with hierarchical permissions
+-   **Security monitoring** with real-time threat detection
 
 ## 🚀 Deployment
 
@@ -283,6 +462,19 @@ For support and questions:
 -   Review the security guidelines
 
 ## 🔄 Changelog
+
+### Version 1.1.0 (Current)
+
+-   ✅ **Complete Swagger/OpenAPI documentation** implementation
+-   ✅ **Interactive API documentation** with Swagger UI
+-   ✅ **Comprehensive controller coverage** for all endpoints
+-   ✅ **BaseController method documentation** in all child controllers
+-   ✅ **Advanced CRUD operations** with bulk operations
+-   ✅ **Trash management system** with restore capabilities
+-   ✅ **Complete API endpoint coverage** (80+ documented endpoints)
+-   ✅ **Authentication integration** with Swagger UI
+-   ✅ **Request/Response schemas** for all endpoints
+-   ✅ **Error handling documentation** with status codes
 
 ### Version 1.0.0
 
