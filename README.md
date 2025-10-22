@@ -1172,3 +1172,203 @@ The BaseCode application is **secure and optimized for development**! 🎉
 ---
 
 **BaseCode** - Your foundation for secure, scalable Laravel applications.
+
+---
+
+## 🔒 Content Security Policy (CSP) Security Implementation
+
+### Secure CSP Implementation
+
+This section explains how to implement a secure Content Security Policy (CSP) that eliminates security issues:
+
+- ❌ `'unsafe-inline'` reduces XSS protection
+- ❌ `'unsafe-eval'` allows code execution  
+- ❌ No nonce or hash-based CSP
+
+### ✅ Secure CSP Features
+
+#### 1. Nonce-Based CSP
+- **Unique nonce** generated for each request
+- **No unsafe-inline** or unsafe-eval directives
+- **Strict resource loading** from same-origin only
+- **Comprehensive directive coverage**
+
+#### 2. Implementation Components
+
+##### SecurityHeadersMiddleware
+- Generates unique nonce per request
+- Builds secure CSP with nonce-based script/style loading
+- Configurable through `config/csp.php`
+
+##### CSPHelper
+- Utility class for nonce access in views
+- Helper methods for script/style tags with nonce
+- Blade directive support
+
+##### Configuration
+- Centralized CSP configuration
+- Development mode support
+- Report-only mode for testing
+
+### 🚀 Usage Examples
+
+#### In Blade Templates
+
+```blade
+<!-- Script with nonce -->
+<script @cspnonceattr>
+    console.log('This script is allowed by CSP');
+</script>
+
+<!-- Style with nonce -->
+<style @cspnonceattr>
+    .secure-style { color: red; }
+</style>
+
+<!-- Using CSPHelper -->
+{!! CSPHelper::script(request(), 'console.log("Hello World");') !!}
+{!! CSPHelper::style(request(), '.my-class { color: blue; }') !!}
+```
+
+#### In Controllers
+
+```php
+use App\Helpers\CSPHelper;
+
+class MyController extends Controller
+{
+    public function index(Request $request)
+    {
+        $nonce = CSPHelper::getNonce($request);
+        
+        // Use nonce in your logic
+        return view('my-view', compact('nonce'));
+    }
+}
+```
+
+#### Configuration Options
+
+```php
+// config/csp.php
+return [
+    'enabled' => true,
+    'report_only' => false, // Set to true for testing
+    'directives' => [
+        'script-src' => ["'self'", "'nonce-{nonce}'"],
+        'style-src' => ["'self'", "'nonce-{nonce}'"],
+        // ... other directives
+    ],
+];
+```
+
+### 🔧 Environment Variables
+
+Add to your `.env` file:
+
+```env
+# CSP Configuration
+CSP_ENABLED=true
+CSP_REPORT_ONLY=false
+CSP_REPORT_URI=/api/csp-report
+CSP_DEVELOPMENT_MODE=false
+```
+
+### 📊 CSP Violation Reporting
+
+The implementation includes CSP violation reporting:
+
+- **Endpoint**: `POST /api/csp-report`
+- **Logging**: Violations logged to Laravel logs
+- **Monitoring**: Track security violations
+- **Analysis**: Identify potential security issues
+
+### 🛡️ Security Benefits
+
+#### Before (Insecure)
+```http
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';
+```
+
+#### After (Secure)
+```http
+Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-abc123'; style-src 'self' 'nonce-abc123'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; media-src 'self'; worker-src 'self'; manifest-src 'self';
+```
+
+### 🔍 Testing CSP
+
+#### 1. Enable Report-Only Mode
+```env
+CSP_REPORT_ONLY=true
+```
+
+#### 2. Check Browser Console
+- Look for CSP violation reports
+- Verify nonce-based scripts work
+- Ensure inline scripts are blocked
+
+#### 3. Monitor Logs
+```bash
+tail -f storage/logs/laravel.log | grep "CSP Violation"
+```
+
+### 🚨 Common Issues & Solutions
+
+#### Issue: "Refused to execute inline script"
+**Solution**: Use nonce attribute
+```blade
+<script @cspnonceattr>
+    // Your script here
+</script>
+```
+
+#### Issue: "Refused to load stylesheet"
+**Solution**: Use nonce for inline styles
+```blade
+<style @cspnonceattr>
+    /* Your styles here */
+</style>
+```
+
+#### Issue: External scripts blocked
+**Solution**: Add specific domains to CSP config
+```php
+'script-src' => ["'self'", "'nonce-{nonce}'", 'https://trusted-cdn.com'],
+```
+
+### 📈 Monitoring & Analytics
+
+#### CSP Violation Database (Optional)
+Create a migration for storing violations:
+
+```php
+Schema::create('csp_violations', function (Blueprint $table) {
+    $table->id();
+    $table->string('user_agent');
+    $table->ipAddress('ip_address');
+    $table->string('violated_directive')->nullable();
+    $table->string('blocked_uri')->nullable();
+    $table->string('document_uri')->nullable();
+    $table->json('report');
+    $table->timestamp('created_at');
+});
+```
+
+### 🎯 Best Practices
+
+1. **Always use nonce** for inline scripts/styles
+2. **Test in report-only mode** first
+3. **Monitor violation reports** regularly
+4. **Keep CSP strict** - only allow necessary resources
+5. **Update nonce** for each request
+6. **Use HTTPS** in production for full security
+
+### 🔄 Migration from Unsafe CSP
+
+1. **Identify inline scripts/styles** in your application
+2. **Add nonce attributes** to all inline content
+3. **Test thoroughly** in report-only mode
+4. **Enable enforcement** once violations are resolved
+5. **Monitor and adjust** as needed
+
+This implementation provides enterprise-grade CSP security while maintaining application functionality!
