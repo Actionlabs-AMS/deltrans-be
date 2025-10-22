@@ -64,8 +64,18 @@ return [
     ],
 
     'encryption' => [
+        'enabled' => env('ENCRYPTION_ENABLED', true),
         'key_rotation_days' => env('ENCRYPTION_KEY_ROTATION_DAYS', 365),
         'algorithm' => env('ENCRYPTION_ALGORITHM', 'AES-256-CBC'),
+        'key' => env('ENCRYPTION_KEY', config('app.key')),
+        'prefix' => env('ENCRYPTION_PREFIX', 'encrypted:'),
+    ],
+
+    'anonymization' => [
+        'enabled' => env('ANONYMIZATION_ENABLED', true),
+        'gdpr_compliance' => env('GDPR_COMPLIANCE_ENABLED', true),
+        'retention_days' => env('GDPR_RETENTION_DAYS', 2555), // 7 years
+        'log_anonymization' => env('GDPR_LOG_ANONYMIZATION', true),
     ],
 
     'csrf' => [

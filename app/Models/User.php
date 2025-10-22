@@ -9,11 +9,12 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\UserMeta;
-use App\Traits\EncryptsAttributes;
+use App\Traits\Encryptable;
+use App\Traits\Anonymizable;
 
 class User extends Authenticatable
 {
-	use HasApiTokens, HasFactory, Notifiable, SoftDeletes, EncryptsAttributes;
+	use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Encryptable, Anonymizable;
 
 	/**
 	 * The attributes that are mass assignable.
@@ -48,11 +49,6 @@ class User extends Authenticatable
 	public function __construct(array $attributes = [])
 	{
 		parent::__construct($attributes);
-		
-		// Set encrypted attributes for this model
-		$this->encrypted = [
-			'user_activation_key',
-		];
 	}
 
 	/**

@@ -8,10 +8,11 @@ A comprehensive, enterprise-ready Laravel backend API with advanced security fea
 
 -   **Two-Factor Authentication (2FA)** with email codes and backup codes
 -   **Advanced Password Security** with salt, pepper, and bcrypt hashing
--   **Data Encryption** for sensitive attributes using Laravel's encryption
+-   **Configurable Database Encryption** for sensitive fields with model-level control
+-   **GDPR Data Anonymization** with multiple anonymization methods
 -   **Audit Trail System** for comprehensive activity logging
 -   **Rate Limiting** to prevent brute force attacks
--   **Security Headers** including CSP, HSTS, and XSS protection
+-   **Security Headers** including HSTS and XSS protection
 -   **Input Sanitization** to prevent XSS and SQL injection
 -   **Security Monitoring** with real-time threat detection
 
@@ -181,6 +182,30 @@ AUDIT_TRAIL_MAX_RESPONSE_SIZE=10000
 AUDIT_TRAIL_MAX_REQUEST_SIZE=5000
 ```
 
+#### Database Encryption Configuration
+
+```env
+ENCRYPTION_ENABLED=true
+ENCRYPTION_ALGORITHM=AES-256-CBC
+ENCRYPTION_KEY=your-32-character-encryption-key
+ENCRYPTION_PREFIX=encrypted:
+ENCRYPTION_KEY_ROTATION_ENABLED=false
+ENCRYPTION_KEY_ROTATION_DAYS=365
+```
+
+#### GDPR Anonymization Configuration
+
+```env
+ANONYMIZATION_ENABLED=true
+GDPR_COMPLIANCE_ENABLED=true
+GDPR_RETENTION_DAYS=2555
+GDPR_LOG_ANONYMIZATION=true
+GDPR_ANONYMIZATION_TRIGGER=deletion
+GDPR_ANONYMIZATION_REASON=GDPR compliance
+ANONYMIZATION_HASH_ALGORITHM=sha256
+ANONYMIZATION_HASH_PREFIX=anon:
+```
+
 #### CORS Configuration
 
 ```env
@@ -263,6 +288,24 @@ CORS_ALLOW_CREDENTIALS=true
 -   **Advanced Search & Filtering** - API endpoints for log management
 -   **Real-time Statistics** - Built-in analytics and reporting
 
+### 🔐 Database Encryption
+
+-   **Configurable Field Encryption** - Encrypt sensitive fields per model
+-   **Automatic Encryption/Decryption** - Transparent data protection
+-   **Model-Level Configuration** - Easy setup for any model
+-   **Performance Optimized** - Batch operations and caching
+-   **Key Rotation Support** - Secure key management
+-   **Error Handling** - Graceful fallbacks for encryption failures
+
+### 🛡️ GDPR Data Anonymization
+
+-   **Multiple Anonymization Methods** - Hash, mask, or replace data
+-   **Automatic Triggers** - Anonymize on deletion or user request
+-   **GDPR Compliance** - Built-in compliance features
+-   **Configurable Patterns** - Custom anonymization for different data types
+-   **Audit Logging** - Complete anonymization audit trail
+-   **Batch Operations** - Efficient processing of large datasets
+
 ## 🧪 Testing
 
 Run the test suite:
@@ -277,6 +320,185 @@ Run specific test suites:
 php artisan test --testsuite=Unit
 php artisan test --testsuite=Feature
 ```
+
+## 🔐 Database Encryption & GDPR Anonymization
+
+### Overview
+
+The BaseCode project includes comprehensive database encryption for sensitive fields and GDPR-compliant data anonymization. These features provide enterprise-level data protection with configurable, model-level control.
+
+### Database Encryption Features
+
+#### **Automatic Field Encryption**
+
+-   **Transparent encryption/decryption** of sensitive fields
+-   **Model-level configuration** for easy setup
+-   **Performance optimized** with batch operations
+-   **Error handling** with graceful fallbacks
+
+#### **Configuration**
+
+```php
+// config/encryption.php
+'model_encryption' => [
+    'User' => [
+        'email',
+        'phone',
+        'address',
+        'date_of_birth',
+    ],
+    'Profile' => [
+        'bio',
+        'personal_notes',
+        'emergency_contact',
+    ],
+],
+```
+
+#### **Model Usage**
+
+```php
+use App\Traits\Encryptable;
+
+class User extends Model
+{
+    use Encryptable;
+
+    // Encryption is automatically handled
+    // Fields are encrypted on save and decrypted on retrieve
+}
+```
+
+#### **Manual Operations**
+
+```php
+// Encrypt specific fields
+$user->encryptFields();
+
+// Get encryption status
+$status = $user->getEncryptionStatus();
+
+// Re-encrypt all fields (for key rotation)
+$user->reEncryptFields();
+```
+
+### GDPR Data Anonymization
+
+#### **Multiple Anonymization Methods**
+
+-   **Hash**: SHA-256 with salt for irreversible anonymization
+-   **Mask**: Partial data hiding (**_@_**.\*\*\*)
+-   **Replace**: Complete data replacement
+
+#### **Configuration**
+
+```php
+// config/anonymization.php
+'model_anonymization' => [
+    'User' => [
+        'email' => 'hash',
+        'phone' => 'mask',
+        'first_name' => 'replace',
+        'last_name' => 'replace',
+        'address' => 'replace',
+    ],
+],
+```
+
+#### **Model Usage**
+
+```php
+use App\Traits\Anonymizable;
+
+class User extends Model
+{
+    use Anonymizable;
+
+    // Anonymization is triggered automatically on deletion
+}
+```
+
+#### **Manual Operations**
+
+```php
+// Anonymize all configured fields
+$user->anonymizeData('GDPR compliance');
+
+// Anonymize specific fields
+$user->anonymizeFields(['email', 'phone'], 'User request');
+
+// Check anonymization status
+$status = $user->getAnonymizationStatus();
+```
+
+### Console Commands
+
+#### **Encrypt Existing Data**
+
+```bash
+# Encrypt all User model data
+php artisan data:encrypt User
+
+# Encrypt specific fields
+php artisan data:encrypt User --fields=email,phone
+
+# Force encryption of already encrypted data
+php artisan data:encrypt User --force
+```
+
+#### **Anonymize Data for GDPR**
+
+```bash
+# Anonymize all User data
+php artisan data:anonymize User
+
+# Anonymize specific fields
+php artisan data:anonymize User --fields=email,phone
+
+# Anonymize records older than 7 years
+php artisan data:anonymize User --older-than=2555
+
+# Anonymize with custom reason
+php artisan data:anonymize User --reason="User requested data deletion"
+```
+
+### Environment Configuration
+
+```env
+# Encryption Settings
+ENCRYPTION_ENABLED=true
+ENCRYPTION_ALGORITHM=AES-256-CBC
+ENCRYPTION_KEY=your-32-character-encryption-key
+ENCRYPTION_PREFIX=encrypted:
+
+# Anonymization Settings
+ANONYMIZATION_ENABLED=true
+GDPR_COMPLIANCE_ENABLED=true
+GDPR_RETENTION_DAYS=2555
+GDPR_LOG_ANONYMIZATION=true
+
+# GDPR Compliance
+GDPR_ANONYMIZATION_TRIGGER=deletion
+GDPR_ANONYMIZATION_REASON=GDPR compliance
+```
+
+### Security Benefits
+
+#### **Database Encryption**
+
+-   ✅ **Data at Rest Protection** - Sensitive data encrypted in database
+-   ✅ **Transparent Operation** - No code changes required for basic usage
+-   ✅ **Performance Optimized** - Minimal impact on application performance
+-   ✅ **Key Management** - Secure key rotation and management
+-   ✅ **Error Resilience** - Graceful handling of encryption failures
+
+#### **GDPR Anonymization**
+
+-   ✅ **GDPR Compliance** - Built-in compliance features
+-   ✅ **Multiple Methods** - Flexible anonymization strategies
+-   ✅ **Audit Trail** - Complete logging of anonymization activities
+-   ✅ **Automatic Triggers** - Configurable anonymization triggers
+-   ✅ **Batch Operations** - Efficient processing of large datasets
 
 ## 📊 Audit Trail System
 
@@ -1293,6 +1515,28 @@ The BaseCode application is **secure and optimized for development**! 🎉
 **Development Security Score: 9/10** - Perfect for development with production-ready security features!
 
 ---
+
+## 🔄 Changelog
+
+### Latest Updates (v2.1.0)
+
+-   ✅ **Configurable Database Encryption** - Model-level field encryption with automatic encryption/decryption
+-   ✅ **GDPR Data Anonymization** - Multiple anonymization methods (hash, mask, replace) for compliance
+-   ✅ **Console Commands** - Data encryption and anonymization management commands
+-   ✅ **Enhanced Security Headers** - Comprehensive security header implementation
+-   ✅ **CORS Configuration** for frontend integration
+-   ✅ **Frontend/Backend Architecture separation**
+-   ✅ **Rate Limiting** - API and authentication rate limiting
+-   ✅ **Input Sanitization** - XSS and SQL injection prevention
+-   ✅ **Security Monitoring** - Real-time threat detection
+-   ✅ **Audit Trail System** - Comprehensive activity logging
+-   ✅ **Two-Factor Authentication** - Enhanced security with 2FA
+-   ✅ **Password Security** - Advanced password hashing with salt and pepper
+-   ✅ **Microsoft Graph Integration** - Email functionality
+-   ✅ **S3 Integration** - File storage and management
+-   ✅ **Swagger Documentation** - Interactive API documentation
+-   ✅ **Comprehensive Testing** - Unit and feature tests
+-   ✅ **Environment Configuration** - Flexible configuration management
 
 **BaseCode** - Your foundation for secure, scalable Laravel backend APIs with frontend integration support.
 
