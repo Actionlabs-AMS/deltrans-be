@@ -150,6 +150,17 @@ MICROSOFT_CLIENT_SECRET=your-client-secret
 MICROSOFT_SENDER_EMAIL=your-sender-email
 ```
 
+#### Audit Trail Configuration
+
+```env
+AUDIT_TRAIL_ENABLED=true
+AUDIT_TRAIL_LOG_API_REQUESTS=true
+AUDIT_TRAIL_LOG_QUERIES=false
+AUDIT_TRAIL_RETENTION_DAYS=90
+AUDIT_TRAIL_MAX_RESPONSE_SIZE=10000
+AUDIT_TRAIL_MAX_REQUEST_SIZE=5000
+```
+
 ### Microsoft Graph Setup
 
 1. **Create Azure AD Application**
@@ -217,6 +228,10 @@ MICROSOFT_SENDER_EMAIL=your-sender-email
 -   **Structured Data** - JSON-formatted logs
 -   **Retention Policy** - Configurable log retention
 -   **Security Events** - Threat detection logging
+-   **Daily Log Files** - Separate files for each day
+-   **Module-based Organization** - Activities organized by modules
+-   **Advanced Search & Filtering** - API endpoints for log management
+-   **Real-time Statistics** - Built-in analytics and reporting
 
 ## 🧪 Testing
 
@@ -231,6 +246,63 @@ Run specific test suites:
 ```bash
 php artisan test --testsuite=Unit
 php artisan test --testsuite=Feature
+```
+
+## 📊 Audit Trail System
+
+### Overview
+
+The BaseCode project includes a comprehensive audit trail system that automatically logs all user activities, API requests, and database operations. This provides complete traceability and compliance with enterprise security requirements.
+
+### Features
+
+-   **Daily Log Files**: Creates separate log files for each day (format: `YYYY-MM-DD.log`)
+-   **JSON Format**: All logs are stored in JSON format for easy parsing and display
+-   **User Tracking**: Every log entry includes user ID, login, and email
+-   **Module-based Organization**: Activities are organized by modules
+-   **Action Tracking**: Tracks all CRUD operations and custom actions
+-   **Automatic Cleanup**: Old log files are automatically cleaned up
+-   **Search & Filter**: API endpoints for searching and filtering logs
+-   **Statistics**: Built-in statistics and analytics
+
+### API Endpoints
+
+-   `GET /api/audit-trail/logs/date` - Get logs for specific date
+-   `GET /api/audit-trail/logs/range` - Get logs for date range
+-   `GET /api/audit-trail/logs/search` - Search logs with filters
+-   `GET /api/audit-trail/files` - List available log files
+-   `GET /api/audit-trail/statistics` - Get log statistics
+-   `GET /api/audit-trail/dashboard` - Get dashboard data
+-   `POST /api/audit-trail/cleanup` - Clean up old logs
+
+### Log Format
+
+Each audit log entry follows this JSON structure:
+
+```json
+{
+    "timestamp": "2024-01-15T10:30:45.000000Z",
+    "user_id": 123,
+    "user_login": "john.doe",
+    "user_email": "john.doe@example.com",
+    "module": "USER_MANAGEMENT",
+    "action": "CREATE",
+    "resource_id": "456",
+    "ip_address": "192.168.1.100",
+    "user_agent": "Mozilla/5.0...",
+    "data": {
+        "user_login": "new.user",
+        "user_email": "new.user@example.com"
+    },
+    "old_data": null,
+    "new_data": {
+        "user_login": "new.user",
+        "user_email": "new.user@example.com"
+    },
+    "url": "https://api.example.com/api/user-management/users",
+    "method": "POST",
+    "session_id": "abc123"
+}
 ```
 
 ## 📚 API Documentation
@@ -463,7 +535,26 @@ For support and questions:
 
 ## 🔄 Changelog
 
-### Version 1.1.0 (Current)
+### Version 2.0.0 (Current)
+
+-   ✅ **Comprehensive Audit Trail System** implementation
+-   ✅ **Enhanced Security Features** with 2FA and encryption
+-   ✅ **Complete Swagger/OpenAPI documentation** implementation
+-   ✅ **Interactive API documentation** with Swagger UI
+-   ✅ **Comprehensive controller coverage** for all endpoints
+-   ✅ **BaseController method documentation** in all child controllers
+-   ✅ **Advanced CRUD operations** with bulk operations
+-   ✅ **Trash management system** with restore capabilities
+-   ✅ **Complete API endpoint coverage** (80+ documented endpoints)
+-   ✅ **Authentication integration** with Swagger UI
+-   ✅ **Request/Response schemas** for all endpoints
+-   ✅ **Error handling documentation** with status codes
+-   ✅ **Real-time Security Monitoring** and threat detection
+-   ✅ **Database Encryption** for sensitive fields
+-   ✅ **Content Security Policy (CSP)** implementation
+-   ✅ **Production-ready Security** implementation
+
+### Version 1.1.0
 
 -   ✅ **Complete Swagger/OpenAPI documentation** implementation
 -   ✅ **Interactive API documentation** with Swagger UI
