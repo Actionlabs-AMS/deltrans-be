@@ -52,16 +52,12 @@ A comprehensive, enterprise-ready Laravel base project with advanced security fe
 -   **Intervention Image** - Image Processing
 -   **Pawlox Video Thumbnail** - Video Processing
 -   **Microsoft Graph API** - Email Services
--   **CoreUI** - Frontend Framework
--   **ReactJS** - Frontend Library
--   **Vite** - Build Tool
 
 ## 📋 Requirements
 
 -   PHP 8.1 or higher
 -   MySQL 5.7 or higher
 -   Composer
--   Node.js & NPM
 -   Microsoft Azure Account (for email services)
 
 ## 🚀 Installation
@@ -79,28 +75,17 @@ A comprehensive, enterprise-ready Laravel base project with advanced security fe
     composer install
     ```
 
-3. **Install Node.js dependencies**
-
-    ```bash
-    npm install
-    ```
-
-4. **Environment setup**
+3. **Environment setup**
 
     ```bash
     cp .env.example .env
     php artisan key:generate
     ```
 
-5. **Database setup**
+4. **Database setup**
 
     ```bash
     php artisan migrate:fresh --seed
-    ```
-
-6. **Build frontend assets**
-    ```bash
-    npm run build
     ```
 
 ## 🔧 Configuration
@@ -641,13 +626,10 @@ All security recommendations have been successfully implemented! The BaseCode pr
 ```php
 'allowed_origins' => [
     'http://localhost:3000',    // Admin panel
-    'http://localhost:3001',    // Frontend app
     'http://localhost:4000',    // Additional dev ports
     'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
     'http://127.0.0.1:4000',
     env('ADMIN_APP_URL'),
-    env('FRONTEND_APP_URL'),
 ],
 'allowed_origins_patterns' => [
     'http://localhost:*',
@@ -773,11 +755,8 @@ The BaseCode project demonstrates **enterprise-level security implementation** w
 // Enhanced development CORS configuration
 'allowed_origins' => [
     'http://localhost:3000',
-    'http://localhost:3001',
     'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
     env('ADMIN_APP_URL'),
-    env('FRONTEND_APP_URL'),
     // Add development domains as needed
 ],
 'allowed_origins_patterns' => [
@@ -792,7 +771,6 @@ The BaseCode project demonstrates **enterprise-level security implementation** w
 // For production deployment
 'allowed_origins' => [
     env('ADMIN_APP_URL'),
-    env('FRONTEND_APP_URL'),
     // Remove localhost origins
 ],
 ```
@@ -872,11 +850,8 @@ The BaseCode application has **no critical security vulnerabilities**. All major
 // config/cors.php - Enhanced for development
 'allowed_origins' => [
     'http://localhost:3000',
-    'http://localhost:3001',
     'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
     env('ADMIN_APP_URL'),
-    env('FRONTEND_APP_URL'),
 ],
 'allowed_origins_patterns' => [
     'http://localhost:*',
@@ -899,7 +874,7 @@ APP_ENV=local
 APP_DEBUG=true
 SECURITY_ENABLED=true
 SECURITY_HEADERS_ENABLED=true
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 AUDIT_TRAIL_ENABLED=true
 RATE_LIMITING_ENABLED=true
 ```
