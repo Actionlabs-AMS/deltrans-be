@@ -1,0 +1,226 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        // Disable foreign key checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
+
+        // Create users table
+        Schema::create('users', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->string('user_login')->unique();
+            $table->string('user_email')->unique();
+            $table->string('user_pass');
+            $table->string('user_salt');
+            $table->tinyInteger('user_status')->default(0);
+            $table->string('user_activation_key')->nullable();
+            $table->rememberToken();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        // Create password reset tokens table
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // Create failed jobs table
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+
+        // Note: personal_access_tokens table is created by Laravel Sanctum
+
+        // Create roles table
+        Schema::create('roles', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->string('name');
+            $table->boolean('active')->default(true);
+            $table->boolean('is_super_admin')->default(false);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        // Create permissions table
+        Schema::create('permissions', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->string('name');
+            $table->string('label');
+            $table->timestamps();
+        });
+
+        // Create navigations table
+        Schema::create('navigations', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->string('name');
+            $table->string('slug');
+            $table->string('icon')->nullable();
+            $table->bigInteger('parent_id')->nullable()->unsigned();
+            $table->boolean('active')->default(true);
+            $table->boolean('show_in_menu')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+
+            // Self-referencing foreign key
+            $table->foreign('parent_id')
+                  ->references('id')
+                  ->on('navigations')
+                  ->onDelete('cascade');
+        });
+
+        // Create role_permissions table
+        Schema::create('role_permissions', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->bigInteger('role_id')->unsigned();
+            $table->bigInteger('navigation_id')->unsigned();
+            $table->bigInteger('permission_id')->unsigned();
+            $table->boolean('allowed')->default(false);
+            $table->timestamps();
+
+            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+            $table->foreign('navigation_id')->references('id')->on('navigations')->onDelete('cascade');
+            $table->foreign('permission_id')->references('id')->on('permissions')->onDelete('cascade');
+        });
+
+        // Create two_factor_auths table
+        Schema::create('two_factor_auths', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('email_code', 6)->nullable();
+            $table->timestamp('email_code_expires_at')->nullable();
+            $table->boolean('is_enabled')->default(false);
+            $table->json('backup_codes')->nullable();
+            $table->timestamp('last_used_at')->nullable();
+            $table->timestamps();
+            
+            $table->index(['user_id', 'is_enabled']);
+        });
+
+        // Create user_meta table
+        Schema::create('user_meta', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->bigInteger('user_id')->unsigned();
+            $table->string('meta_key');
+            $table->longText('meta_value')->nullable();
+            $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->index(['user_id', 'meta_key']);
+        });
+
+        // Create categories table
+        Schema::create('categories', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->bigInteger('parent_id')->nullable()->unsigned();
+            $table->boolean('active')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('parent_id')->references('id')->on('categories')->onDelete('cascade');
+        });
+
+        // Create tags table
+        Schema::create('tags', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('color', 7)->default('#007bff');
+            $table->boolean('active')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        // Create media_libraries table
+        Schema::create('media_libraries', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->string('filename');
+            $table->string('original_name');
+            $table->string('mime_type');
+            $table->string('extension');
+            $table->bigInteger('size');
+            $table->string('path');
+            $table->string('url');
+            $table->json('metadata')->nullable();
+            $table->bigInteger('user_id')->unsigned();
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+        });
+
+        // Create options table
+        Schema::create('options', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->bigIncrements('id');
+            $table->string('option_key')->unique();
+            $table->longText('option_value')->nullable();
+            $table->string('option_type')->default('string');
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        // Disable foreign key checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
+
+        // Drop tables in reverse order to avoid foreign key constraints
+        Schema::dropIfExists('options');
+        Schema::dropIfExists('media_libraries');
+        Schema::dropIfExists('tags');
+        Schema::dropIfExists('categories');
+        Schema::dropIfExists('user_meta');
+        Schema::dropIfExists('two_factor_auths');
+        Schema::dropIfExists('role_permissions');
+        Schema::dropIfExists('navigations');
+        Schema::dropIfExists('permissions');
+        Schema::dropIfExists('roles');
+        // Note: personal_access_tokens is handled by Laravel Sanctum
+        Schema::dropIfExists('failed_jobs');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
+
+        // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+    }
+};

@@ -1,0 +1,564 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Http\Requests\SignupRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Helpers\PasswordHelper;
+use App\Models\User;
+use App\Services\TwoFactorAuthService;
+use App\Services\MicrosoftGraphService;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\VerifyEmail;
+use App\Mail\ForgotPasswordEmail;
+use Illuminate\Support\Facades\Auth; 
+use App\Http\Resources\AuthResource;
+use App\Traits\AuditTrailTrait;
+use Illuminate\Support\Facades\RateLimiter;
+
+use Hash;
+
+/**
+ * @OA\Info(
+ *     title="BaseCode API",
+ *     version="1.0.0",
+ *     description="A comprehensive Laravel API with authentication, role management, and security features",
+ *     @OA\Contact(
+ *         email="admin@basecode.com"
+ *     )
+ * )
+ * 
+ * @OA\Server(
+ *     url=L5_SWAGGER_CONST_HOST,
+ *     description="BaseCode API Server"
+ * )
+ * 
+ * @OA\SecurityScheme(
+ *     securityScheme="sanctum",
+ *     type="http",
+ *     scheme="bearer",
+ *     bearerFormat="JWT",
+ *     description="Laravel Sanctum token authentication"
+ * )
+ * 
+ * @OA\Schema(
+ *     schema="User",
+ *     type="object",
+ *     title="User",
+ *     description="User model",
+ *     @OA\Property(property="id", type="integer", example=1, description="User ID"),
+ *     @OA\Property(property="user_login", type="string", example="johndoe", description="Username"),
+ *     @OA\Property(property="user_email", type="string", format="email", example="john@example.com", description="User email"),
+ *     @OA\Property(property="user_status", type="integer", example=1, description="User status (0=inactive, 1=active)"),
+ *     @OA\Property(property="created_at", type="string", format="date-time", example="2024-01-01T00:00:00.000000Z", description="Creation timestamp"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", example="2024-01-01T00:00:00.000000Z", description="Last update timestamp"),
+ *     @OA\Property(property="user_details", type="object", description="User metadata"),
+ *     @OA\Property(property="user_role", type="string", example="admin", description="User role")
+ * )
+ */
+class AuthController extends Controller
+{
+	use AuditTrailTrait;
+
+	protected $twoFactorService;
+
+	public function __construct(TwoFactorAuthService $twoFactorService)
+	{
+		$this->twoFactorService = $twoFactorService;
+	}
+	/**
+	 * Create a new user.
+	 * 
+	 * @OA\Post(
+	 *     path="/api/signup",
+	 *     summary="Register a new user",
+	 *     tags={"Authentication"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"username", "email", "password", "password_confirmation"},
+	 *             @OA\Property(property="username", type="string", example="johndoe", description="Unique username"),
+	 *             @OA\Property(property="email", type="string", format="email", example="john@example.com", description="Valid email address"),
+	 *             @OA\Property(property="password", type="string", format="password", example="SecurePass123!", description="Strong password (min 8 chars, mixed case, numbers, symbols)"),
+	 *             @OA\Property(property="password_confirmation", type="string", format="password", example="SecurePass123!", description="Password confirmation")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="User registered successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="message", type="string", example="Aww yeah, you have successfuly registered. Verification email has been sent to your registered email.")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=422,
+	 *         description="Validation error or weak password",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="errors", type="array", @OA\Items(type="string")),
+	 *             @OA\Property(property="status", type="boolean", example=false),
+	 *             @OA\Property(property="status_code", type="integer", example=422)
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function signup(SignupRequest $request) 
+	{
+		$data = $request->validated();
+
+		// Check password strength
+		$passwordStrength = PasswordHelper::checkPasswordStrength($data['password']);
+		if (!$passwordStrength['is_strong']) {
+			return response([
+				'errors' => $passwordStrength['feedback'],
+				'status' => false,
+				'status_code' => 422,
+			], 422);
+		}
+
+		$salt = PasswordHelper::generateSalt();
+		$password = PasswordHelper::generatePassword($salt, $request->password);
+		$activation_key = PasswordHelper::generateResetToken();
+
+		$user = User::create([
+			'user_login' => $data['username'],
+			'user_email' => $data['email'],
+			'user_salt' => $salt,
+			'user_pass' => $password,
+			'user_activation_key' => $activation_key,
+		]);
+
+		$user_key = $user->user_activation_key;
+		$verify_url = env('ADMIN_APP_URL')."/login/activate/".$user_key;
+
+		$message = '';
+		try {
+			// Send verification email using Microsoft Graph
+			$emailSent = MicrosoftGraphService::sendUserRegistrationEmail($user, $verify_url);
+			if ($emailSent) {
+				$message = 'Aww yeah, you have successfuly registered. Verification email has been sent to your registered email.';
+			} else {
+				$message = 'Registration successful, but there was an issue sending the verification email. Please contact support.';
+			}
+		} catch (\Exception $e) {
+			// Fallback to Laravel Mail if Microsoft Graph fails
+			$options = array('verify_url' => $verify_url);
+			if(Mail::to($user->user_email)->send(new VerifyEmail($user, $options))) {
+				$message = 'Aww yeah, you have successfuly registered. Verification email has been sent to your registered email.';
+			} else {
+				$message = 'Registration successful, but there was an issue sending the verification email. Please contact support.';
+			}
+		}
+
+		// Log the user registration
+		$this->logAction(
+			'AUTHENTICATION',
+			'REGISTER',
+			[
+				'username' => $data['username'],
+				'email' => $this->anonymizeEmail($data['email']),
+				'activation_key' => $activation_key,
+				'email_sent' => !empty($message),
+				'password_strength' => $passwordStrength['strength']
+			],
+			(string) $user->id
+		);
+
+		return response(compact('message'));
+		
+	}
+
+	/**
+	 * Activate registered user.
+	 * 
+	 * @OA\Get(
+	 *     path="/api/activate/{activation_key}",
+	 *     summary="Activate user account",
+	 *     tags={"Authentication"},
+	 *     @OA\Parameter(
+	 *         name="activation_key",
+	 *         in="path",
+	 *         required=true,
+	 *         description="User activation key received via email",
+	 *         @OA\Schema(type="string", example="abc123def456")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Account activated successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="message", type="string", example="Your registered email address has been validated, you can login you account and enjoy.")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Invalid or expired activation key",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="message", type="string", example="Invalid or expired activation key")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function activateUser(Request $request) 
+	{
+		$message = '';
+
+		$user = User::where('user_activation_key', $request->activation_key)
+		->where('user_status', 0)->first();
+		
+		if($user) {
+			$user->update(['user_status' => 1]);
+			$message = 'Your registered email address has been validated, you can login you account and enjoy.';
+
+			// Log activation
+			$this->logAction(
+				'AUTHENTICATION',
+				'ACTIVATE',
+				[
+					'user_id' => $user->id,
+					'email' => $this->anonymizeEmail($user->user_email)
+				],
+				(string) $user->id
+			);
+		}
+
+		return response(compact('message'));
+
+	}
+
+	/**
+	 * Generate a temporary password.
+	 * 
+	 * @OA\Post(
+	 *     path="/api/forgot-password",
+	 *     summary="Request password reset",
+	 *     tags={"Authentication"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"email"},
+	 *             @OA\Property(property="email", type="string", format="email", example="john@example.com", description="Registered email address")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Password reset email sent successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="message", type="string", example="Your temporary password has been sent to your registered email.")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=422,
+	 *         description="Validation error or invalid email",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="message", type="string", example="User does not have a valid email address for password reset."),
+	 *             @OA\Property(property="error", type="string", example="invalid_email")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function genTempPassword(ForgotPasswordRequest $request) 
+	{
+		$data = $request->validated();
+		$message = '';
+
+		$user = User::where('user_email', $data['email'])->first();
+
+		if($user) {
+			// Check if user has a valid email address
+			if(empty($user->user_email) || !filter_var($user->user_email, FILTER_VALIDATE_EMAIL)) {
+				return response()->json([
+					'message' => 'User does not have a valid email address for password reset.',
+					'error' => 'invalid_email'
+				], 422);
+			}
+
+			$salt = $user->user_salt;
+			$new_password = PasswordHelper::generateTemporaryPassword();
+			$password = PasswordHelper::generatePassword($salt, $new_password);
+
+			$user->update(['user_pass' => $password]);
+
+			$login_url = env('ADMIN_APP_URL')."/login";
+			
+			try {
+				// Send password reset email using Microsoft Graph
+				$emailSent = MicrosoftGraphService::sendPasswordResetEmail($user, $login_url);
+				if ($emailSent) {
+					$message = 'Your temporary password has been sent to your registered email.';
+				} else {
+					$message = 'Password reset successful, but there was an issue sending the email. Please contact support.';
+				}
+			} catch (\Exception $e) {
+				// Fallback to Laravel Mail if Microsoft Graph fails
+				$options = array(
+					'login_url' => $login_url,
+					'new_password' => $new_password
+				);
+				if(Mail::to($user->user_email)->send(new ForgotPasswordEmail($user, $options))) {
+					$message = 'Your temporary password has been sent to your registered email.';
+				} else {
+					$message = 'Password reset successful, but there was an issue sending the email. Please contact support.';
+				}
+			}
+
+			// Log password reset
+			$this->logAction(
+				'AUTHENTICATION',
+				'PASSWORD_RESET',
+				[
+					'user_id' => $user->id,
+					'email' => $this->anonymizeEmail($user->user_email),
+					'temporary_password_generated' => true
+				],
+				(string) $user->id
+			);
+		}
+
+		return response(compact('message'));
+	}
+
+	/**
+	 * Login a user.
+	 * 
+	 * @OA\Post(
+	 *     path="/api/login",
+	 *     summary="Authenticate user",
+	 *     tags={"Authentication"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"email", "password"},
+	 *             @OA\Property(property="email", type="string", format="email", example="john@example.com", description="User email address"),
+	 *             @OA\Property(property="password", type="string", format="password", example="SecurePass123!", description="User password")
+	 *         )
+	 *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Login successful or 2FA required",
+     *         @OA\JsonContent(
+     *             oneOf={
+     *                 @OA\Schema(
+     *                     @OA\Property(property="user", ref="#/components/schemas/User"),
+     *                     @OA\Property(property="token", type="string", example="1|abc123def456...", description="Bearer token for API authentication")
+     *                 ),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="message", type="string", example="Two-factor authentication required. Please check your email for the verification code."),
+     *                     @OA\Property(property="two_factor_required", type="boolean", example=true),
+     *                     @OA\Property(property="status", type="boolean", example=true),
+     *                     @OA\Property(property="status_code", type="integer", example=200)
+     *                 )
+     *             }
+     *         )
+     *     ),
+	 *     @OA\Response(
+	 *         response=422,
+	 *         description="Invalid credentials",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="errors", type="array", @OA\Items(type="string"), example={"Invalid email or password."}),
+	 *             @OA\Property(property="status", type="boolean", example=false),
+	 *             @OA\Property(property="status_code", type="integer", example=422)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=429,
+	 *         description="Too many login attempts",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="errors", type="array", @OA\Items(type="string"), example={"Too many login attempts. Please try again later."}),
+	 *             @OA\Property(property="status", type="boolean", example=false),
+	 *             @OA\Property(property="status_code", type="integer", example=429)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Failed to send 2FA code",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="errors", type="array", @OA\Items(type="string"), example={"Failed to send verification code. Please try again."}),
+	 *             @OA\Property(property="status", type="boolean", example=false),
+	 *             @OA\Property(property="status_code", type="integer", example=500)
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function login(LoginRequest $request) 
+	{
+		$credentials = $request->validated();
+		$ip = $request->ip();
+
+		// Check rate limiting
+		if (RateLimiter::tooManyAttempts('login:' . $ip, 5)) {
+			$this->logAction(
+				'AUTHENTICATION',
+				'LOGIN_BLOCKED',
+				[
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'reason' => 'Too many attempts',
+					'ip_address' => $ip
+				]
+			);
+
+			return response([
+				'errors' => ['Too many login attempts. Please try again later.'],
+				'status' => false,
+				'status_code' => 429,
+			], 429);
+		}
+
+		$user = User::where('user_email', '=', $credentials['email'])->where('user_status', 1)->first();
+		if (!$user || !PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass)) {
+			// Increment rate limiter
+			RateLimiter::hit('login:' . $ip, 300); // 5 minutes
+
+			// Log failed login attempt
+			$this->logAction(
+				'AUTHENTICATION',
+				'LOGIN_FAILED',
+				[
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'reason' => 'Invalid email or password',
+					'ip_address' => $ip,
+					'user_agent' => $request->userAgent()
+				]
+			);
+			
+			return response([
+				'errors' => ['Invalid email or password.'],
+				'status' => false,
+				'status_code' => 422,
+			], 422);
+		}
+
+		// Clear rate limiter on successful login
+		RateLimiter::clear('login:' . $ip);
+		
+		// Check if 2FA is enabled for this user
+		if ($this->twoFactorService->isTwoFactorEnabled($user)) {
+			// Send 2FA code
+			$twoFactorResult = $this->twoFactorService->sendEmailCode($user);
+			
+			if ($twoFactorResult['success']) {
+				// Log 2FA code sent
+				$this->logAction(
+					'AUTHENTICATION',
+					'2FA_CODE_SENT',
+					[
+						'email' => $this->anonymizeEmail($credentials['email']),
+						'user_id' => $user->id,
+						'ip_address' => $ip,
+						'user_agent' => $request->userAgent()
+					],
+					(string) $user->id
+				);
+
+				return response([
+					'message' => 'Two-factor authentication required. Please check your email for the verification code.',
+					'two_factor_required' => true,
+					'status' => true,
+					'status_code' => 200,
+				], 200);
+			} else {
+				// Log 2FA code send failure
+				$this->logAction(
+					'AUTHENTICATION',
+					'2FA_CODE_FAILED',
+					[
+						'email' => $this->anonymizeEmail($credentials['email']),
+						'user_id' => $user->id,
+						'ip_address' => $ip,
+						'error' => $twoFactorResult['message']
+					],
+					(string) $user->id
+				);
+
+				return response([
+					'errors' => ['Failed to send verification code. Please try again.'],
+					'status' => false,
+					'status_code' => 500,
+				], 500);
+			}
+		}
+
+		// No 2FA required, proceed with normal login
+		$user->tokens()->delete();
+
+		Auth::login($user);
+		$token = $user->createToken('admin')->plainTextToken;
+		$userResource = new AuthResource($user);
+
+		// Log successful login
+		$this->logAction(
+			'AUTHENTICATION',
+			'LOGIN_SUCCESS',
+			[
+				'email' => $this->anonymizeEmail($credentials['email']),
+				'user_id' => $user->id,
+				'user_login' => $user->user_login,
+				'ip_address' => $ip,
+				'user_agent' => $request->userAgent(),
+				'token_created' => true,
+				'previous_tokens_deleted' => true
+			],
+			(string) $user->id
+		);
+
+		return response(['user' => $userResource, 'token' => $token]);	
+
+	}
+
+	/**
+	 * Logout a user.
+	 * 
+	 * @OA\Post(
+	 *     path="/api/logout",
+	 *     summary="Logout user",
+	 *     tags={"Authentication"},
+	 *     security={{"sanctum": {}}},
+	 *     @OA\Response(
+	 *         response=204,
+	 *         description="Logout successful"
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Unauthenticated",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function logout(Request $request) 
+	{
+		$user = $request->user();
+		
+		// Log the logout action
+		$this->logAction(
+			'AUTHENTICATION',
+			'LOGOUT',
+			[
+				'user_id' => $user->id,
+				'user_login' => $user->user_login,
+				'email' => $this->anonymizeEmail($user->user_email),
+				'ip_address' => $request->ip(),
+				'token_deleted' => true
+			],
+			(string) $user->id
+		);
+		
+		$user->currentAccessToken()->delete();
+		return response('', 204);
+	}
+
+	/**
+	 * Anonymize email for logging
+	 */
+	private function anonymizeEmail($email)
+	{
+		$parts = explode('@', $email);
+		$username = $parts[0];
+		$domain = $parts[1];
+		
+		$anonymized = substr($username, 0, 2) . '***@' . $domain;
+		return $anonymized;
+	}
+}
