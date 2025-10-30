@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\NavigationController;
+use App\Http\Controllers\Api\SettingsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -188,6 +189,23 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::patch('/restore/{id}', [NavigationController::class, 'restore']);
 			Route::delete('/{id}', [NavigationController::class, 'forceDelete']);
 		});
+
+		// Settings Management Routes (moved under system-settings)
+		Route::prefix('settings')->group(function () {
+			Route::get('/', [SettingsController::class, 'index']);
+			Route::post('/', [SettingsController::class, 'update']);
+			Route::get('/{key}', [SettingsController::class, 'show']);
+			Route::put('/{key}', [SettingsController::class, 'updateOption']);
+			Route::post('/initialize', [SettingsController::class, 'initialize']);
+			
+			// 2FA Settings
+			Route::prefix('two-factor')->group(function () {
+				Route::get('/status', [SettingsController::class, 'getTwoFactorStatus']);
+				Route::post('/enable', [SettingsController::class, 'enableTwoFactor']);
+				Route::post('/disable', [SettingsController::class, 'disableTwoFactor']);
+				Route::post('/backup-codes', [SettingsController::class, 'generateBackupCodes']);
+			});
+		});
 	});
 
 	// PROFILE ROUTES
@@ -246,3 +264,5 @@ Route::prefix('2fa')->group(function () {
         Route::post('/generate-backup-codes', [TwoFactorAuthController::class, 'generateBackupCodes']);
     });
 });
+
+// (merged into system-settings/settings above)

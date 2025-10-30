@@ -3690,6 +3690,284 @@
                 ]
             }
         },
+        "/api/settings": {
+            "get": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Get all system settings",
+                "description": "Get all system settings",
+                "operationId": "42d0b4246b20863060a17026148f8d92",
+                "responses": {
+                    "200": {
+                        "description": "Settings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Update system settings",
+                "description": "Update system settings",
+                "operationId": "234b5defb67a3f8ff0dc93837a5d14e2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "two_factor": {
+                                        "type": "object"
+                                    },
+                                    "security": {
+                                        "type": "object"
+                                    },
+                                    "general": {
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Settings updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Settings updated successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/settings/{key}": {
+            "get": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Get specific option by key",
+                "description": "Get specific option by key",
+                "operationId": "977e532fd74cd4a9f0cffe2434b250b7",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "description": "Option key",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "two_factor_enabled"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Option retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Update specific option by key",
+                "description": "Update specific option by key",
+                "operationId": "d58b5670f9dd3b9b22ca1225d2595c19",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "description": "Option key",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "two_factor_enabled"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "value": {
+                                        "type": "string",
+                                        "example": "true"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "boolean"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Enable 2FA"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Option updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/settings/two-factor/status": {
+            "get": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Get 2FA status for current user",
+                "description": "Get 2FA settings for current user",
+                "operationId": "c1981e6f46030b223ad1bb0f0c735e7b",
+                "responses": {
+                    "200": {
+                        "description": "2FA status retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/settings/two-factor/enable": {
+            "post": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Enable 2FA for current user",
+                "description": "Enable 2FA for current user",
+                "operationId": "ffe54c87ce204ba5696b5a9a8fcc0f4e",
+                "responses": {
+                    "200": {
+                        "description": "2FA enabled successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/settings/two-factor/disable": {
+            "post": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Disable 2FA for current user",
+                "description": "Disable 2FA for current user",
+                "operationId": "e203aa74f19b03a7e6ee6ec0098b2d1e",
+                "responses": {
+                    "200": {
+                        "description": "2FA disabled successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/settings/two-factor/backup-codes": {
+            "post": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Generate backup codes for current user",
+                "description": "Generate backup codes for current user",
+                "operationId": "41880eedb9fa1ae50f2e3093cb999844",
+                "responses": {
+                    "200": {
+                        "description": "Backup codes generated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/settings/initialize": {
+            "post": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Initialize default options",
+                "description": "Initialize default options (admin only)",
+                "operationId": "ee5cb7acfa43d4736405eb6f6bdd7a15",
+                "responses": {
+                    "200": {
+                        "description": "Default options initialized successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/content-management/tags": {
             "get": {
                 "tags": [
@@ -6447,6 +6725,10 @@
         {
             "name": "Role Management",
             "description": "API endpoints for role and permission management"
+        },
+        {
+            "name": "Settings Management",
+            "description": "API endpoints for application settings management"
         },
         {
             "name": "Tag Management",
