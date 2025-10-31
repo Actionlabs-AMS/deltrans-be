@@ -34,16 +34,9 @@ class UserSeeder extends Seeder
                 'user_salt' => $salt,
                 'user_status' => 1,
                 'user_activation_key' => null,
+                'role_id' => $superAdminRole->id,
             ]
         );
-
-        // Save user role in user_meta
-        $superAdmin->saveUserMeta([
-            'user_role' => json_encode([
-                'id' => $superAdminRole->id,
-                'name' => $superAdminRole->name
-            ])
-        ]);
 
         // Create additional test users
         $testUsers = [
@@ -77,16 +70,9 @@ class UserSeeder extends Seeder
                     'user_salt' => $salt,
                     'user_status' => 1,
                     'user_activation_key' => null,
+                    'role_id' => $role->id,
                 ]
             );
-
-            // Save user role in user_meta
-            $user->saveUserMeta([
-                'user_role' => json_encode([
-                    'id' => $role->id,
-                    'name' => $role->name
-                ])
-            ]);
         }
     }
 }

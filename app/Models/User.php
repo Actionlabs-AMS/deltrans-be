@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\UserMeta;
+use App\Models\Role;
 use App\Traits\Encryptable;
 use App\Traits\Anonymizable;
 
@@ -28,6 +29,7 @@ class User extends Authenticatable
 		'user_salt',
 		'user_status',
 		'user_activation_key',
+		'role_id',
 		'remember_token',
 	];
 
@@ -98,6 +100,16 @@ class User extends Authenticatable
 		return $this->hasMany('App\Models\UserMeta', 'user_id', 'id');
 	}
 
+	/**
+	 * Get the role that belongs to the user.
+	 *
+	 * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+	 */
+	public function role()
+	{
+		return $this->belongsTo(Role::class, 'role_id');
+	}
+
 	public function getUserRole($role_id)
 	{   
 		return Role::find($role_id);
@@ -113,8 +125,8 @@ class User extends Authenticatable
 
 	public function getUserRoleAttribute()
 	{
-		$user_role = json_decode($this->user_details['user_role'] ?? 'null');
-		return $user_role && ($role = $this->getUserRole($user_role->id)) ? $role : null;
+		// Use the role relationship instead of user_meta
+		return $this->role;
 	}
 
 	/**

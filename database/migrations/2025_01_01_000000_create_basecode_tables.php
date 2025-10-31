@@ -25,6 +25,7 @@ return new class extends Migration
             $table->string('user_salt');
             $table->tinyInteger('user_status')->default(0);
             $table->string('user_activation_key')->nullable();
+            $table->bigInteger('role_id')->unsigned()->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
@@ -61,6 +62,11 @@ return new class extends Migration
             $table->boolean('is_super_admin')->default(false);
             $table->timestamps();
             $table->softDeletes();
+        });
+
+        // Add foreign key constraint for users.role_id after roles table is created
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('role_id')->references('id')->on('roles')->onDelete('set null');
         });
 
         // Create permissions table
