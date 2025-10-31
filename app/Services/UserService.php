@@ -36,6 +36,15 @@ class UserService extends BaseService
           ->orWhere('roles.name', 'LIKE', '%' . $search . '%');
       });
     })
+    ->when(request()->has('role_name') && request('role_name') !== '', function ($query) {
+      // Strict filter: exact match on role name
+      return $query->where('roles.name', request('role_name'));
+    })
+    ->when(request()->has('user_status') && request('user_status') !== '', function ($query) {
+      // Strict filter: exact match on user status (handles 0, 1, 2 correctly)
+      // Note: Using request()->has() to check existence, not truthiness, so '0' is handled correctly
+      return $query->where('users.user_status', request('user_status'));
+    })
     ->when(request('order'), function ($query) {
       $order = request('order');
       $sort = request('sort', 'asc');
