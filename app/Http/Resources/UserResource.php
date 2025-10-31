@@ -28,8 +28,10 @@ class UserResource extends JsonResource
       'attachment_metadata' => $this->user_details['attachment_metadata'] ?? null,
       'user_role' => json_encode($this->user_role) ?? null,
       'user_role_name' => ($this->user_role) ? $this->user_role->name : 'Unassigned',
+      'role_name' => ($this->user_role) ? $this->user_role->name : 'Unassigned', // Added for frontend table
+      'role_id' => $this->role_id, // Added for frontend
       'theme' => $this->user_details['theme'] ?? null,
-      'user_status' => ($this->user_status) ? 'Active' : 'Inactive',
+      'user_status' => $this->user_status, // Return numeric status for badge logic
       'updated_at' => $this->updated_at->format('Y-m-d H:m:s'),
       'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:m:s') : null
     ];

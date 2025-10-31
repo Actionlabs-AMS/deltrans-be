@@ -31,19 +31,25 @@ class SecurityMonitoringMiddleware
         $endpoint = $request->path();
         $userId = $request->user()?->id;
 
-        // Check for brute force attacks
-        $bruteForceCheck = $this->securityMonitor->checkBruteForceAttack($ip, $endpoint);
-        if ($bruteForceCheck['blocked']) {
-            return response()->json([
-                'message' => 'Too many requests. Please try again later.',
-                'error' => 'BRUTE_FORCE_BLOCKED',
-            ], 429);
-        }
+        // Check for brute force attacks (only for auth endpoints, not regular API calls)
+        // Skip brute force checking for authenticated API requests to avoid false positives
+        if ($userId && $request->is('api/*')) {
+            // Authenticated API requests bypass brute force checks
+            // Only check for unauthenticated auth endpoints
+        } elseif (str_contains($endpoint, 'login') || str_contains($endpoint, 'auth') || str_contains($endpoint, 'signup') || str_contains($endpoint, '2fa')) {
+            $bruteForceCheck = $this->securityMonitor->checkBruteForceAttack($ip, $endpoint);
+            if ($bruteForceCheck['blocked']) {
+                return response()->json([
+                    'message' => 'Too many requests. Please try again later.',
+                    'error' => 'BRUTE_FORCE_BLOCKED',
+                ], 429);
+            }
 
-        // Increment brute force counter
-        $key = "brute_force:{$ip}:{$endpoint}";
-        $current = Cache::get($key, 0);
-        Cache::put($key, $current + 1, 3600); // 1 hour
+            // Increment brute force counter only for auth endpoints (unauthenticated)
+            $key = "brute_force:{$ip}:{$endpoint}";
+            $current = Cache::get($key, 0);
+            Cache::put($key, $current + 1, 3600); // 1 hour
+        }
 
         // Check for suspicious login patterns (for auth endpoints)
         if (str_contains($endpoint, 'login') || str_contains($endpoint, 'auth')) {

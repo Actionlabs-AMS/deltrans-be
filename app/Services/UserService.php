@@ -25,23 +25,34 @@ class UserService extends BaseService
     $trashedUsers = $this->getTrashedCount();
 
     return UserResource::collection(User::query()
-    ->join('user_meta as um', 'users.id', '=', 'um.user_id')
-    ->where('um.meta_key', 'user_role')
-    ->whereRaw("JSON_VALID(um.meta_value)")
-    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(um.meta_value, '$.id')) != ?", [1])
-    ->when($trash, function ($query) {
-      return $query->onlyTrashed();
-    })
+    ->with('role') // Eager load role relationship
+    ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
+    // Exclude super admin role (role_id = 1) if needed, or remove this filter to show all users
     ->when(request('search'), function ($query) {
-      return $query->where('name', 'LIKE', '%' . request('search') . '%')
-                   ->orWhere('slug', 'LIKE', '%' . request('search') . '%')
-                   ->orWhere('descriptions', 'LIKE', '%' . request('search') . '%');
+      $search = request('search');
+      return $query->where(function ($q) use ($search) {
+        $q->where('users.user_login', 'LIKE', '%' . $search . '%')
+          ->orWhere('users.user_email', 'LIKE', '%' . $search . '%')
+          ->orWhere('roles.name', 'LIKE', '%' . $search . '%');
+      });
     })
     ->when(request('order'), function ($query) {
-        return $query->orderBy(request('order'), request('sort'));
+      $order = request('order');
+      $sort = request('sort', 'asc');
+      
+      // Handle ordering by role name
+      if ($order === 'role_name') {
+        return $query->orderBy('roles.name', $sort);
+      }
+      
+      // Handle other fields
+      return $query->orderBy('users.' . $order, $sort);
     })
     ->when(!request('order'), function ($query) {
-      return $query->orderBy('id', 'desc');
+      return $query->orderBy('users.id', 'desc');
+    })
+    ->when($trash, function ($query) {
+      return $query->onlyTrashed();
     })
     ->select('users.*') // Important to avoid column conflicts
     ->paginate($perPage)->withQueryString()
@@ -111,19 +122,17 @@ class UserService extends BaseService
     if(count($ids) > 0) {
       foreach ($ids as $id) {
         $user = User::findOrFail($id);
-        $this->changeRoleMeta($user, $role);
+        $this->changeRole($user, $role);
       }
     }
   }
 
-  public function changeRoleMeta(User $user, $role) 
+  public function changeRole(User $user, $role) 
   {
-    $meta_details = [];
-    if(isset($role))
-      $meta_details['user_role'] = $role;
-
-    if(count($meta_details))
-      $user->saveUserMeta($meta_details);
+    if(isset($role)) {
+      // Update role_id directly on users table
+      $user->update(['role_id' => $role]);
+    }
   }
 
   /**

@@ -72,7 +72,9 @@ class SecurityMonitorService
         $key = "brute_force:{$ip}:{$endpoint}";
         $attempts = Cache::get($key, 0);
         
-        if ($attempts > 20) {
+        // Increased threshold to avoid false positives for normal usage
+        // Only blocks if more than 100 attempts in 1 hour (for auth endpoints only)
+        if ($attempts > 100) {
             $this->logSecurityEvent('BRUTE_FORCE_ATTACK', [
                 'ip' => $ip,
                 'endpoint' => $endpoint,
@@ -107,7 +109,8 @@ class SecurityMonitorService
 
         // Check for unusual data access patterns
         $recentAccess = Cache::get("api_access:{$userId}", []);
-        if (count($recentAccess) > 100) {
+        // Increased threshold to avoid false positives - 500 requests in 24 hours is reasonable
+        if (count($recentAccess) > 500) {
             $suspicious = true;
             $reasons[] = "Unusually high API usage";
         }
@@ -121,7 +124,8 @@ class SecurityMonitorService
 
         if (in_array($endpoint, $sensitiveEndpoints)) {
             $sensitiveAccess = Cache::get("sensitive_access:{$userId}", 0);
-            if ($sensitiveAccess > 50) {
+            // Increased threshold - 200 requests per 24 hours is reasonable for admin users
+            if ($sensitiveAccess > 200) {
                 $suspicious = true;
                 $reasons[] = "Frequent access to sensitive endpoints";
             }

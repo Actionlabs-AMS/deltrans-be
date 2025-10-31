@@ -14,12 +14,12 @@ class RoleSeeder extends Seeder
     {
         $roles = [
             [
-                'name' => 'Super Admin',
+                'name' => 'Developer Account',
                 'active' => true,
                 'is_super_admin' => true,
             ],
             [
-                'name' => 'Admin',
+                'name' => 'Web Admin',
                 'active' => true,
                 'is_super_admin' => false,
             ],
