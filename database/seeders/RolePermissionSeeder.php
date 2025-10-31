@@ -16,7 +16,7 @@ class RolePermissionSeeder extends Seeder
     public function run(): void
     {
         // Get roles
-        $superAdminRole = Role::where('name', 'Super Admin')->first();
+        $superAdminRole = Role::where('name', 'Developer Account')->first();
         $adminRole = Role::where('name', 'Admin')->first();
         $editorRole = Role::where('name', 'Editor')->first();
         $viewerRole = Role::where('name', 'Viewer')->first();
