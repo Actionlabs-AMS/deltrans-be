@@ -15,129 +15,230 @@ class NavigationSeeder extends Seeder
         // Clear existing navigations (use delete instead of truncate to avoid foreign key issues)
         Navigation::query()->delete();
 
-        $navigations = [
-            // Dashboard
+        // Define navigation structure with parent-child relationships
+        $navigationStructure = [
+            // Dashboard (standalone)
             [
                 'name' => 'Dashboard',
                 'slug' => 'dashboard',
-                'icon' => 'cil-speedometer',
+                'icon' => 'home',
+                'description' => 'Main dashboard with overview of system metrics and quick access to key features',
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
+                'children' => [],
             ],
             
-            // User Management
+            // User Management Section
             [
                 'name' => 'User Management',
                 'slug' => 'user-management',
-                'icon' => 'cil-people',
+                'icon' => 'users',
+                'description' => 'Manage users, roles, permissions, and user activity tracking',
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
-            ],
-            [
-                'name' => 'Users',
-                'slug' => 'users',
-                'icon' => 'cil-user',
-                'parent_id' => null, // Will be set after parent is created
-                'active' => true,
-                'show_in_menu' => true,
-            ],
-            [
-                'name' => 'Roles',
-                'slug' => 'roles',
-                'icon' => 'cil-shield-alt',
-                'parent_id' => null, // Will be set after parent is created
-                'active' => true,
-                'show_in_menu' => true,
+                'children' => [
+                    [
+                        'name' => 'All Users',
+                        'slug' => 'users',
+                        'icon' => 'user-group',
+                        'description' => 'View and manage all registered users, their profiles and account status',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Roles & Permissions',
+                        'slug' => 'roles',
+                        'icon' => 'shield-check',
+                        'description' => 'Manage user roles and permissions to control what users can access and do (authorization)',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'User Activity',
+                        'slug' => 'user-activity',
+                        'icon' => 'clock',
+                        'description' => 'Monitor user login history, actions, and activity logs',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                ],
             ],
             
-            // Content Management
+            // Content Management Section
             [
                 'name' => 'Content Management',
                 'slug' => 'content-management',
-                'icon' => 'cil-folder',
+                'icon' => 'document-text',
+                'description' => 'Create, edit, and organize content including posts, pages, media, and taxonomies',
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
-            ],
-            [
-                'name' => 'Media Library',
-                'slug' => 'media-library',
-                'icon' => 'cil-image',
-                'parent_id' => null, // Will be set after parent is created
-                'active' => true,
-                'show_in_menu' => true,
-            ],
-            [
-                'name' => 'Categories',
-                'slug' => 'categories',
-                'icon' => 'cil-tags',
-                'parent_id' => null, // Will be set after parent is created
-                'active' => true,
-                'show_in_menu' => true,
-            ],
-            [
-                'name' => 'Tags',
-                'slug' => 'tags',
-                'icon' => 'cil-tag',
-                'parent_id' => null, // Will be set after parent is created
-                'active' => true,
-                'show_in_menu' => true,
+                'children' => [
+                    [
+                        'name' => 'Pages',
+                        'slug' => 'pages',
+                        'icon' => 'newspaper',
+                        'description' => 'Create and manage static pages like About, Contact, and Privacy Policy',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Media Library',
+                        'slug' => 'media-library',
+                        'icon' => 'photo',
+                        'description' => 'Upload, organize, and manage images, videos, and other media files',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Categories',
+                        'slug' => 'categories',
+                        'icon' => 'tag',
+                        'description' => 'Organize content into hierarchical categories for better structure',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Tags',
+                        'slug' => 'tags',
+                        'icon' => 'hashtag',
+                        'description' => 'Manage tags for flexible content labeling and filtering',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                ],
             ],
             
-            // System Settings
+            // Analytics & Reports Section
+            [
+                'name' => 'Analytics & Reports',
+                'slug' => 'analytics',
+                'icon' => 'chart-bar',
+                'description' => 'View detailed analytics, reports, and insights about system usage and performance',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => true,
+                'children' => [
+                    [
+                        'name' => 'Analytics Overview',
+                        'slug' => 'analytics-dashboard',
+                        'icon' => 'presentation-chart-line',
+                        'description' => 'Overview of key metrics and analytics in a visual dashboard format',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'User Reports',
+                        'slug' => 'user-reports',
+                        'icon' => 'user-circle',
+                        'description' => 'Detailed reports on user registration, engagement, and behavior patterns',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Content Reports',
+                        'slug' => 'content-reports',
+                        'icon' => 'document-chart-bar',
+                        'description' => 'Analyze content performance, views, and engagement statistics',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Activity Logs',
+                        'slug' => 'activity-logs',
+                        'icon' => 'clipboard-document-list',
+                        'description' => 'Comprehensive log of all system activities and administrative actions',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                ],
+            ],
+            
+            // System Settings Section
             [
                 'name' => 'System Settings',
                 'slug' => 'system-settings',
-                'icon' => 'cil-settings',
+                'icon' => 'cog-6-tooth',
+                'description' => 'Configure system preferences, security, and administrative settings',
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
-            ],
-            [
-                'name' => 'Navigation',
-                'slug' => 'navigation',
-                'icon' => 'cil-list',
-                'parent_id' => null, // Will be set after parent is created
-                'active' => true,
-                'show_in_menu' => true,
-            ],
-            [
-                'name' => 'Security Dashboard',
-                'slug' => 'security',
-                'icon' => 'cil-shield',
-                'parent_id' => null, // Will be set after parent is created
-                'active' => true,
-                'show_in_menu' => true,
+                'children' => [
+                    [
+                        'name' => 'General Settings',
+                        'slug' => 'settings',
+                        'icon' => 'adjustments-horizontal',
+                        'description' => 'Configure general application settings, site information, and preferences',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Navigation',
+                        'slug' => 'navigation',
+                        'icon' => 'list-bullet',
+                        'description' => 'Customize and manage navigation menu structure and order',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Security',
+                        'slug' => 'security',
+                        'icon' => 'shield-exclamation',
+                        'description' => 'Configure system security settings including password policies, two-factor authentication, session management, and security logs',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Email Settings',
+                        'slug' => 'email-settings',
+                        'icon' => 'envelope',
+                        'description' => 'Configure email server settings and notification templates',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Backup & Restore',
+                        'slug' => 'backup',
+                        'icon' => 'server',
+                        'description' => 'Create backups, restore data, and manage system recovery options',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                ],
             ],
         ];
 
-        // Create parent navigations first
-        $parentNavigations = [];
-        foreach ($navigations as $navigation) {
-            if ($navigation['parent_id'] === null && in_array($navigation['slug'], ['dashboard', 'user-management', 'content-management', 'system-settings'])) {
-                $nav = Navigation::create($navigation);
-                $parentNavigations[$navigation['slug']] = $nav->id;
-            }
+        // Create navigations recursively
+        foreach ($navigationStructure as $navData) {
+            $this->createNavigation($navData, null);
         }
+    }
 
-        // Create child navigations
-        foreach ($navigations as $navigation) {
-            if ($navigation['parent_id'] === null && !in_array($navigation['slug'], ['dashboard', 'user-management', 'content-management', 'system-settings'])) {
-                $parentId = null;
-                
-                // Determine parent based on slug
-                if (in_array($navigation['slug'], ['users', 'roles'])) {
-                    $parentId = $parentNavigations['user-management'] ?? null;
-                } elseif (in_array($navigation['slug'], ['media-library', 'categories', 'tags'])) {
-                    $parentId = $parentNavigations['content-management'] ?? null;
-                } elseif (in_array($navigation['slug'], ['navigation', 'security'])) {
-                    $parentId = $parentNavigations['system-settings'] ?? null;
-                }
-                
-                $navigation['parent_id'] = $parentId;
-                Navigation::create($navigation);
+    /**
+     * Recursively create navigation items and their children
+     */
+    private function createNavigation(array $navData, ?int $parentId): void
+    {
+        // Prepare navigation data
+        $navigation = [
+            'name' => $navData['name'],
+            'slug' => $navData['slug'],
+            'icon' => $navData['icon'],
+            'description' => $navData['description'] ?? null,
+            'parent_id' => $parentId,
+            'active' => $navData['active'] ?? true,
+            'show_in_menu' => $navData['show_in_menu'] ?? true,
+        ];
+
+        // Create the navigation item
+        $nav = Navigation::create($navigation);
+
+        // Create children if they exist
+        if (isset($navData['children']) && is_array($navData['children'])) {
+            foreach ($navData['children'] as $childData) {
+                $this->createNavigation($childData, $nav->id);
             }
         }
     }

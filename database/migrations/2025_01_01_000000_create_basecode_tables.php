@@ -79,6 +79,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug');
             $table->string('icon')->nullable();
+            $table->text('description')->nullable();
             $table->bigInteger('parent_id')->nullable()->unsigned();
             $table->boolean('active')->default(true);
             $table->boolean('show_in_menu')->default(true);
