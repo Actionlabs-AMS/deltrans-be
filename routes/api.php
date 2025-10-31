@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\NavigationController;
 use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,11 @@ use App\Http\Controllers\Api\SettingsController;
 Route::middleware('auth:sanctum')->group(function () {
 	Route::get('/user/me', [UserController::class, 'getUser']);
 	Route::post('/logout', [AuthController::class, 'logout']);
+	
+	// Dashboard Routes
+	Route::prefix('dashboard')->group(function () {
+		Route::get('/stats', [DashboardController::class, 'getStats']);
+	});
 	
 	/*
 	|--------------------------------------------------------------------------
