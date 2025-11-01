@@ -14,6 +14,22 @@ class UserResource extends JsonResource
    */
   public function toArray(Request $request): array
   {
+    // Get user role with permissions (same as AuthResource)
+    $userRole = $this->user_role;
+    
+    // Build user_role object with permissions
+    $userRoleData = null;
+    if ($userRole) {
+      $permissions = $userRole->permissions ?? [];
+      
+      $userRoleData = [
+        'id' => $userRole->id,
+        'name' => $userRole->name,
+        'is_super_admin' => $userRole->is_super_admin ?? false,
+        'permissions' => $permissions,
+      ];
+    }
+    
     return [
       'id' => $this->id,
       'user_login' => $this->user_login,
@@ -26,9 +42,9 @@ class UserResource extends JsonResource
       'biography' => $this->user_details['biography'] ?? null,
       'attachment_file' => $this->user_details['attachment_file'] ?? null,
       'attachment_metadata' => $this->user_details['attachment_metadata'] ?? null,
-      'user_role' => json_encode($this->user_role) ?? null,
-      'user_role_name' => ($this->user_role) ? $this->user_role->name : 'Unassigned',
-      'role_name' => ($this->user_role) ? $this->user_role->name : 'Unassigned', // Added for frontend table
+      'user_role' => $userRoleData ? json_encode($userRoleData) : null, // JSON string as sima-admin expects
+      'user_role_name' => ($userRole) ? $userRole->name : 'Unassigned',
+      'role_name' => ($userRole) ? $userRole->name : 'Unassigned', // Added for frontend table
       'role_id' => $this->role_id, // Added for frontend
       'theme' => $this->user_details['theme'] ?? null,
       'user_status' => $this->user_status, // Return numeric status for badge logic
