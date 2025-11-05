@@ -4,10 +4,9 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Http\Resources\UserResource;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\ForgotPasswordEmail;
-use App\Mail\VerifyEmail;
+use App\Services\MicrosoftGraphService;
 use App\Helpers\PasswordHelper;
+use Illuminate\Support\Facades\Log;
 
 class UserService extends BaseService
 {
@@ -145,30 +144,105 @@ class UserService extends BaseService
   }
 
   /**
-  * Send verify email.
+  * Send verify email using Microsoft Graph.
   */
   public function sendVerifyEmail($user, $user_key)
   {
-    $options = array(
-      'verify_url'   => env('ADMIN_APP_URL')."/login/activate/".$user_key,
-      'password'   => request('user_pass')
-    );
+    try {
+      $verify_url = env('ADMIN_APP_URL')."/login/activate/".$user_key;
+      $password = request('user_pass') ?? '';
+      
+      // Build email body
+      $userName = $user->user_login;
+      $emailBody = "<h2>Welcome to CorePanel!</h2>"
+          . "<p>Hello {$userName},</p>"
+          . "<p>Your account has been created successfully. Please use the following credentials to log in:</p>"
+          . "<p><strong>Username:</strong> {$user->user_login}</p>"
+          . "<p><strong>Email:</strong> {$user->user_email}</p>";
+      
+      if ($password) {
+        $emailBody .= "<p><strong>Password:</strong> {$password}</p>";
+      }
+      
+      $emailBody .= "<p>Please click the link below to verify and activate your account:</p>"
+          . "<p><a href='{$verify_url}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Verify Email Address</a></p>"
+          . "<p>If the button doesn't work, you can copy and paste this link into your browser:</p>"
+          . "<p>{$verify_url}</p>"
+          . "<p>Best regards,<br>The CorePanel Team</p>";
 
-    Mail::to($user->user_email)->send(new VerifyEmail($user, $options));
+      // Send email using Microsoft Graph
+      MicrosoftGraphService::sendNotificationEmail(
+        $user->user_email,
+        "Welcome to CorePanel - Verify Your Email",
+        $emailBody
+      );
+      
+      Log::info('[UserService] Verification email sent successfully', [
+        'user_id' => $user->id,
+        'user_email' => $user->user_email
+      ]);
+    } catch (\Exception $e) {
+      // Log error but don't throw - allow user creation to succeed even if email fails
+      Log::error('[UserService] Failed to send verification email', [
+        'user_id' => $user->id,
+        'user_email' => $user->user_email,
+        'error' => $e->getMessage()
+      ]);
+      // Don't throw exception - user creation should succeed even if email fails
+    }
   }
 
   /**
-  * Send temporary password.
+  * Send temporary password using Microsoft Graph.
   */
   public function sendForgotPasswordEmail($user, $new_password = '') 
   {
-    $user_pass = ($new_password) ? $new_password : request('user_pass');
-    $options = array(
-      'login_url' => env('ADMIN_APP_URL')."/login",
-      'new_password' => $user_pass
-    );
+    try {
+      $user_pass = ($new_password) ? $new_password : request('user_pass');
+      
+      if (!$user_pass) {
+        Log::warning('[UserService] No password provided for forgot password email', [
+          'user_id' => $user->id
+        ]);
+        return;
+      }
 
-    if($user_pass)
-      Mail::to($user->user_email)->send(new ForgotPasswordEmail($user, $options));
+      $login_url = env('ADMIN_APP_URL')."/login";
+      $userName = $user->user_login;
+      
+      $emailBody = "<h2>Password Reset</h2>"
+          . "<p>Hello {$userName},</p>"
+          . "<p>Your temporary password has been generated. Please use the following credentials to log in:</p>"
+          . "<p><strong>Username:</strong> {$user->user_login}</p>"
+          . "<p><strong>Email:</strong> {$user->user_email}</p>"
+          . "<p><strong>Temporary Password:</strong> {$user_pass}</p>"
+          . "<p>Please click the link below to log in:</p>"
+          . "<p><a href='{$login_url}' style='background-color: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Log In</a></p>"
+          . "<p>If the button doesn't work, you can copy and paste this link into your browser:</p>"
+          . "<p>{$login_url}</p>"
+          . "<p><strong>Important:</strong> Please change your password after logging in for security reasons.</p>"
+          . "<p>If you didn't request this password reset, please contact support immediately.</p>"
+          . "<p>Best regards,<br>The CorePanel Team</p>";
+
+      // Send email using Microsoft Graph
+      MicrosoftGraphService::sendNotificationEmail(
+        $user->user_email,
+        "CorePanel - Temporary Password",
+        $emailBody
+      );
+      
+      Log::info('[UserService] Password reset email sent successfully', [
+        'user_id' => $user->id,
+        'user_email' => $user->user_email
+      ]);
+    } catch (\Exception $e) {
+      // Log error but don't throw - allow operation to succeed even if email fails
+      Log::error('[UserService] Failed to send password reset email', [
+        'user_id' => $user->id,
+        'user_email' => $user->user_email,
+        'error' => $e->getMessage()
+      ]);
+      // Don't throw exception - password reset should succeed even if email fails
+    }
   }
 }

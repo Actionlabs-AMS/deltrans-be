@@ -881,4 +881,271 @@ class UserController extends BaseController
       return $this->messageService->responseError();
     }
 	}
+
+  /**
+   * Import users from CSV file.
+   * 
+   * @OA\Post(
+   *     path="/api/user-management/users/import",
+   *     summary="Import users from CSV file",
+   *     tags={"User Management"},
+   *     security={{"sanctum": {}}},
+   *     @OA\RequestBody(
+   *         required=true,
+   *         @OA\MediaType(
+   *             mediaType="multipart/form-data",
+   *             @OA\Schema(
+   *                 @OA\Property(
+   *                     property="file",
+   *                     type="string",
+   *                     format="binary",
+   *                     description="CSV file containing user data"
+   *                 )
+   *             )
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=200,
+   *         description="Users imported successfully",
+   *         @OA\JsonContent(
+   *             @OA\Property(property="imported", type="integer", example=10),
+   *             @OA\Property(property="skipped", type="integer", example=2),
+   *             @OA\Property(property="errors", type="array", @OA\Items(type="object"))
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=422,
+   *         description="Validation error",
+   *         @OA\JsonContent(
+   *             @OA\Property(property="message", type="string", example="The file field is required.")
+   *         )
+   *     ),
+   *     @OA\Response(
+   *         response=401,
+   *         description="Unauthenticated",
+   *         @OA\JsonContent(
+   *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+   *         )
+   *     )
+   * )
+   */
+  public function import(Request $request)
+  {
+    try {
+      // Validate file upload
+      $request->validate([
+        'file' => 'required|file|mimes:csv,txt|max:10240', // 10MB max
+      ]);
+
+      $file = $request->file('file');
+      
+      if (!$file || !$file->isValid()) {
+        return response()->json([
+          'message' => 'Invalid file upload',
+          'errors' => ['file' => ['The uploaded file is invalid.']]
+        ], 422);
+      }
+
+      $imported = 0;
+      $skipped = 0;
+      $errors = [];
+
+      // Read CSV file
+      $handle = fopen($file->getRealPath(), 'r');
+      
+      if ($handle === false) {
+        return response()->json([
+          'message' => 'Failed to read CSV file',
+          'errors' => ['file' => ['Could not open the CSV file.']]
+        ], 422);
+      }
+
+      // Read header row
+      $headers = fgetcsv($handle);
+      
+      if ($headers === false || empty($headers)) {
+        fclose($handle);
+        return response()->json([
+          'message' => 'Invalid CSV format',
+          'errors' => ['file' => ['The CSV file is empty or has invalid format.']]
+        ], 422);
+      }
+
+      // Normalize headers (trim whitespace, lowercase)
+      $headers = array_map(function($header) {
+        return trim(strtolower($header));
+      }, $headers);
+
+      // Expected columns mapping
+      $columnMap = [
+        'username' => 'user_login',
+        'email' => 'user_email',
+        'password' => 'user_pass',
+        'first name' => 'first_name',
+        'last name' => 'last_name',
+        'employee id' => 'employee_id',
+        'position' => 'position',
+        'role id' => 'role_id',
+        'status' => 'user_status',
+      ];
+
+      $rowNumber = 1; // Start from 1 (header is row 0)
+
+      // Process each row
+      while (($row = fgetcsv($handle)) !== false) {
+        $rowNumber++;
+        
+        // Skip empty rows
+        if (empty(array_filter($row))) {
+          continue;
+        }
+
+        try {
+          // Map CSV columns to data array
+          $data = [];
+          foreach ($headers as $index => $header) {
+            $value = isset($row[$index]) ? trim($row[$index]) : '';
+            
+            // Skip comments (lines starting with #)
+            if (strpos($value, '#') === 0) {
+              continue 2; // Skip to next row
+            }
+
+            // Map header to field name
+            if (isset($columnMap[$header])) {
+              $data[$columnMap[$header]] = $value;
+            }
+          }
+
+          // Validate required fields
+          if (empty($data['user_login']) || empty($data['user_email'])) {
+            $skipped++;
+            $errors[] = [
+              'row' => $rowNumber,
+              'message' => 'Missing required fields: Username and Email are required',
+              'data' => $data
+            ];
+            continue;
+          }
+
+          // Check if user already exists
+          $existingUser = User::where('user_login', $data['user_login'])
+            ->orWhere('user_email', $data['user_email'])
+            ->first();
+
+          if ($existingUser) {
+            $skipped++;
+            $errors[] = [
+              'row' => $rowNumber,
+              'message' => 'User already exists: ' . ($existingUser->user_login === $data['user_login'] ? 'Username' : 'Email') . ' already in use',
+              'data' => $data
+            ];
+            continue;
+          }
+
+          // Prepare user data
+          $salt = PasswordHelper::generateSalt();
+          $plainPassword = !empty($data['user_pass']) 
+            ? $data['user_pass']
+            : PasswordHelper::generateTemporaryPassword();
+          
+          $hashedPassword = PasswordHelper::generatePassword($salt, $plainPassword);
+          $activation_key = PasswordHelper::generateSalt();
+
+          $userData = [
+            'user_login' => $data['user_login'],
+            'user_email' => $data['user_email'],
+            'user_salt' => $salt,
+            'user_pass' => $hashedPassword,
+            'user_status' => isset($data['user_status']) ? (int)$data['user_status'] : 1,
+            'user_activation_key' => $activation_key,
+          ];
+
+          // Prepare meta details
+          $meta_details = [];
+          if (!empty($data['first_name'])) {
+            $meta_details['first_name'] = $data['first_name'];
+          }
+          if (!empty($data['last_name'])) {
+            $meta_details['last_name'] = $data['last_name'];
+          }
+          if (!empty($data['employee_id'])) {
+            $meta_details['employee_id'] = $data['employee_id'];
+          }
+          if (!empty($data['position'])) {
+            $meta_details['position'] = $data['position'];
+          }
+          if (!empty($data['role_id'])) {
+            $roleData = json_encode(['id' => (int)$data['role_id']]);
+            $meta_details['user_role'] = $roleData;
+            // Also set role_id directly on user table
+            $userData['role_id'] = (int)$data['role_id'];
+          }
+
+          // Create user
+          // Temporarily set password in request for email sending
+          $originalPassword = request('user_pass');
+          request()->merge(['user_pass' => $plainPassword]);
+          
+          try {
+            $user = $this->service->storeWithMeta($userData, $meta_details);
+            
+            if ($user) {
+              $imported++;
+            } else {
+              $skipped++;
+              $errors[] = [
+                'row' => $rowNumber,
+                'message' => 'Failed to create user',
+                'data' => $data
+              ];
+            }
+          } finally {
+            // Restore original password in request
+            if ($originalPassword !== null) {
+              request()->merge(['user_pass' => $originalPassword]);
+            } else {
+              request()->offsetUnset('user_pass');
+            }
+          }
+
+        } catch (\Exception $e) {
+          $skipped++;
+          $errors[] = [
+            'row' => $rowNumber,
+            'message' => $e->getMessage(),
+            'data' => $data ?? []
+          ];
+        }
+      }
+
+      fclose($handle);
+
+      return response()->json([
+        'data' => [
+          'imported' => $imported,
+          'skipped' => $skipped,
+          'errors' => $errors,
+          'total_processed' => $rowNumber - 1
+        ],
+        'message' => "Import completed. {$imported} user(s) imported, {$skipped} skipped."
+      ], 200);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+      return response()->json([
+        'message' => 'Validation failed',
+        'errors' => $e->errors()
+      ], 422);
+    } catch (\Exception $e) {
+      \Log::error('[UserController] Import error:', [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
+      
+      return response()->json([
+        'message' => 'Import failed: ' . $e->getMessage(),
+        'errors' => []
+      ], 500);
+    }
+  }
 }

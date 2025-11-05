@@ -77,6 +77,10 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::post('/bulk/restore', [UserController::class, 'bulkRestore']);  // Bulk restore users
 			Route::post('/bulk/force-delete', [UserController::class, 'bulkForceDelete']);  // Bulk permanently delete users
 			Route::post('/bulk/role', [UserController::class, 'bulkChangeRole']);
+			Route::post('/bulk/password', [UserController::class, 'bulkChangePassword']);  // Bulk change password
+			
+			// Import/Export operations
+			Route::post('/import', [UserController::class, 'import']);  // Import users from CSV
 		});
 
 		// Custom route for archived (trashed) users with a distinct prefix
