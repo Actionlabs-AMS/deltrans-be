@@ -454,6 +454,16 @@ class UserController extends BaseController
     try {
       $data = $request->validated();
 
+      // Debug: Log incoming request data
+      \Log::info('[UserController] Store request:', [
+        'validated' => $data,
+        'all_request' => $request->all(),
+        'first_name' => $request->first_name,
+        'last_name' => $request->last_name,
+        'employee_id' => $request->employee_id,
+        'position' => $request->position,
+      ]);
+
       $salt = PasswordHelper::generateSalt();
       $password = PasswordHelper::generatePassword($salt, $data['user_pass']);
       $activation_key = PasswordHelper::generateSalt();
@@ -473,14 +483,37 @@ class UserController extends BaseController
         
       if(isset($request->last_name))
         $meta_details['last_name'] = $request->last_name;
+      
+      if(isset($request->employee_id))
+        $meta_details['employee_id'] = $request->employee_id;
+      
+      if(isset($request->position))
+        $meta_details['position'] = $request->position;
     
       if(isset($request->user_role))
         $meta_details['user_role'] = $request->user_role;
 
+      // Debug: Log meta details being saved
+      \Log::info('[UserController] Meta details to save:', $meta_details);
+
       $user = $this->service->storeWithMeta($data, $meta_details);
+      
+      // Debug: Log saved user
+      \Log::info('[UserController] User created:', [
+        'user_id' => $user->id,
+        'user_login' => $user->user_login,
+        'first_name_meta' => $user->getMeta('first_name'),
+        'last_name_meta' => $user->getMeta('last_name'),
+        'employee_id_meta' => $user->getMeta('employee_id'),
+        'position_meta' => $user->getMeta('position'),
+      ]);
       
       return response($user, 201);
     } catch (\Exception $e) {
+      \Log::error('[UserController] Store error:', [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
       return $this->messageService->responseError();
     }
   }
@@ -550,6 +583,17 @@ class UserController extends BaseController
       $data = $request->validated();
       $user = User::findOrFail($id);
 
+      // Debug: Log incoming request data
+      \Log::info('[UserController] Update request:', [
+        'user_id' => $id,
+        'validated' => $data,
+        'all_request' => $request->all(),
+        'first_name' => $request->first_name,
+        'last_name' => $request->last_name,
+        'employee_id' => $request->employee_id,
+        'position' => $request->position,
+      ]);
+
       $upData = [
         'user_login' => $request->user_login,
         'user_email' => $request->user_email,
@@ -567,14 +611,38 @@ class UserController extends BaseController
         
       if(isset($request->last_name))
         $meta_details['last_name'] = $request->last_name;
+      
+      if(isset($request->employee_id))
+        $meta_details['employee_id'] = $request->employee_id;
+      
+      if(isset($request->position))
+        $meta_details['position'] = $request->position;
     
       if(isset($request->user_role))
         $meta_details['user_role'] = $request->user_role;
 
+      // Debug: Log meta details being saved
+      \Log::info('[UserController] Meta details to update:', $meta_details);
+
       $user = $this->service->updateWithMeta($upData, $meta_details, $user);
+
+      // Debug: Log updated user
+      \Log::info('[UserController] User updated:', [
+        'user_id' => $user->id,
+        'user_login' => $user->user_login,
+        'first_name_meta' => $user->getMeta('first_name'),
+        'last_name_meta' => $user->getMeta('last_name'),
+        'employee_id_meta' => $user->getMeta('employee_id'),
+        'position_meta' => $user->getMeta('position'),
+      ]);
 
       return response($user, 201);
     } catch (\Exception $e) {
+      \Log::error('[UserController] Update error:', [
+        'user_id' => $id,
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
       return $this->messageService->responseError();
     }
   }

@@ -73,8 +73,15 @@ class User extends Authenticatable
 
 	public function saveUserMeta($metaData) 
 	{
+		// Debug: Log meta data being saved
+		\Log::info('[User Model] saveUserMeta called:', [
+			'user_id' => $this->id,
+			'meta_data' => $metaData,
+			'meta_keys' => array_keys($metaData),
+		]);
+
 		foreach ($metaData as $key => $data) {
-			UserMeta::updateOrCreate(
+			$result = UserMeta::updateOrCreate(
 			[
 				'user_id' => $this->id,
 				'meta_key' => $key
@@ -82,7 +89,27 @@ class User extends Authenticatable
 			[
 				'meta_value' => $data,
 			]);
+
+			// Debug: Log each meta save
+			\Log::info('[User Model] Meta saved:', [
+				'user_id' => $this->id,
+				'meta_key' => $key,
+				'meta_value' => $data,
+				'was_recently_created' => $result->wasRecentlyCreated,
+			]);
 		}
+
+		// Debug: Verify saved meta data
+		$savedMeta = UserMeta::where('user_id', $this->id)
+			->whereIn('meta_key', array_keys($metaData))
+			->get()
+			->pluck('meta_value', 'meta_key')
+			->toArray();
+		
+		\Log::info('[User Model] Verified saved meta:', [
+			'user_id' => $this->id,
+			'saved_meta' => $savedMeta,
+		]);
 	}
 
 	/**
