@@ -19,7 +19,6 @@ class RoleResource extends JsonResource
       'name' => $this->name,
       'label' => $this->name,
       'active' => ($this->active) ? 'Active' : 'Inactive',
-      'is_super_admin' => $this->is_super_admin,
       'permissions' => $this->permissions,
       'updated_at' => $this->updated_at->format('Y-m-d H:m:s'),
       'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:m:s') : null

@@ -9,6 +9,7 @@ use App\Services\RoleService;
 use App\Models\Role;
 use App\Models\Permission;
 use App\Models\RolePermission;
+use App\Http\Resources\RoleResource;
 
 /**
  * @OA\Tag(
@@ -416,7 +417,6 @@ class RoleController extends BaseController
    *             required={"name"},
    *             @OA\Property(property="name", type="string", example="Editor", description="Role name"),
    *             @OA\Property(property="active", type="boolean", example=true, description="Role active status"),
-   *             @OA\Property(property="is_super_admin", type="boolean", example=false, description="Is super admin role"),
    *             @OA\Property(property="permissions", type="array", @OA\Items(type="string"), example={"create", "read", "update"}, description="Array of permission names")
    *         )
    *     ),
@@ -448,13 +448,12 @@ class RoleController extends BaseController
   public function store(RoleRequest $request)
   {
     try {
-      $resource = '';
       $data = $request->all();
+      
       // Save the role
       $role = new Role();
       $role->name = $data['name'];
       $role->active = $data['active'] ?? true;
-      $role->is_super_admin = $data['is_super_admin'] ?? true;
       $role->save();
 
       // Fetch permissions once to optimize lookup
@@ -463,22 +462,40 @@ class RoleController extends BaseController
       $dataToInsert = [];
 
       // Iterate over the permissions data
-      foreach ($data['permissions'] as $parent_navigation_id => $navigations) {
-        $role_id = $role->id; // Use the newly created role's ID
+      if (isset($data['permissions']) && is_array($data['permissions'])) {
+        foreach ($data['permissions'] as $parent_navigation_id => $navigations) {
+          $role_id = $role->id; // Use the newly created role's ID
 
-        foreach ($navigations as $navigation_id => $permissions_data) {
-          foreach ($permissions_data as $permission_name => $allowed) {
-            if ($allowed && isset($permissions[$permission_name])) {
-              $permission_id = $permissions[$permission_name];
+          if (!is_array($navigations)) {
+            \Log::warning('RoleController::store - Invalid navigations structure', [
+              'parent_navigation_id' => $parent_navigation_id,
+              'navigations' => $navigations
+            ]);
+            continue;
+          }
 
-              $dataToInsert[] = [
-                'role_id' => $role_id,
+          foreach ($navigations as $navigation_id => $permissions_data) {
+            if (!is_array($permissions_data)) {
+              \Log::warning('RoleController::store - Invalid permissions_data structure', [
                 'navigation_id' => $navigation_id,
-                'permission_id' => $permission_id,
-                'allowed' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-              ];
+                'permissions_data' => $permissions_data
+              ]);
+              continue;
+            }
+
+            foreach ($permissions_data as $permission_name => $allowed) {
+              if ($allowed && isset($permissions[$permission_name])) {
+                $permission_id = $permissions[$permission_name];
+
+                $dataToInsert[] = [
+                  'role_id' => $role_id,
+                  'navigation_id' => (int)$navigation_id,
+                  'permission_id' => $permission_id,
+                  'allowed' => true,
+                  'created_at' => now(),
+                  'updated_at' => now(),
+                ];
+              }
             }
           }
         }
@@ -486,11 +503,17 @@ class RoleController extends BaseController
 
       // Insert all records at once if any data to insert
       if (!empty($dataToInsert)) {
-        $resource = RolePermission::insert($dataToInsert);
+        RolePermission::insert($dataToInsert);
       }
     
-      return response($resource, 201);
+      // Return the created role resource
+      return response(new RoleResource($role), 201);
     } catch (\Exception $e) {
+      \Log::error('RoleController::store - Error creating role', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+        'data' => $request->all()
+      ]);
       return $this->messageService->responseError();
     }
   }
@@ -516,7 +539,6 @@ class RoleController extends BaseController
    *             required={"name"},
    *             @OA\Property(property="name", type="string", example="Editor", description="Role name"),
    *             @OA\Property(property="active", type="boolean", example=true, description="Role active status"),
-   *             @OA\Property(property="is_super_admin", type="boolean", example=false, description="Is super admin role"),
    *             @OA\Property(property="permissions", type="object", description="Role permissions object")
    *         )
    *     ),
@@ -563,7 +585,6 @@ class RoleController extends BaseController
       // Update the role's basic information
       $role->name = $data['name'];
       $role->active = $data['active'] ?? true;
-      $role->is_super_admin = $data['is_super_admin'] ?? true;
       $role->save();
 
       // Fetch the existing permissions
@@ -575,23 +596,42 @@ class RoleController extends BaseController
       // Prepare new permissions data for insertion
       $dataToInsert = [];
 
-      foreach ($data['permissions'] as $parent_navigation_id => $navigations) {
-        $role_id = $role->id; // Use the updated role's ID
+      if (isset($data['permissions']) && is_array($data['permissions'])) {
+        foreach ($data['permissions'] as $parent_navigation_id => $navigations) {
+          $role_id = $role->id; // Use the updated role's ID
 
-        foreach ($navigations as $navigation_id => $permissions_data) {
-          foreach ($permissions_data as $permission_name => $allowed) {
-            // Only insert if the permission is allowed and exists in the database
-            if ($allowed && isset($permissions[$permission_name])) {
-              $permission_id = $permissions[$permission_name];
+          if (!is_array($navigations)) {
+            \Log::warning('RoleController::update - Invalid navigations structure', [
+              'role_id' => $role_id,
+              'parent_navigation_id' => $parent_navigation_id,
+              'navigations' => $navigations
+            ]);
+            continue;
+          }
 
-              $dataToInsert[] = [
-                'role_id' => $role_id,
+          foreach ($navigations as $navigation_id => $permissions_data) {
+            if (!is_array($permissions_data)) {
+              \Log::warning('RoleController::update - Invalid permissions_data structure', [
                 'navigation_id' => $navigation_id,
-                'permission_id' => $permission_id,
-                'allowed' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-              ];
+                'permissions_data' => $permissions_data
+              ]);
+              continue;
+            }
+
+            foreach ($permissions_data as $permission_name => $allowed) {
+              // Only insert if the permission is allowed and exists in the database
+              if ($allowed && isset($permissions[$permission_name])) {
+                $permission_id = $permissions[$permission_name];
+
+                $dataToInsert[] = [
+                  'role_id' => $role_id,
+                  'navigation_id' => (int)$navigation_id,
+                  'permission_id' => $permission_id,
+                  'allowed' => true,
+                  'created_at' => now(),
+                  'updated_at' => now(),
+                ];
+              }
             }
           }
         }
@@ -603,8 +643,14 @@ class RoleController extends BaseController
       }
 
       // Return the updated resource (role)
-      return response($role, 200);
+      return response(new RoleResource($role), 200);
     } catch (\Exception $e) {
+      \Log::error('RoleController::update - Error updating role', [
+        'role_id' => $id,
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+        'data' => $request->all()
+      ]);
       // Handle exception and return error response
       return $this->messageService->responseError();
     }

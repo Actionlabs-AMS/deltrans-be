@@ -17,7 +17,6 @@ class Role extends Model
 	protected $fillable = [
 		'name',
 		'active',
-		'is_super_admin'
 	];
 
     /**
@@ -50,71 +49,8 @@ class Role extends Model
 		// Initialize the array to store the structured permissions
 		$permissions_data = [];
 
-		// For Super Admin, check if there are explicit permissions in database
-		// If explicit permissions exist, use them; otherwise grant all permissions
-		$hasExplicitPermissions = $this->rolePermissions()->exists();
-		
-		if ($this->is_super_admin && !$hasExplicitPermissions) {
-			// Super Admin with no explicit permissions - grant all permissions automatically
-			\Log::info('Role::getPermissionsFormatted - Super Admin with no explicit permissions - granting all', [
-				'role_id' => $this->id,
-				'role_name' => $this->name,
-			]);
-			// Get all navigations
-			$navigations = Navigation::all();
-			
-			// Get all permissions
-			$permissions = Permission::all();
-			$permissionNames = $permissions->pluck('name')->toArray();
-
-			// Grant all permissions to all navigations
-			// Use sima-api style: parent_id ?? 0 (default to 0 for root items)
-			// IMPORTANT: Only store navigations under their actual parent, not under themselves
-			foreach ($navigations as $navigation) {
-				// Get the parent ID - if null (root item), use 0
-				$parent_navigation_id = $navigation->parent_id ?? 0; // Default to 0 if parent_id is null (matching sima-api)
-				$navigation_id = $navigation->id;
-
-				// Skip if navigation is trying to store under itself (shouldn't happen, but safety check)
-				if ($parent_navigation_id == $navigation_id && $navigation->parent_id !== null) {
-					continue;
-				}
-
-				// If the parent navigation doesn't exist in our structure, create it
-				if (!isset($permissions_data[$parent_navigation_id])) {
-					$permissions_data[$parent_navigation_id] = [];
-				}
-
-				// If the navigation under this parent doesn't exist, create it
-				if (!isset($permissions_data[$parent_navigation_id][$navigation_id])) {
-					$permissions_data[$parent_navigation_id][$navigation_id] = [];
-				}
-
-				// Add all permissions under this navigation
-				foreach ($permissionNames as $permission_name) {
-					$permissions_data[$parent_navigation_id][$navigation_id][$permission_name] = true;
-				}
-			}
-
-			\Log::info('Role::getPermissionsFormatted - Super Admin permissions generated', [
-				'role_id' => $this->id,
-				'permissions_structure_keys' => array_keys($permissions_data),
-				'total_navigations' => count($permissions_data),
-			]);
-			
-			return $permissions_data;
-		}
-		
-		// For Super Admin with explicit permissions OR non-super admin roles, fetch from role_permissions table
-		if ($this->is_super_admin) {
-			\Log::info('Role::getPermissionsFormatted - Super Admin with explicit permissions - using database', [
-				'role_id' => $this->id,
-				'role_name' => $this->name,
-			]);
-		}
-
-		// For non-super admin roles, fetch from role_permissions table
-		\Log::info('Role::getPermissionsFormatted - Non-Super Admin - Fetching from role_permissions', [
+		// Fetch permissions from role_permissions table
+		\Log::info('Role::getPermissionsFormatted - Fetching from role_permissions', [
 			'role_id' => $this->id,
 			'role_name' => $this->name,
 		]);
