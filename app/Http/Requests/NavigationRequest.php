@@ -21,9 +21,16 @@ class NavigationRequest extends FormRequest
    */
   public function rules(): array
   {
+    $id = $this->route('id');
+    
     return [
-      "name" => "required|regex:/^[a-zA-Z0-9,&-_\s]+$/|unique:roles,name,".$this->id,
-      "slug" => "string|regex:/^[a-zA-Z0-9,&-_\s]+$/",
+      "name" => "required|string|max:255|regex:/^[a-zA-Z0-9,&-_\s]+$/|unique:navigations,name," . ($id ?? 'NULL'),
+      "slug" => "required|string|max:255|regex:/^[a-zA-Z0-9-_\s]+$/|unique:navigations,slug," . ($id ?? 'NULL'),
+      "icon" => "nullable|string|max:255",
+      "description" => "nullable|string|max:500",
+      "parent_id" => "nullable|integer|exists:navigations,id",
+      "active" => "required|boolean",
+      "show_in_menu" => "required|boolean",
     ];
   }
 
@@ -33,7 +40,14 @@ class NavigationRequest extends FormRequest
       'name.required' => 'The navigation name is required.',
       'name.regex' => 'The navigation name can only contain letters, numbers, and special characters (, & - _).',
       'name.unique' => 'This navigation name is already taken.',
-      'slug.regex' => 'The slug can only contain letters, numbers, and special characters (, & - _).'
+      'slug.required' => 'The slug is required.',
+      'slug.regex' => 'The slug can only contain letters, numbers, hyphens, underscores, and spaces.',
+      'slug.unique' => 'This slug is already taken.',
+      'parent_id.exists' => 'The selected parent navigation does not exist.',
+      'active.required' => 'The active status is required.',
+      'active.boolean' => 'The active status must be true or false.',
+      'show_in_menu.required' => 'The show in menu status is required.',
+      'show_in_menu.boolean' => 'The show in menu status must be true or false.',
     ];
   }
 }

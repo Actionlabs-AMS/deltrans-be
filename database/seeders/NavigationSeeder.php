@@ -178,7 +178,7 @@ class NavigationSeeder extends Seeder
                         'name' => 'Security',
                         'slug' => 'security',
                         'icon' => 'shield-exclamation',
-                        'description' => 'Configure system security settings including password policies, two-factor authentication, session management, and security logs',
+                        'description' => 'Configure two-factor authentication (2FA) and session security settings',
                         'active' => true,
                         'show_in_menu' => true,
                     ],

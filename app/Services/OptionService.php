@@ -142,14 +142,8 @@ class OptionService extends BaseService
                 'date_format' => $this->getOption('date_format', 'Y-m-d'),
                 'time_format' => $this->getOption('time_format', 'H:i:s'),
             ],
-            'email' => [
-                'mail_from_name' => $this->getOption('mail_from_name', 'CorePanel'),
-                'mail_from_address' => $this->getOption('mail_from_address', 'noreply@corepanel.com'),
-            ],
-            'ui' => [
-                'items_per_page' => $this->getOption('items_per_page', 10),
-                'theme_color' => $this->getOption('theme_color', 'blue'),
-                'sidebar_collapsed' => $this->getOption('sidebar_collapsed', false),
+            'language' => [
+                'default_language' => $this->getOption('default_language', 'en'),
             ],
         ];
 
@@ -177,19 +171,71 @@ class OptionService extends BaseService
             }
         }
         
-        // Email settings
-        if (isset($settings['email'])) {
-            foreach ($settings['email'] as $key => $value) {
+        // Language settings
+        if (isset($settings['language'])) {
+            foreach ($settings['language'] as $key => $value) {
                 $results[$key] = $this->setOption($key, $value, 'string');
             }
         }
         
-        // UI settings
-        if (isset($settings['ui'])) {
-            foreach ($settings['ui'] as $key => $value) {
-                $type = $key === 'sidebar_collapsed' ? 'boolean' : ($key === 'items_per_page' ? 'integer' : 'string');
+        // Clear all option caches to ensure fresh data
+        Cache::forget('options.all');
+        foreach (array_keys($results) as $key) {
+            Cache::forget("option.{$key}");
+        }
+        
+        return $results;
+    }
+
+    /**
+     * Get security settings (2FA and Session settings)
+     */
+    public function getSecuritySettings()
+    {
+        $settings = [
+            'two_factor' => [
+                'enabled' => $this->getOption('two_factor_enabled', false),
+                'required' => $this->getOption('two_factor_required', false),
+                'backup_codes_count' => $this->getOption('two_factor_backup_codes_count', 10),
+            ],
+            'session' => [
+                'session_enabled' => $this->getOption('session_enabled', true),
+                'session_timeout' => $this->getOption('session_timeout', 30),
+                'max_login_attempts' => $this->getOption('max_login_attempts', 5),
+                'lockout_duration' => $this->getOption('lockout_duration', 15),
+            ],
+        ];
+
+        return $settings;
+    }
+
+    /**
+     * Update security settings (2FA and Session settings)
+     */
+    public function updateSecuritySettings(array $settings)
+    {
+        $results = [];
+        
+        // Two Factor settings
+        if (isset($settings['two_factor'])) {
+            foreach ($settings['two_factor'] as $key => $value) {
+                $type = $key === 'backup_codes_count' ? 'integer' : 'boolean';
                 $results[$key] = $this->setOption($key, $value, $type);
             }
+        }
+        
+        // Session settings
+        if (isset($settings['session'])) {
+            foreach ($settings['session'] as $key => $value) {
+                $type = $key === 'session_enabled' ? 'boolean' : 'integer';
+                $results[$key] = $this->setOption($key, $value, $type);
+            }
+        }
+        
+        // Clear all option caches to ensure fresh data
+        Cache::forget('options.all');
+        foreach (array_keys($results) as $key) {
+            Cache::forget("option.{$key}");
         }
         
         return $results;

@@ -73,10 +73,23 @@ class Option extends Model
      */
     public static function set($key, $value, $type = 'string', $description = null)
     {
+        // Format value based on type
+        $formattedValue = $value;
+        switch ($type) {
+            case 'boolean':
+                $formattedValue = $value ? 'true' : 'false';
+                break;
+            case 'json':
+                $formattedValue = is_string($value) ? $value : json_encode($value);
+                break;
+            default:
+                $formattedValue = (string) $value;
+        }
+        
         return self::updateOrCreate(
             ['option_key' => $key],
             [
-                'option_value' => $value,
+                'option_value' => $formattedValue,
                 'option_type' => $type,
                 'description' => $description,
             ]

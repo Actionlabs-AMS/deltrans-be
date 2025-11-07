@@ -409,13 +409,8 @@ class SettingsController extends BaseController
                 'date_time.timezone' => 'sometimes|string|max:50',
                 'date_time.date_format' => 'sometimes|string|max:50',
                 'date_time.time_format' => 'sometimes|string|max:50',
-                'email' => 'sometimes|array',
-                'email.mail_from_name' => 'sometimes|string|max:255',
-                'email.mail_from_address' => 'sometimes|email|max:255',
-                'ui' => 'sometimes|array',
-                'ui.items_per_page' => 'sometimes|integer|min:5|max:100',
-                'ui.theme_color' => 'sometimes|string|max:50',
-                'ui.sidebar_collapsed' => 'sometimes|boolean',
+                'language' => 'sometimes|array',
+                'language.default_language' => 'sometimes|string|max:10',
             ]);
 
             $this->optionService->updateGeneralSettings($validated);
@@ -435,6 +430,90 @@ class SettingsController extends BaseController
             ], 422);
         } catch (\Exception $e) {
             return $this->messageService->responseError('Failed to update general settings');
+        }
+    }
+
+    /**
+     * Get security settings (2FA and Session settings)
+     * 
+     * @OA\Get(
+     *     path="/api/system-settings/settings/security",
+     *     summary="Get security settings",
+     *     tags={"Settings Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Security settings retrieved successfully"
+     *     )
+     * )
+     */
+    public function getSecuritySettings()
+    {
+        try {
+            $settings = $this->optionService->getSecuritySettings();
+            
+            return response([
+                'success' => true,
+                'data' => $settings
+            ], 200);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError('Failed to retrieve security settings');
+        }
+    }
+
+    /**
+     * Update security settings (2FA and Session settings)
+     * 
+     * @OA\Post(
+     *     path="/api/system-settings/settings/security",
+     *     summary="Update security settings",
+     *     tags={"Settings Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="two_factor", type="object"),
+     *             @OA\Property(property="session", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Security settings updated successfully"
+     *     )
+     * )
+     */
+    public function updateSecuritySettings(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'two_factor' => 'sometimes|array',
+                'two_factor.enabled' => 'sometimes|boolean',
+                'two_factor.required' => 'sometimes|boolean',
+                'two_factor.backup_codes_count' => 'sometimes|integer|min:5|max:20',
+                'session' => 'sometimes|array',
+                'session.session_enabled' => 'sometimes|boolean',
+                'session.session_timeout' => 'sometimes|integer|min:5|max:1440',
+                'session.max_login_attempts' => 'sometimes|integer|min:3|max:10',
+                'session.lockout_duration' => 'sometimes|integer|min:5|max:60',
+            ]);
+
+            $this->optionService->updateSecuritySettings($validated);
+
+            // Log the action
+            $this->logUpdate('OPTIONS', [], $validated);
+
+            return response([
+                'success' => true,
+                'message' => 'Security settings updated successfully'
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError('Failed to update security settings');
         }
     }
 

@@ -24,6 +24,9 @@ class Navigation extends Model
 		'created_at' => 'datetime',
 		'updated_at' => 'datetime',
 		'deleted_at' => 'datetime',
+		'active' => 'boolean',
+		'show_in_menu' => 'boolean',
+		'parent_id' => 'integer',
 	];
 
 	protected $table = 'navigations';

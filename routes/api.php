@@ -215,13 +215,19 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::prefix('settings')->group(function () {
 			Route::get('/', [SettingsController::class, 'index']);
 			Route::post('/', [SettingsController::class, 'update']);
-			Route::get('/{key}', [SettingsController::class, 'show']);
-			Route::put('/{key}', [SettingsController::class, 'updateOption']);
 			Route::post('/initialize', [SettingsController::class, 'initialize']);
 
-			// General Settings (excludes security and 2FA)
+			// General Settings (excludes security and 2FA) - Must be before /{key} route
 			Route::get('/general', [SettingsController::class, 'getGeneralSettings']);
 			Route::post('/general', [SettingsController::class, 'updateGeneralSettings']);
+
+			// Security Settings (2FA and Session) - Must be before /{key} route
+			Route::get('/security', [SettingsController::class, 'getSecuritySettings']);
+			Route::post('/security', [SettingsController::class, 'updateSecuritySettings']);
+
+			// Individual option routes (must be after specific routes)
+			Route::get('/{key}', [SettingsController::class, 'show']);
+			Route::put('/{key}', [SettingsController::class, 'updateOption']);
 
 			// 2FA Settings
 			Route::prefix('two-factor')->group(function () {
