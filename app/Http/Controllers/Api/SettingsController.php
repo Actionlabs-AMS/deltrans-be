@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\OptionService;
 use App\Services\MessageService;
 use App\Services\TwoFactorAuthService;
+use App\Traits\AuditTrailTrait;
 
 /**
  * @OA\Tag(
@@ -15,6 +16,8 @@ use App\Services\TwoFactorAuthService;
  */
 class SettingsController extends BaseController
 {
+    use AuditTrailTrait;
+    
     protected $optionService;
     protected $twoFactorService;
 
@@ -333,6 +336,105 @@ class SettingsController extends BaseController
             ], 200);
         } catch (\Exception $e) {
             return $this->messageService->responseError('Failed to generate backup codes');
+        }
+    }
+
+    /**
+     * Get general settings only (excludes security and 2FA)
+     * 
+     * @OA\Get(
+     *     path="/api/system-settings/settings/general",
+     *     summary="Get general settings",
+     *     tags={"Settings Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="General settings retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     )
+     * )
+     */
+    public function getGeneralSettings()
+    {
+        try {
+            $settings = $this->optionService->getGeneralSettings();
+            
+            return response([
+                'success' => true,
+                'data' => $settings
+            ], 200);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError('Failed to retrieve general settings');
+        }
+    }
+
+    /**
+     * Update general settings only (excludes security and 2FA)
+     * 
+     * @OA\Post(
+     *     path="/api/system-settings/settings/general",
+     *     summary="Update general settings",
+     *     tags={"Settings Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="site", type="object"),
+     *             @OA\Property(property="date_time", type="object"),
+     *             @OA\Property(property="email", type="object"),
+     *             @OA\Property(property="ui", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="General settings updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="General settings updated successfully")
+     *         )
+     *     )
+     * )
+     */
+    public function updateGeneralSettings(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'site' => 'sometimes|array',
+                'site.site_name' => 'sometimes|string|max:255',
+                'site.site_description' => 'sometimes|string|max:500',
+                'date_time' => 'sometimes|array',
+                'date_time.timezone' => 'sometimes|string|max:50',
+                'date_time.date_format' => 'sometimes|string|max:50',
+                'date_time.time_format' => 'sometimes|string|max:50',
+                'email' => 'sometimes|array',
+                'email.mail_from_name' => 'sometimes|string|max:255',
+                'email.mail_from_address' => 'sometimes|email|max:255',
+                'ui' => 'sometimes|array',
+                'ui.items_per_page' => 'sometimes|integer|min:5|max:100',
+                'ui.theme_color' => 'sometimes|string|max:50',
+                'ui.sidebar_collapsed' => 'sometimes|boolean',
+            ]);
+
+            $this->optionService->updateGeneralSettings($validated);
+
+            // Log the action
+            $this->logUpdate('OPTIONS', [], $validated);
+
+            return response([
+                'success' => true,
+                'message' => 'General settings updated successfully'
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError('Failed to update general settings');
         }
     }
 

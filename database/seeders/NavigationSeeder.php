@@ -191,6 +191,14 @@ class NavigationSeeder extends Seeder
                         'show_in_menu' => true,
                     ],
                     [
+                        'name' => 'Language',
+                        'slug' => 'language',
+                        'icon' => 'language',
+                        'description' => 'Manage application languages, translations, and localization settings',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
                         'name' => 'Backup & Restore',
                         'slug' => 'backup',
                         'icon' => 'server',

@@ -218,7 +218,11 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::get('/{key}', [SettingsController::class, 'show']);
 			Route::put('/{key}', [SettingsController::class, 'updateOption']);
 			Route::post('/initialize', [SettingsController::class, 'initialize']);
-			
+
+			// General Settings (excludes security and 2FA)
+			Route::get('/general', [SettingsController::class, 'getGeneralSettings']);
+			Route::post('/general', [SettingsController::class, 'updateGeneralSettings']);
+
 			// 2FA Settings
 			Route::prefix('two-factor')->group(function () {
 				Route::get('/status', [SettingsController::class, 'getTwoFactorStatus']);
