@@ -388,14 +388,19 @@ class AuthController extends Controller
 
 		// Check rate limiting
 		if (RateLimiter::tooManyAttempts('login:' . $ip, 5)) {
+			// Try to find user to include user_id
+			$userForBlock = User::where('user_email', '=', $credentials['email'])->first();
+			
 			$this->logAction(
 				'AUTHENTICATION',
 				'LOGIN_BLOCKED',
 				[
+					'user_id' => $userForBlock ? $userForBlock->id : null,
 					'email' => $this->anonymizeEmail($credentials['email']),
 					'reason' => 'Too many attempts',
 					'ip_address' => $ip
-				]
+				],
+				$userForBlock ? (string) $userForBlock->id : null
 			);
 
 			return response([
@@ -410,16 +415,18 @@ class AuthController extends Controller
 			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, 300); // 5 minutes
 
-			// Log failed login attempt
+			// Log failed login attempt - include user_id if user exists (password was wrong)
 			$this->logAction(
 				'AUTHENTICATION',
 				'LOGIN_FAILED',
 				[
+					'user_id' => $user ? $user->id : null, // Include user_id if user exists
 					'email' => $this->anonymizeEmail($credentials['email']),
-					'reason' => 'Invalid email or password',
+					'reason' => $user ? 'Invalid password' : 'User not found',
 					'ip_address' => $ip,
 					'user_agent' => $request->userAgent()
-				]
+				],
+				$user ? (string) $user->id : null // Also pass as resourceId
 			);
 			
 			return response([
@@ -529,23 +536,65 @@ class AuthController extends Controller
 	 */
 	public function logout(Request $request) 
 	{
+		// Log that logout endpoint was called
+		\Log::info('AuthController: Logout endpoint called', [
+			'has_user' => $request->user() !== null,
+			'user_id' => $request->user()?->id,
+			'ip' => $request->ip(),
+		]);
+		
 		$user = $request->user();
 		
+		if (!$user) {
+			\Log::warning('AuthController: Logout called but no authenticated user');
+			return response('', 204);
+		}
+		
 		// Log the logout action
-		$this->logAction(
-			'AUTHENTICATION',
-			'LOGOUT',
-			[
+		try {
+			\Log::info('AuthController: Attempting to log logout action', [
 				'user_id' => $user->id,
 				'user_login' => $user->user_login,
-				'email' => $this->anonymizeEmail($user->user_email),
-				'ip_address' => $request->ip(),
-				'token_deleted' => true
-			],
-			(string) $user->id
-		);
+			]);
+			
+			$logged = $this->logAction(
+				'AUTHENTICATION',
+				'LOGOUT',
+				[
+					'user_id' => $user->id,
+					'user_login' => $user->user_login,
+					'email' => $this->anonymizeEmail($user->user_email),
+					'ip_address' => $request->ip(),
+					'token_deleted' => true
+				],
+				(string) $user->id
+			);
+			
+			// Log if logging failed
+			if (!$logged) {
+				\Log::error('AuthController: Failed to log logout action', [
+					'user_id' => $user->id,
+					'user_login' => $user->user_login,
+				]);
+			} else {
+				\Log::info('AuthController: Logout action logged successfully', [
+					'user_id' => $user->id,
+					'user_login' => $user->user_login,
+				]);
+			}
+		} catch (\Exception $e) {
+			\Log::error('AuthController: Exception while logging logout', [
+				'user_id' => $user->id,
+				'error' => $e->getMessage(),
+				'trace' => $e->getTraceAsString(),
+			]);
+		}
 		
 		$user->currentAccessToken()->delete();
+		\Log::info('AuthController: Logout completed, token deleted', [
+			'user_id' => $user->id,
+		]);
+		
 		return response('', 204);
 	}
 

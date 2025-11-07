@@ -28,16 +28,24 @@ class AuditTrailHelper
         ?array $newData = null
     ): bool {
         try {
+            // Allow user_id to be passed in data array (useful for failed logins where user isn't authenticated)
+            $userId = $data['user_id'] ?? auth()->id();
+            $userEmail = $data['user_email'] ?? auth()->user()?->user_email;
+            
+            // Remove user_id and user_email from data if they were passed (to avoid duplication)
+            $cleanData = $data;
+            unset($cleanData['user_id'], $cleanData['user_email']);
+            
             $logData = [
                 'timestamp' => now()->toISOString(),
                 'module' => $module,
                 'action' => $action,
                 'resource_id' => $resourceId,
-                'data' => $data,
+                'data' => $cleanData,
                 'old_data' => $oldData,
                 'new_data' => $newData,
-                'user_id' => auth()->id(),
-                'user_email' => auth()->user()?->user_email,
+                'user_id' => $userId,
+                'user_email' => $userEmail,
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'url' => request()->fullUrl(),
@@ -45,7 +53,27 @@ class AuditTrailHelper
             ];
 
             // Log to Laravel log file
-            Log::channel('audit')->info('Audit Trail', $logData);
+            try {
+                Log::channel('audit')->info('Audit Trail', $logData);
+                
+                // Also log to main log for debugging
+                if ($module === 'AUTHENTICATION' && in_array($action, ['LOGOUT', 'LOGIN_FAILED', 'LOGIN_BLOCKED'])) {
+                    Log::info('AuditTrailHelper: Logging authentication action', [
+                        'module' => $module,
+                        'action' => $action,
+                        'user_id' => $logData['user_id'],
+                        'timestamp' => $logData['timestamp'],
+                    ]);
+                }
+            } catch (\Exception $logException) {
+                Log::error('Audit Trail Log Channel Error', [
+                    'error' => $logException->getMessage(),
+                    'module' => $module,
+                    'action' => $action,
+                    'trace' => $logException->getTraceAsString(),
+                ]);
+                throw $logException;
+            }
 
             // Store in database if audit table exists
             if (self::auditTableExists()) {
@@ -54,7 +82,12 @@ class AuditTrailHelper
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Audit Trail Logging Error: ' . $e->getMessage());
+            Log::error('Audit Trail Logging Error', [
+                'error' => $e->getMessage(),
+                'module' => $module,
+                'action' => $action,
+                'trace' => $e->getTraceAsString(),
+            ]);
             return false;
         }
     }

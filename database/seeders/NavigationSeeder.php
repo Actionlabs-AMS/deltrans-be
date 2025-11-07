@@ -55,14 +55,6 @@ class NavigationSeeder extends Seeder
                         'active' => true,
                         'show_in_menu' => true,
                     ],
-                    [
-                        'name' => 'User Activity',
-                        'slug' => 'user-activity',
-                        'icon' => 'clock',
-                        'description' => 'Monitor user login history, actions, and activity logs',
-                        'active' => true,
-                        'show_in_menu' => true,
-                    ],
                 ],
             ],
             
@@ -149,7 +141,7 @@ class NavigationSeeder extends Seeder
                         'name' => 'Activity Logs',
                         'slug' => 'activity-logs',
                         'icon' => 'clipboard-document-list',
-                        'description' => 'Comprehensive log of all system activities and administrative actions',
+                        'description' => 'Comprehensive system-wide audit trail of all administrative actions, module activities, and system operations across all users. Complete audit log for compliance and security monitoring',
                         'active' => true,
                         'show_in_menu' => true,
                     ],

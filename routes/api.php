@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\NavigationController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\UserActivityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -88,6 +89,16 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::get('/', [UserController::class, 'getTrashed']);
 			Route::patch('/restore/{id}', [UserController::class, 'restore']);
 			Route::delete('/{id}', [UserController::class, 'forceDelete']);
+		});
+
+		// User Activity Routes
+		Route::prefix('user-activity')->group(function () {
+			Route::get('/{userId}', [UserActivityController::class, 'getUserActivities']);
+			Route::get('/{userId}/login-history', [UserActivityController::class, 'getLoginHistory']);
+			Route::get('/{userId}/sessions', [UserActivityController::class, 'getActiveSessions']);
+			Route::post('/{userId}/sessions/{tokenId}/revoke', [UserActivityController::class, 'revokeSession']);
+			Route::get('/{userId}/timeline', [UserActivityController::class, 'getUserTimeline']);
+			Route::get('/{userId}/statistics', [UserActivityController::class, 'getActivityStatistics']);
 		});
 
 		Route::prefix('roles')->group(function () {
