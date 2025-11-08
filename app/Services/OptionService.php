@@ -132,10 +132,54 @@ class OptionService extends BaseService
      */
     public function getGeneralSettings()
     {
+        // Helper function to convert storage path to full URL
+        $getLogoUrl = function($logoPath) {
+            if (empty($logoPath)) {
+                return '';
+            }
+            
+            // If it's already a full URL, return as is
+            if (filter_var($logoPath, FILTER_VALIDATE_URL)) {
+                return $logoPath;
+            }
+            
+            // Convert storage path to full URL
+            // storage/logos/filename.png -> http://domain.com/storage/logos/filename.png
+            // Use request to get current URL with port, fallback to config
+            try {
+                // Try to get URL from current request (includes port automatically)
+                if (app()->runningInConsole() === false && request()) {
+                    // request()->root() returns the full base URL including port
+                    $baseUrl = rtrim(request()->root(), '/');
+                } else {
+                    // Fallback to config (reads from APP_URL in .env)
+                    $baseUrl = rtrim(config('app.url', 'http://127.0.0.1:8000'), '/');
+                }
+            } catch (\Exception $e) {
+                // If request is not available, use config
+                $baseUrl = rtrim(config('app.url', 'http://127.0.0.1:8000'), '/');
+            }
+            
+            // Remove leading slash if present
+            $cleanPath = ltrim($logoPath, '/');
+            
+            // Ensure path starts with storage/
+            if (strpos($cleanPath, 'storage/') !== 0) {
+                $cleanPath = 'storage/' . $cleanPath;
+            }
+            
+            // Build full URL
+            $fullUrl = $baseUrl . '/' . $cleanPath;
+            
+            return $fullUrl;
+        };
+        
         $settings = [
             'site' => [
                 'site_name' => $this->getOption('site_name', 'CorePanel'),
                 'site_description' => $this->getOption('site_description', 'Admin Panel Management System'),
+                'auth_logo' => $getLogoUrl($this->getOption('auth_logo', '')),
+                'sidenav_logo' => $getLogoUrl($this->getOption('sidenav_logo', '')),
             ],
             'date_time' => [
                 'timezone' => $this->getOption('timezone', 'UTC'),
@@ -216,15 +260,22 @@ class OptionService extends BaseService
     {
         $results = [];
         
-        // Two Factor settings
+        // Two Factor settings - map to database keys
         if (isset($settings['two_factor'])) {
+            $keyMapping = [
+                'enabled' => 'two_factor_enabled',
+                'required' => 'two_factor_required',
+                'backup_codes_count' => 'two_factor_backup_codes_count',
+            ];
+            
             foreach ($settings['two_factor'] as $key => $value) {
+                $dbKey = $keyMapping[$key] ?? "two_factor_{$key}";
                 $type = $key === 'backup_codes_count' ? 'integer' : 'boolean';
-                $results[$key] = $this->setOption($key, $value, $type);
+                $results[$dbKey] = $this->setOption($dbKey, $value, $type);
             }
         }
         
-        // Session settings
+        // Session settings - keys are already correct
         if (isset($settings['session'])) {
             foreach ($settings['session'] as $key => $value) {
                 $type = $key === 'session_enabled' ? 'boolean' : 'integer';
@@ -288,8 +339,10 @@ class OptionService extends BaseService
             'two_factor_backup_codes_count' => ['value' => 10, 'type' => 'integer', 'description' => 'Number of backup codes to generate'],
             
             // Security Settings
+            'session_enabled' => ['value' => true, 'type' => 'boolean', 'description' => 'Enable session timeout'],
             'session_timeout' => ['value' => 30, 'type' => 'integer', 'description' => 'Session timeout in minutes'],
             'max_login_attempts' => ['value' => 5, 'type' => 'integer', 'description' => 'Maximum login attempts before lockout'],
+            'lockout_duration' => ['value' => 15, 'type' => 'integer', 'description' => 'Account lockout duration in minutes'],
             'password_min_length' => ['value' => 8, 'type' => 'integer', 'description' => 'Minimum password length'],
             
             // General Settings

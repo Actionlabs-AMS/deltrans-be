@@ -11,6 +11,7 @@ use App\Helpers\PasswordHelper;
 use App\Models\User;
 use App\Services\TwoFactorAuthService;
 use App\Services\MicrosoftGraphService;
+use App\Services\OptionService;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\VerifyEmail;
 use App\Mail\ForgotPasswordEmail;
@@ -64,10 +65,12 @@ class AuthController extends Controller
 	use AuditTrailTrait;
 
 	protected $twoFactorService;
+	protected $optionService;
 
-	public function __construct(TwoFactorAuthService $twoFactorService)
+	public function __construct(TwoFactorAuthService $twoFactorService, OptionService $optionService)
 	{
 		$this->twoFactorService = $twoFactorService;
+		$this->optionService = $optionService;
 	}
 	/**
 	 * Create a new user.
@@ -386,10 +389,19 @@ class AuthController extends Controller
 		$credentials = $request->validated();
 		$ip = $request->ip();
 
-		// Check rate limiting
-		if (RateLimiter::tooManyAttempts('login:' . $ip, 5)) {
+		// Get max login attempts and lockout duration from database settings
+		$maxLoginAttempts = (int) $this->optionService->getOption('max_login_attempts', 5);
+		$lockoutDurationMinutes = (int) $this->optionService->getOption('lockout_duration', 15);
+		$lockoutDurationSeconds = $lockoutDurationMinutes * 60; // Convert minutes to seconds
+
+		// Check rate limiting using database settings
+		if (RateLimiter::tooManyAttempts('login:' . $ip, $maxLoginAttempts)) {
 			// Try to find user to include user_id
 			$userForBlock = User::where('user_email', '=', $credentials['email'])->first();
+			
+			// Get remaining lockout time
+			$secondsRemaining = RateLimiter::availableIn('login:' . $ip);
+			$minutesRemaining = ceil($secondsRemaining / 60);
 			
 			$this->logAction(
 				'AUTHENTICATION',
@@ -398,22 +410,27 @@ class AuthController extends Controller
 					'user_id' => $userForBlock ? $userForBlock->id : null,
 					'email' => $this->anonymizeEmail($credentials['email']),
 					'reason' => 'Too many attempts',
-					'ip_address' => $ip
+					'ip_address' => $ip,
+					'max_attempts' => $maxLoginAttempts,
+					'lockout_duration_minutes' => $lockoutDurationMinutes
 				],
 				$userForBlock ? (string) $userForBlock->id : null
 			);
 
 			return response([
-				'errors' => ['Too many login attempts. Please try again later.'],
+				'errors' => [
+					"Too many login attempts. Please try again in {$minutesRemaining} minute(s)."
+				],
 				'status' => false,
 				'status_code' => 429,
+				'lockout_remaining_minutes' => $minutesRemaining,
 			], 429);
 		}
 
 		$user = User::where('user_email', '=', $credentials['email'])->where('user_status', 1)->first();
 		if (!$user || !PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass)) {
-			// Increment rate limiter
-			RateLimiter::hit('login:' . $ip, 300); // 5 minutes
+			// Increment rate limiter using database lockout duration
+			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
 
 			// Log failed login attempt - include user_id if user exists (password was wrong)
 			$this->logAction(
@@ -439,8 +456,20 @@ class AuthController extends Controller
 		// Clear rate limiter on successful login
 		RateLimiter::clear('login:' . $ip);
 		
-		// Check if 2FA is enabled for this user
-		if ($this->twoFactorService->isTwoFactorEnabled($user)) {
+		// Check if 2FA is required system-wide but user hasn't enabled it
+		if ($this->twoFactorService->isTwoFactorRequiredSystemWide() && !$this->twoFactorService->isTwoFactorEnabled($user)) {
+			// User must enable 2FA before logging in
+			return response([
+				'message' => 'Two-factor authentication is required. Please enable 2FA in your profile settings before logging in.',
+				'two_factor_required' => true,
+				'two_factor_setup_required' => true,
+				'status' => false,
+				'status_code' => 403,
+			], 403);
+		}
+		
+		// Check if 2FA is required for this user (system-wide required OR user has it enabled)
+		if ($this->twoFactorService->isTwoFactorRequiredForUser($user)) {
 			// Send 2FA code
 			$twoFactorResult = $this->twoFactorService->sendEmailCode($user);
 			

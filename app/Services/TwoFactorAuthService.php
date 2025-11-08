@@ -6,12 +6,55 @@ use App\Models\User;
 use App\Models\TwoFactorAuth;
 use App\Mail\TwoFactorCodeMail;
 use App\Services\MicrosoftGraphService;
+use App\Services\OptionService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class TwoFactorAuthService
 {
+    protected $optionService;
+
+    public function __construct(OptionService $optionService = null)
+    {
+        $this->optionService = $optionService ?? app(OptionService::class);
+    }
+
+    /**
+     * Check if 2FA is enabled system-wide
+     */
+    public function isTwoFactorEnabledSystemWide(): bool
+    {
+        return $this->optionService->getOption('two_factor_enabled', false);
+    }
+
+    /**
+     * Check if 2FA is required system-wide
+     */
+    public function isTwoFactorRequiredSystemWide(): bool
+    {
+        return $this->optionService->getOption('two_factor_required', false);
+    }
+
+    /**
+     * Check if 2FA should be enforced for a user (system-wide required OR user has it enabled)
+     */
+    public function isTwoFactorRequiredForUser(User $user): bool
+    {
+        // If system-wide 2FA is required, enforce it
+        if ($this->isTwoFactorRequiredSystemWide()) {
+            return true;
+        }
+
+        // If system-wide 2FA is enabled but not required, check user's individual setting
+        if ($this->isTwoFactorEnabledSystemWide()) {
+            return $this->isTwoFactorEnabled($user);
+        }
+
+        // System-wide 2FA is disabled
+        return false;
+    }
+
     /**
      * Send 2FA code via email
      */
@@ -137,6 +180,14 @@ class TwoFactorAuthService
     public function enableTwoFactor(User $user): array
     {
         try {
+            // Check if 2FA is enabled system-wide
+            if (!$this->isTwoFactorEnabledSystemWide()) {
+                return [
+                    'success' => false,
+                    'message' => 'Two-factor authentication is not enabled system-wide. Please contact your administrator.',
+                ];
+            }
+
             $twoFactorAuth = TwoFactorAuth::firstOrCreate(
                 ['user_id' => $user->id],
                 ['is_enabled' => false]
@@ -174,6 +225,14 @@ class TwoFactorAuthService
     public function disableTwoFactor(User $user): array
     {
         try {
+            // Check if 2FA is required system-wide - users cannot disable if required
+            if ($this->isTwoFactorRequiredSystemWide()) {
+                return [
+                    'success' => false,
+                    'message' => 'Two-factor authentication is required system-wide and cannot be disabled.',
+                ];
+            }
+
             $twoFactorAuth = TwoFactorAuth::where('user_id', $user->id)->first();
 
             if (!$twoFactorAuth) {

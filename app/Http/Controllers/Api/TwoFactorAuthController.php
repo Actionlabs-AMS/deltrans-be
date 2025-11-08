@@ -319,6 +319,11 @@ class TwoFactorAuthController extends Controller
         }
 
         $status = $this->twoFactorService->getTwoFactorStatus($user);
+        
+        // Add system-wide 2FA settings
+        $status['system_enabled'] = $this->twoFactorService->isTwoFactorEnabledSystemWide();
+        $status['system_required'] = $this->twoFactorService->isTwoFactorRequiredSystemWide();
+        $status['can_disable'] = !$this->twoFactorService->isTwoFactorRequiredSystemWide();
 
         \Log::info('2FA Status API response', [
             'user_id' => $user->id,
@@ -368,7 +373,7 @@ class TwoFactorAuthController extends Controller
         }
 
         $user = User::where('user_email', $request->email)->first();
-        $isRequired = $this->twoFactorService->isTwoFactorEnabled($user);
+        $isRequired = $this->twoFactorService->isTwoFactorRequiredForUser($user);
 
         return response()->json([
             'success' => true,

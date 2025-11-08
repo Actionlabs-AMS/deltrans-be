@@ -401,7 +401,8 @@ class SettingsController extends BaseController
     public function updateGeneralSettings(Request $request)
     {
         try {
-            $validated = $request->validate([
+            // Build validation rules dynamically - only validate logos if files are actually uploaded
+            $validationRules = [
                 'site' => 'sometimes|array',
                 'site.site_name' => 'sometimes|string|max:255',
                 'site.site_description' => 'sometimes|string|max:500',
@@ -411,7 +412,38 @@ class SettingsController extends BaseController
                 'date_time.time_format' => 'sometimes|string|max:50',
                 'language' => 'sometimes|array',
                 'language.default_language' => 'sometimes|string|max:10',
-            ]);
+            ];
+            
+            // Only add logo validation if files are actually being uploaded
+            // This prevents validation errors when logos are not provided
+            if ($request->hasFile('site.auth_logo')) {
+                $validationRules['site.auth_logo'] = 'image|mimes:jpeg,png,jpg,gif,svg|max:2048';
+            }
+            if ($request->hasFile('site.sidenav_logo')) {
+                $validationRules['site.sidenav_logo'] = 'image|mimes:jpeg,png,jpg,gif,svg|max:2048';
+            }
+            
+            $validated = $request->validate($validationRules);
+
+            // Handle logo uploads - Laravel expects nested array notation for file uploads
+            $logoFields = ['auth_logo', 'sidenav_logo'];
+            if (!isset($validated['site'])) {
+                $validated['site'] = [];
+            }
+            
+            foreach ($logoFields as $field) {
+                // Check for file upload with nested array notation: site[auth_logo]
+                $fileKey = "site.{$field}";
+                if ($request->hasFile($fileKey)) {
+                    $file = $request->file($fileKey);
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('public/logos', $filename);
+                    $validated['site'][$field] = 'storage/logos/' . $filename;
+                } elseif ($request->has($fileKey) && $request->input($fileKey) === '') {
+                    // Allow clearing logo by sending empty string
+                    $validated['site'][$field] = '';
+                }
+            }
 
             $this->optionService->updateGeneralSettings($validated);
 
