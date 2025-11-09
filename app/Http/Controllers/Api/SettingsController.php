@@ -466,6 +466,136 @@ class SettingsController extends BaseController
     }
 
     /**
+     * Get email settings
+     * 
+     * @OA\Get(
+     *     path="/api/system-settings/settings/email",
+     *     summary="Get email settings",
+     *     tags={"Settings Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Email settings retrieved successfully"
+     *     )
+     * )
+     */
+    public function getEmailSettings()
+    {
+        try {
+            $settings = $this->optionService->getEmailSettings();
+            
+            return response([
+                'success' => true,
+                'data' => $settings
+            ], 200);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError('Failed to retrieve email settings');
+        }
+    }
+
+    /**
+     * Update email settings
+     * 
+     * @OA\Post(
+     *     path="/api/system-settings/settings/email",
+     *     summary="Update email settings",
+     *     tags={"Settings Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="mailer", type="string", example="smtp"),
+     *             @OA\Property(property="mail_from_name", type="string"),
+     *             @OA\Property(property="mail_from_address", type="string"),
+     *             @OA\Property(property="smtp", type="object"),
+     *             @OA\Property(property="mailgun", type="object"),
+     *             @OA\Property(property="postmark", type="object"),
+     *             @OA\Property(property="ses", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Email settings updated successfully"
+     *     )
+     * )
+     */
+    public function updateEmailSettings(Request $request)
+    {
+        try {
+            $validationRules = [
+                'mailer' => 'required|string|in:smtp,mailgun,postmark,ses,microsoft,sendmail,log,array',
+                'mail_from_name' => 'required|string|max:255',
+                'mail_from_address' => 'required|email|max:255',
+            ];
+            
+            // Only validate the selected mailer's configuration
+            $mailer = $request->input('mailer');
+            switch ($mailer) {
+                case 'smtp':
+                    $validationRules['smtp'] = 'required|array';
+                    $validationRules['smtp.host'] = 'required|string|max:255';
+                    $validationRules['smtp.port'] = 'required|string|max:10';
+                    $validationRules['smtp.encryption'] = 'nullable|string|in:,tls,ssl,starttls';
+                    $validationRules['smtp.username'] = 'required|string|max:255';
+                    $validationRules['smtp.password'] = 'required|string|max:255';
+                    break;
+                    
+                case 'mailgun':
+                    $validationRules['mailgun'] = 'required|array';
+                    $validationRules['mailgun.domain'] = 'required|string|max:255';
+                    $validationRules['mailgun.secret'] = 'required|string|max:255';
+                    break;
+                    
+                case 'postmark':
+                    $validationRules['postmark'] = 'required|array';
+                    $validationRules['postmark.token'] = 'required|string|max:255';
+                    break;
+                    
+                case 'ses':
+                    $validationRules['ses'] = 'required|array';
+                    $validationRules['ses.key'] = 'required|string|max:255';
+                    $validationRules['ses.secret'] = 'required|string|max:255';
+                    $validationRules['ses.region'] = 'required|string|max:50';
+                    break;
+                    
+                case 'microsoft':
+                    $validationRules['microsoft'] = 'required|array';
+                    $validationRules['microsoft.tenant_id'] = 'required|string|max:255';
+                    $validationRules['microsoft.client_id'] = 'required|string|max:255';
+                    $validationRules['microsoft.client_secret'] = 'required|string|max:255';
+                    $validationRules['microsoft.sender_email'] = 'required|email|max:255';
+                    break;
+                    
+                case 'sendmail':
+                case 'log':
+                case 'array':
+                    // These mailers don't need additional validation
+                    break;
+            }
+            
+            $validated = $request->validate($validationRules);
+
+            $this->optionService->updateEmailSettings($validated);
+            
+            // Log the action
+            $this->logUpdate('EMAIL_SETTINGS', [], $validated);
+
+            return response([
+                'success' => true,
+                'message' => 'Email settings updated successfully'
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError('Failed to update email settings');
+        }
+    }
+
+    /**
      * Get security settings (2FA and Session settings)
      * 
      * @OA\Get(

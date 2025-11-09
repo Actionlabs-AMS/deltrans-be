@@ -232,6 +232,117 @@ class OptionService extends BaseService
     }
 
     /**
+     * Get email settings
+     */
+    public function getEmailSettings()
+    {
+        $settings = [
+            'mailer' => $this->getOption('mail_mailer', 'smtp'),
+            'mail_from_name' => $this->getOption('mail_from_name', 'CorePanel'),
+            'mail_from_address' => $this->getOption('mail_from_address', 'noreply@example.com'),
+            // SMTP settings
+            'smtp' => [
+                'host' => $this->getOption('mail_host', ''),
+                'port' => $this->getOption('mail_port', '587'),
+                'encryption' => $this->getOption('mail_encryption', 'tls'),
+                'username' => $this->getOption('mail_username', ''),
+                'password' => $this->getOption('mail_password', ''),
+            ],
+            // Mailgun settings
+            'mailgun' => [
+                'domain' => $this->getOption('mailgun_domain', ''),
+                'secret' => $this->getOption('mailgun_secret', ''),
+            ],
+            // Postmark settings
+            'postmark' => [
+                'token' => $this->getOption('postmark_token', ''),
+            ],
+            // SES settings
+            'ses' => [
+                'key' => $this->getOption('ses_key', ''),
+                'secret' => $this->getOption('ses_secret', ''),
+                'region' => $this->getOption('ses_region', 'us-east-1'),
+            ],
+            // Microsoft Graph settings
+            'microsoft' => [
+                'tenant_id' => $this->getOption('microsoft_tenant_id', ''),
+                'client_id' => $this->getOption('microsoft_client_id', ''),
+                'client_secret' => $this->getOption('microsoft_client_secret', ''),
+                'sender_email' => $this->getOption('microsoft_sender_email', ''),
+            ],
+        ];
+
+        return $settings;
+    }
+
+    /**
+     * Update email settings
+     */
+    public function updateEmailSettings(array $settings)
+    {
+        $results = [];
+        
+        // Mailer and from settings
+        if (isset($settings['mailer'])) {
+            $results['mail_mailer'] = $this->setOption('mail_mailer', $settings['mailer'], 'string');
+        }
+        if (isset($settings['mail_from_name'])) {
+            $results['mail_from_name'] = $this->setOption('mail_from_name', $settings['mail_from_name'], 'string');
+        }
+        if (isset($settings['mail_from_address'])) {
+            $results['mail_from_address'] = $this->setOption('mail_from_address', $settings['mail_from_address'], 'string');
+        }
+        
+        // SMTP settings
+        if (isset($settings['smtp'])) {
+            foreach ($settings['smtp'] as $key => $value) {
+                $optionKey = 'mail_' . $key;
+                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
+            }
+        }
+        
+        // Mailgun settings
+        if (isset($settings['mailgun'])) {
+            foreach ($settings['mailgun'] as $key => $value) {
+                $optionKey = 'mailgun_' . $key;
+                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
+            }
+        }
+        
+        // Postmark settings
+        if (isset($settings['postmark'])) {
+            foreach ($settings['postmark'] as $key => $value) {
+                $optionKey = 'postmark_' . $key;
+                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
+            }
+        }
+        
+        // SES settings
+        if (isset($settings['ses'])) {
+            foreach ($settings['ses'] as $key => $value) {
+                $optionKey = 'ses_' . $key;
+                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
+            }
+        }
+        
+        // Microsoft Graph settings
+        if (isset($settings['microsoft'])) {
+            foreach ($settings['microsoft'] as $key => $value) {
+                $optionKey = 'microsoft_' . $key;
+                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
+            }
+        }
+        
+        // Clear all option caches
+        Cache::forget('options.all');
+        foreach (array_keys($results) as $key) {
+            Cache::forget("option.{$key}");
+        }
+        
+        return $results;
+    }
+
+    /**
      * Get security settings (2FA and Session settings)
      */
     public function getSecuritySettings()

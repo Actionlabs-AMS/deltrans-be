@@ -222,6 +222,10 @@ Route::middleware('auth:sanctum')->group(function () {
 			// POST requires authentication (inside auth middleware)
 			Route::post('/general', [SettingsController::class, 'updateGeneralSettings']);
 
+			// Email Settings - Must be before /{key} route
+			Route::get('/email', [SettingsController::class, 'getEmailSettings']);
+			Route::post('/email', [SettingsController::class, 'updateEmailSettings']);
+
 			// Security Settings (2FA and Session) - Must be before /{key} route
 			Route::get('/security', [SettingsController::class, 'getSecuritySettings']);
 			Route::post('/security', [SettingsController::class, 'updateSecuritySettings']);
