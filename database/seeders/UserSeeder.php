@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
 
         // Create Super Admin user
         $salt = PasswordHelper::generateSalt();
-        $password = PasswordHelper::generatePassword($salt, 'admin123');
+        $password = PasswordHelper::generatePassword($salt, 'admin123'); 
         
         $superAdmin = User::updateOrCreate(
             ['user_email' => 'admin@basecode.com'],

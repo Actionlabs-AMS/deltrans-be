@@ -427,23 +427,78 @@ class AuthController extends Controller
 			], 429);
 		}
 
-		$user = User::where('user_email', '=', $credentials['email'])->where('user_status', 1)->first();
-		if (!$user || !PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass)) {
-			// Increment rate limiter using database lockout duration
+		// First check if user exists (without status check)
+		$user = User::where('user_email', '=', $credentials['email'])->first();
+		
+		// Check if user exists
+		if (!$user) {
+			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
-
-			// Log failed login attempt - include user_id if user exists (password was wrong)
+			
+			// Log failed login attempt
 			$this->logAction(
 				'AUTHENTICATION',
 				'LOGIN_FAILED',
 				[
-					'user_id' => $user ? $user->id : null, // Include user_id if user exists
+					'user_id' => null,
 					'email' => $this->anonymizeEmail($credentials['email']),
-					'reason' => $user ? 'Invalid password' : 'User not found',
+					'reason' => 'User not found',
 					'ip_address' => $ip,
 					'user_agent' => $request->userAgent()
 				],
-				$user ? (string) $user->id : null // Also pass as resourceId
+				null
+			);
+			
+			return response([
+				'errors' => ['Invalid email or password.'],
+				'status' => false,
+				'status_code' => 422,
+			], 422);
+		}
+		
+		// Check if user is active
+		if ($user->user_status !== 1) {
+			// Increment rate limiter
+			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
+			
+			// Log failed login attempt
+			$this->logAction(
+				'AUTHENTICATION',
+				'LOGIN_FAILED',
+				[
+					'user_id' => $user->id,
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'reason' => 'User account is inactive',
+					'ip_address' => $ip,
+					'user_agent' => $request->userAgent()
+				],
+				(string) $user->id
+			);
+			
+			return response([
+				'errors' => ['Your account is inactive. Please contact administrator.'],
+				'status' => false,
+				'status_code' => 403,
+			], 403);
+		}
+		
+		// Verify password
+		if (!PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass)) {
+			// Increment rate limiter
+			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
+
+			// Log failed login attempt
+			$this->logAction(
+				'AUTHENTICATION',
+				'LOGIN_FAILED',
+				[
+					'user_id' => $user->id,
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'reason' => 'Invalid password',
+					'ip_address' => $ip,
+					'user_agent' => $request->userAgent()
+				],
+				(string) $user->id
 			);
 			
 			return response([
@@ -460,7 +515,7 @@ class AuthController extends Controller
 		if ($this->twoFactorService->isTwoFactorRequiredSystemWide() && !$this->twoFactorService->isTwoFactorEnabled($user)) {
 			// User must enable 2FA before logging in
 			return response([
-				'message' => 'Two-factor authentication is required. Please enable 2FA in your profile settings before logging in.',
+				'message' => 'Two-factor authentication is required. You will be redirected to set up 2FA.',
 				'two_factor_required' => true,
 				'two_factor_setup_required' => true,
 				'status' => false,
@@ -625,6 +680,150 @@ class AuthController extends Controller
 		]);
 		
 		return response('', 204);
+	}
+
+	/**
+	 * Enable 2FA during login (for first-time users when 2FA is mandatory)
+	 * 
+	 * @OA\Post(
+	 *     path="/api/auth/enable-2fa-setup",
+	 *     summary="Enable 2FA during login setup",
+	 *     tags={"Authentication"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"email", "password"},
+	 *             @OA\Property(property="email", type="string", format="email", example="john@example.com"),
+	 *             @OA\Property(property="password", type="string", format="password", example="SecurePass123!")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="2FA enabled successfully, code sent to email",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean", example=true),
+	 *             @OA\Property(property="message", type="string", example="2FA enabled successfully. Please check your email for the verification code."),
+	 *             @OA\Property(property="two_factor_required", type="boolean", example=true)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="Invalid credentials",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean", example=false),
+	 *             @OA\Property(property="message", type="string", example="Invalid email or password")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function enable2FASetup(Request $request)
+	{
+		$request->validate([
+			'email' => 'required|email',
+			'password' => 'required|string',
+		]);
+
+		$credentials = $request->only('email', 'password');
+		$ip = $request->ip();
+
+		// Verify user credentials
+		$user = User::where('user_email', $credentials['email'])->first();
+
+		if (!$user || !PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass)) {
+			return response([
+				'success' => false,
+				'message' => 'Invalid email or password.',
+				'status' => false,
+				'status_code' => 401,
+			], 401);
+		}
+
+		// Check if user is active
+		if ($user->user_status !== 1) {
+			return response([
+				'success' => false,
+				'message' => 'Your account is inactive. Please contact administrator.',
+				'status' => false,
+				'status_code' => 403,
+			], 403);
+		}
+
+		// Verify that 2FA is required system-wide and user hasn't enabled it
+		if (!$this->twoFactorService->isTwoFactorRequiredSystemWide()) {
+			return response([
+				'success' => false,
+				'message' => 'Two-factor authentication is not required system-wide.',
+				'status' => false,
+				'status_code' => 400,
+			], 400);
+		}
+
+		if ($this->twoFactorService->isTwoFactorEnabled($user)) {
+			return response([
+				'success' => false,
+				'message' => 'Two-factor authentication is already enabled for your account.',
+				'status' => false,
+				'status_code' => 400,
+			], 400);
+		}
+
+		// Enable 2FA for the user
+		$enableResult = $this->twoFactorService->enableTwoFactor($user);
+
+		if (!$enableResult['success']) {
+			return response([
+				'success' => false,
+				'message' => $enableResult['message'],
+				'status' => false,
+				'status_code' => 500,
+			], 500);
+		}
+
+		// Send 2FA code to user's email
+		$twoFactorResult = $this->twoFactorService->sendEmailCode($user);
+
+		if ($twoFactorResult['success']) {
+			// Log 2FA setup and code sent
+			$this->logAction(
+				'AUTHENTICATION',
+				'2FA_SETUP_COMPLETED',
+				[
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'user_id' => $user->id,
+					'ip_address' => $ip,
+					'user_agent' => $request->userAgent()
+				],
+				(string) $user->id
+			);
+
+			return response([
+				'success' => true,
+				'message' => 'Two-factor authentication enabled successfully. Please check your email for the verification code.',
+				'two_factor_required' => true,
+				'status' => true,
+				'status_code' => 200,
+			], 200);
+		} else {
+			// Log 2FA code send failure
+			$this->logAction(
+				'AUTHENTICATION',
+				'2FA_CODE_FAILED',
+				[
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'user_id' => $user->id,
+					'ip_address' => $ip,
+					'error' => $twoFactorResult['message']
+				],
+				(string) $user->id
+			);
+
+			return response([
+				'success' => false,
+				'message' => '2FA was enabled but failed to send verification code. Please try logging in again.',
+				'status' => false,
+				'status_code' => 500,
+			], 500);
+		}
 	}
 
 	/**
