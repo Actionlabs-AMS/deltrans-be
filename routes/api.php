@@ -218,7 +218,8 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::post('/initialize', [SettingsController::class, 'initialize']);
 
 			// General Settings (excludes security and 2FA) - Must be before /{key} route
-			Route::get('/general', [SettingsController::class, 'getGeneralSettings']);
+			// Note: GET /general is public (defined outside auth middleware) for login/2FA pages
+			// POST requires authentication (inside auth middleware)
 			Route::post('/general', [SettingsController::class, 'updateGeneralSettings']);
 
 			// Security Settings (2FA and Session) - Must be before /{key} route
@@ -259,6 +260,9 @@ Route::post('/validate', [AuthController::class, 'activateUser'])->middleware('t
 Route::post('/generate-password', [AuthController::class, 'genTempPassword'])->middleware('throttle:auth');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/enable-2fa-setup', [AuthController::class, 'enable2FASetup'])->middleware('throttle:login');
+
+// Public route for general settings (site name, logos) - needed for login page
+Route::get('/system-settings/settings/general', [SettingsController::class, 'getGeneralSettings']);
 
 // Microsoft Graph Test Route (for testing integration)
 Route::get('/test-microsoft-graph', function () {
