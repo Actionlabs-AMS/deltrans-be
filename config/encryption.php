@@ -85,6 +85,20 @@ return [
             'bank_account_number',
             'routing_number',
         ],
+        'Option' => [
+            // Note: Option model uses custom encryption logic based on option_key
+            // Sensitive email settings are automatically encrypted:
+            // - mail_password (SMTP password)
+            // - mailgun_secret (Mailgun API secret)
+            // - postmark_token (Postmark API token)
+            // - ses_key (AWS SES access key)
+            // - ses_secret (AWS SES secret key)
+            // - microsoft_tenant_id (Microsoft Graph tenant ID)
+            // - microsoft_client_id (Microsoft Graph client ID)
+            // - microsoft_client_secret (Microsoft Graph client secret)
+            // The encryption is handled in Option::shouldEncrypt() method
+            'option_value', // Only encrypted when option_key is in the sensitive list
+        ],
     ],
 
     /*

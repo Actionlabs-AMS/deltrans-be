@@ -26,6 +26,10 @@ use App\Http\Controllers\Api\UserActivityController;
 |
 */
 
+// Public route for general settings (site name, logos) - needed for login page
+// MUST be defined BEFORE auth middleware group to avoid being caught by /{key} catch-all route
+Route::get('/system-settings/settings/general', [SettingsController::class, 'getGeneralSettings']);
+
 Route::middleware('auth:sanctum')->group(function () {
 	Route::get('/user/me', [UserController::class, 'getUser']);
 	Route::post('/logout', [AuthController::class, 'logout']);
@@ -265,9 +269,6 @@ Route::post('/generate-password', [AuthController::class, 'genTempPassword'])->m
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/enable-2fa-setup', [AuthController::class, 'enable2FASetup'])->middleware('throttle:login');
 
-// Public route for general settings (site name, logos) - needed for login page
-Route::get('/system-settings/settings/general', [SettingsController::class, 'getGeneralSettings']);
-
 // Microsoft Graph Test Route (for testing integration)
 Route::get('/test-microsoft-graph', function () {
     try {
@@ -286,6 +287,49 @@ Route::get('/test-microsoft-graph', function () {
             'success' => false,
             'error' => $e->getMessage(),
             'message' => 'Microsoft Graph test failed'
+        ], 500);
+    }
+});
+
+// Test SMTP Email Configuration Route
+Route::post('/test-smtp-email', function (\Illuminate\Http\Request $request) {
+    try {
+        $email = $request->input('email', 'test@example.com');
+        
+        // Get current mail configuration
+        $mailConfig = [
+            'default' => config('mail.default'),
+            'from' => config('mail.from'),
+            'smtp_host' => config('mail.mailers.smtp.host'),
+            'smtp_port' => config('mail.mailers.smtp.port'),
+            'smtp_encryption' => config('mail.mailers.smtp.encryption'),
+            'smtp_username' => config('mail.mailers.smtp.username') ? '***configured***' : 'not set',
+        ];
+        
+        // Try to send a test email
+        \Illuminate\Support\Facades\Mail::raw('This is a test email from BaseCode SMTP configuration. If you receive this, your SMTP settings are working correctly!', function ($message) use ($email) {
+            $message->to($email)
+                    ->subject('BaseCode SMTP Test Email');
+        });
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Test email sent successfully to ' . $email,
+            'mail_config' => $mailConfig,
+        ]);
+    } catch (\Illuminate\Mail\SendException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to send test email via SMTP',
+            'error' => $e->getMessage(),
+            'mail_config' => $mailConfig ?? [],
+        ], 500);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unexpected error',
+            'error' => $e->getMessage(),
+            'mail_config' => $mailConfig ?? [],
         ], 500);
     }
 });

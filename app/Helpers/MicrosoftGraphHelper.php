@@ -5,6 +5,7 @@ namespace App\Helpers;
 use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
+use App\Services\OptionService;
 
 class MicrosoftGraphHelper
 {
@@ -40,25 +41,44 @@ class MicrosoftGraphHelper
    */
   private static function getAccessToken()
   {
-    // Get configuration from config file
-    $config = config('microsoft');
+    // Get configuration from database options (with decryption) or config file
+    $optionService = app(OptionService::class);
+    
+    // Try to get from database options first (primary source)
+    $tenantId = $optionService->getOption('microsoft_tenant_id', null);
+    $clientId = $optionService->getOption('microsoft_client_id', null);
+    $clientSecret = $optionService->getOption('microsoft_client_secret', null);
+    $senderEmail = $optionService->getOption('microsoft_sender_email', null);
+    
+    // Fallback to config file if database options are not set
+    if (empty($tenantId) || empty($clientId) || empty($clientSecret) || empty($senderEmail)) {
+      $config = config('microsoft', []);
+      $tenantId = $tenantId ?: ($config['tenant_id'] ?? null);
+      $clientId = $clientId ?: ($config['client_id'] ?? null);
+      $clientSecret = $clientSecret ?: ($config['client_secret'] ?? null);
+      $senderEmail = $senderEmail ?: ($config['sender_email'] ?? null);
+    }
     
     // Validate required configuration
-    $requiredConfig = [
-        'tenant_id',
-        'client_id',
-        'client_secret',
-        'sender_email'
-    ];
-
-    foreach ($requiredConfig as $configKey) {
-        if (empty($config[$configKey])) {
-            Log::error("Missing required Microsoft Graph configuration: {$configKey}");
-            throw new Exception("Missing required Microsoft Graph configuration: {$configKey}");
-        }
+    if (empty($tenantId)) {
+        Log::error("Missing required Microsoft Graph configuration: tenant_id");
+        throw new Exception("Missing required Microsoft Graph configuration: tenant_id");
     }
-
-    $tenantId = $config['tenant_id'];
+    if (empty($clientId)) {
+        Log::error("Missing required Microsoft Graph configuration: client_id");
+        throw new Exception("Missing required Microsoft Graph configuration: client_id");
+    }
+    if (empty($clientSecret)) {
+        Log::error("Missing required Microsoft Graph configuration: client_secret");
+        throw new Exception("Missing required Microsoft Graph configuration: client_secret");
+    }
+    if (empty($senderEmail)) {
+        Log::error("Missing required Microsoft Graph configuration: sender_email");
+        throw new Exception("Missing required Microsoft Graph configuration: sender_email");
+    }
+    
+    // Get other config from config file (URLs, scope, etc.)
+    $config = config('microsoft', []);
     $isHttps = (strpos(config('app.url'), 'https://') === 0);
     $verifySsl = $config['verify_ssl'] && $isHttps;
     
@@ -69,12 +89,15 @@ class MicrosoftGraphHelper
     $url = str_replace('{tenant_id}', $tenantId, $config['token_url']);
     
     try {
-      Log::info('Requesting access token from Microsoft Graph');
+      Log::info('Requesting access token from Microsoft Graph', [
+        'tenant_id' => $tenantId,
+        'client_id' => substr($clientId, 0, 8) . '...', // Log partial for security
+      ]);
       $token = $guzzle->post($url, [
         'form_params' => [
-          'client_id' => $config['client_id'],
-          'client_secret' => $config['client_secret'],
-          'scope' => $config['scope'],
+          'client_id' => $clientId,
+          'client_secret' => $clientSecret,
+          'scope' => $config['scope'] ?? 'https://graph.microsoft.com/.default',
           'grant_type' => 'client_credentials',
         ],
       ]);
@@ -143,15 +166,29 @@ class MicrosoftGraphHelper
         $email['message']['attachments'] = $attachments;
       }
 
-      $config = config('microsoft');
+      // Get sender email from database options (with decryption) or config file
+      $optionService = app(OptionService::class);
+      $senderEmail = $optionService->getOption('microsoft_sender_email', null);
+      
+      // Fallback to config file if database option is not set
+      if (empty($senderEmail)) {
+        $config = config('microsoft', []);
+        $senderEmail = $config['sender_email'] ?? null;
+      }
+      
+      if (empty($senderEmail)) {
+        Log::error('Microsoft Graph sender email is not configured');
+        throw new Exception('Microsoft Graph sender email is not configured');
+      }
+      
+      $config = config('microsoft', []);
+      $sendMailUrl = str_replace('{sender_email}', $senderEmail, $config['send_mail_url'] ?? 'https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail');
       
       Log::info('Attempting to send email', [
         'to' => $to,
         'subject' => $subject,
-        'sender' => $config['sender_email']
+        'sender' => $senderEmail
       ]);
-
-      $sendMailUrl = str_replace('{sender_email}', $config['sender_email'], $config['send_mail_url']);
       $response = self::$graphClient->post($sendMailUrl, ['json' => $email]);
 
       $statusCode = $response->getStatusCode();

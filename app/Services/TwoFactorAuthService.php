@@ -70,16 +70,64 @@ class TwoFactorAuthService
             // Generate new code
             $code = $twoFactorAuth->generateNewEmailCode();
 
-            // Send email using Microsoft Graph with fallback to Laravel Mail
+            $emailSent = false;
+            $lastError = null;
+
+            // Try Microsoft Graph first
             try {
                 MicrosoftGraphService::sendTwoFactorCodeEmail($user, $code);
+                $emailSent = true;
+                Log::info('2FA code sent via Microsoft Graph', [
+                    'user_id' => $user->id,
+                    'email' => $this->anonymizeEmail($user->user_email),
+                ]);
             } catch (\Exception $e) {
-                // Fallback to Laravel Mail if Microsoft Graph fails
-                Mail::to($user->user_email)->send(new TwoFactorCodeMail($code, $user));
+                $lastError = $e->getMessage();
+                Log::warning('Microsoft Graph email failed, trying Laravel Mail', [
+                    'user_id' => $user->id,
+                    'error' => $lastError,
+                ]);
+
+                // Fallback to Laravel Mail (SMTP)
+                try {
+                    Mail::to($user->user_email)->send(new TwoFactorCodeMail($code, $user));
+                    $emailSent = true;
+                    Log::info('2FA code sent via Laravel Mail (SMTP)', [
+                        'user_id' => $user->id,
+                        'email' => $this->anonymizeEmail($user->user_email),
+                        'mailer' => config('mail.default'),
+                    ]);
+                } catch (\Illuminate\Mail\SendException $mailException) {
+                    $lastError = $mailException->getMessage();
+                    Log::error('Laravel Mail (SMTP) failed to send 2FA code', [
+                        'user_id' => $user->id,
+                        'email' => $this->anonymizeEmail($user->user_email),
+                        'error' => $lastError,
+                        'mailer' => config('mail.default'),
+                        'smtp_host' => config('mail.mailers.smtp.host'),
+                        'trace' => $mailException->getTraceAsString(),
+                    ]);
+                } catch (\Exception $e) {
+                    $lastError = $e->getMessage();
+                    Log::error('Unexpected error sending 2FA email', [
+                        'user_id' => $user->id,
+                        'email' => $this->anonymizeEmail($user->user_email),
+                        'error' => $lastError,
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                }
             }
 
-            // Log the action
-            Log::info('2FA email code sent', [
+            if (!$emailSent) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to send verification code. Please check your email configuration.',
+                    'error' => $lastError,
+                ];
+            }
+
+            // Log successful action
+            Log::info('2FA email code sent successfully', [
                 'user_id' => $user->id,
                 'email' => $this->anonymizeEmail($user->user_email),
                 'expires_at' => $twoFactorAuth->email_code_expires_at,
@@ -92,14 +140,17 @@ class TwoFactorAuthService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Failed to send 2FA email code', [
+            Log::error('Failed to send 2FA email code - unexpected error', [
                 'user_id' => $user->id,
+                'email' => $this->anonymizeEmail($user->user_email),
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
                 'success' => false,
                 'message' => 'Failed to send verification code. Please try again.',
+                'error' => $e->getMessage(),
             ];
         }
     }

@@ -46,6 +46,15 @@ class OptionService extends BaseService
         Cache::forget("option.{$key}");
         Cache::forget('options.all');
         
+        // Clear mail config cache if this is a mail-related option
+        if (strpos($key, 'mail_') === 0 || 
+            strpos($key, 'mailgun_') === 0 || 
+            strpos($key, 'postmark_') === 0 || 
+            strpos($key, 'ses_') === 0 || 
+            strpos($key, 'microsoft_') === 0) {
+            Cache::forget('mail.config');
+        }
+        
         return $this->resource::make($option);
     }
 
@@ -276,6 +285,107 @@ class OptionService extends BaseService
     }
 
     /**
+     * Get email configuration for Laravel Mail config
+     * Primary: Database options, Fallback: Environment variables
+     * 
+     * @return array
+     */
+    public function getEmailConfig()
+    {
+        $service = $this;
+        return Cache::remember('mail.config', 3600, function () use ($service) {
+            // Helper function to get option with env fallback
+            $getConfig = function ($optionKey, $envKey, $default = null) use ($service) {
+                try {
+                    $dbValue = $service->getOption($optionKey, null);
+                    if ($dbValue !== null && $dbValue !== '') {
+                        return $dbValue;
+                    }
+                } catch (\Exception $e) {
+                    // If database query fails, fallback to env
+                }
+                return env($envKey, $default);
+            };
+
+            // Get mailer (default mailer)
+            // Note: "microsoft" is not a Laravel mailer - it's handled via MicrosoftGraphService
+            // If microsoft is selected, use SMTP as fallback for Laravel Mail
+            $mailer = $getConfig('mail_mailer', 'MAIL_MAILER', 'smtp');
+            if ($mailer === 'microsoft') {
+                $mailer = 'smtp'; // Use SMTP for Laravel Mail, Microsoft Graph handled separately
+            }
+
+            // Get from address and name
+            $fromAddress = $getConfig('mail_from_address', 'MAIL_FROM_ADDRESS', 'hello@example.com');
+            $fromName = $getConfig('mail_from_name', 'MAIL_FROM_NAME', 'Example');
+
+            // Build mailers configuration
+            $mailers = [
+                'smtp' => [
+                    'transport' => 'smtp',
+                    'url' => env('MAIL_URL'),
+                    'host' => $getConfig('mail_host', 'MAIL_HOST', 'smtp.mailgun.org'),
+                    'port' => $getConfig('mail_port', 'MAIL_PORT', 587),
+                    'encryption' => $getConfig('mail_encryption', 'MAIL_ENCRYPTION', 'tls'),
+                    'username' => $getConfig('mail_username', 'MAIL_USERNAME'),
+                    'password' => $getConfig('mail_password', 'MAIL_PASSWORD'),
+                    'timeout' => null,
+                    'local_domain' => env('MAIL_EHLO_DOMAIN'),
+                ],
+                'ses' => [
+                    'transport' => 'ses',
+                ],
+                'postmark' => [
+                    'transport' => 'postmark',
+                ],
+                'mailgun' => [
+                    'transport' => 'mailgun',
+                ],
+                'sendmail' => [
+                    'transport' => 'sendmail',
+                    'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
+                ],
+                'log' => [
+                    'transport' => 'log',
+                    'channel' => env('MAIL_LOG_CHANNEL'),
+                ],
+                'array' => [
+                    'transport' => 'array',
+                ],
+                'failover' => [
+                    'transport' => 'failover',
+                    'mailers' => [
+                        'smtp',
+                        'log',
+                    ],
+                ],
+                'roundrobin' => [
+                    'transport' => 'roundrobin',
+                    'mailers' => [
+                        'ses',
+                        'postmark',
+                    ],
+                ],
+            ];
+
+            return [
+                'default' => $mailer,
+                'mailers' => $mailers,
+                'from' => [
+                    'address' => $fromAddress,
+                    'name' => $fromName,
+                ],
+                'markdown' => [
+                    'theme' => 'default',
+                    'paths' => [
+                        resource_path('views/vendor/mail'),
+                    ],
+                ],
+            ];
+        });
+    }
+
+    /**
      * Update email settings
      */
     public function updateEmailSettings(array $settings)
@@ -335,6 +445,7 @@ class OptionService extends BaseService
         
         // Clear all option caches
         Cache::forget('options.all');
+        Cache::forget('mail.config'); // Clear mail config cache when settings are updated
         foreach (array_keys($results) as $key) {
             Cache::forget("option.{$key}");
         }
