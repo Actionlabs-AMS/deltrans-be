@@ -261,7 +261,39 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/config', [SecurityDashboardController::class, 'getSecurityConfig']);
 		Route::post('/config', [SecurityDashboardController::class, 'updateSecurityConfig']);
 	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Backup and Restore Routes
+	|--------------------------------------------------------------------------
+	*/
+	Route::prefix('backups')->group(function () {
+		// Options (most specific routes first)
+		Route::get('/options/tables', [\App\Http\Controllers\Api\BackupController::class, 'getTables']);
+		Route::get('/options/disks', [\App\Http\Controllers\Api\BackupController::class, 'getDisks']);
+
+		// Schedule Management (before /{id} routes)
+		Route::get('/schedules', [\App\Http\Controllers\Api\BackupController::class, 'schedules']);
+		Route::post('/schedules', [\App\Http\Controllers\Api\BackupController::class, 'createSchedule']);
+		Route::get('/schedules/{id}', [\App\Http\Controllers\Api\BackupController::class, 'getSchedule']);
+		Route::put('/schedules/{id}', [\App\Http\Controllers\Api\BackupController::class, 'updateSchedule']);
+		Route::delete('/schedules/{id}', [\App\Http\Controllers\Api\BackupController::class, 'deleteSchedule']);
+		Route::post('/schedules/{id}/run', [\App\Http\Controllers\Api\BackupController::class, 'runSchedule']);
+
+		// Backup Management
+		Route::get('/', [\App\Http\Controllers\Api\BackupController::class, 'index']);
+		Route::post('/', [\App\Http\Controllers\Api\BackupController::class, 'store']);
+		Route::get('/stats', [\App\Http\Controllers\Api\BackupController::class, 'stats']);
+		Route::get('/{id}', [\App\Http\Controllers\Api\BackupController::class, 'show']);
+		Route::delete('/{id}', [\App\Http\Controllers\Api\BackupController::class, 'destroy']);
+		Route::get('/{id}/download', [\App\Http\Controllers\Api\BackupController::class, 'download']);
+		Route::post('/{id}/restore', [\App\Http\Controllers\Api\BackupController::class, 'restoreBackup']);
+		Route::get('/{id}/validate', [\App\Http\Controllers\Api\BackupController::class, 'validateBackup']);
+	});
 });
+
+// Webhook endpoint (no auth required, but token protected)
+Route::post('/backups/webhook/trigger', [\App\Http\Controllers\Api\BackupController::class, 'webhookTrigger']);
 
 Route::post('/signup', [AuthController::class, 'signup'])->middleware('throttle:auth');
 Route::post('/validate', [AuthController::class, 'activateUser'])->middleware('throttle:auth');

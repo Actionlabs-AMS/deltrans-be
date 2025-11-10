@@ -200,7 +200,7 @@ class NavigationSeeder extends Seeder
                     ],
                     [
                         'name' => 'Backup & Restore',
-                        'slug' => 'backup',
+                        'slug' => 'backup-restore',
                         'icon' => 'server',
                         'description' => 'Create backups, restore data, and manage system recovery options',
                         'active' => true,

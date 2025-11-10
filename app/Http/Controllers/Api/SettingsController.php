@@ -7,6 +7,11 @@ use App\Services\OptionService;
 use App\Services\MessageService;
 use App\Services\TwoFactorAuthService;
 use App\Traits\AuditTrailTrait;
+use App\Http\Requests\UpdateSystemSettingsRequest;
+use App\Http\Requests\UpdateOptionRequest;
+use App\Http\Requests\UpdateGeneralSettingsRequest;
+use App\Http\Requests\UpdateEmailSettingsRequest;
+use App\Http\Requests\UpdateSecuritySettingsRequest;
 
 /**
  * @OA\Tag(
@@ -86,23 +91,10 @@ class SettingsController extends BaseController
      *     )
      * )
      */
-    public function update(Request $request)
+    public function update(UpdateSystemSettingsRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'two_factor' => 'sometimes|array',
-                'two_factor.enabled' => 'sometimes|boolean',
-                'two_factor.required' => 'sometimes|boolean',
-                'two_factor.backup_codes_count' => 'sometimes|integer|min:5|max:20',
-                'security' => 'sometimes|array',
-                'security.session_timeout' => 'sometimes|integer|min:5|max:480',
-                'security.max_login_attempts' => 'sometimes|integer|min:3|max:10',
-                'security.password_min_length' => 'sometimes|integer|min:6|max:32',
-                'general' => 'sometimes|array',
-                'general.site_name' => 'sometimes|string|max:255',
-                'general.site_description' => 'sometimes|string|max:500',
-                'general.timezone' => 'sometimes|string|max:50',
-            ]);
+            $validated = $request->validated();
 
             $this->optionService->updateSystemSettings($validated);
 
@@ -188,14 +180,10 @@ class SettingsController extends BaseController
      *     )
      * )
      */
-    public function updateOption(Request $request, $key)
+    public function updateOption(UpdateOptionRequest $request, $key)
     {
         try {
-            $validated = $request->validate([
-                'value' => 'required',
-                'type' => 'sometimes|string|in:string,boolean,integer,float,json',
-                'description' => 'sometimes|string|max:500'
-            ]);
+            $validated = $request->validated();
 
             $option = $this->optionService->setOption(
                 $key,
@@ -398,32 +386,10 @@ class SettingsController extends BaseController
      *     )
      * )
      */
-    public function updateGeneralSettings(Request $request)
+    public function updateGeneralSettings(UpdateGeneralSettingsRequest $request)
     {
         try {
-            // Build validation rules dynamically - only validate logos if files are actually uploaded
-            $validationRules = [
-                'site' => 'sometimes|array',
-                'site.site_name' => 'sometimes|string|max:255',
-                'site.site_description' => 'sometimes|string|max:500',
-                'date_time' => 'sometimes|array',
-                'date_time.timezone' => 'sometimes|string|max:50',
-                'date_time.date_format' => 'sometimes|string|max:50',
-                'date_time.time_format' => 'sometimes|string|max:50',
-                'language' => 'sometimes|array',
-                'language.default_language' => 'sometimes|string|max:10',
-            ];
-            
-            // Only add logo validation if files are actually being uploaded
-            // This prevents validation errors when logos are not provided
-            if ($request->hasFile('site.auth_logo')) {
-                $validationRules['site.auth_logo'] = 'image|mimes:jpeg,png,jpg,gif,svg|max:2048';
-            }
-            if ($request->hasFile('site.sidenav_logo')) {
-                $validationRules['site.sidenav_logo'] = 'image|mimes:jpeg,png,jpg,gif,svg|max:2048';
-            }
-            
-            $validated = $request->validate($validationRules);
+            $validated = $request->validated();
 
             // Handle logo uploads - Laravel expects nested array notation for file uploads
             $logoFields = ['auth_logo', 'sidenav_logo'];
@@ -519,61 +485,10 @@ class SettingsController extends BaseController
      *     )
      * )
      */
-    public function updateEmailSettings(Request $request)
+    public function updateEmailSettings(UpdateEmailSettingsRequest $request)
     {
         try {
-            $validationRules = [
-                'mailer' => 'required|string|in:smtp,mailgun,postmark,ses,microsoft,sendmail,log,array',
-                'mail_from_name' => 'required|string|max:255',
-                'mail_from_address' => 'required|email|max:255',
-            ];
-            
-            // Only validate the selected mailer's configuration
-            $mailer = $request->input('mailer');
-            switch ($mailer) {
-                case 'smtp':
-                    $validationRules['smtp'] = 'required|array';
-                    $validationRules['smtp.host'] = 'required|string|max:255';
-                    $validationRules['smtp.port'] = 'required|string|max:10';
-                    $validationRules['smtp.encryption'] = 'nullable|string|in:,tls,ssl,starttls';
-                    $validationRules['smtp.username'] = 'required|string|max:255';
-                    $validationRules['smtp.password'] = 'required|string|max:255';
-                    break;
-                    
-                case 'mailgun':
-                    $validationRules['mailgun'] = 'required|array';
-                    $validationRules['mailgun.domain'] = 'required|string|max:255';
-                    $validationRules['mailgun.secret'] = 'required|string|max:255';
-                    break;
-                    
-                case 'postmark':
-                    $validationRules['postmark'] = 'required|array';
-                    $validationRules['postmark.token'] = 'required|string|max:255';
-                    break;
-                    
-                case 'ses':
-                    $validationRules['ses'] = 'required|array';
-                    $validationRules['ses.key'] = 'required|string|max:255';
-                    $validationRules['ses.secret'] = 'required|string|max:255';
-                    $validationRules['ses.region'] = 'required|string|max:50';
-                    break;
-                    
-                case 'microsoft':
-                    $validationRules['microsoft'] = 'required|array';
-                    $validationRules['microsoft.tenant_id'] = 'required|string|max:255';
-                    $validationRules['microsoft.client_id'] = 'required|string|max:255';
-                    $validationRules['microsoft.client_secret'] = 'required|string|max:255';
-                    $validationRules['microsoft.sender_email'] = 'required|email|max:255';
-                    break;
-                    
-                case 'sendmail':
-                case 'log':
-                case 'array':
-                    // These mailers don't need additional validation
-                    break;
-            }
-            
-            $validated = $request->validate($validationRules);
+            $validated = $request->validated();
 
             $this->optionService->updateEmailSettings($validated);
             
@@ -644,20 +559,10 @@ class SettingsController extends BaseController
      *     )
      * )
      */
-    public function updateSecuritySettings(Request $request)
+    public function updateSecuritySettings(UpdateSecuritySettingsRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'two_factor' => 'sometimes|array',
-                'two_factor.enabled' => 'sometimes|boolean',
-                'two_factor.required' => 'sometimes|boolean',
-                'two_factor.backup_codes_count' => 'sometimes|integer|min:5|max:20',
-                'session' => 'sometimes|array',
-                'session.session_enabled' => 'sometimes|boolean',
-                'session.session_timeout' => 'sometimes|integer|min:5|max:1440',
-                'session.max_login_attempts' => 'sometimes|integer|min:3|max:10',
-                'session.lockout_duration' => 'sometimes|integer|min:5|max:60',
-            ]);
+            $validated = $request->validated();
 
             $this->optionService->updateSecuritySettings($validated);
 

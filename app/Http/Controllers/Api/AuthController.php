@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\SignupRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\Enable2FASetupRequest;
 use App\Helpers\PasswordHelper;
 use App\Models\User;
 use App\Services\TwoFactorAuthService;
@@ -716,12 +717,8 @@ class AuthController extends Controller
 	 *     )
 	 * )
 	 */
-	public function enable2FASetup(Request $request)
+	public function enable2FASetup(Enable2FASetupRequest $request)
 	{
-		$request->validate([
-			'email' => 'required|email',
-			'password' => 'required|string',
-		]);
 
 		$credentials = $request->only('email', 'password');
 		$ip = $request->ip();

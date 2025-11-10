@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Requests\ProfileRequest;
+use App\Http\Requests\ImportUsersRequest;
 use App\Helpers\PasswordHelper;
 use App\Services\UserService;
 use App\Services\MessageService;
@@ -929,13 +930,9 @@ class UserController extends BaseController
    *     )
    * )
    */
-  public function import(Request $request)
+  public function import(ImportUsersRequest $request)
   {
     try {
-      // Validate file upload
-      $request->validate([
-        'file' => 'required|file|mimes:csv,txt|max:10240', // 10MB max
-      ]);
 
       $file = $request->file('file');
       

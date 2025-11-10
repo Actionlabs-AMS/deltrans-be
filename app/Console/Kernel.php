@@ -12,7 +12,16 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Run backup schedules every minute (if cron is available)
+        $schedule->command('backup:run-schedules')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground();
+
+        // Cleanup expired backups daily at 2 AM
+        $schedule->command('backup:cleanup')
+            ->dailyAt('02:00')
+            ->withoutOverlapping();
     }
 
     /**
