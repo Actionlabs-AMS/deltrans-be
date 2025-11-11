@@ -48,6 +48,22 @@ A comprehensive, enterprise-ready Laravel backend API with advanced security fea
 -   **Microsoft Graph Integration** for email services
 -   **Comprehensive Logging** with structured data
 
+### 💾 Backup and Restore Module
+
+-   **Database Backup** - Full or selective table backups with compression and encryption
+-   **File Storage Backup** - Backup of storage files (local and S3)
+-   **Full Backup** - Combined database + files backup
+-   **Manual Backup** - On-demand backup creation
+-   **Scheduled Backup** - Automated backups (daily/weekly/monthly/custom) - **No cron required!**
+-   **Restore Functionality** - Safe restore with validation and automatic rollback
+-   **Compression** - Gzip/Zip compression support
+-   **Encryption** - Optional AES-256 encryption
+-   **Storage** - Local and S3 storage support
+-   **Retention** - Configurable backup retention policy
+-   **Management** - List, download, delete, and monitor backups
+-   **Session Timeout Integration** - Respects system session timeout settings for token expiration
+-   **Remember Me Support** - Extended token expiration for remember me sessions
+
 ### 📚 API Documentation
 
 -   **Interactive Swagger UI** with real-time testing
@@ -325,6 +341,11 @@ CORS_ALLOW_CREDENTIALS=true
 -   `categories` - Content categories
 -   `tags` - Content tags
 -   `media_libraries` - File management
+
+### Backup Tables
+
+-   `backups` - Backup metadata and status tracking
+-   `backup_schedules` - Automated backup schedule configurations
 
 ## 🔐 Security Features
 
@@ -785,6 +806,26 @@ The BaseCode project includes comprehensive **Swagger/OpenAPI documentation** wi
 -   `GET /api/security/config` - Get security configuration
 -   `POST /api/security/config` - Update security configuration
 
+#### Backup and Restore Management
+
+-   `GET /api/backups` - List backups with pagination and filters
+-   `POST /api/backups` - Create new backup (database/files/full)
+-   `GET /api/backups/{id}` - Get backup details
+-   `DELETE /api/backups/{id}` - Delete backup
+-   `GET /api/backups/{id}/download` - Download backup file
+-   `POST /api/backups/{id}/restore` - Restore backup
+-   `GET /api/backups/{id}/validate` - Validate backup integrity
+-   `GET /api/backups/stats` - Get backup statistics
+-   `GET /api/backups/schedules` - List backup schedules
+-   `POST /api/backups/schedules` - Create backup schedule
+-   `GET /api/backups/schedules/{id}` - Get schedule details
+-   `PUT /api/backups/schedules/{id}` - Update schedule
+-   `DELETE /api/backups/schedules/{id}` - Delete schedule
+-   `POST /api/backups/schedules/{id}/run` - Run schedule manually
+-   `GET /api/backups/options/tables` - Get database tables list
+-   `GET /api/backups/options/disks` - Get available storage disks
+-   `POST /api/backups/webhook/trigger` - Webhook endpoint for external schedulers
+
 ### 🔧 API Features
 
 #### Authentication
@@ -852,7 +893,24 @@ For support and questions:
 
 ## 🔄 Changelog
 
-### Version 2.0.0 (Current)
+### Version 2.3.0 (Current)
+
+-   ✅ **Backup and Restore Module** - Complete implementation with scheduling, encryption, and restore
+-   ✅ **Cron-Free Scheduling** - Multiple scheduling methods (on-request, queue-based, webhook, manual)
+-   ✅ **Session Timeout Integration** - Token expiration respects system session timeout settings
+-   ✅ **Remember Me Functionality** - Extended token expiration for remember me sessions
+-   ✅ **Form Request Validation** - All controllers use Form Request classes for validation
+-   ✅ **BaseController Integration** - BackupController extends BaseController with MessageService
+-   ✅ **Comprehensive Testing** - 17 backup-related unit tests, all passing
+
+### Version 2.2.0
+
+-   ✅ **Database Encryption for Sensitive Fields** - Model-level field encryption
+-   ✅ **GDPR Data Anonymization** - Multiple anonymization methods (hash, mask, replace)
+-   ✅ **Console Commands** - Data encryption and anonymization management commands
+-   ✅ **Frontend/Backend Architecture** separation with optimized CORS configuration
+
+### Version 2.0.0
 
 -   ✅ **Comprehensive Audit Trail System** implementation
 -   ✅ **Enhanced Security Features** with 2FA and encryption
@@ -1681,6 +1739,318 @@ The BaseCode application is **secure and optimized for development**! 🎉
 -   ✅ **SOC 2 Compatible** - Service organization control compliance
 
 **BaseCode** - Your foundation for secure, scalable Laravel backend APIs with frontend integration support.
+
+---
+
+## 💾 Backup and Restore Module
+
+### Overview
+
+The Backup and Restore module provides comprehensive backup functionality for both database and file storage, with automated scheduling, encryption, compression, and safe restore capabilities. The module is fully integrated with the system's session timeout settings and supports "Remember Me" functionality.
+
+### Key Features
+
+#### Core Functionality
+
+-   ✅ **Database Backup** - Full or selective table backups
+-   ✅ **File Storage Backup** - Backup of storage files (local/S3)
+-   ✅ **Full Backup** - Combined database + files backup
+-   ✅ **Manual Backup** - On-demand backup creation
+-   ✅ **Scheduled Backup** - Automated backups (daily/weekly/monthly/custom)
+-   ✅ **Restore** - Safe restore with validation and rollback
+-   ✅ **Compression** - Gzip/Zip compression support
+-   ✅ **Encryption** - Optional AES-256 encryption
+-   ✅ **Storage** - Local and S3 storage support
+-   ✅ **Retention** - Configurable backup retention policy
+-   ✅ **Management** - List, download, delete, monitor backups
+
+#### Security & Safety
+
+-   ✅ **Access Control** - Permission-based access (backup.manage, backup.restore, backup.schedule)
+-   ✅ **Audit Trail** - Complete logging of all operations
+-   ✅ **Validation** - Pre-restore validation and integrity checks
+-   ✅ **Rollback** - Automatic rollback on failed restore
+-   ✅ **Pre-Restore Backup** - Auto-backup before restore
+
+### Backup Types
+
+#### 1. Database Backup
+
+-   Exports all or selected tables to SQL
+-   Supports compression (gzip)
+-   Optional encryption
+-   Includes schema and data
+
+#### 2. Files Backup
+
+-   Backs up storage files (local/S3)
+-   Creates archive (zip/tar.gz)
+-   Preserves directory structure
+-   Optional encryption
+
+#### 3. Full Backup
+
+-   Combines database + files
+-   Single archive file
+-   Complete system backup
+-   Recommended for migrations
+
+### Scheduling Options
+
+#### ⚠️ Cron-Free Scheduling (Works on Any Hosting!)
+
+**No server cron jobs required!** The system supports multiple scheduling methods:
+
+1. **On-Request Scheduling** ⭐ (Recommended for shared hosting)
+   - Checks schedules when site receives requests
+   - Works on GoDaddy, shared hosting, any provider
+   - Automatic execution when site is accessed
+   - Register `CheckBackupSchedulesMiddleware` in `app/Http/Kernel.php`
+
+2. **Queue-Based Delayed Jobs** ⭐⭐ (Best reliability)
+   - Uses Laravel's delayed jobs
+   - Creates automatic chain of backups
+   - Most precise timing
+   - Requires queue worker: `php artisan queue:work --queue=backups`
+
+3. **External Webhook Services** 🌐 (Guaranteed execution)
+   - Free services (EasyCron, cron-job.org)
+   - Works even when site is inactive
+   - No server configuration needed
+   - Configure webhook token: `BACKUP_WEBHOOK_TOKEN=your-secure-token`
+
+4. **Manual Trigger** (Always available)
+   - Admin can trigger any schedule immediately
+   - Available regardless of other methods
+
+#### Frequency Types
+
+-   **Daily**: Run at specified time every day
+-   **Weekly**: Run on specific day at specified time
+-   **Monthly**: Run on specific day of month
+-   **Custom**: Cron expression for advanced scheduling
+
+### Quick Setup
+
+#### For Shared Hosting (GoDaddy, etc.) - Recommended ⭐
+
+**Method**: On-Request Scheduling
+
+1. **Register Middleware** (one-time setup):
+   ```php
+   // app/Http/Kernel.php
+   protected $middleware = [
+       // ... existing middleware
+       \App\Http\Middleware\CheckBackupSchedulesMiddleware::class,
+   ];
+   ```
+
+2. **Done!** Schedules will automatically check when your site receives requests.
+
+#### For VPS/Cloud (AWS, DigitalOcean) - Best Reliability ⭐⭐
+
+**Method**: Queue-Based Delayed Jobs
+
+1. **Configure Queue**:
+   ```env
+   QUEUE_CONNECTION=database
+   ```
+
+2. **Run Queue Worker**:
+   ```bash
+   php artisan queue:work --queue=backups
+   ```
+
+#### For Guaranteed Execution - Even When Site is Inactive 🌐
+
+**Method**: External Webhook Service
+
+1. **Set Webhook Token**:
+   ```env
+   BACKUP_WEBHOOK_TOKEN=your-secure-random-token-here
+   ```
+
+2. **Set up Free Service** (EasyCron example):
+   - Go to https://www.easycron.com
+   - Create account (free tier: 1 cron job)
+   - Add new cron job:
+     - **URL**: `https://yourdomain.com/api/backups/webhook/trigger`
+     - **Method**: POST
+     - **Headers**: `X-Webhook-Token: your-secure-random-token-here`
+     - **Schedule**: Every 15 minutes
+
+### Configuration
+
+#### Environment Variables
+
+```env
+# Backup Configuration
+BACKUP_STORAGE_DISK=local
+BACKUP_STORAGE_PATH=backups
+BACKUP_DEFAULT_RETENTION_DAYS=30
+BACKUP_COMPRESSION_DEFAULT=gzip
+BACKUP_ENCRYPTION_ENABLED=false
+
+# Scheduling Method (auto, on_request, queue, webhook, manual)
+BACKUP_SCHEDULING_METHOD=auto
+
+# For webhook method
+BACKUP_WEBHOOK_TOKEN=your-secure-random-token-here
+
+# Schedule check cooldown (minutes) - for on-request method
+BACKUP_SCHEDULE_CHECK_COOLDOWN=5
+```
+
+#### Auto-Detection
+
+If `BACKUP_SCHEDULING_METHOD=auto`, the system will:
+1. Use **queue** if queue is configured
+2. Use **webhook** if webhook token is set
+3. Fall back to **on-request** (always works)
+
+### API Usage Examples
+
+#### Create Manual Backup
+
+```bash
+POST /api/backups
+{
+    "name": "Manual Backup",
+    "type": "full",
+    "compression": "gzip",
+    "encrypted": true,
+    "storage_disk": "local",
+    "retention_days": 30
+}
+```
+
+#### Create Schedule
+
+```bash
+POST /api/backups/schedules
+{
+    "name": "Daily Backup",
+    "type": "database",
+    "frequency": "daily",
+    "time": "02:00",
+    "retention_days": 30,
+    "compression": "gzip",
+    "encrypted": false,
+    "storage_disk": "local",
+    "active": true
+}
+```
+
+#### Restore Backup
+
+```bash
+POST /api/backups/{id}/restore
+{
+    "confirm": true,
+    "create_backup": true
+}
+```
+
+### Storage Strategy
+
+#### Local Storage
+
+-   Path: `storage/app/backups/`
+-   Structure: `{type}/{year}/{month}/{filename}`
+-   Example: `backups/database/2025/01/backup_20250115_020000.sql.gz`
+
+#### S3 Storage
+
+-   Bucket: Configured S3 bucket
+-   Path: `backups/{type}/{year}/{month}/`
+-   Lifecycle: Auto-delete after retention
+
+### Restore Process
+
+#### Steps
+
+1. **Validation**: Check backup integrity and compatibility
+2. **Pre-Backup**: Create automatic backup before restore
+3. **Execution**: Restore database/files
+4. **Verification**: Verify restore success
+5. **Rollback**: If failed, restore pre-restore backup
+
+#### Safety Features
+
+-   Requires explicit confirmation
+-   Creates backup before restore
+-   Validates before execution
+-   Supports dry-run preview
+-   Automatic rollback on failure
+
+### Console Commands
+
+```bash
+# Run scheduled backups (if using cron)
+php artisan backup:run-schedules
+
+# Cleanup expired backups
+php artisan backup:cleanup
+```
+
+### Testing
+
+The module includes comprehensive unit tests:
+
+```bash
+# Run backup-related tests
+php artisan test --filter=Backup
+```
+
+**Test Coverage:**
+- ✅ Backup Model Tests: 6/6 passing
+- ✅ BackupSchedule Model Tests: 5/5 passing
+- ✅ BackupService Tests: 6/6 passing
+- ✅ Total: 17 backup-related tests, all passing
+
+### Architecture
+
+#### Backend Components
+
+```
+BaseCode/
+├── app/
+│   ├── Models/
+│   │   ├── Backup.php              # Backup metadata model
+│   │   └── BackupSchedule.php      # Schedule model
+│   ├── Services/
+│   │   └── BackupService.php      # Main service
+│   ├── Helpers/
+│   │   └── BackupHelper.php       # Backup utilities
+│   ├── Http/
+│   │   ├── Controllers/Api/
+│   │   │   └── BackupController.php
+│   │   └── Requests/
+│   │       ├── StoreBackupRequest.php
+│   │       ├── RestoreBackupRequest.php
+│   │       ├── CreateBackupScheduleRequest.php
+│   │       ├── UpdateBackupScheduleRequest.php
+│   │       └── WebhookTriggerRequest.php
+│   ├── Jobs/
+│   │   └── CreateBackupJob.php    # Async backup creation
+│   ├── Console/Commands/
+│   │   ├── BackupRunSchedulesCommand.php
+│   │   └── BackupCleanupCommand.php
+│   └── Http/Middleware/
+│       └── CheckBackupSchedulesMiddleware.php
+└── database/migrations/
+    ├── create_backups_table.php
+    └── create_backup_schedules_table.php
+```
+
+### Recommended Setup by Hosting Type
+
+| Hosting Type | Primary Method | Fallback |
+|-------------|---------------|----------|
+| **Shared Hosting** (GoDaddy) | On-Request | Manual Trigger |
+| **VPS/Cloud** | Queue-Based | On-Request |
+| **Serverless** | Webhook | Manual Trigger |
+| **Dedicated Server** | Queue-Based + Cron | On-Request |
 
 ---
 
