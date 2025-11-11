@@ -575,7 +575,19 @@ class AuthController extends Controller
 		$user->tokens()->delete();
 
 		Auth::login($user);
-		$token = $user->createToken('admin')->plainTextToken;
+		
+		// Handle remember me - use different token name and expiration
+		$rememberMe = $request->boolean('remember_me', false);
+		$tokenName = $rememberMe ? 'admin-remember' : 'admin';
+		
+		// Set expiration based on remember me preference
+		// Standard session: 24 hours, Remember me: 30 days
+		$expiresAt = $rememberMe 
+			? now()->addDays(30)  // Remember me: 30 days
+			: now()->addHours(24); // Standard: 24 hours
+		
+		// Create token with expiration
+		$token = $user->createToken($tokenName, ['*'], $expiresAt)->plainTextToken;
 		$userResource = new AuthResource($user);
 
 		// Log successful login
