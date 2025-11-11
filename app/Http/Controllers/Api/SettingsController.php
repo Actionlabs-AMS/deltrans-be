@@ -400,14 +400,25 @@ class SettingsController extends BaseController
             foreach ($logoFields as $field) {
                 // Check for file upload with nested array notation: site[auth_logo]
                 $fileKey = "site.{$field}";
+                $removeKey = "site.remove_{$field}";
+                
                 if ($request->hasFile($fileKey)) {
                     $file = $request->file($fileKey);
                     $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                     $path = $file->storeAs('public/logos', $filename);
                     $validated['site'][$field] = 'storage/logos/' . $filename;
+                } elseif ($request->has($removeKey)) {
+                    // Remove flag is set - delete the logo
+                    $validated['site'][$field] = null;
                 } elseif ($request->has($fileKey) && $request->input($fileKey) === '') {
-                    // Allow clearing logo by sending empty string
-                    $validated['site'][$field] = '';
+                    // Empty string sent - delete the logo
+                    $validated['site'][$field] = null;
+                } elseif (isset($validated['site'][$field]) && $validated['site'][$field] === null) {
+                    // Handle null value from JSON request (already null)
+                    $validated['site'][$field] = null;
+                } elseif (isset($validated['site'][$field]) && $validated['site'][$field] === '') {
+                    // Empty string in validated data - convert to null
+                    $validated['site'][$field] = null;
                 }
             }
 

@@ -40,9 +40,18 @@ class OptionService extends BaseService
      */
     public function setOption($key, $value, $type = 'string', $description = null)
     {
+        // Handle null values directly - delete the option
+        if ($value === null) {
+            Option::where('option_key', $key)->delete();
+            Cache::forget("option.{$key}");
+            Cache::forget('options.all');
+            Cache::forget('general.settings');
+            return null;
+        }
+        
         $option = Option::set($key, $value, $type, $description);
         
-        // Clear related caches
+        // Clear related caches (always clear, even if option was deleted/null)
         Cache::forget("option.{$key}");
         Cache::forget('options.all');
         
@@ -183,12 +192,16 @@ class OptionService extends BaseService
             return $fullUrl;
         };
         
+        // Get logo values - return null if option doesn't exist
+        $authLogo = $this->getOption('auth_logo', null);
+        $sidenavLogo = $this->getOption('sidenav_logo', null);
+        
         $settings = [
             'site' => [
                 'site_name' => $this->getOption('site_name', 'CorePanel'),
                 'site_description' => $this->getOption('site_description', 'Admin Panel Management System'),
-                'auth_logo' => $getLogoUrl($this->getOption('auth_logo', '')),
-                'sidenav_logo' => $getLogoUrl($this->getOption('sidenav_logo', '')),
+                'auth_logo' => $authLogo ? $getLogoUrl($authLogo) : null,
+                'sidenav_logo' => $sidenavLogo ? $getLogoUrl($sidenavLogo) : null,
             ],
             'date_time' => [
                 'timezone' => $this->getOption('timezone', 'UTC'),
@@ -213,6 +226,7 @@ class OptionService extends BaseService
         // Site settings
         if (isset($settings['site'])) {
             foreach ($settings['site'] as $key => $value) {
+                // Handle null values for logo removal - setOption will handle deletion
                 $results[$key] = $this->setOption($key, $value, 'string');
             }
         }
@@ -235,6 +249,16 @@ class OptionService extends BaseService
         Cache::forget('options.all');
         foreach (array_keys($results) as $key) {
             Cache::forget("option.{$key}");
+        }
+        
+        // Also clear cache for logo fields if they were in the settings (even if deleted)
+        if (isset($settings['site'])) {
+            if (array_key_exists('auth_logo', $settings['site'])) {
+                Cache::forget("option.auth_logo");
+            }
+            if (array_key_exists('sidenav_logo', $settings['site'])) {
+                Cache::forget("option.sidenav_logo");
+            }
         }
         
         return $results;

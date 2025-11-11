@@ -129,6 +129,12 @@ class Option extends Model
      */
     public static function set($key, $value, $type = 'string', $description = null)
     {
+        // Handle null values - delete the option
+        if ($value === null) {
+            self::where('option_key', $key)->delete();
+            return null;
+        }
+        
         // Format value based on type
         $formattedValue = $value;
         switch ($type) {

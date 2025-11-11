@@ -25,6 +25,10 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'site' => 'sometimes|array',
             'site.site_name' => 'sometimes|string|max:255',
             'site.site_description' => 'sometimes|string|max:500',
+            'site.auth_logo' => 'sometimes|nullable', // Allow null for deletion
+            'site.sidenav_logo' => 'sometimes|nullable', // Allow null for deletion
+            'site.remove_auth_logo' => 'sometimes|string', // Remove flag for FormData
+            'site.remove_sidenav_logo' => 'sometimes|string', // Remove flag for FormData
             'date_time' => 'sometimes|array',
             'date_time.timezone' => 'sometimes|string|max:50',
             'date_time.date_format' => 'sometimes|string|max:50',
@@ -33,7 +37,7 @@ class UpdateGeneralSettingsRequest extends FormRequest
             'language.default_language' => 'sometimes|string|max:10',
         ];
 
-        // Only add logo validation if files are actually being uploaded
+        // Only add file validation if files are actually being uploaded
         if ($this->hasFile('site.auth_logo')) {
             $rules['site.auth_logo'] = 'image|mimes:jpeg,png,jpg,gif,svg|max:2048';
         }
