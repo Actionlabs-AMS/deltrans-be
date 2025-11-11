@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\TwoFactorAuthService;
+use App\Services\OptionService;
 use App\Models\User;
 use App\Http\Resources\AuthResource;
 use Illuminate\Http\Request;
@@ -21,10 +22,12 @@ use Illuminate\Support\Facades\Log;
 class TwoFactorAuthController extends Controller
 {
     protected $twoFactorService;
+    protected $optionService;
 
-    public function __construct(TwoFactorAuthService $twoFactorService)
+    public function __construct(TwoFactorAuthService $twoFactorService, OptionService $optionService)
     {
         $this->twoFactorService = $twoFactorService;
+        $this->optionService = $optionService;
     }
 
     /**
@@ -163,6 +166,7 @@ class TwoFactorAuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,user_email',
             'code' => 'required|string|size:6',
+            'remember_me' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -192,8 +196,38 @@ class TwoFactorAuthController extends Controller
             // Clear any existing tokens for this user
             $user->tokens()->delete();
             
-            // Generate new token for successful 2FA verification
-            $token = $user->createToken('admin')->plainTextToken;
+            // Get session timeout settings for token expiration
+            $sessionEnabled = $this->optionService->getOption('session_enabled', true);
+            $sessionTimeoutMinutes = (int) $this->optionService->getOption('session_timeout', 30);
+            
+            // Check if remember_me was passed (from 2FA flow)
+            $rememberMe = $request->boolean('remember_me', false);
+            $tokenName = $rememberMe ? 'admin-remember' : 'admin';
+            
+            // Set expiration based on remember me preference and session timeout settings
+            if ($sessionEnabled) {
+                // Session timeout is enabled - use configured timeout
+                if ($rememberMe) {
+                    // Remember me: Use 10x the session timeout (or minimum 7 days, maximum 30 days)
+                    $rememberMeTimeout = max(7 * 24 * 60, min(30 * 24 * 60, $sessionTimeoutMinutes * 10));
+                    $expiresAt = now()->addMinutes($rememberMeTimeout);
+                } else {
+                    // Standard session: Use configured session timeout
+                    $expiresAt = now()->addMinutes($sessionTimeoutMinutes);
+                }
+            } else {
+                // Session timeout is disabled - set longer expiration
+                if ($rememberMe) {
+                    // Remember me: 30 days when session timeout is disabled
+                    $expiresAt = now()->addDays(30);
+                } else {
+                    // Standard: 24 hours when session timeout is disabled
+                    $expiresAt = now()->addHours(24);
+                }
+            }
+            
+            // Generate new token for successful 2FA verification with expiration
+            $token = $user->createToken($tokenName, ['*'], $expiresAt)->plainTextToken;
             
             // Create full user resource with all necessary data
             $userResource = new AuthResource($user);

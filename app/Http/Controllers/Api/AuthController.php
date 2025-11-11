@@ -580,11 +580,31 @@ class AuthController extends Controller
 		$rememberMe = $request->boolean('remember_me', false);
 		$tokenName = $rememberMe ? 'admin-remember' : 'admin';
 		
-		// Set expiration based on remember me preference
-		// Standard session: 24 hours, Remember me: 30 days
-		$expiresAt = $rememberMe 
-			? now()->addDays(30)  // Remember me: 30 days
-			: now()->addHours(24); // Standard: 24 hours
+		// Get session timeout settings
+		$sessionEnabled = $this->optionService->getOption('session_enabled', true);
+		$sessionTimeoutMinutes = (int) $this->optionService->getOption('session_timeout', 30);
+		
+		// Set expiration based on remember me preference and session timeout settings
+		if ($sessionEnabled) {
+			// Session timeout is enabled - use configured timeout
+			if ($rememberMe) {
+				// Remember me: Use 10x the session timeout (or minimum 7 days, maximum 30 days)
+				$rememberMeTimeout = max(7 * 24 * 60, min(30 * 24 * 60, $sessionTimeoutMinutes * 10));
+				$expiresAt = now()->addMinutes($rememberMeTimeout);
+			} else {
+				// Standard session: Use configured session timeout
+				$expiresAt = now()->addMinutes($sessionTimeoutMinutes);
+			}
+		} else {
+			// Session timeout is disabled - set longer expiration
+			if ($rememberMe) {
+				// Remember me: 30 days when session timeout is disabled
+				$expiresAt = now()->addDays(30);
+			} else {
+				// Standard: 24 hours when session timeout is disabled
+				$expiresAt = now()->addHours(24);
+			}
+		}
 		
 		// Create token with expiration
 		$token = $user->createToken($tokenName, ['*'], $expiresAt)->plainTextToken;
