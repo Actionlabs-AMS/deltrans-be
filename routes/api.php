@@ -33,12 +33,12 @@ Route::get('/system-settings/settings/general', [SettingsController::class, 'get
 Route::middleware('auth:sanctum')->group(function () {
 	Route::get('/user/me', [UserController::class, 'getUser']);
 	Route::post('/logout', [AuthController::class, 'logout']);
-	
+
 	// Dashboard Routes
 	Route::prefix('dashboard')->group(function () {
 		Route::get('/stats', [DashboardController::class, 'getStats']);
 	});
-	
+
 	/*
 	|--------------------------------------------------------------------------
 	| Options Management Routes
@@ -76,14 +76,14 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::post('/', [UserController::class, 'store']);  // Create a new user
 			Route::put('/{id}', [UserController::class, 'update']);  // Update an existing user
 			Route::delete('/{id}', [UserController::class, 'destroy']);  // Delete a user
-			
+
 			// Bulk operations
 			Route::post('/bulk/delete', [UserController::class, 'bulkDelete']);  // Bulk delete users
 			Route::post('/bulk/restore', [UserController::class, 'bulkRestore']);  // Bulk restore users
 			Route::post('/bulk/force-delete', [UserController::class, 'bulkForceDelete']);  // Bulk permanently delete users
 			Route::post('/bulk/role', [UserController::class, 'bulkChangeRole']);
 			Route::post('/bulk/password', [UserController::class, 'bulkChangePassword']);  // Bulk change password
-			
+
 			// Import/Export operations
 			Route::post('/import', [UserController::class, 'import']);  // Import users from CSV
 		});
@@ -112,7 +112,7 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::post('/', [RoleController::class, 'store']);  // Create a new role
 			Route::put('/{id}', [RoleController::class, 'update']);  // Update an existing role
 			Route::delete('/{id}', [RoleController::class, 'destroy']);  // Delete a role
-			
+
 			// Bulk operations
 			Route::post('/bulk/delete', [RoleController::class, 'bulkDelete']);  // Bulk delete roles
 			Route::post('/bulk/restore', [RoleController::class, 'bulkRestore']);  // Bulk restore roles
@@ -140,7 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::prefix('content-management')->group(function () {
 
 		Route::apiResource('/media-library', MediaController::class);
-		Route::post('/media-library/bulk/delete', [MediaController::class, 'bulkDelete']);	
+		Route::post('/media-library/bulk/delete', [MediaController::class, 'bulkDelete']);
 
 		Route::prefix('categories')->group(function () {
 			// Standard CRUD operations
@@ -149,7 +149,7 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::post('/', [CategoryController::class, 'store']);  // Create a new category
 			Route::put('/{id}', [CategoryController::class, 'update']);  // Update an existing category
 			Route::delete('/{id}', [CategoryController::class, 'destroy']);  // Delete a category
-			
+
 			// Bulk operations
 			Route::post('/bulk/delete', [CategoryController::class, 'bulkDelete']);  // Bulk delete categories
 			Route::post('/bulk/restore', [CategoryController::class, 'bulkRestore']);  // Bulk restore categories
@@ -170,7 +170,7 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::post('/', [TagController::class, 'store']);  // Create a new tag
 			Route::put('/{id}', [TagController::class, 'update']);  // Update an existing tag
 			Route::delete('/{id}', [TagController::class, 'destroy']);  // Delete a tag
-			
+
 			// Bulk operations
 			Route::post('/bulk/delete', [TagController::class, 'bulkDelete']);  // Bulk delete tags
 			Route::post('/bulk/restore', [TagController::class, 'bulkRestore']);  // Bulk restore tags
@@ -201,7 +201,7 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::post('/', [NavigationController::class, 'store']);  // Create a new navigation
 			Route::put('/{id}', [NavigationController::class, 'update']);  // Update an existing navigation
 			Route::delete('/{id}', [NavigationController::class, 'destroy']);  // Delete a navigation
-			
+
 			// Bulk operations
 			Route::post('/bulk/delete', [NavigationController::class, 'bulkDelete']);  // Bulk delete navigations
 			Route::post('/bulk/restore', [NavigationController::class, 'bulkRestore']);  // Bulk restore navigations
@@ -250,7 +250,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	// PROFILE ROUTES
 	Route::post('/profile', [UserController::class, 'updateProfile']);
-	
+
 	// SECURITY DASHBOARD ROUTES
 	Route::prefix('security')->group(function () {
 		Route::get('/metrics', [SecurityDashboardController::class, 'getMetrics']);
@@ -303,82 +303,82 @@ Route::post('/auth/enable-2fa-setup', [AuthController::class, 'enable2FASetup'])
 
 // Microsoft Graph Test Route (for testing integration)
 Route::get('/test-microsoft-graph', function () {
-    try {
-        $result = \App\Services\MicrosoftGraphService::sendNotificationEmail(
-            'test@example.com',
-            'BaseCode Microsoft Graph Test',
-            '<h1>Microsoft Graph Integration Test</h1><p>This is a test email from BaseCode using Microsoft Graph API.</p><p>If you receive this email, the integration is working correctly!</p>'
-        );
-        
-        return response()->json([
-            'success' => $result,
-            'message' => $result ? 'Test email sent successfully via Microsoft Graph' : 'Failed to send test email'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'message' => 'Microsoft Graph test failed'
-        ], 500);
-    }
+	try {
+		$result = \App\Services\MicrosoftGraphService::sendNotificationEmail(
+			'test@example.com',
+			'Deltrans Microsoft Graph Test',
+			'<h1>Microsoft Graph Integration Test</h1><p>This is a test email from Deltrans using Microsoft Graph API.</p><p>If you receive this email, the integration is working correctly!</p>'
+		);
+
+		return response()->json([
+			'success' => $result,
+			'message' => $result ? 'Test email sent successfully via Microsoft Graph' : 'Failed to send test email'
+		]);
+	} catch (\Exception $e) {
+		return response()->json([
+			'success' => false,
+			'error' => $e->getMessage(),
+			'message' => 'Microsoft Graph test failed'
+		], 500);
+	}
 });
 
 // Test SMTP Email Configuration Route
 Route::post('/test-smtp-email', function (\Illuminate\Http\Request $request) {
-    try {
-        $email = $request->input('email', 'test@example.com');
-        
-        // Get current mail configuration
-        $mailConfig = [
-            'default' => config('mail.default'),
-            'from' => config('mail.from'),
-            'smtp_host' => config('mail.mailers.smtp.host'),
-            'smtp_port' => config('mail.mailers.smtp.port'),
-            'smtp_encryption' => config('mail.mailers.smtp.encryption'),
-            'smtp_username' => config('mail.mailers.smtp.username') ? '***configured***' : 'not set',
-        ];
-        
-        // Try to send a test email
-        \Illuminate\Support\Facades\Mail::raw('This is a test email from BaseCode SMTP configuration. If you receive this, your SMTP settings are working correctly!', function ($message) use ($email) {
-            $message->to($email)
-                    ->subject('BaseCode SMTP Test Email');
-        });
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Test email sent successfully to ' . $email,
-            'mail_config' => $mailConfig,
-        ]);
-    } catch (\Illuminate\Mail\SendException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to send test email via SMTP',
-            'error' => $e->getMessage(),
-            'mail_config' => $mailConfig ?? [],
-        ], 500);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Unexpected error',
-            'error' => $e->getMessage(),
-            'mail_config' => $mailConfig ?? [],
-        ], 500);
-    }
+	try {
+		$email = $request->input('email', 'test@example.com');
+
+		// Get current mail configuration
+		$mailConfig = [
+			'default' => config('mail.default'),
+			'from' => config('mail.from'),
+			'smtp_host' => config('mail.mailers.smtp.host'),
+			'smtp_port' => config('mail.mailers.smtp.port'),
+			'smtp_encryption' => config('mail.mailers.smtp.encryption'),
+			'smtp_username' => config('mail.mailers.smtp.username') ? '***configured***' : 'not set',
+		];
+
+		// Try to send a test email
+		\Illuminate\Support\Facades\Mail::raw('This is a test email from Deltrans SMTP configuration. If you receive this, your SMTP settings are working correctly!', function ($message) use ($email) {
+			$message->to($email)
+				->subject('Deltrans SMTP Test Email');
+		});
+
+		return response()->json([
+			'success' => true,
+			'message' => 'Test email sent successfully to ' . $email,
+			'mail_config' => $mailConfig,
+		]);
+	} catch (\Illuminate\Mail\SendException $e) {
+		return response()->json([
+			'success' => false,
+			'message' => 'Failed to send test email via SMTP',
+			'error' => $e->getMessage(),
+			'mail_config' => $mailConfig ?? [],
+		], 500);
+	} catch (\Exception $e) {
+		return response()->json([
+			'success' => false,
+			'message' => 'Unexpected error',
+			'error' => $e->getMessage(),
+			'mail_config' => $mailConfig ?? [],
+		], 500);
+	}
 });
 
 // Two-Factor Authentication Routes
 Route::prefix('2fa')->group(function () {
-    Route::post('/send-code', [TwoFactorAuthController::class, 'sendCode'])->middleware('throttle:auth');
-    Route::post('/verify-code', [TwoFactorAuthController::class, 'verifyCode'])->middleware('throttle:auth');
-    Route::post('/is-required', [TwoFactorAuthController::class, 'isRequired'])->middleware('throttle:auth');
-    
-    // Protected 2FA management routes
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/enable', [TwoFactorAuthController::class, 'enable']);
-        Route::post('/disable', [TwoFactorAuthController::class, 'disable']);
-        Route::get('/status', [TwoFactorAuthController::class, 'status']);
-        Route::post('/generate-backup-codes', [TwoFactorAuthController::class, 'generateBackupCodes']);
-    });
+	Route::post('/send-code', [TwoFactorAuthController::class, 'sendCode'])->middleware('throttle:auth');
+	Route::post('/verify-code', [TwoFactorAuthController::class, 'verifyCode'])->middleware('throttle:auth');
+	Route::post('/is-required', [TwoFactorAuthController::class, 'isRequired'])->middleware('throttle:auth');
+
+	// Protected 2FA management routes
+	Route::middleware('auth:sanctum')->group(function () {
+		Route::post('/enable', [TwoFactorAuthController::class, 'enable']);
+		Route::post('/disable', [TwoFactorAuthController::class, 'disable']);
+		Route::get('/status', [TwoFactorAuthController::class, 'status']);
+		Route::post('/generate-backup-codes', [TwoFactorAuthController::class, 'generateBackupCodes']);
+	});
 });
 
 // (merged into system-settings/settings above)

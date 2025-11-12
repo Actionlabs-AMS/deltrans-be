@@ -16,7 +16,7 @@ use App\Services\OptionService;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\VerifyEmail;
 use App\Mail\ForgotPasswordEmail;
-use Illuminate\Support\Facades\Auth; 
+use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\AuthResource;
 use App\Traits\AuditTrailTrait;
 use Illuminate\Support\Facades\RateLimiter;
@@ -25,17 +25,17 @@ use Hash;
 
 /**
  * @OA\Info(
- *     title="BaseCode API",
+ *     title="Deltrans API",
  *     version="1.0.0",
  *     description="A comprehensive Laravel API with authentication, role management, and security features",
  *     @OA\Contact(
- *         email="admin@basecode.com"
+ *         email="admin@deltrans.com"
  *     )
  * )
  * 
  * @OA\Server(
  *     url=L5_SWAGGER_CONST_HOST,
- *     description="BaseCode API Server"
+ *     description="Deltrans API Server"
  * )
  * 
  * @OA\SecurityScheme(
@@ -108,7 +108,7 @@ class AuthController extends Controller
 	 *     )
 	 * )
 	 */
-	public function signup(SignupRequest $request) 
+	public function signup(SignupRequest $request)
 	{
 		$data = $request->validated();
 
@@ -135,7 +135,7 @@ class AuthController extends Controller
 		]);
 
 		$user_key = $user->user_activation_key;
-		$verify_url = env('ADMIN_APP_URL')."/login/activate/".$user_key;
+		$verify_url = env('ADMIN_APP_URL') . "/login/activate/" . $user_key;
 
 		$message = '';
 		try {
@@ -149,7 +149,7 @@ class AuthController extends Controller
 		} catch (\Exception $e) {
 			// Fallback to Laravel Mail if Microsoft Graph fails
 			$options = array('verify_url' => $verify_url);
-			if(Mail::to($user->user_email)->send(new VerifyEmail($user, $options))) {
+			if (Mail::to($user->user_email)->send(new VerifyEmail($user, $options))) {
 				$message = 'Aww yeah, you have successfuly registered. Verification email has been sent to your registered email.';
 			} else {
 				$message = 'Registration successful, but there was an issue sending the verification email. Please contact support.';
@@ -171,7 +171,7 @@ class AuthController extends Controller
 		);
 
 		return response(compact('message'));
-		
+
 	}
 
 	/**
@@ -204,14 +204,14 @@ class AuthController extends Controller
 	 *     )
 	 * )
 	 */
-	public function activateUser(Request $request) 
+	public function activateUser(Request $request)
 	{
 		$message = '';
 
 		$user = User::where('user_activation_key', $request->activation_key)
-		->where('user_status', 0)->first();
-		
-		if($user) {
+			->where('user_status', 0)->first();
+
+		if ($user) {
 			$user->update(['user_status' => 1]);
 			$message = 'Your registered email address has been validated, you can login you account and enjoy.';
 
@@ -262,16 +262,16 @@ class AuthController extends Controller
 	 *     )
 	 * )
 	 */
-	public function genTempPassword(ForgotPasswordRequest $request) 
+	public function genTempPassword(ForgotPasswordRequest $request)
 	{
 		$data = $request->validated();
 		$message = '';
 
 		$user = User::where('user_email', $data['email'])->first();
 
-		if($user) {
+		if ($user) {
 			// Check if user has a valid email address
-			if(empty($user->user_email) || !filter_var($user->user_email, FILTER_VALIDATE_EMAIL)) {
+			if (empty($user->user_email) || !filter_var($user->user_email, FILTER_VALIDATE_EMAIL)) {
 				return response()->json([
 					'message' => 'User does not have a valid email address for password reset.',
 					'error' => 'invalid_email'
@@ -284,8 +284,8 @@ class AuthController extends Controller
 
 			$user->update(['user_pass' => $password]);
 
-			$login_url = env('ADMIN_APP_URL')."/login";
-			
+			$login_url = env('ADMIN_APP_URL') . "/login";
+
 			try {
 				// Send password reset email using Microsoft Graph
 				$emailSent = MicrosoftGraphService::sendPasswordResetEmail($user, $login_url);
@@ -300,7 +300,7 @@ class AuthController extends Controller
 					'login_url' => $login_url,
 					'new_password' => $new_password
 				);
-				if(Mail::to($user->user_email)->send(new ForgotPasswordEmail($user, $options))) {
+				if (Mail::to($user->user_email)->send(new ForgotPasswordEmail($user, $options))) {
 					$message = 'Your temporary password has been sent to your registered email.';
 				} else {
 					$message = 'Password reset successful, but there was an issue sending the email. Please contact support.';
@@ -338,24 +338,24 @@ class AuthController extends Controller
 	 *             @OA\Property(property="password", type="string", format="password", example="SecurePass123!", description="User password")
 	 *         )
 	 *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Login successful or 2FA required",
-     *         @OA\JsonContent(
-     *             oneOf={
-     *                 @OA\Schema(
-     *                     @OA\Property(property="user", ref="#/components/schemas/User"),
-     *                     @OA\Property(property="token", type="string", example="1|abc123def456...", description="Bearer token for API authentication")
-     *                 ),
-     *                 @OA\Schema(
-     *                     @OA\Property(property="message", type="string", example="Two-factor authentication required. Please check your email for the verification code."),
-     *                     @OA\Property(property="two_factor_required", type="boolean", example=true),
-     *                     @OA\Property(property="status", type="boolean", example=true),
-     *                     @OA\Property(property="status_code", type="integer", example=200)
-     *                 )
-     *             }
-     *         )
-     *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Login successful or 2FA required",
+	 *         @OA\JsonContent(
+	 *             oneOf={
+	 *                 @OA\Schema(
+	 *                     @OA\Property(property="user", ref="#/components/schemas/User"),
+	 *                     @OA\Property(property="token", type="string", example="1|abc123def456...", description="Bearer token for API authentication")
+	 *                 ),
+	 *                 @OA\Schema(
+	 *                     @OA\Property(property="message", type="string", example="Two-factor authentication required. Please check your email for the verification code."),
+	 *                     @OA\Property(property="two_factor_required", type="boolean", example=true),
+	 *                     @OA\Property(property="status", type="boolean", example=true),
+	 *                     @OA\Property(property="status_code", type="integer", example=200)
+	 *                 )
+	 *             }
+	 *         )
+	 *     ),
 	 *     @OA\Response(
 	 *         response=422,
 	 *         description="Invalid credentials",
@@ -385,7 +385,7 @@ class AuthController extends Controller
 	 *     )
 	 * )
 	 */
-	public function login(LoginRequest $request) 
+	public function login(LoginRequest $request)
 	{
 		$credentials = $request->validated();
 		$ip = $request->ip();
@@ -399,11 +399,11 @@ class AuthController extends Controller
 		if (RateLimiter::tooManyAttempts('login:' . $ip, $maxLoginAttempts)) {
 			// Try to find user to include user_id
 			$userForBlock = User::where('user_email', '=', $credentials['email'])->first();
-			
+
 			// Get remaining lockout time
 			$secondsRemaining = RateLimiter::availableIn('login:' . $ip);
 			$minutesRemaining = ceil($secondsRemaining / 60);
-			
+
 			$this->logAction(
 				'AUTHENTICATION',
 				'LOGIN_BLOCKED',
@@ -430,12 +430,12 @@ class AuthController extends Controller
 
 		// First check if user exists (without status check)
 		$user = User::where('user_email', '=', $credentials['email'])->first();
-		
+
 		// Check if user exists
 		if (!$user) {
 			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
-			
+
 			// Log failed login attempt
 			$this->logAction(
 				'AUTHENTICATION',
@@ -449,19 +449,19 @@ class AuthController extends Controller
 				],
 				null
 			);
-			
+
 			return response([
 				'errors' => ['Invalid email or password.'],
 				'status' => false,
 				'status_code' => 422,
 			], 422);
 		}
-		
+
 		// Check if user is active
 		if ($user->user_status !== 1) {
 			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
-			
+
 			// Log failed login attempt
 			$this->logAction(
 				'AUTHENTICATION',
@@ -475,14 +475,14 @@ class AuthController extends Controller
 				],
 				(string) $user->id
 			);
-			
+
 			return response([
 				'errors' => ['Your account is inactive. Please contact administrator.'],
 				'status' => false,
 				'status_code' => 403,
 			], 403);
 		}
-		
+
 		// Verify password
 		if (!PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass)) {
 			// Increment rate limiter
@@ -501,7 +501,7 @@ class AuthController extends Controller
 				],
 				(string) $user->id
 			);
-			
+
 			return response([
 				'errors' => ['Invalid email or password.'],
 				'status' => false,
@@ -511,7 +511,7 @@ class AuthController extends Controller
 
 		// Clear rate limiter on successful login
 		RateLimiter::clear('login:' . $ip);
-		
+
 		// Check if 2FA is required system-wide but user hasn't enabled it
 		if ($this->twoFactorService->isTwoFactorRequiredSystemWide() && !$this->twoFactorService->isTwoFactorEnabled($user)) {
 			// User must enable 2FA before logging in
@@ -523,12 +523,12 @@ class AuthController extends Controller
 				'status_code' => 403,
 			], 403);
 		}
-		
+
 		// Check if 2FA is required for this user (system-wide required OR user has it enabled)
 		if ($this->twoFactorService->isTwoFactorRequiredForUser($user)) {
 			// Send 2FA code
 			$twoFactorResult = $this->twoFactorService->sendEmailCode($user);
-			
+
 			if ($twoFactorResult['success']) {
 				// Log 2FA code sent
 				$this->logAction(
@@ -575,15 +575,15 @@ class AuthController extends Controller
 		$user->tokens()->delete();
 
 		Auth::login($user);
-		
+
 		// Handle remember me - use different token name and expiration
 		$rememberMe = $request->boolean('remember_me', false);
 		$tokenName = $rememberMe ? 'admin-remember' : 'admin';
-		
+
 		// Get session timeout settings
 		$sessionEnabled = $this->optionService->getOption('session_enabled', true);
 		$sessionTimeoutMinutes = (int) $this->optionService->getOption('session_timeout', 30);
-		
+
 		// Set expiration based on remember me preference and session timeout settings
 		if ($sessionEnabled) {
 			// Session timeout is enabled - use configured timeout
@@ -605,7 +605,7 @@ class AuthController extends Controller
 				$expiresAt = now()->addHours(24);
 			}
 		}
-		
+
 		// Create token with expiration
 		$token = $user->createToken($tokenName, ['*'], $expiresAt)->plainTextToken;
 		$userResource = new AuthResource($user);
@@ -626,7 +626,7 @@ class AuthController extends Controller
 			(string) $user->id
 		);
 
-		return response(['user' => $userResource, 'token' => $token]);	
+		return response(['user' => $userResource, 'token' => $token]);
 
 	}
 
@@ -651,7 +651,7 @@ class AuthController extends Controller
 	 *     )
 	 * )
 	 */
-	public function logout(Request $request) 
+	public function logout(Request $request)
 	{
 		// Log that logout endpoint was called
 		\Log::info('AuthController: Logout endpoint called', [
@@ -659,21 +659,21 @@ class AuthController extends Controller
 			'user_id' => $request->user()?->id,
 			'ip' => $request->ip(),
 		]);
-		
+
 		$user = $request->user();
-		
+
 		if (!$user) {
 			\Log::warning('AuthController: Logout called but no authenticated user');
 			return response('', 204);
 		}
-		
+
 		// Log the logout action
 		try {
 			\Log::info('AuthController: Attempting to log logout action', [
 				'user_id' => $user->id,
 				'user_login' => $user->user_login,
 			]);
-			
+
 			$logged = $this->logAction(
 				'AUTHENTICATION',
 				'LOGOUT',
@@ -686,7 +686,7 @@ class AuthController extends Controller
 				],
 				(string) $user->id
 			);
-			
+
 			// Log if logging failed
 			if (!$logged) {
 				\Log::error('AuthController: Failed to log logout action', [
@@ -706,12 +706,12 @@ class AuthController extends Controller
 				'trace' => $e->getTraceAsString(),
 			]);
 		}
-		
+
 		$user->currentAccessToken()->delete();
 		\Log::info('AuthController: Logout completed, token deleted', [
 			'user_id' => $user->id,
 		]);
-		
+
 		return response('', 204);
 	}
 
@@ -863,7 +863,7 @@ class AuthController extends Controller
 		$parts = explode('@', $email);
 		$username = $parts[0];
 		$domain = $parts[1];
-		
+
 		$anonymized = substr($username, 0, 2) . '***@' . $domain;
 		return $anonymized;
 	}

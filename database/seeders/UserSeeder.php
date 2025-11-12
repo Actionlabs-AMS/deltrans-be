@@ -28,10 +28,10 @@ class UserSeeder extends Seeder
         $password = PasswordHelper::generatePassword($salt, 'admin123'); 
         
         $superAdmin = User::updateOrCreate(
-            ['user_email' => 'admin@basecode.com'],
+            ['user_email' => 'admin@deltrans.com'],
             [
                 'user_login' => 'admin',
-                'user_email' => 'admin@basecode.com',
+                'user_email' => 'admin@deltrans.com',
                 'user_pass' => $password,
                 'user_salt' => $salt,
                 'user_status' => 1,
@@ -63,7 +63,7 @@ class UserSeeder extends Seeder
             $firstName = $firstNames[($i - 1) % count($firstNames)];
             $lastName = $lastNames[($i - 1) % count($lastNames)];
             $userLogin = strtolower($firstName . $i);
-            $userEmail = $userLogin . '@basecode.com';
+            $userEmail = $userLogin . '@deltrans.com';
             $password = 'password123'; // Same password for all test users
             
             $salt = PasswordHelper::generateSalt();

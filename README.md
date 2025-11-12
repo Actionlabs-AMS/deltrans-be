@@ -1,4 +1,4 @@
-# BaseCode - Enterprise Laravel Backend API
+# deltrans-be - Enterprise Laravel Backend API
 
 A comprehensive, enterprise-ready Laravel backend API with advanced security features, role-based access control, and modern development practices. This is the backend component of a full-stack application that works with separate frontend frameworks like React.js or Vue.js.
 
@@ -117,7 +117,7 @@ A comprehensive, enterprise-ready Laravel backend API with advanced security fea
 
     ```bash
     git clone <repository-url>
-    cd BaseCode
+    cd deltrans-be
     ```
 
 2. **Install PHP dependencies**
@@ -227,7 +227,7 @@ A comprehensive, enterprise-ready Laravel backend API with advanced security fea
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=basecode
+DB_DATABASE=deltrans
 DB_USERNAME=root
 DB_PASSWORD=
 ```
@@ -411,7 +411,7 @@ php artisan test --testsuite=Feature
 
 ### Overview
 
-The BaseCode project includes comprehensive database encryption for sensitive fields and GDPR-compliant data anonymization. These features provide enterprise-level data protection with configurable, model-level control.
+The deltrans-be project includes comprehensive database encryption for sensitive fields and GDPR-compliant data anonymization. These features provide enterprise-level data protection with configurable, model-level control.
 
 ### Database Encryption Features
 
@@ -590,7 +590,7 @@ GDPR_ANONYMIZATION_REASON=GDPR compliance
 
 ### Overview
 
-The BaseCode project includes a comprehensive audit trail system that automatically logs all user activities, API requests, and database operations. This provides complete traceability and compliance with enterprise security requirements.
+The deltrans-be project includes a comprehensive audit trail system that automatically logs all user activities, API requests, and database operations. This provides complete traceability and compliance with enterprise security requirements.
 
 ### Features
 
@@ -647,7 +647,7 @@ Each audit log entry follows this JSON structure:
 
 ### 🔗 Interactive API Documentation
 
-The BaseCode project includes comprehensive **Swagger/OpenAPI documentation** with interactive testing capabilities:
+The deltrans-be project includes comprehensive **Swagger/OpenAPI documentation** with interactive testing capabilities:
 
 **📖 Swagger UI**: `http://127.0.0.1:8000/api/documentation`
 
@@ -971,7 +971,7 @@ For support and questions:
 2. Navigate to "Azure Active Directory" > "App registrations"
 3. Click "New registration"
 4. Fill in the application details:
-    - Name: "BaseCode Email Service"
+    - Name: "deltrans-be Email Service"
     - Supported account types: "Accounts in this organizational directory only"
     - Redirect URI: Leave blank for now
 5. Click "Register"
@@ -991,7 +991,7 @@ For support and questions:
 
 1. In your app registration, go to "Certificates & secrets"
 2. Click "New client secret"
-3. Add a description: "BaseCode Email Service Secret"
+3. Add a description: "deltrans-be Email Service Secret"
 4. Choose expiration period (recommended: 24 months)
 5. Click "Add"
 6. **Important**: Copy the secret value immediately - it won't be shown again
@@ -1033,8 +1033,8 @@ use App\Services\MicrosoftGraphService;
 // Send a simple notification
 MicrosoftGraphService::sendNotificationEmail(
     'user@example.com',
-    'Welcome to BaseCode',
-    '<h1>Welcome!</h1><p>Thank you for joining BaseCode.</p>'
+    'Welcome to deltrans-be',
+    '<h1>Welcome!</h1><p>Thank you for joining deltrans-be.</p>'
 );
 ```
 
@@ -1133,7 +1133,7 @@ Route::get('/test-microsoft-graph', function () {
         $result = \App\Services\MicrosoftGraphService::sendNotificationEmail(
             'test@example.com',
             'Test Email',
-            '<h1>Test</h1><p>This is a test email from BaseCode.</p>'
+            '<h1>Test</h1><p>This is a test email from deltrans-be.</p>'
         );
 
         return response()->json(['success' => $result]);
@@ -1170,7 +1170,7 @@ Enable debug logging by setting `LOG_LEVEL=debug` in your `.env` file.
 
 ### 📊 Implementation Summary
 
-All security recommendations have been successfully implemented! The BaseCode project now has **enterprise-level security** with comprehensive protection against modern web vulnerabilities.
+All security recommendations have been successfully implemented! The deltrans-be project now has **enterprise-level security** with comprehensive protection against modern web vulnerabilities.
 
 ### ✅ Completed Security Features
 
@@ -1328,7 +1328,7 @@ ENCRYPTED_FIELDS=user_email,user_activation_key
 
 #### Production Readiness: ✅ READY
 
-The BaseCode application is **production-ready** with enterprise-level security implementation.
+The deltrans-be application is **production-ready** with enterprise-level security implementation.
 
 #### Compliance Status: ✅ COMPLIANT
 
@@ -1343,7 +1343,7 @@ The BaseCode application is **production-ready** with enterprise-level security 
 
 ### Overall Security Score: 8.5/10
 
-The BaseCode project demonstrates **enterprise-level security implementation** with comprehensive protection against common web vulnerabilities. The security improvements have been successfully implemented and are production-ready.
+The deltrans-be project demonstrates **enterprise-level security implementation** with comprehensive protection against common web vulnerabilities. The security improvements have been successfully implemented and are production-ready.
 
 ### ✅ Security Strengths
 
@@ -1491,7 +1491,7 @@ $csp = "default-src 'self'; " .
 
 #### ✅ No Critical Vulnerabilities Detected
 
-The BaseCode application has **no critical security vulnerabilities**. All major security concerns have been addressed:
+The deltrans-be application has **no critical security vulnerabilities**. All major security concerns have been addressed:
 
 -   ✅ **No hardcoded credentials** in codebase
 -   ✅ **No SQL injection vulnerabilities**
@@ -1586,7 +1586,7 @@ SESSION_LIFETIME=60
 
 #### Overall Security Rating: 8.5/10
 
-The BaseCode application demonstrates **enterprise-level security** with:
+The deltrans-be application demonstrates **enterprise-level security** with:
 
 -   ✅ **Comprehensive authentication security**
 -   ✅ **Robust input validation and sanitization**
@@ -1633,7 +1633,7 @@ The security implementation meets industry standards for:
 -   ✅ **Environment-based security configuration**
 -   ✅ **Team collaboration support**
 
-The BaseCode application is **secure and optimized for development**! 🎉
+The deltrans-be application is **secure and optimized for development**! 🎉
 
 **Development Security Score: 9/10** - Perfect for development with production-ready security features!
 
@@ -1738,7 +1738,7 @@ The BaseCode application is **secure and optimized for development**! 🎉
 -   ✅ **PCI DSS Ready** - Payment card industry security standards
 -   ✅ **SOC 2 Compatible** - Service organization control compliance
 
-**BaseCode** - Your foundation for secure, scalable Laravel backend APIs with frontend integration support.
+**deltrans-be** - Your foundation for secure, scalable Laravel backend APIs with frontend integration support.
 
 ---
 
@@ -2013,7 +2013,7 @@ php artisan test --filter=Backup
 #### Backend Components
 
 ```
-BaseCode/
+deltrans-be/
 ├── app/
 │   ├── Models/
 │   │   ├── Backup.php              # Backup metadata model

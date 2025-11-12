@@ -112,9 +112,9 @@ class TestEmail extends Command
         $this->line('─────────────────────────────────────');
 
         try {
-            Mail::raw('This is a test email from BaseCode SMTP configuration. If you receive this, your SMTP settings are working correctly!', function ($message) use ($email) {
+            Mail::raw('This is a test email from deltrans-be SMTP configuration. If you receive this, your SMTP settings are working correctly!', function ($message) use ($email) {
                 $message->to($email)
-                        ->subject('BaseCode SMTP Test Email');
+                        ->subject('deltrans-be SMTP Test Email');
             });
 
             $this->info('✓ Email sent successfully!');

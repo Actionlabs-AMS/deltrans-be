@@ -1,17 +1,17 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "BaseCode API",
+        "title": "Deltrans API",
         "description": "A comprehensive Laravel API with authentication, role management, and security features",
         "contact": {
-            "email": "admin@basecode.com"
+            "email": "admin@deltrans.com"
         },
         "version": "1.0.0"
     },
     "servers": [
         {
-            "url": "http://127.0.0.1:8000",
-            "description": "BaseCode API Server"
+            "url": "http://localhost:8000",
+            "description": "Deltrans API Server"
         },
         {
             "url": ""
@@ -444,6 +444,88 @@
                         "sanctum": []
                     }
                 ]
+            }
+        },
+        "/api/auth/enable-2fa-setup": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Enable 2FA during login setup",
+                "description": "Enable 2FA during login (for first-time users when 2FA is mandatory)",
+                "operationId": "bb1f0a0d2249702ea697d80b78257dc7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "SecurePass123!"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "2FA enabled successfully, code sent to email",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "2FA enabled successfully. Please check your email for the verification code."
+                                        },
+                                        "two_factor_required": {
+                                            "type": "boolean",
+                                            "example": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid email or password"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/content-management/categories": {
@@ -1489,6 +1571,76 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Category not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/dashboard/stats": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get dashboard statistics",
+                "description": "Get dashboard statistics",
+                "operationId": "97f93f93be9753e12dfa48ed63db092c",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard statistics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "total_users": {
+                                                    "type": "integer",
+                                                    "example": 150
+                                                },
+                                                "total_media": {
+                                                    "type": "integer",
+                                                    "example": 234
+                                                },
+                                                "total_categories": {
+                                                    "type": "integer",
+                                                    "example": 45
+                                                },
+                                                "total_tags": {
+                                                    "type": "integer",
+                                                    "example": 128
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -2778,11 +2930,6 @@
                                         "type": "boolean",
                                         "example": true
                                     },
-                                    "is_super_admin": {
-                                        "description": "Is super admin role",
-                                        "type": "boolean",
-                                        "example": false
-                                    },
                                     "permissions": {
                                         "description": "Array of permission names",
                                         "type": "array",
@@ -2976,11 +3123,6 @@
                                         "description": "Role active status",
                                         "type": "boolean",
                                         "example": true
-                                    },
-                                    "is_super_admin": {
-                                        "description": "Is super admin role",
-                                        "type": "boolean",
-                                        "example": false
                                     },
                                     "permissions": {
                                         "description": "Role permissions object",
@@ -3939,6 +4081,229 @@
                 "responses": {
                     "200": {
                         "description": "Backup codes generated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/system-settings/settings/general": {
+            "get": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Get general settings",
+                "description": "Get general settings only (excludes security and 2FA)",
+                "operationId": "1685eb86f90e25d5be9a3beae7b95ce6",
+                "responses": {
+                    "200": {
+                        "description": "General settings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Update general settings",
+                "description": "Update general settings only (excludes security and 2FA)",
+                "operationId": "736615a2f9ef87764860d013224ae162",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "site": {
+                                        "type": "object"
+                                    },
+                                    "date_time": {
+                                        "type": "object"
+                                    },
+                                    "email": {
+                                        "type": "object"
+                                    },
+                                    "ui": {
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "General settings updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "General settings updated successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/system-settings/settings/email": {
+            "get": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Get email settings",
+                "description": "Get email settings",
+                "operationId": "152a41f0af6979f2212dd1d6cedb5a37",
+                "responses": {
+                    "200": {
+                        "description": "Email settings retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Update email settings",
+                "description": "Update email settings",
+                "operationId": "ef80af53ed0417afac5f6889b7087099",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "mailer": {
+                                        "type": "string",
+                                        "example": "smtp"
+                                    },
+                                    "mail_from_name": {
+                                        "type": "string"
+                                    },
+                                    "mail_from_address": {
+                                        "type": "string"
+                                    },
+                                    "smtp": {
+                                        "type": "object"
+                                    },
+                                    "mailgun": {
+                                        "type": "object"
+                                    },
+                                    "postmark": {
+                                        "type": "object"
+                                    },
+                                    "ses": {
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email settings updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/system-settings/settings/security": {
+            "get": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Get security settings",
+                "description": "Get security settings (2FA and Session settings)",
+                "operationId": "fd0b8437266b15a07a3a11f573915339",
+                "responses": {
+                    "200": {
+                        "description": "Security settings retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Settings Management"
+                ],
+                "summary": "Update security settings",
+                "description": "Update security settings (2FA and Session settings)",
+                "operationId": "0495f89448ba6b180d6e28f64610f2aa",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "two_factor": {
+                                        "type": "object"
+                                    },
+                                    "session": {
+                                        "type": "object"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Security settings updated successfully"
                     }
                 },
                 "security": [
@@ -5273,6 +5638,388 @@
                                         "message": {
                                             "type": "string",
                                             "example": "User not authenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/user-management/user-activity/{userId}": {
+            "get": {
+                "tags": [
+                    "User Activity"
+                ],
+                "summary": "Get user activities",
+                "description": "Get all activities for a specific user",
+                "operationId": "117e987275ab9fe0a550cef2d38ef161",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "module",
+                        "in": "query",
+                        "description": "Filter by module",
+                        "schema": {
+                            "type": "string",
+                            "example": "AUTHENTICATION"
+                        }
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "description": "Filter by action",
+                        "schema": {
+                            "type": "string",
+                            "example": "LOGIN_SUCCESS"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "example": "2024-01-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "End date (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "example": "2024-01-31"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Limit results",
+                        "schema": {
+                            "type": "integer",
+                            "example": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User activities retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/user-management/user-activity/{userId}/login-history": {
+            "get": {
+                "tags": [
+                    "User Activity"
+                ],
+                "summary": "Get user login history",
+                "description": "Get login history for a user",
+                "operationId": "2167817a276b228c6d7fe765fb1e6f24",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "example": "2024-01-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "End date (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "example": "2024-01-31"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Limit results",
+                        "schema": {
+                            "type": "integer",
+                            "example": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login history retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/user-management/user-activity/{userId}/sessions": {
+            "get": {
+                "tags": [
+                    "User Activity"
+                ],
+                "summary": "Get user active sessions",
+                "description": "Get active sessions for a user",
+                "operationId": "b6803d97848e918a997ba22ac9bbcea9",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Active sessions retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/user-management/user-activity/{userId}/sessions/{tokenId}/revoke": {
+            "post": {
+                "tags": [
+                    "User Activity"
+                ],
+                "summary": "Revoke a user session",
+                "description": "Revoke a user session",
+                "operationId": "c12cb2a10c75428f56ed089f169cc517",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "tokenId",
+                        "in": "path",
+                        "description": "Token ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session revoked successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/user-management/user-activity/{userId}/timeline": {
+            "get": {
+                "tags": [
+                    "User Activity"
+                ],
+                "summary": "Get user activity timeline",
+                "description": "Get activity timeline for a user",
+                "operationId": "6a507c09399f221f90d48d280886671f",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "example": "2024-01-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "End date (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "example": "2024-01-31"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Activity timeline retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/user-management/user-activity/{userId}/statistics": {
+            "get": {
+                "tags": [
+                    "User Activity"
+                ],
+                "summary": "Get user activity statistics",
+                "description": "Get activity statistics for a user",
+                "operationId": "f5c5e4d6f7bd7c00e481bbdce1c2d623",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "example": "2024-01-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "End date (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "example": "2024-01-31"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Activity statistics retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -6651,6 +7398,98 @@
                     }
                 ]
             }
+        },
+        "/api/user-management/users/import": {
+            "post": {
+                "tags": [
+                    "User Management"
+                ],
+                "summary": "Import users from CSV file",
+                "description": "Import users from CSV file.",
+                "operationId": "c811f7fb9125aba5e2917104d89d90bd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "description": "CSV file containing user data",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Users imported successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "imported": {
+                                            "type": "integer",
+                                            "example": 10
+                                        },
+                                        "skipped": {
+                                            "type": "integer",
+                                            "example": 2
+                                        },
+                                        "errors": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The file field is required."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -6719,6 +7558,10 @@
             "description": "API endpoints for category management"
         },
         {
+            "name": "Dashboard",
+            "description": "API endpoints for dashboard statistics"
+        },
+        {
             "name": "Navigation Management",
             "description": "API endpoints for navigation management"
         },
@@ -6737,6 +7580,10 @@
         {
             "name": "Two-Factor Authentication",
             "description": "API Endpoints for two-factor authentication management"
+        },
+        {
+            "name": "User Activity",
+            "description": "API endpoints for user activity tracking"
         },
         {
             "name": "User Management",
