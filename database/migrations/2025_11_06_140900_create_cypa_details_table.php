@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -17,21 +16,21 @@ return new class extends Migration
 
         Schema::create('cypa_details', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('cypa_id');
-            $table->string('cypa_name');
-            $table->text('cypa_address')->nullable();
-            $table->string('cypa_contact_name')->nullable();
-            $table->string('cypa_contact_mobile')->nullable();
-            $table->string('cypa_landline1')->nullable();
-            $table->string('cypa_landline2')->nullable();
-            $table->string('cypa_landline3')->nullable();
-            $table->string('cypa_landline4')->nullable();
+            $table->bigIncrements('id');
+            $table->string('name');
+            $table->text('address')->nullable();
+            $table->string('contact_name')->nullable();
+            $table->string('contact_mobile')->nullable();
+            $table->string('landline1')->nullable();
+            $table->string('landline2')->nullable();
+            $table->string('landline3')->nullable();
+            $table->string('landline4')->nullable();
             $table->enum('type', ['Container Yard', 'Port Area'])->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('cypa_name');
+            $table->index('name');
             $table->index('type');
         });
 
@@ -46,9 +45,9 @@ return new class extends Migration
     {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
-        
+
         Schema::dropIfExists('cypa_details');
-        
+
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }

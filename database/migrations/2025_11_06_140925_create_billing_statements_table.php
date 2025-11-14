@@ -17,23 +17,23 @@ return new class extends Migration
 
         Schema::create('billing_statements', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->string('bs_transaction_number')->primary();
-            $table->date('bs_transaction_date');
-            $table->text('bs_description_of_charges')->nullable();
-            $table->string('bs_container_size')->nullable();
-            $table->decimal('bs_rate_of_trip', 15, 2)->default(0);
-            $table->decimal('bs_total_amount', 15, 2)->default(0);
+            $table->string('transaction_number')->primary();
+            $table->date('transaction_date');
+            $table->text('description_of_charges')->nullable();
+            $table->string('container_size')->nullable();
+            $table->decimal('rate_of_trip', 15, 2)->default(0);
+            $table->decimal('total_amount', 15, 2)->default(0);
             $table->string('soa_transaction_number')->nullable();
             $table->string('waybill_number')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('soa_transaction_number')->references('soa_transaction_number')->on('statement_of_accounts')->onDelete('set null');
+            $table->foreign('soa_transaction_number')->references('transaction_number')->on('statement_of_accounts')->onDelete('set null');
             $table->foreign('waybill_number')->references('waybill_number')->on('waybill_details')->onDelete('set null');
 
             // Indexes
-            $table->index('bs_transaction_date');
+            $table->index('transaction_date');
             $table->index('soa_transaction_number');
             $table->index('waybill_number');
         });

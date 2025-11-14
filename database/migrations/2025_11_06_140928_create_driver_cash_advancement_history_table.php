@@ -17,21 +17,21 @@ return new class extends Migration
 
         Schema::create('driver_cash_advancement_history', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('dcah_id');
-            $table->decimal('dcah_amount', 15, 2)->default(0);
-            $table->date('dcah_transaction_date');
-            $table->string('dcah_shift')->nullable();
+            $table->bigIncrements('id');
+            $table->decimal('amount', 15, 2)->default(0);
+            $table->date('transaction_date');
+            $table->string('shift')->nullable();
             $table->bigInteger('driver_id')->unsigned();
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('driver_id')->references('driver_id')->on('drivers')->onDelete('cascade');
+            $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('cascade');
 
             // Indexes
-            $table->index('dcah_transaction_date');
+            $table->index('transaction_date');
             $table->index('driver_id');
-            $table->index('dcah_shift');
+            $table->index('shift');
         });
 
         // Re-enable foreign key checks

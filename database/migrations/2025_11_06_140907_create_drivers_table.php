@@ -16,22 +16,20 @@ return new class extends Migration {
 
         Schema::create('drivers', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('driver_id');
-            $table->string('driver_first_name');
-            $table->string('driver_last_name');
-            $table->string('driver_contact_number');
+            $table->bigIncrements('id');
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('contact_number');
             $table->boolean('active_status')->default(true);
-            $table->string('truck_plate_number')->nullable();
+            $table->json('assigned_truck_plate_numbers')->nullable();
+            $table->json('stack_run')->nullable();
+            $table->json('helpers_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            // Foreign key constraints
-            $table->foreign('truck_plate_number')->references('plate_number')->on('trucks')->onDelete('set null');
-
             // Indexes
             $table->index('active_status');
-            $table->index('truck_plate_number');
-            $table->index(['driver_first_name', 'driver_last_name']);
+            $table->index(['first_name', 'last_name']);
         });
 
         // Re-enable foreign key checks

@@ -17,9 +17,9 @@ return new class extends Migration
 
         Schema::create('budget_transactions', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('budget_transaction_id');
-            $table->text('budget_description')->nullable();
-            $table->decimal('budget_total_amount', 15, 2)->default(0);
+            $table->bigIncrements('id');
+            $table->text('description')->nullable();
+            $table->decimal('total_amount', 15, 2)->default(0);
             $table->string('budget_type')->nullable();
             $table->date('tracked_date')->nullable();
             $table->decimal('total_spent', 15, 2)->default(0);

@@ -17,21 +17,21 @@ return new class extends Migration
 
         Schema::create('helper_cash_advancement_history', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('hcah_id');
-            $table->decimal('hcah_amount', 15, 2)->default(0);
-            $table->date('hcah_transaction_date');
-            $table->string('hcah_shift')->nullable();
+            $table->bigIncrements('id');
+            $table->decimal('amount', 15, 2)->default(0);
+            $table->date('transaction_date');
+            $table->string('shift')->nullable();
             $table->bigInteger('helper_id')->unsigned();
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('helper_id')->references('helper_id')->on('helpers')->onDelete('cascade');
+            $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('cascade');
 
             // Indexes
-            $table->index('hcah_transaction_date');
+            $table->index('transaction_date');
             $table->index('helper_id');
-            $table->index('hcah_shift');
+            $table->index('shift');
         });
 
         // Re-enable foreign key checks

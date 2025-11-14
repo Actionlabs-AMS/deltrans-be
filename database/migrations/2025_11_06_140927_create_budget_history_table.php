@@ -17,8 +17,8 @@ return new class extends Migration
 
         Schema::create('budget_history', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('budget_id');
-            $table->decimal('budget_total_amount', 15, 2)->default(0);
+            $table->bigIncrements('id');
+            $table->decimal('total_amount', 15, 2)->default(0);
             $table->bigInteger('budget_transaction_id')->unsigned();
             $table->text('description')->nullable();
             $table->date('tracked_date')->nullable();
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('budget_transaction_id')->references('budget_transaction_id')->on('budget_transactions')->onDelete('cascade');
+            $table->foreign('budget_transaction_id')->references('id')->on('budget_transactions')->onDelete('cascade');
 
             // Indexes
             $table->index('budget_transaction_id');

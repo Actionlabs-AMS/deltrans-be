@@ -17,16 +17,16 @@ return new class extends Migration
 
         Schema::create('warehouse_inventory', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('warehouse_id');
-            $table->string('warehouse_vehicle_parts');
-            $table->text('warehouse_description')->nullable();
-            $table->integer('warehouse_stock_quantity')->default(0);
-            $table->string('warehouse_unit_measure')->nullable();
+            $table->bigIncrements('id');
+            $table->string('vehicle_parts');
+            $table->text('description')->nullable();
+            $table->integer('stock_quantity')->default(0);
+            $table->string('unit_measure')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('warehouse_vehicle_parts');
+            $table->index('vehicle_parts');
         });
 
         // Re-enable foreign key checks

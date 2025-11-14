@@ -17,25 +17,25 @@ return new class extends Migration
 
         Schema::create('warehouse_inventory_logs', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('warehouse_log_id');
+            $table->bigIncrements('id');
             $table->bigInteger('warehouse_id')->unsigned();
-            $table->text('warehouse_log_description')->nullable();
-            $table->integer('warehouse_log_stock_quantity')->default(0);
-            $table->string('warehouse_log_unit_measure')->nullable();
-            $table->string('warehouse_log_type')->nullable();
-            $table->date('warehouse_log_date');
+            $table->text('description')->nullable();
+            $table->integer('stock_quantity')->default(0);
+            $table->string('unit_measure')->nullable();
+            $table->string('type')->nullable();
+            $table->date('log_date');
             $table->string('fleet_truck_plate_number')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('warehouse_id')->references('warehouse_id')->on('warehouse_inventory')->onDelete('cascade');
-            $table->foreign('fleet_truck_plate_number')->references('fleet_truck_plate_number')->on('fleet_trucks')->onDelete('set null');
+            $table->foreign('warehouse_id')->references('id')->on('warehouse_inventory')->onDelete('cascade');
+            $table->foreign('fleet_truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('set null');
 
             // Indexes
             $table->index('warehouse_id');
-            $table->index('warehouse_log_date');
-            $table->index('warehouse_log_type');
+            $table->index('log_date');
+            $table->index('type');
             $table->index('fleet_truck_plate_number');
         });
 

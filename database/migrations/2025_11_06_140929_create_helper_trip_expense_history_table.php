@@ -17,24 +17,24 @@ return new class extends Migration
 
         Schema::create('helper_trip_expense_history', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('hteh_id');
-            $table->decimal('hteh_amount', 15, 2)->default(0);
-            $table->date('hteh_transaction_date');
-            $table->string('hteh_shift')->nullable();
+            $table->bigIncrements('id');
+            $table->decimal('amount', 15, 2)->default(0);
+            $table->date('transaction_date');
+            $table->string('shift')->nullable();
             $table->bigInteger('helper_id')->unsigned();
             $table->string('fleet_truck_plate_number')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('helper_id')->references('helper_id')->on('helpers')->onDelete('cascade');
-            $table->foreign('fleet_truck_plate_number')->references('fleet_truck_plate_number')->on('fleet_trucks')->onDelete('set null');
+            $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('cascade');
+            $table->foreign('fleet_truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('set null');
 
             // Indexes
-            $table->index('hteh_transaction_date');
+            $table->index('transaction_date');
             $table->index('helper_id');
             $table->index('fleet_truck_plate_number');
-            $table->index('hteh_shift');
+            $table->index('shift');
         });
 
         // Re-enable foreign key checks

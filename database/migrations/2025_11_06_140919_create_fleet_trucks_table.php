@@ -17,16 +17,16 @@ return new class extends Migration
 
         Schema::create('fleet_trucks', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->string('fleet_truck_plate_number')->primary();
-            $table->string('fleet_container_size')->nullable();
-            $table->string('fleet_condition')->nullable();
-            $table->string('fleet_status')->nullable();
+            $table->string('plate_number')->primary();
+            $table->string('container_size')->nullable();
+            $table->string('condition')->nullable();
+            $table->string('status')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('fleet_status');
-            $table->index('fleet_condition');
+            $table->index('status');
+            $table->index('condition');
         });
 
         // Re-enable foreign key checks

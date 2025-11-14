@@ -17,8 +17,8 @@ return new class extends Migration
 
         Schema::create('statement_of_accounts', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->string('soa_transaction_number')->primary();
-            $table->date('soa_transaction_date');
+            $table->string('transaction_number')->primary();
+            $table->date('transaction_date');
             $table->string('container_chassis_number')->nullable();
             $table->text('remarks')->nullable();
             $table->string('container_size')->nullable();
@@ -32,13 +32,13 @@ return new class extends Migration
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('truck_plate_number')->references('plate_number')->on('trucks')->onDelete('set null');
+            $table->foreign('truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('set null');
             $table->foreign('waybill_number')->references('waybill_number')->on('waybill_details')->onDelete('set null');
-            $table->foreign('origin_cypa_id')->references('cypa_id')->on('cypa_details')->onDelete('set null');
-            $table->foreign('destination_cypa_id')->references('cypa_id')->on('cypa_details')->onDelete('set null');
+            $table->foreign('origin_cypa_id')->references('id')->on('cypa_details')->onDelete('set null');
+            $table->foreign('destination_cypa_id')->references('id')->on('cypa_details')->onDelete('set null');
 
             // Indexes
-            $table->index('soa_transaction_date');
+            $table->index('transaction_date');
             $table->index('truck_plate_number');
             $table->index('waybill_number');
             $table->index('origin_cypa_id');
