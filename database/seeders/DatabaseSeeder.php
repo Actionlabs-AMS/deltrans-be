@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             TagSeeder::class,
             OptionSeeder::class,
+            SoaDataOptionSeeder::class,
+            ShippingLineSeeder::class,
         ]);
     }
 }

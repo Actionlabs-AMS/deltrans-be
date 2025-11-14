@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\NavigationController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\UserActivityController;
+use App\Http\Controllers\Api\ShippingLineController;
+use App\Http\Controllers\Api\SoaDataOptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,6 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/navigations/{id}', [NavigationController::class, 'getSubNavigations']);  // Retrieve subcategories for a specific category		
 		Route::get('/routes', [NavigationController::class, 'getRoutes']);  // Retrieve all routes
 		Route::get('/roles', [RoleController::class, 'getRoles']);  // Retrieve all roles
+		// SOA data options-related routes
+		Route::get('/soa-data-options/parents', [SoaDataOptionController::class, 'getParents']);  // Retrieve all parent SOA data options
+		Route::get('/soa-data-options/parents/{parentId}/children', [SoaDataOptionController::class, 'getChildren']);  // Retrieve children for a specific parent
 	});
 
 	/*
@@ -183,6 +188,64 @@ Route::middleware('auth:sanctum')->group(function () {
 			Route::patch('/restore/{id}', [TagController::class, 'restore']);
 			Route::delete('/{id}', [TagController::class, 'forceDelete']);
 		});
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Shipping Line Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Shipping Lines CRUD Operations
+	|
+	*/
+	Route::prefix('shipping-lines')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [ShippingLineController::class, 'index']);  // Retrieve all shipping lines
+		Route::get('/{id}', [ShippingLineController::class, 'show']);  // Retrieve a single shipping line
+		Route::post('/', [ShippingLineController::class, 'store']);  // Create a new shipping line
+		Route::put('/{id}', [ShippingLineController::class, 'update']);  // Update an existing shipping line
+		Route::delete('/{id}', [ShippingLineController::class, 'destroy']);  // Delete a shipping line
+
+		// Bulk operations
+		Route::post('/bulk/delete', [ShippingLineController::class, 'bulkDelete']);  // Bulk delete shipping lines
+		Route::post('/bulk/restore', [ShippingLineController::class, 'bulkRestore']);  // Bulk restore shipping lines
+		Route::post('/bulk/force-delete', [ShippingLineController::class, 'bulkForceDelete']);  // Bulk permanently delete shipping lines
+	});
+
+	// Custom route for archived (trashed) shipping lines with a distinct prefix
+	Route::prefix('archived/shipping-lines')->group(function () {
+		Route::get('/', [ShippingLineController::class, 'getTrashed']); // Retrieve soft-deleted shipping lines
+		Route::patch('/restore/{id}', [ShippingLineController::class, 'restore']); // Restore a soft-deleted shipping line
+		Route::delete('/{id}', [ShippingLineController::class, 'forceDelete']); // Permanently delete a soft-deleted shipping line
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| SOA Data Option Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| SOA Data Options CRUD Operations
+	|
+	*/
+	Route::prefix('soa-data-options')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [SoaDataOptionController::class, 'index']);  // Retrieve all SOA data options
+		Route::get('/{id}', [SoaDataOptionController::class, 'show']);  // Retrieve a single SOA data option
+		Route::post('/', [SoaDataOptionController::class, 'store']);  // Create a new SOA data option
+		Route::put('/{id}', [SoaDataOptionController::class, 'update']);  // Update an existing SOA data option
+		Route::delete('/{id}', [SoaDataOptionController::class, 'destroy']);  // Delete a SOA data option
+
+		// Bulk operations
+		Route::post('/bulk/delete', [SoaDataOptionController::class, 'bulkDelete']);  // Bulk delete SOA data options
+		Route::post('/bulk/restore', [SoaDataOptionController::class, 'bulkRestore']);  // Bulk restore SOA data options
+		Route::post('/bulk/force-delete', [SoaDataOptionController::class, 'bulkForceDelete']);  // Bulk permanently delete SOA data options
+	});
+
+	// Custom route for archived (trashed) SOA data options with a distinct prefix
+	Route::prefix('archived/soa-data-options')->group(function () {
+		Route::get('/', [SoaDataOptionController::class, 'getTrashed']); // Retrieve soft-deleted SOA data options
+		Route::patch('/restore/{id}', [SoaDataOptionController::class, 'restore']); // Restore a soft-deleted SOA data option
+		Route::delete('/{id}', [SoaDataOptionController::class, 'forceDelete']); // Permanently delete a soft-deleted SOA data option
 	});
 
 	/*

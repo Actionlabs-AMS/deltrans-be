@@ -14,25 +14,23 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::create('shipping_lines', function (Blueprint $table) {
+        Schema::create('soa_data_options', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
+            $table->bigInteger('parent_id')->nullable()->unsigned();
             $table->string('name');
-            $table->string('email_address');
-            $table->text('address')->nullable();
-            $table->string('contact_name')->nullable();
-            $table->string('contact_mobile')->nullable();
-            $table->json('landlines')->nullable();
-            $table->string('fax_no')->nullable();
-            $table->string('tin')->nullable();
-            $table->json('shipping_lines_template')->nullable();
-            $table->json('transaction_information_template')->nullable();
+            $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
+            // Self-referencing foreign key
+            $table->foreign('parent_id')
+                ->references('id')
+                ->on('soa_data_options')
+                ->onDelete('cascade');
+
             // Indexes
-            $table->index('email_address');
-            $table->index('name');
+            $table->index('parent_id');
         });
 
         // Re-enable foreign key checks
@@ -47,7 +45,7 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::dropIfExists('shipping_lines');
+        Schema::dropIfExists('soa_data_options');
 
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');

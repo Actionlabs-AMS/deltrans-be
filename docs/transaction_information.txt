@@ -1,0 +1,17 @@
+Transaction Information
+- Date
+- Plate Number
+- Waybill
+- Container Number
+- Origin
+- Destination
+- Remarks
+- Size
+- Amount (Price of container)
+- Vessel
+- VAT
+- Total Amount (Amount + VAT)
+- Booking Number
+- Work Order
+- Stack Run
+
