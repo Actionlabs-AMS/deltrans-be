@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -17,8 +16,8 @@ return new class extends Migration
 
         Schema::create('fleet_trucks', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->string('plate_number')->primary();
-            $table->string('container_size')->nullable();
+            $table->bigIncrements('id');
+            $table->string('plate_number')->unique();
             $table->string('condition')->nullable();
             $table->string('status')->nullable();
             $table->timestamps();
@@ -27,6 +26,7 @@ return new class extends Migration
             // Indexes
             $table->index('status');
             $table->index('condition');
+            $table->index('plate_number');
         });
 
         // Re-enable foreign key checks
@@ -40,9 +40,9 @@ return new class extends Migration
     {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
-        
+
         Schema::dropIfExists('fleet_trucks');
-        
+
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
