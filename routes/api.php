@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\UserActivityController;
 use App\Http\Controllers\Api\ShippingLineController;
 use App\Http\Controllers\Api\SoaDataOptionController;
 use App\Http\Controllers\Api\HelperController;
+use App\Http\Controllers\Api\DriverController;
 
 /*
 |--------------------------------------------------------------------------
@@ -276,6 +277,35 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [HelperController::class, 'getTrashed']); // Retrieve soft-deleted helpers
 		Route::patch('/restore/{id}', [HelperController::class, 'restore']); // Restore a soft-deleted helper
 		Route::delete('/{id}', [HelperController::class, 'forceDelete']); // Permanently delete a soft-deleted helper
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Driver Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Drivers CRUD Operations
+	|
+	*/
+	Route::prefix('drivers')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [DriverController::class, 'index']);  // Retrieve all drivers
+		Route::get('/{id}', [DriverController::class, 'show']);  // Retrieve a single driver
+		Route::post('/', [DriverController::class, 'store']);  // Create a new driver
+		Route::put('/{id}', [DriverController::class, 'update']);  // Update an existing driver
+		Route::delete('/{id}', [DriverController::class, 'destroy']);  // Delete a driver
+
+		// Bulk operations
+		Route::post('/bulk/delete', [DriverController::class, 'bulkDelete']);  // Bulk delete drivers
+		Route::post('/bulk/restore', [DriverController::class, 'bulkRestore']);  // Bulk restore drivers
+		Route::post('/bulk/force-delete', [DriverController::class, 'bulkForceDelete']);  // Bulk permanently delete drivers
+	});
+
+	// Custom route for archived (trashed) drivers with a distinct prefix
+	Route::prefix('archived/drivers')->group(function () {
+		Route::get('/', [DriverController::class, 'getTrashed']); // Retrieve soft-deleted drivers
+		Route::patch('/restore/{id}', [DriverController::class, 'restore']); // Restore a soft-deleted driver
+		Route::delete('/{id}', [DriverController::class, 'forceDelete']); // Permanently delete a soft-deleted driver
 	});
 
 	/*

@@ -117,5 +117,117 @@
             "all": 8,
             "trashed": 0
         }
+    },
+    "Driver API Response": {
+        "url": "http://localhost:8000/api/drivers?page=1&per_page=10",
+        "data": [
+            {
+                "id": 8,
+                "first_name": "Alberto",
+                "last_name": "Sanchez",
+                "full_name": "Alberto Sanchez",
+                "contact_number": "+63 935 012 3456",
+                "active_status": true,
+                "assigned_truck_plate_numbers": [
+                    "YZA-8901"
+                ],
+                "stack_run": [],
+                "helpers_id": [
+                    12
+                ],
+                "created_at": "2025-11-17 05:42:46",
+                "updated_at": "2025-11-17 05:42:46",
+                "deleted_at": null
+            }
+        ],
+        "links": {
+            "first": "http://localhost:8000/api/drivers?per_page=10&active_status=1&page=1",
+            "last": "http://localhost:8000/api/drivers?per_page=10&active_status=1&page=1",
+            "prev": null,
+            "next": null
+        },
+        "meta": {
+            "current_page": 1,
+            "from": 1,
+            "last_page": 1,
+            "links": [
+                {
+                    "url": null,
+                    "label": "&laquo; Previous",
+                    "active": false
+                },
+                {
+                    "url": "http://localhost:8000/api/drivers?per_page=10&active_status=1&page=1",
+                    "label": "1",
+                    "active": true
+                },
+                {
+                    "url": null,
+                    "label": "Next &raquo;",
+                    "active": false
+                }
+            ],
+            "path": "http://localhost:8000/api/drivers",
+            "per_page": 10,
+            "to": 7,
+            "total": 7,
+            "all": 8,
+            "trashed": 0
+        }
+    },
+    "Helper API Response": {
+        "url": "http://localhost:8000/api/helpers?page=1&per_page=10",
+        "data": [
+            {
+                "id": 12,
+                "first_name": "Elena",
+                "last_name": "Bautista",
+                "full_name": "Elena Bautista",
+                "contact_number": "+63 927 234 5678",
+                "active_status": true,
+                "created_at": "2025-11-17 05:42:46",
+                "updated_at": "2025-11-17 05:42:46",
+                "deleted_at": null
+            }
+        ],
+        "links": {
+            "first": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=1",
+            "last": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=2",
+            "prev": null,
+            "next": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=2"
+        },
+        "meta": {
+            "current_page": 1,
+            "from": 1,
+            "last_page": 2,
+            "links": [
+                {
+                    "url": null,
+                    "label": "&laquo; Previous",
+                    "active": false
+                },
+                {
+                    "url": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=1",
+                    "label": "1",
+                    "active": true
+                },
+                {
+                    "url": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=2",
+                    "label": "2",
+                    "active": false
+                },
+                {
+                    "url": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=2",
+                    "label": "Next &raquo;",
+                    "active": false
+                }
+            ],
+            "path": "http://localhost:8000/api/helpers",
+            "per_page": 10,
+            "to": 10,
+            "total": 11,
+            "all": 12,
+            "trashed": 0
+        }
     }
 }
