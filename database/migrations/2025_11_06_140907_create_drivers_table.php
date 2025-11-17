@@ -20,10 +20,10 @@ return new class extends Migration {
             $table->string('first_name');
             $table->string('last_name');
             $table->string('contact_number');
-            $table->boolean('active_status')->default(true);
             $table->json('assigned_truck_plate_numbers')->nullable();
             $table->json('stack_run')->nullable();
             $table->json('helpers_id')->nullable();
+            $table->boolean('active_status')->default(true);
             $table->timestamps();
             $table->softDeletes();
 

@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\UserActivityController;
 use App\Http\Controllers\Api\ShippingLineController;
 use App\Http\Controllers\Api\SoaDataOptionController;
+use App\Http\Controllers\Api\HelperController;
 
 /*
 |--------------------------------------------------------------------------
@@ -246,6 +247,35 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [SoaDataOptionController::class, 'getTrashed']); // Retrieve soft-deleted SOA data options
 		Route::patch('/restore/{id}', [SoaDataOptionController::class, 'restore']); // Restore a soft-deleted SOA data option
 		Route::delete('/{id}', [SoaDataOptionController::class, 'forceDelete']); // Permanently delete a soft-deleted SOA data option
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Helper Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Helpers CRUD Operations
+	|
+	*/
+	Route::prefix('helpers')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [HelperController::class, 'index']);  // Retrieve all helpers
+		Route::get('/{id}', [HelperController::class, 'show']);  // Retrieve a single helper
+		Route::post('/', [HelperController::class, 'store']);  // Create a new helper
+		Route::put('/{id}', [HelperController::class, 'update']);  // Update an existing helper
+		Route::delete('/{id}', [HelperController::class, 'destroy']);  // Delete a helper
+
+		// Bulk operations
+		Route::post('/bulk/delete', [HelperController::class, 'bulkDelete']);  // Bulk delete helpers
+		Route::post('/bulk/restore', [HelperController::class, 'bulkRestore']);  // Bulk restore helpers
+		Route::post('/bulk/force-delete', [HelperController::class, 'bulkForceDelete']);  // Bulk permanently delete helpers
+	});
+
+	// Custom route for archived (trashed) helpers with a distinct prefix
+	Route::prefix('archived/helpers')->group(function () {
+		Route::get('/', [HelperController::class, 'getTrashed']); // Retrieve soft-deleted helpers
+		Route::patch('/restore/{id}', [HelperController::class, 'restore']); // Restore a soft-deleted helper
+		Route::delete('/{id}', [HelperController::class, 'forceDelete']); // Permanently delete a soft-deleted helper
 	});
 
 	/*
