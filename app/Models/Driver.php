@@ -48,3 +48,4 @@ class Driver extends Model
     protected $table = 'drivers';
 }
 
+

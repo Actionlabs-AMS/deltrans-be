@@ -42,3 +42,4 @@ class Helper extends Model
     protected $table = 'helpers';
 }
 
+
