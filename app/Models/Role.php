@@ -176,14 +176,30 @@ class Role extends Model
 			$parentKey = 0; // Root items use 0 as parent key
 			$permissions = $this->permissions[$parentKey][$navigation->id] ?? [];
 
-			if(!empty($permissions)) {
+			// Generate children routes first to check if any children have permissions
+			$hasChildren = !empty($navigation['children']);
+			$childrenRoutes = $hasChildren ? $this->childRoutes($navigation['children'], $navigation->id) : [];
+
+			// Include parent navigation based on these rules:
+			// 1. If it has children: only include if childrenRoutes is not empty (has children with permissions)
+			// 2. If it has no children (standalone route): include if it has direct permissions
+			$shouldInclude = false;
+			if ($hasChildren) {
+				// Parent navigation: only show if it has children with permissions
+				$shouldInclude = !empty($childrenRoutes);
+			} else {
+				// Standalone route: show if it has direct permissions
+				$shouldInclude = !empty($permissions);
+			}
+
+			if($shouldInclude) {
 				$route = [
 					'id' => $navigation->id,
 					'path' => '/' . $navigation->slug,
 					'name' => $navigation->name,
 					'side_nav' => $navigation->show_in_menu ? 'true' : 'false',
 					'icon' => $navigation->icon ?? '',
-					'children' => ($navigation['children']) ? $this->childRoutes($navigation['children'], $navigation->id) : []
+					'children' => $childrenRoutes
 				];
 
 				$routes[] = $route;
