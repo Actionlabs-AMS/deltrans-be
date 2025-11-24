@@ -21,10 +21,7 @@ return new class extends Migration {
             $table->text('address')->nullable();
             $table->string('contact_name')->nullable();
             $table->string('contact_mobile')->nullable();
-            $table->string('landline1')->nullable();
-            $table->string('landline2')->nullable();
-            $table->string('landline3')->nullable();
-            $table->string('landline4')->nullable();
+            $table->json('landlines')->nullable();
             $table->enum('type', ['Container Yard', 'Port Area'])->nullable();
             $table->timestamps();
             $table->softDeletes();

@@ -46,19 +46,24 @@ class BackupController extends BaseController
 
             return response()->json($backups);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Failed to list backups: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
     /**
      * Create backup.
      */
-    public function store(StoreBackupRequest $request): JsonResponse
+    public function store(StoreBackupRequest $request)
     {
         try {
             $options = $request->only([
-                'name', 'compression', 'encrypted', 'storage_disk',
-                'tables_included', 'files_included', 'retention_days'
+                'name',
+                'compression',
+                'encrypted',
+                'storage_disk',
+                'tables_included',
+                'files_included',
+                'retention_days'
             ]);
 
             switch ($request->type) {
@@ -80,7 +85,7 @@ class BackupController extends BaseController
                 'data' => $backup,
             ], 201);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Backup creation failed: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -99,7 +104,7 @@ class BackupController extends BaseController
 
             return response()->json($backup);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Failed to get backup: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -136,7 +141,7 @@ class BackupController extends BaseController
 
             return response()->json(['message' => 'Backup deleted successfully']);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Failed to delete backup: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -191,7 +196,7 @@ class BackupController extends BaseController
 
             return response()->json(['message' => 'Backup restored successfully']);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Restore failed: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -210,7 +215,7 @@ class BackupController extends BaseController
 
             return response()->json($validation);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Validation failed: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -224,7 +229,7 @@ class BackupController extends BaseController
 
             return response()->json($stats);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Failed to get backup statistics: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -241,7 +246,7 @@ class BackupController extends BaseController
     /**
      * Create schedule.
      */
-    public function createSchedule(CreateBackupScheduleRequest $request): JsonResponse
+    public function createSchedule(CreateBackupScheduleRequest $request)
     {
         try {
             $data = $request->all();
@@ -254,7 +259,7 @@ class BackupController extends BaseController
                 'data' => $schedule,
             ], 201);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Schedule creation failed: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -276,7 +281,7 @@ class BackupController extends BaseController
     /**
      * Update schedule.
      */
-    public function updateSchedule(UpdateBackupScheduleRequest $request, $id): JsonResponse
+    public function updateSchedule(UpdateBackupScheduleRequest $request, $id)
     {
         $id = (int) $id;
         if ($id <= 0) {
@@ -291,7 +296,7 @@ class BackupController extends BaseController
                 'data' => $schedule,
             ]);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Schedule update failed: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -313,7 +318,7 @@ class BackupController extends BaseController
     /**
      * Run schedule manually.
      */
-    public function runSchedule($id): JsonResponse
+    public function runSchedule($id)
     {
         $id = (int) $id;
         if ($id <= 0) {
@@ -331,7 +336,7 @@ class BackupController extends BaseController
 
             return response()->json(['message' => 'Schedule triggered successfully']);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Failed to trigger schedule: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 
@@ -361,7 +366,7 @@ class BackupController extends BaseController
     /**
      * Webhook endpoint for external schedulers.
      */
-    public function webhookTrigger(WebhookTriggerRequest $request): JsonResponse
+    public function webhookTrigger(WebhookTriggerRequest $request)
     {
         try {
             $this->backupService->runDueSchedules();
@@ -372,7 +377,7 @@ class BackupController extends BaseController
                 'timestamp' => now()->toIso8601String(),
             ]);
         } catch (\Exception $e) {
-            return $this->messageService->responseError('Failed to run schedules: ' . $e->getMessage());
+            return $this->messageService->responseError();
         }
     }
 }
