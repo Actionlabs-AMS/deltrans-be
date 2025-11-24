@@ -580,7 +580,7 @@ class UserController extends BaseController
    */
   public function update(UpdateUserRequest $request, Int $id)
   {
-    // try {
+    try {
       $data = $request->validated();
       $user = User::findOrFail($id);
 
@@ -651,14 +651,14 @@ class UserController extends BaseController
       ]);
 
       return response($user, 201);
-    // } catch (\Exception $e) {
-    //   \Log::error('[UserController] Update error:', [
-    //     'user_id' => $id,
-    //     'message' => $e->getMessage(),
-    //     'trace' => $e->getTraceAsString(),
-    //   ]);
-    //   return $this->messageService->responseError();
-    // }
+    } catch (\Exception $e) {
+      \Log::error('[UserController] Update error:', [
+        'user_id' => $id,
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
+      return $this->messageService->responseError();
+    }
   }
 
   /**
