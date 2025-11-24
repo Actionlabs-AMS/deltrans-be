@@ -580,7 +580,7 @@ class UserController extends BaseController
    */
   public function update(UpdateUserRequest $request, Int $id)
   {
-    try {
+    // try {
       $data = $request->validated();
       $user = User::findOrFail($id);
 
@@ -619,8 +619,21 @@ class UserController extends BaseController
       if(isset($request->position))
         $meta_details['position'] = $request->position;
     
-      if(isset($request->user_role))
-        $meta_details['user_role'] = $request->user_role;
+      if(isset($request->user_role)) {
+        // Handle user_role as object or array - convert to JSON string for user_meta
+        if (is_array($request->user_role) || is_object($request->user_role)) {
+          // Extract role_id from the object/array
+          $roleId = is_array($request->user_role) ? ($request->user_role['id'] ?? null) : ($request->user_role->id ?? null);
+          if ($roleId) {
+            $upData['role_id'] = $roleId;
+          }
+          // Convert to JSON string for user_meta
+          $meta_details['user_role'] = json_encode($request->user_role);
+        } else {
+          // Already a string, use as is
+          $meta_details['user_role'] = $request->user_role;
+        }
+      }
 
       // Debug: Log meta details being saved
       \Log::info('[UserController] Meta details to update:', $meta_details);
@@ -638,14 +651,14 @@ class UserController extends BaseController
       ]);
 
       return response($user, 201);
-    } catch (\Exception $e) {
-      \Log::error('[UserController] Update error:', [
-        'user_id' => $id,
-        'message' => $e->getMessage(),
-        'trace' => $e->getTraceAsString(),
-      ]);
-      return $this->messageService->responseError();
-    }
+    // } catch (\Exception $e) {
+    //   \Log::error('[UserController] Update error:', [
+    //     'user_id' => $id,
+    //     'message' => $e->getMessage(),
+    //     'trace' => $e->getTraceAsString(),
+    //   ]);
+    //   return $this->messageService->responseError();
+    // }
   }
 
   /**
