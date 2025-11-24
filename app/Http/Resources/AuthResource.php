@@ -57,6 +57,8 @@ class AuthResource extends JsonResource
 				'is_super_admin' => $userRole->is_super_admin ?? false,
 				'permissions' => $permissions,
 			];
+			// Ensure permissions attribute is set so getUserRoutes can use it
+			$userRole->setAttribute('permissions', $permissions);
 		}
 		
 		return [
