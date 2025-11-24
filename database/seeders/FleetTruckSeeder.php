@@ -79,3 +79,5 @@ class FleetTruckSeeder extends Seeder
 
 
 
+
+
