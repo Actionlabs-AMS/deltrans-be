@@ -25,6 +25,9 @@ class DatabaseSeeder extends Seeder
             FleetTruckSeeder::class,
             HelperSeeder::class,
             DriverSeeder::class,
+            RequestSeeder::class,
+            FixedExpenseSeeder::class,
+            StackRunSeeder::class,
         ]);
     }
 }
