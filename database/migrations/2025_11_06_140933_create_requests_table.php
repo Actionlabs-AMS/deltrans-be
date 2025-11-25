@@ -14,21 +14,19 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::create('cypa_details', function (Blueprint $table) {
+        Schema::create('requests', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('id');
-            $table->string('name');
-            $table->text('address')->nullable();
-            $table->string('contact_name')->nullable();
-            $table->string('contact_mobile')->nullable();
-            $table->json('landlines')->nullable();
-            $table->enum('location_type', ['Container Yard', 'Port Area'])->nullable();
+            $table->bigIncrements('request_id');
+            $table->integer('extra_money')->default(0);
+            $table->text('reason')->default('');
+            $table->integer('type')->default(0);
+            $table->integer('status')->default(0);
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('name');
-            $table->index('location_type');
+            $table->index('type');
+            $table->index('status');
         });
 
         // Re-enable foreign key checks
@@ -43,9 +41,10 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::dropIfExists('cypa_details');
+        Schema::dropIfExists('requests');
 
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };
+

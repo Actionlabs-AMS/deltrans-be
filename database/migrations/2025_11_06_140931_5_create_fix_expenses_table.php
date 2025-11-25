@@ -14,21 +14,26 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::create('cypa_details', function (Blueprint $table) {
+        Schema::create('fixed_expenses', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->string('name');
-            $table->text('address')->nullable();
-            $table->string('contact_name')->nullable();
-            $table->string('contact_mobile')->nullable();
-            $table->json('landlines')->nullable();
-            $table->enum('location_type', ['Container Yard', 'Port Area'])->nullable();
+            $table->bigInteger('cypa_id_from')->unsigned();
+            $table->bigInteger('cypa_id_to')->unsigned();
+            $table->string('size');
+            $table->integer('docs_fee')->default(0);
+            $table->integer('stack_run')->default(0);
+            $table->integer('expenses')->default(0);
+            $table->integer('total_expenses')->default(0);
             $table->timestamps();
             $table->softDeletes();
 
+            // Foreign key constraints
+            $table->foreign('cypa_id_from')->references('id')->on('cypa_details')->onDelete('cascade');
+            $table->foreign('cypa_id_to')->references('id')->on('cypa_details')->onDelete('cascade');
+
             // Indexes
-            $table->index('name');
-            $table->index('location_type');
+            $table->index('cypa_id_from');
+            $table->index('cypa_id_to');
         });
 
         // Re-enable foreign key checks
@@ -43,9 +48,10 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::dropIfExists('cypa_details');
+        Schema::dropIfExists('fix_expenses');
 
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };
+
