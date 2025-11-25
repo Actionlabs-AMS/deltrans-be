@@ -29,6 +29,18 @@ class NavigationSeeder extends Seeder
                 'children' => [],
             ],
             
+            // Hidden Profile page (accessible via header menu)
+            [
+                'name' => 'Profile',
+                'slug' => 'profile',
+                'icon' => 'user',
+                'description' => 'Manage personal profile information, password, and two-factor authentication',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => false,
+                'children' => [],
+            ],
+            
             // User Management Section
             [
                 'name' => 'User Management',
@@ -54,6 +66,14 @@ class NavigationSeeder extends Seeder
                         'description' => 'Manage user roles and permissions to control what users can access and do (authorization)',
                         'active' => true,
                         'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'User Activity',
+                        'slug' => 'user-activity/:userId',
+                        'icon' => 'activity',
+                        'description' => 'Review the detailed activity timeline, login history, and sessions for a specific user',
+                        'active' => true,
+                        'show_in_menu' => false,
                     ],
                 ],
             ],
