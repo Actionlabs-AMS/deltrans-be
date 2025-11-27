@@ -6,9 +6,9 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Config;
 use App\Services\OptionService;
+use App\Services\EmailService;
 use App\Models\User;
 use App\Mail\TwoFactorCodeMail;
-use App\Services\MicrosoftGraphService;
 
 class TestEmail extends Command
 {
@@ -30,14 +30,16 @@ class TestEmail extends Command
     protected $description = 'Test email sending functionality with SMTP configuration';
 
     protected $optionService;
+    protected $emailService;
 
     /**
      * Create a new command instance.
      */
-    public function __construct(OptionService $optionService)
+    public function __construct(OptionService $optionService, EmailService $emailService)
     {
         parent::__construct();
         $this->optionService = $optionService;
+        $this->emailService = $emailService;
     }
 
     /**
@@ -104,24 +106,36 @@ class TestEmail extends Command
     }
 
     /**
-     * Test simple email sending
+     * Test simple email sending using EmailService
      */
     protected function testSimpleEmail($email)
     {
         $this->info("Testing simple email to: {$email}");
         $this->line('─────────────────────────────────────');
+        
+        $mailer = $this->emailService->getMailer();
+        $this->info("Using configured mailer: {$mailer}");
+        $this->newLine();
 
         try {
-            Mail::raw('This is a test email from deltrans-be SMTP configuration. If you receive this, your SMTP settings are working correctly!', function ($message) use ($email) {
-                $message->to($email)
-                        ->subject('deltrans-be SMTP Test Email');
-            });
+            $emailBody = "<h2>Test Email from DelTrans</h2>"
+                . "<p>This is a test email from deltrans-be email configuration.</p>"
+                . "<p>If you receive this, your email settings are working correctly!</p>"
+                . "<p><strong>Configured Mailer:</strong> {$mailer}</p>"
+                . "<p>Best regards,<br>The DelTrans Team</p>";
+
+            $this->emailService->sendEmail(
+                $email,
+                'DelTrans - Email Configuration Test',
+                $emailBody
+            );
 
             $this->info('✓ Email sent successfully!');
             $this->line("Check inbox: {$email}");
+            $this->line("Mailer used: {$mailer}");
             return true;
-        } catch (\Illuminate\Mail\SendException $e) {
-            $this->error('✗ Failed to send email via SMTP');
+        } catch (\Exception $e) {
+            $this->error('✗ Failed to send email');
             $this->error('Error: ' . $e->getMessage());
             
             if ($e->getPrevious()) {
@@ -130,15 +144,11 @@ class TestEmail extends Command
             
             $this->newLine();
             $this->warn('Troubleshooting:');
-            $this->line('1. Check SMTP host, port, and credentials');
-            $this->line('2. Verify firewall allows outbound SMTP connections');
+            $this->line('1. Check email settings in System Settings > Email Settings');
+            $this->line('2. Verify the configured mailer has valid credentials');
             $this->line('3. Check if encryption (TLS/SSL) matches server requirements');
             $this->line('4. Review logs: storage/logs/laravel.log');
             
-            return false;
-        } catch (\Exception $e) {
-            $this->error('✗ Unexpected error: ' . $e->getMessage());
-            $this->error('Trace: ' . $e->getTraceAsString());
             return false;
         }
     }

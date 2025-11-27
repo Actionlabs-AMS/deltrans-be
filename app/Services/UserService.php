@@ -4,16 +4,20 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Http\Resources\UserResource;
-use App\Services\MicrosoftGraphService;
+use App\Services\EmailService;
 use App\Helpers\PasswordHelper;
 use Illuminate\Support\Facades\Log;
 
 class UserService extends BaseService
 {
-  public function __construct()
+  protected $emailService;
+
+  public function __construct(EmailService $emailService = null)
   {
       // Pass the UserResource class to the parent constructor
       parent::__construct(new UserResource(new User), new User());
+      // Inject EmailService for sending emails using database-configured settings
+      $this->emailService = $emailService ?? app(EmailService::class);
   }
   /**
   * Retrieve all resources with paginate.
@@ -144,7 +148,7 @@ class UserService extends BaseService
   }
 
   /**
-  * Send verify email using Microsoft Graph.
+  * Send verify email using configured email settings from database.
   */
   public function sendVerifyEmail($user, $user_key)
   {
@@ -170,8 +174,8 @@ class UserService extends BaseService
           . "<p>{$verify_url}</p>"
           . "<p>Best regards,<br>The CorePanel Team</p>";
 
-      // Send email using Microsoft Graph
-      MicrosoftGraphService::sendNotificationEmail(
+      // Send email using configured mailer from database settings
+      $this->emailService->sendEmail(
         $user->user_email,
         "Welcome to CorePanel - Verify Your Email",
         $emailBody
@@ -179,13 +183,15 @@ class UserService extends BaseService
       
       Log::info('[UserService] Verification email sent successfully', [
         'user_id' => $user->id,
-        'user_email' => $user->user_email
+        'user_email' => $user->user_email,
+        'mailer' => $this->emailService->getMailer()
       ]);
     } catch (\Exception $e) {
       // Log error but don't throw - allow user creation to succeed even if email fails
       Log::error('[UserService] Failed to send verification email', [
         'user_id' => $user->id,
         'user_email' => $user->user_email,
+        'mailer' => $this->emailService->getMailer(),
         'error' => $e->getMessage()
       ]);
       // Don't throw exception - user creation should succeed even if email fails
@@ -193,7 +199,7 @@ class UserService extends BaseService
   }
 
   /**
-  * Send temporary password using Microsoft Graph.
+  * Send temporary password using configured email settings from database.
   */
   public function sendForgotPasswordEmail($user, $new_password = '') 
   {
@@ -224,8 +230,8 @@ class UserService extends BaseService
           . "<p>If you didn't request this password reset, please contact support immediately.</p>"
           . "<p>Best regards,<br>The CorePanel Team</p>";
 
-      // Send email using Microsoft Graph
-      MicrosoftGraphService::sendNotificationEmail(
+      // Send email using configured mailer from database settings
+      $this->emailService->sendEmail(
         $user->user_email,
         "CorePanel - Temporary Password",
         $emailBody
@@ -233,13 +239,15 @@ class UserService extends BaseService
       
       Log::info('[UserService] Password reset email sent successfully', [
         'user_id' => $user->id,
-        'user_email' => $user->user_email
+        'user_email' => $user->user_email,
+        'mailer' => $this->emailService->getMailer()
       ]);
     } catch (\Exception $e) {
       // Log error but don't throw - allow operation to succeed even if email fails
       Log::error('[UserService] Failed to send password reset email', [
         'user_id' => $user->id,
         'user_email' => $user->user_email,
+        'mailer' => $this->emailService->getMailer(),
         'error' => $e->getMessage()
       ]);
       // Don't throw exception - password reset should succeed even if email fails
