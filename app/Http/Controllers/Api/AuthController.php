@@ -483,8 +483,15 @@ class AuthController extends Controller
 			], 403);
 		}
 
+		$legacyPasswordUpgraded = false;
+		$legacyUpgradeCallback = function () use ($user, $credentials, &$legacyPasswordUpgraded) {
+			$user->user_pass = PasswordHelper::generatePassword($user->user_salt, $credentials['password']);
+			$user->save();
+			$legacyPasswordUpgraded = true;
+		};
+
 		// Verify password
-		if (!PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass)) {
+		if (!PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass, $legacyUpgradeCallback)) {
 			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
 
@@ -507,6 +514,13 @@ class AuthController extends Controller
 				'status' => false,
 				'status_code' => 422,
 			], 422);
+		}
+
+		if ($legacyPasswordUpgraded) {
+			\Log::info('AuthController: Upgraded legacy password hash during login', [
+				'user_id' => $user->id,
+				'user_email' => $this->anonymizeEmail($user->user_email),
+			]);
 		}
 
 		// Clear rate limiter on successful login
@@ -758,13 +772,29 @@ class AuthController extends Controller
 		// Verify user credentials
 		$user = User::where('user_email', $credentials['email'])->first();
 
-		if (!$user || !PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass)) {
+		$legacyPasswordUpgraded = false;
+		$legacyUpgradeCallback = function () use ($user, $credentials, &$legacyPasswordUpgraded) {
+			if ($user) {
+				$user->user_pass = PasswordHelper::generatePassword($user->user_salt, $credentials['password']);
+				$user->save();
+				$legacyPasswordUpgraded = true;
+			}
+		};
+
+		if (!$user || !PasswordHelper::verifyPassword($credentials['password'], $user->user_salt, $user->user_pass, $legacyUpgradeCallback)) {
 			return response([
 				'success' => false,
 				'message' => 'Invalid email or password.',
 				'status' => false,
 				'status_code' => 401,
 			], 401);
+		}
+
+		if ($legacyPasswordUpgraded) {
+			\Log::info('AuthController: Upgraded legacy password hash during 2FA enablement', [
+				'user_id' => $user->id,
+				'user_email' => $this->anonymizeEmail($user->user_email),
+			]);
 		}
 
 		// Check if user is active
