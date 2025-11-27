@@ -11,17 +11,12 @@ use App\Http\Requests\Enable2FASetupRequest;
 use App\Helpers\PasswordHelper;
 use App\Models\User;
 use App\Services\TwoFactorAuthService;
-use App\Services\MicrosoftGraphService;
 use App\Services\OptionService;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\VerifyEmail;
-use App\Mail\ForgotPasswordEmail;
+use App\Services\EmailService;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\AuthResource;
 use App\Traits\AuditTrailTrait;
 use Illuminate\Support\Facades\RateLimiter;
-
-use Hash;
 
 /**
  * @OA\Info(
@@ -67,11 +62,16 @@ class AuthController extends Controller
 
 	protected $twoFactorService;
 	protected $optionService;
+	protected $emailService;
 
-	public function __construct(TwoFactorAuthService $twoFactorService, OptionService $optionService)
-	{
+	public function __construct(
+		TwoFactorAuthService $twoFactorService,
+		OptionService $optionService,
+		EmailService $emailService
+	) {
 		$this->twoFactorService = $twoFactorService;
 		$this->optionService = $optionService;
+		$this->emailService = $emailService;
 	}
 	/**
 	 * Create a new user.
@@ -137,23 +137,31 @@ class AuthController extends Controller
 		$user_key = $user->user_activation_key;
 		$verify_url = env('ADMIN_APP_URL') . "/login/activate/" . $user_key;
 
+		$emailSubject = 'Verify Your Deltrans Account';
+		$emailBody = $this->buildEmailTemplate(
+			'Verify Your Account',
+			"Hi {$user->user_login},",
+			"Thanks for registering with Deltrans Logistics. Please confirm your account by clicking the button below.",
+			'Verify Account',
+			$verify_url,
+			'If you did not create this account, please contact our support team immediately.'
+		);
+
 		$message = '';
 		try {
-			// Send verification email using Microsoft Graph
-			$emailSent = MicrosoftGraphService::sendUserRegistrationEmail($user, $verify_url);
+			$emailSent = $this->emailService->sendEmail($user->user_email, $emailSubject, $emailBody);
 			if ($emailSent) {
 				$message = 'Aww yeah, you have successfuly registered. Verification email has been sent to your registered email.';
 			} else {
 				$message = 'Registration successful, but there was an issue sending the verification email. Please contact support.';
 			}
 		} catch (\Exception $e) {
-			// Fallback to Laravel Mail if Microsoft Graph fails
-			$options = array('verify_url' => $verify_url);
-			if (Mail::to($user->user_email)->send(new VerifyEmail($user, $options))) {
-				$message = 'Aww yeah, you have successfuly registered. Verification email has been sent to your registered email.';
-			} else {
-				$message = 'Registration successful, but there was an issue sending the verification email. Please contact support.';
-			}
+			\Log::error('[AuthController] Failed to send registration email', [
+				'user_id' => $user->id,
+				'email' => $user->user_email,
+				'error' => $e->getMessage(),
+			]);
+			$message = 'Registration successful, but there was an issue sending the verification email. Please contact support.';
 		}
 
 		// Log the user registration
@@ -286,25 +294,30 @@ class AuthController extends Controller
 
 			$login_url = env('ADMIN_APP_URL') . "/login";
 
+			$emailSubject = 'Your Deltrans Temporary Password';
+			$emailBody = $this->buildEmailTemplate(
+				'Password Reset Request',
+				"Hi {$user->user_login},",
+				"We've generated a temporary password for your account. Use the credentials below to sign in, then update your password immediately from your profile settings.",
+				'Go to Login',
+				$login_url,
+				'Temporary Password: <strong>' . e($new_password) . '</strong><br/><br/>If you did not request this change, please contact support right away.'
+			);
+
 			try {
-				// Send password reset email using Microsoft Graph
-				$emailSent = MicrosoftGraphService::sendPasswordResetEmail($user, $login_url);
+				$emailSent = $this->emailService->sendEmail($user->user_email, $emailSubject, $emailBody);
 				if ($emailSent) {
 					$message = 'Your temporary password has been sent to your registered email.';
 				} else {
 					$message = 'Password reset successful, but there was an issue sending the email. Please contact support.';
 				}
 			} catch (\Exception $e) {
-				// Fallback to Laravel Mail if Microsoft Graph fails
-				$options = array(
-					'login_url' => $login_url,
-					'new_password' => $new_password
-				);
-				if (Mail::to($user->user_email)->send(new ForgotPasswordEmail($user, $options))) {
-					$message = 'Your temporary password has been sent to your registered email.';
-				} else {
-					$message = 'Password reset successful, but there was an issue sending the email. Please contact support.';
-				}
+				\Log::error('[AuthController] Failed to send password reset email', [
+					'user_id' => $user->id,
+					'email' => $user->user_email,
+					'error' => $e->getMessage(),
+				]);
+				$message = 'Password reset successful, but there was an issue sending the email. Please contact support.';
 			}
 
 			// Log password reset
@@ -896,5 +909,68 @@ class AuthController extends Controller
 
 		$anonymized = substr($username, 0, 2) . '***@' . $domain;
 		return $anonymized;
+	}
+
+	/**
+	 * Build a simple HTML email template for transactional emails.
+	 */
+	private function buildEmailTemplate(
+		string $title,
+		string $intro,
+		string $content,
+		?string $actionText = null,
+		?string $actionUrl = null,
+		?string $footer = null
+	): string {
+		$actionButton = '';
+		if ($actionText && $actionUrl) {
+			$actionButton = sprintf(
+				'<p style="text-align:center;margin:30px 0;"><a href="%s" style="background-color:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">%s</a></p>',
+				htmlspecialchars($actionUrl, ENT_QUOTES, 'UTF-8'),
+				htmlspecialchars($actionText, ENT_QUOTES, 'UTF-8')
+			);
+		}
+
+		$footerHtml = $footer
+			? '<p style="font-size:14px;color:#4b5563;line-height:1.6;">' . $footer . '</p>'
+			: '';
+
+		return sprintf('
+			<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<title>%s</title>
+			</head>
+			<body style="font-family:Arial,Helvetica,sans-serif;background-color:#f3f4f6;margin:0;padding:24px;">
+				<table width="100%%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td align="center">
+							<table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;padding:32px;">
+								<tr>
+									<td>
+										<h2 style="margin-top:0;color:#0f172a;">%s</h2>
+										<p style="font-size:15px;color:#1f2937;line-height:1.6;">%s</p>
+										<p style="font-size:15px;color:#1f2937;line-height:1.6;">%s</p>
+										%s
+										%s
+										<p style="font-size:14px;color:#94a3b8;margin-top:32px;">&copy; %s Deltrans Logistics. All rights reserved.</p>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+			</body>
+			</html>
+		',
+			htmlspecialchars($title, ENT_QUOTES, 'UTF-8'),
+			htmlspecialchars($title, ENT_QUOTES, 'UTF-8'),
+			htmlspecialchars($intro, ENT_QUOTES, 'UTF-8'),
+			$content,
+			$actionButton,
+			$footerHtml,
+			date('Y')
+		);
 	}
 }
