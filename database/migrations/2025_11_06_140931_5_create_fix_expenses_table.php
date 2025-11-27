@@ -17,9 +17,10 @@ return new class extends Migration {
         Schema::create('fixed_expenses', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
+            $table->bigInteger('shipping_line_id')->unsigned();
             $table->bigInteger('cypa_id_from')->unsigned();
             $table->bigInteger('cypa_id_to')->unsigned();
-            $table->string('size');
+            $table->string('container_size');
             $table->integer('docs_fee')->default(0);
             $table->integer('stack_run')->default(0);
             $table->integer('expenses')->default(0);
@@ -30,10 +31,11 @@ return new class extends Migration {
             // Foreign key constraints
             $table->foreign('cypa_id_from')->references('id')->on('cypa_details')->onDelete('cascade');
             $table->foreign('cypa_id_to')->references('id')->on('cypa_details')->onDelete('cascade');
-
+            $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
             // Indexes
             $table->index('cypa_id_from');
             $table->index('cypa_id_to');
+            $table->index('shipping_line_id');
         });
 
         // Re-enable foreign key checks

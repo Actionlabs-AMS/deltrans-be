@@ -18,15 +18,20 @@ return new class extends Migration {
             $table->engine = 'InnoDB';
             $table->string('waybill_number')->primary();
             $table->date('transaction_date');
-            $table->string('shipping_line_email_address');
+            $table->string('shipping_line_email_address'); //remove
+            $table->bigInteger('shipping_line_id')->nullable()->unsigned();
             $table->bigInteger('cypa_id')->nullable()->unsigned();
             $table->bigInteger('driver_id')->nullable()->unsigned();
             $table->bigInteger('helper_id')->nullable()->unsigned();
             $table->string('truck_plate_number')->nullable();
+            $table->bigInteger('fixed_expense_id')->nullable()->unsigned();
             $table->string('container_size')->nullable();
-            $table->decimal('amount', 15, 2)->default(0);
+            $table->decimal('other_expense', 15, 2)->default(0);
+            $table->string('container_id')->nullable();
+            $table->date('pickup_date')->nullable();
+            $table->date('delivered_date')->nullable();
+            $table->decimal('post_expense_amount', 15, 2)->default(0);
             $table->decimal('total_amount', 15, 2)->default(0);
-            $table->bigInteger('shipping_line_id')->nullable()->unsigned();
             $table->timestamps();
             $table->softDeletes();
 
@@ -36,6 +41,7 @@ return new class extends Migration {
             $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('set null');
             $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('set null');
             $table->foreign('truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('set null');
+            $table->foreign('fixed_expense_id')->references('id')->on('fixed_expenses')->onDelete('set null');
 
             // Indexes for better query performance
             $table->index('transaction_date');
@@ -44,6 +50,10 @@ return new class extends Migration {
             $table->index('helper_id');
             $table->index('truck_plate_number');
             $table->index('shipping_line_id');
+            $table->index('fixed_expense_id');
+            $table->index('container_id');
+            $table->index('pickup_date');
+            $table->index('delivered_date');
         });
 
         // Re-enable foreign key checks
