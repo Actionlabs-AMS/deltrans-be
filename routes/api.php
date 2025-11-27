@@ -420,7 +420,10 @@ Route::post('/backups/webhook/trigger', [\App\Http\Controllers\Api\BackupControl
 
 Route::post('/signup', [AuthController::class, 'signup'])->middleware('throttle:auth');
 Route::post('/validate', [AuthController::class, 'activateUser'])->middleware('throttle:auth');
+// Legacy alias kept for backward compatibility
 Route::post('/generate-password', [AuthController::class, 'genTempPassword'])->middleware('throttle:auth');
+// New explicit forgot-password endpoint used by the frontend
+Route::post('/auth/forgot-password', [AuthController::class, 'genTempPassword'])->middleware('throttle:auth');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/enable-2fa-setup', [AuthController::class, 'enable2FASetup'])->middleware('throttle:login');
 
