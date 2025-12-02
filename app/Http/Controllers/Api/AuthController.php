@@ -497,7 +497,7 @@ class AuthController extends Controller
 		}
 
 		// Check if user has a role and if the role is active
-		if (!$user->role_id || !$user->role || $user->role->active !== true) {
+		if (!$user->role_id || !$user->role || !$user->role->active) {
 			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
 
@@ -848,7 +848,7 @@ class AuthController extends Controller
 		}
 
 		// Check if user has a role and if the role is active
-		if (!$user->role_id || !$user->role || $user->role->active !== true) {
+		if (!$user->role_id || !$user->role || !$user->role->active) {
 			return response([
 				'success' => false,
 				'message' => 'Your role is inactive. Please contact administrator.',
