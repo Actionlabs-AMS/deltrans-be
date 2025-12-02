@@ -70,8 +70,8 @@ class AuthResource extends JsonResource
       'user_routes' => $userRole ? $userRole->getUserRoutes() : [],
       'user_role' => $userRoleData ? json_encode($userRoleData) : null, // JSON string as sima-admin expects
       'theme' => (isset($this->user_details['theme'])) ? $this->user_details['theme'] : '',
-      'updated_at' => $this->updated_at->format('Y-m-d H:m:s'),
-      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:m:s') : null
+      'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null
     ];
 	}
 }
