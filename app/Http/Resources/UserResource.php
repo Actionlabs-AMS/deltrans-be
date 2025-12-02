@@ -50,8 +50,8 @@ class UserResource extends JsonResource
       'role_id' => $this->role_id, // Added for frontend
       'theme' => $this->user_details['theme'] ?? null,
       'user_status' => $this->user_status, // Return numeric status for badge logic
-      'updated_at' => $this->updated_at->format('Y-m-d H:m:s'),
-      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:m:s') : null
+      'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null
     ];
   }
 }

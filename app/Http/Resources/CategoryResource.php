@@ -26,8 +26,8 @@ class CategoryResource extends JsonResource
       'active' => ($this->active) ? 'Active' : 'Inactive',
       'label' => $this->label,
       'children' => self::collection($this->getChildren),
-      'updated_at' => $this->updated_at->format('Y-m-d H:m:s'),
-      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:m:s') : null
+      'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null
     ];
   }
 }

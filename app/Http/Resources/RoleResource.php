@@ -20,8 +20,8 @@ class RoleResource extends JsonResource
       'label' => $this->name,
       'active' => ($this->active) ? 'Active' : 'Inactive',
       'permissions' => $this->permissions,
-      'updated_at' => $this->updated_at->format('Y-m-d H:m:s'),
-      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:m:s') : null
+      'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null
     ];
   }
 }
