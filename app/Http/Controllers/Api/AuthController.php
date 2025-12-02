@@ -442,7 +442,7 @@ class AuthController extends Controller
 		}
 
 		// First check if user exists (without status check)
-		$user = User::where('user_email', '=', $credentials['email'])->first();
+		$user = User::with('role')->where('user_email', '=', $credentials['email'])->first();
 
 		// Check if user exists
 		if (!$user) {
@@ -471,7 +471,7 @@ class AuthController extends Controller
 		}
 
 		// Check if user is active
-		if ($user->user_status !== 1) {
+		if ($user->user_status != 1) {
 			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
 
@@ -491,6 +491,33 @@ class AuthController extends Controller
 
 			return response([
 				'errors' => ['Your account is inactive. Please contact administrator.'],
+				'status' => false,
+				'status_code' => 403,
+			], 403);
+		}
+
+		// Check if user has a role and if the role is active
+		if (!$user->role_id || !$user->role || $user->role->active !== true) {
+			// Increment rate limiter
+			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
+
+			// Log failed login attempt
+			$this->logAction(
+				'AUTHENTICATION',
+				'LOGIN_FAILED',
+				[
+					'user_id' => $user->id,
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'reason' => 'User role is inactive or missing',
+					'role_id' => $user->role_id,
+					'ip_address' => $ip,
+					'user_agent' => $request->userAgent()
+				],
+				(string) $user->id
+			);
+
+			return response([
+				'errors' => ['Your role is inactive. Please contact administrator.'],
 				'status' => false,
 				'status_code' => 403,
 			], 403);
@@ -783,7 +810,7 @@ class AuthController extends Controller
 		$ip = $request->ip();
 
 		// Verify user credentials
-		$user = User::where('user_email', $credentials['email'])->first();
+		$user = User::with('role')->where('user_email', $credentials['email'])->first();
 
 		$legacyPasswordUpgraded = false;
 		$legacyUpgradeCallback = function () use ($user, $credentials, &$legacyPasswordUpgraded) {
@@ -815,6 +842,16 @@ class AuthController extends Controller
 			return response([
 				'success' => false,
 				'message' => 'Your account is inactive. Please contact administrator.',
+				'status' => false,
+				'status_code' => 403,
+			], 403);
+		}
+
+		// Check if user has a role and if the role is active
+		if (!$user->role_id || !$user->role || $user->role->active !== true) {
+			return response([
+				'success' => false,
+				'message' => 'Your role is inactive. Please contact administrator.',
 				'status' => false,
 				'status_code' => 403,
 			], 403);
