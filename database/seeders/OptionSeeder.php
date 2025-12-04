@@ -80,7 +80,7 @@ class OptionSeeder extends Seeder
             ],
             [
                 'option_key' => 'timezone',
-                'option_value' => 'UTC',
+                'option_value' => 'Asia/Manila',
                 'option_type' => 'string',
                 'description' => 'Default timezone',
             ],

@@ -138,7 +138,7 @@ class OptionService extends BaseService
             'general' => [
                 'site_name' => $this->getOption('site_name', 'CorePanel'),
                 'site_description' => $this->getOption('site_description', 'Admin Panel'),
-                'timezone' => $this->getOption('timezone', 'UTC'),
+                'timezone' => $this->getOption('timezone', 'Asia/Manila'),
             ],
         ];
 
@@ -204,7 +204,7 @@ class OptionService extends BaseService
                 'sidenav_logo' => $sidenavLogo ? $getLogoUrl($sidenavLogo) : null,
             ],
             'date_time' => [
-                'timezone' => $this->getOption('timezone', 'UTC'),
+                'timezone' => $this->getOption('timezone', 'Asia/Manila'),
                 'date_format' => $this->getOption('date_format', 'Y-m-d'),
                 'time_format' => $this->getOption('time_format', 'H:i:s'),
             ],
@@ -428,7 +428,7 @@ class OptionService extends BaseService
             // General Settings
             'site_name' => ['value' => 'CorePanel', 'type' => 'string', 'description' => 'Site name'],
             'site_description' => ['value' => 'Admin Panel', 'type' => 'string', 'description' => 'Site description'],
-            'timezone' => ['value' => 'UTC', 'type' => 'string', 'description' => 'Default timezone'],
+            'timezone' => ['value' => 'Asia/Manila', 'type' => 'string', 'description' => 'Default timezone'],
         ];
 
         foreach ($defaultOptions as $key => $data) {
