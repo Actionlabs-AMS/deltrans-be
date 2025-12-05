@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\ShippingLineController;
 use App\Http\Controllers\Api\SoaDataOptionController;
 use App\Http\Controllers\Api\HelperController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\TruckController;
+use App\Http\Controllers\Api\ContainerYardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -413,6 +415,67 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/{id}/restore', [\App\Http\Controllers\Api\BackupController::class, 'restoreBackup']);
 		Route::get('/{id}/validate', [\App\Http\Controllers\Api\BackupController::class, 'validateBackup']);
 	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Fleet Truck Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Fleet Truck CRUD Operations
+	|
+	*/
+	Route::prefix('trucks')->group(function () {
+		// Standard CRUD operations
+		Route::get('/truck-list', [TruckController::class, 'index']);  // Retrieve all truck list
+		Route::get('/get-truck-by-id/{id}', [TruckController::class, 'show']);  // Get a specific truck
+		Route::post('/add-truck', [TruckController::class, 'store']);  // Create a new truck
+		Route::put('/update-truck/{id}', [TruckController::class, 'update']);  // Update an existing truck details
+		Route::patch('/deactivate-truck/{id}', [TruckController::class, 'destroy']);  // Deactivate a truck
+		Route::patch('/activate-truck/{id}', [TruckController::class, 'restore']);  // Activate a truck
+
+		// Bulk operations
+		Route::post('/bulk/delete', [TruckController::class, 'bulkDelete']);  // Bulk delete shipping lines
+		Route::post('/bulk/restore', [TruckController::class, 'bulkRestore']);  // Bulk restore shipping lines
+		Route::post('/bulk/force-delete', [TruckController::class, 'bulkForceDelete']);  // Bulk permanently delete shipping lines
+	});
+
+	// // Custom route for archived (trashed) shipping lines with a distinct prefix
+	// Route::prefix('archived/trucks')->group(function () {
+	// 	Route::get('/', [TruckController::class, 'getTrashed']); // Retrieve soft-deleted shipping lines
+	// 	Route::patch('/restore/{id}', [TruckController::class, 'restore']); // Restore a soft-deleted shipping line
+	// 	Route::delete('/{id}', [TruckController::class, 'forceDelete']); // Permanently delete a soft-deleted shipping line
+	// });
+
+	/*
+	|--------------------------------------------------------------------------
+	| Container Yard Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Container Yard CRUD Operations
+	|
+	*/
+	Route::prefix('container-yards')->group(function () {
+		// Standard CRUD operations
+		Route::get('/yard-list', [ContainerYardController::class, 'index']);  // Retrieve all container yard list
+		Route::get('get-yard-by-id/{id}', [ContainerYardController::class, 'show']);  // Get a specific container yard
+		Route::post('/add-yard', [ContainerYardController::class, 'store']);  // Create a new container yard
+		Route::put('/update-yard/{id}', [ContainerYardController::class, 'update']);  // Update an existing container yard details
+		Route::patch('/deactivate-yard/{id}', [ContainerYardController::class, 'destroy']);  // Deactivate a container yard
+		Route::patch('/activate-yard/{id}', [ContainerYardController::class, 'restore']);  // Activate a container yard
+		Route::get('/search', [ContainerYardController::class, 'search'])->name('container-yards.search');
+		// // Bulk operations
+		// Route::post('/bulk/delete', [TruckController::class, 'bulkDelete']);  // Bulk delete shipping lines
+		// Route::post('/bulk/restore', [TruckController::class, 'bulkRestore']);  // Bulk restore shipping lines
+		// Route::post('/bulk/force-delete', [TruckController::class, 'bulkForceDelete']);  // Bulk permanently delete shipping lines
+	});
+
+	// // Custom route for archived (trashed) shipping lines with a distinct prefix
+	// Route::prefix('archived/trucks')->group(function () {
+	// 	Route::get('/', [TruckController::class, 'getTrashed']); // Retrieve soft-deleted shipping lines
+	// 	Route::patch('/restore/{id}', [TruckController::class, 'restore']); // Restore a soft-deleted shipping line
+	// 	Route::delete('/{id}', [TruckController::class, 'forceDelete']); // Permanently delete a soft-deleted shipping line
+	// });
+
 });
 
 // Webhook endpoint (no auth required, but token protected)

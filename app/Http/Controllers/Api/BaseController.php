@@ -6,6 +6,46 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Services\MessageService;
 
+/**
+ * --- DEFINE TOP-LEVEL INFO ONCE ---
+ * @OA\Info(                
+ * title="Deltrans API",                
+ * version="1.0.0",                
+ * description="A comprehensive Laravel API with authentication, role management, and security features",
+ * @OA\Contact(
+ *    email="admin@deltrans.com"
+ *  )            
+ * )              
+ * 
+ * * --- DEFINE GLOBAL RESPONSES ONCE ---                
+ *
+* @OA\Response(
+ * response="BadRequest",
+ * description="Bad request, often due to validation errors or malformed input",
+ * @OA\JsonContent(
+ * @OA\Property(property="success", type="boolean", example=false),
+ * @OA\Property(property="message", type="string", example="The given data was invalid."),
+ * @OA\Property(property="errors", type="object", example={"license_plate": {"The license plate field is required."}})
+ * )
+ * )
+ * @OA\Response(
+ * response="NotFound",
+ * description="Resource not found",
+ * @OA\JsonContent(
+ * @OA\Property(property="success", type="boolean", example=false),
+ * @OA\Property(property="message", type="string", example="Resource not found.")
+ * )
+ * )
+ * @OA\Response(
+ * response="GeneralError",
+ * description="General Server Error",
+ * @OA\JsonContent(
+ * @OA\Property(property="success", type="boolean", example=false),
+ * @OA\Property(property="message", type="string", example="An error occurred.")
+ * )
+ * )              
+ */
+
 class BaseController extends Controller
 {
   protected $service;

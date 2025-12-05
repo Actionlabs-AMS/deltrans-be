@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->string('plate_number')->unique();
             $table->string('condition')->nullable();
-            $table->string('status')->nullable();
+            $table->tinyInteger('status')->default(1);
             $table->timestamps();
             $table->softDeletes();
 
