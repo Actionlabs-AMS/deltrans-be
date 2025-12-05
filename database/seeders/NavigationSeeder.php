@@ -28,19 +28,19 @@ class NavigationSeeder extends Seeder
                 'show_in_menu' => true,
                 'children' => [],
             ],
-            
-            // Hidden Profile page (accessible via header menu)
+
+            // Container Yard Section
             [
-                'name' => 'Profile',
-                'slug' => 'profile',
-                'icon' => 'user',
-                'description' => 'Manage personal profile information, password, and two-factor authentication',
+                'name' => 'Container Yard',
+                'slug' => 'container-yard',
+                'icon' => 'map-pinned',
+                'description' => 'List of container yard locations',
                 'parent_id' => null,
                 'active' => true,
-                'show_in_menu' => false,
+                'show_in_menu' => true,
                 'children' => [],
             ],
-            
+
             // User Management Section
             [
                 'name' => 'User Management',
@@ -77,7 +77,7 @@ class NavigationSeeder extends Seeder
                     ],
                 ],
             ],
-            
+
             // Content Management Section
             [
                 'name' => 'Content Management',
@@ -122,7 +122,7 @@ class NavigationSeeder extends Seeder
                     ],
                 ],
             ],
-            
+
             // Analytics & Reports Section
             [
                 'name' => 'Analytics & Reports',
@@ -167,7 +167,7 @@ class NavigationSeeder extends Seeder
                     ],
                 ],
             ],
-            
+
             // System Settings Section
             [
                 'name' => 'System Settings',

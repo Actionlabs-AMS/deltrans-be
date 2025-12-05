@@ -22,9 +22,14 @@ class DatabaseSeeder extends Seeder
             OptionSeeder::class,
             SoaDataOptionSeeder::class,
             ShippingLineSeeder::class,
+            CypaDetailsSeeder::class,
             FleetTruckSeeder::class,
             HelperSeeder::class,
             DriverSeeder::class,
+            RequestSeeder::class,
+            FixedExpenseSeeder::class,
+            StackRunSeeder::class,
+            WaybillDetailsSeeder::class,
         ]);
     }
 }

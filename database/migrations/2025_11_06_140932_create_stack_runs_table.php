@@ -14,22 +14,27 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::create('cypa_details', function (Blueprint $table) {
+        Schema::create('stack_runs', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->string('name');
-            $table->text('address')->nullable();
-            $table->string('contact_name')->nullable();
-            $table->string('contact_mobile')->nullable();
-            $table->json('landlines')->nullable();
-            $table->enum('location_type', ['Container Yard', 'Port Area'])->nullable();
-            $table->tinyInteger('status')->default(1);
+            $table->bigInteger('shipping_line_id')->unsigned();
+            $table->integer('quantity_of_container')->default(0);
+            $table->bigInteger('cypa_id_from')->unsigned();
+            $table->bigInteger('cypa_id_to')->unsigned();
+            $table->json('waybill')->nullable();
+            $table->decimal('total_amount', 15, 2)->default(0);
             $table->timestamps();
             $table->softDeletes();
 
+            // Foreign key constraints
+            $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
+            $table->foreign('cypa_id_from')->references('id')->on('cypa_details')->onDelete('cascade');
+            $table->foreign('cypa_id_to')->references('id')->on('cypa_details')->onDelete('cascade');
+
             // Indexes
-            $table->index('name');
-            $table->index('location_type');
+            $table->index('shipping_line_id');
+            $table->index('cypa_id_from');
+            $table->index('cypa_id_to');
         });
 
         // Re-enable foreign key checks
@@ -44,9 +49,10 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::dropIfExists('cypa_details');
+        Schema::dropIfExists('stack_runs');
 
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };
+
