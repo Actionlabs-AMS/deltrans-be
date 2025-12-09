@@ -158,7 +158,7 @@ class UserService extends BaseService
       
       // Build email body
       $userName = $user->user_login;
-      $emailBody = "<h2>Welcome to CorePanel!</h2>"
+      $emailBody = "<h2>Welcome to Deltrans / Deltrans Logistics Inc.</h2>"
           . "<p>Hello {$userName},</p>"
           . "<p>Your account has been created successfully. Please use the following credentials to log in:</p>"
           . "<p><strong>Username:</strong> {$user->user_login}</p>"
