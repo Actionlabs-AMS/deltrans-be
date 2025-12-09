@@ -280,13 +280,13 @@
                                         "description": "User email address",
                                         "type": "string",
                                         "format": "email",
-                                        "example": "john@example.com"
+                                        "example": "admin@example.com"
                                     },
                                     "password": {
                                         "description": "User password",
                                         "type": "string",
                                         "format": "password",
-                                        "example": "SecurePass123!"
+                                        "example": "Admin123!"
                                     }
                                 },
                                 "type": "object"
@@ -1613,6 +1613,362 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/container-yards/yard-list": {
+            "get": {
+                "tags": [
+                    "Container Yard Management"
+                ],
+                "summary": "Get list of container yards",
+                "description": "Returns list of all container yards.",
+                "operationId": "getContainerYardsList",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ContainerYard"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/container-yards/add-yard": {
+            "post": {
+                "tags": [
+                    "Container Yard Management"
+                ],
+                "summary": "Create a new container yard",
+                "description": "Creates a new container yard resource in storage.",
+                "operationId": "storeContainerYard",
+                "requestBody": {
+                    "description": "Container yard data to store",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContainerYardInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Container yard created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContainerYard"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/container-yards/get-yard-by-id/{id}": {
+            "get": {
+                "tags": [
+                    "Container Yard Management"
+                ],
+                "summary": "Get a specific container yard",
+                "description": "Returns a single container yard resource by its ID.",
+                "operationId": "getContainerYardById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the container yard to return",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContainerYard"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/container-yards/update-yard/{id}": {
+            "put": {
+                "tags": [
+                    "Container Yard Management"
+                ],
+                "summary": "Update an existing container yard",
+                "description": "Updates an existing container yard resource by its ID.",
+                "operationId": "updateContainerYard",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the container yard to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Container yard data to update (uses ContainerYardRequest for validation)",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContainerYardInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Container yard updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContainerYard"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/container-yards/deactivate-yard/{id}": {
+            "patch": {
+                "tags": [
+                    "Container Yard Management"
+                ],
+                "summary": "Deactivate a container yard (Logical Delete)",
+                "description": "Updates the container yard status to 0 (inactive) by its ID.",
+                "operationId": "deactivateContainerYard",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the container yard to deactivate",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Container yard successfully deactivated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container yard deactivated successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/container-yards/activate-yard/{id}": {
+            "patch": {
+                "tags": [
+                    "Container Yard Management"
+                ],
+                "summary": "Activate a container yard (Restore)",
+                "description": "Updates the container yard status to 1 (active) by its ID.",
+                "operationId": "activateContainerYard",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the container yard to activate",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Container yard successfully activated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container yard activated successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/container-yards/search": {
+            "get": {
+                "tags": [
+                    "Container Yard Management"
+                ],
+                "summary": "Search container yards by name",
+                "description": "Returns a list of container yards matching the partial name provided.",
+                "operationId": "searchContainerYardByName",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "Partial or full name of the container yard",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "North"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ContainerYard"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
                     }
                 },
                 "security": [
@@ -10870,6 +11226,317 @@
                 ]
             }
         },
+        "/api/trucks/truck-list": {
+            "get": {
+                "tags": [
+                    "Trucks Management"
+                ],
+                "summary": "Get list of trucks",
+                "description": "Returns list of all trucks (paginated or filtered via parent::index()).",
+                "operationId": "getTrucksList",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Truck"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/trucks/add-truck": {
+            "post": {
+                "tags": [
+                    "Trucks Management"
+                ],
+                "summary": "Create a new truck",
+                "description": "Creates a new truck resource in storage.",
+                "operationId": "storeTruck",
+                "requestBody": {
+                    "description": "Truck data to store",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TruckInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Truck created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Truck"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/trucks/get-truck-by-id/{id}": {
+            "get": {
+                "tags": [
+                    "Trucks Management"
+                ],
+                "summary": "Get a specific truck",
+                "description": "Returns a single truck resource by its ID.",
+                "operationId": "getTruckById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the truck to return",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Truck"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/trucks/update-truck/{id}": {
+            "put": {
+                "tags": [
+                    "Trucks Management"
+                ],
+                "summary": "Update an existing truck",
+                "description": "Updates an existing truck resource by its ID.",
+                "operationId": "updateTruck",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the truck to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Truck data to update (uses TruckRequest for validation)",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TruckInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Truck updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Truck"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/trucks/deactivate-truck/{id}": {
+            "patch": {
+                "tags": [
+                    "Trucks Management"
+                ],
+                "summary": "Deactivate a truck (Logical Delete)",
+                "description": "Updates the truck status to 0 (inactive) by its ID.",
+                "operationId": "deactivateTruck",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the truck to deactivate",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Truck successfully deactivated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Truck deactivated successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/trucks/activate-truck/{id}": {
+            "patch": {
+                "tags": [
+                    "Trucks Management"
+                ],
+                "summary": "Activate a truck (Restore)",
+                "description": "Updates the truck status to 1 (active) by its ID.",
+                "operationId": "activateTruck",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the truck to activate",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Truck successfully activated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Truck activated successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/2fa/send-code": {
             "post": {
                 "tags": [
@@ -13192,6 +13859,231 @@
                     }
                 },
                 "type": "object"
+            },
+            "ContainerYard": {
+                "title": "Container Yard Model",
+                "description": "A container yard resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "North Yard"
+                    },
+                    "address": {
+                        "type": "string",
+                        "example": "123 Port St."
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "contact_mobile": {
+                        "type": "string",
+                        "example": "09171234567"
+                    },
+                    "landlines": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": "['02-8123-4567','02-8123-4568']"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "Container Yard/Port"
+                    },
+                    "status": {
+                        "description": "1=Active, 0=Inactive",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "ContainerYardInput": {
+                "title": "Container Yard Input",
+                "description": "Data required to create or update a container yard",
+                "required": [
+                    "name",
+                    "address",
+                    "type",
+                    "status"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "North Yard"
+                    },
+                    "address": {
+                        "type": "string",
+                        "example": "123 Port St."
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "contact_mobile": {
+                        "type": "string",
+                        "example": "09171234567"
+                    },
+                    "landlines": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": "['02-8123-4567','02-8123-4568']"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "Container Yard/Port"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "Truck": {
+                "title": "Truck Model",
+                "description": "A truck resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "plate_number": {
+                        "type": "string",
+                        "example": "ABC-1234"
+                    },
+                    "condition": {
+                        "type": "string",
+                        "example": "Good"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "example": "1"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "TruckInput": {
+                "title": "Truck Input",
+                "description": "Data required to create or update a truck",
+                "required": [
+                    "plate_number",
+                    "condition",
+                    "status"
+                ],
+                "properties": {
+                    "plate_number": {
+                        "type": "string",
+                        "example": "XYZ-5678"
+                    },
+                    "condition": {
+                        "type": "string",
+                        "example": "Good/Maintenance"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "example": "1"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "responses": {
+            "BadRequest": {
+                "description": "Bad request, often due to validation errors or malformed input",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "description": "--- DEFINE TOP-LEVEL INFO ONCE ---",
+                                    "type": "boolean",
+                                    "example": false
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "The given data was invalid."
+                                },
+                                "errors": {
+                                    "type": "object",
+                                    "example": {
+                                        "license_plate": [
+                                            "The license plate field is required."
+                                        ]
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "Resource not found",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "example": false
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Resource not found."
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "GeneralError": {
+                "description": "General Server Error",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "example": false
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "An error occurred."
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                }
             }
         },
         "securitySchemes": {
@@ -13210,6 +14102,10 @@
         {
             "name": "Category Management",
             "description": "API endpoints for category management"
+        },
+        {
+            "name": "Container Yard Management",
+            "description": "API Endpoints for managing container yards"
         },
         {
             "name": "Content Reports",
@@ -13258,6 +14154,10 @@
         {
             "name": "Translation Management",
             "description": "API endpoints for translation management"
+        },
+        {
+            "name": "Trucks Management",
+            "description": "API Endpoints for managing trucks"
         },
         {
             "name": "Two-Factor Authentication",

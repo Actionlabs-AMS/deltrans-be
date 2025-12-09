@@ -19,14 +19,6 @@ use App\Traits\AuditTrailTrait;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
- * @OA\Info(
- *     title="Deltrans API",
- *     version="1.0.0",
- *     description="A comprehensive Laravel API with authentication, role management, and security features",
- *     @OA\Contact(
- *         email="admin@deltrans.com"
- *     )
- * )
  * 
  * @OA\Server(
  *     url=L5_SWAGGER_CONST_HOST,
@@ -347,8 +339,8 @@ class AuthController extends Controller
 	 *         required=true,
 	 *         @OA\JsonContent(
 	 *             required={"email", "password"},
-	 *             @OA\Property(property="email", type="string", format="email", example="john@example.com", description="User email address"),
-	 *             @OA\Property(property="password", type="string", format="password", example="SecurePass123!", description="User password")
+	 *             @OA\Property(property="email", type="string", format="email", example="admin@example.com", description="User email address"),
+	 *             @OA\Property(property="password", type="string", format="password", example="Admin123!", description="User password")
 	 *         )
 	 *     ),
 	 *     @OA\Response(
