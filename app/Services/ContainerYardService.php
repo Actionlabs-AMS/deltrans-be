@@ -31,7 +31,7 @@ class ContainerYardService extends BaseService
      * Get list of container yards with search, sort, and pagination.
      * Updated for cypa_details table.
      */
-    public function list($perPage = 10, $trash = false)
+    public function list($perPage = 10, $search = null, $trash = false)
     {
         try {
     
@@ -47,14 +47,6 @@ class ContainerYardService extends BaseService
 
             // FIX: Apply search conditions based on new columns
             if (request('search')) {
-                // $query->where(function ($q) {                
-                //     $searchTerm = '%' . request('search') . '%';
-                //     $q->where('name', 'LIKE', $searchTerm)
-                //       ->orWhere('address', 'LIKE', $searchTerm)                
-                //       ->orWhere('contact_name', 'LIKE', $searchTerm)
-                //       ->orWhere('location_type', 'LIKE', $searchTerm);
-                // }); 
-
                 $query->where(function ($q) {                
                     //$searchTerm = '%' . request('search') . '%';
                     $q->where('name', 'LIKE', '%' . request('search') . '%')

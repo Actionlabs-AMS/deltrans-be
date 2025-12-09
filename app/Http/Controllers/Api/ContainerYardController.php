@@ -52,11 +52,11 @@ class ContainerYardController extends BaseController
 
     /**
      * @OA\Get(
-     * path="/api/container-yards/yard-list",                
-     * operationId="getContainerYardsList",                
-     * tags={"Container Yard Management"},                
-     * summary="Get list of container yards",                
-     * description="Returns list of all container yards.",                
+     * path="/api/container-yards/yard-list",                
+     * operationId="getContainerYardsList",                
+     * tags={"Container Yard Management"},                
+     * summary="Get list of container yards",                
+     * description="Returns a paginated list of container yards with search filtering.",                
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="page",
@@ -69,14 +69,22 @@ class ContainerYardController extends BaseController
      * name="per_page",
      * in="query",
      * description="Items per page",
+     * required=false,
      * @OA\Schema(type="integer", example=10)
+     * ),
+     * @OA\Parameter(
+     * name="search",
+     * in="query",
+     * description="Search term for filtering by Name, Address, Contact Name, or Location Type.",
+     * required=false,
+     * @OA\Schema(type="string", example="North Yard")
      * ),
      * @OA\Response(
      * response=200,
      * description="Successful operation",
      * @OA\JsonContent(
      * type="array",
-     * @OA\Items(ref="#/components/schemas/ContainerYard")                
+     * @OA\Items(ref="#/components/schemas/ContainerYard")                
      * )
      * ),
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
@@ -84,7 +92,14 @@ class ContainerYardController extends BaseController
      */
     public function index()
     {
-        return parent::index();
+        //return parent::index();
+        //Pass all relevant query parameters explicitly to the service
+        $request = request();
+        $perPage = $request->get('per_page', 10);
+        $search = $request->get('search');
+        // ... get other filters
+
+        return $this->service->list($perPage, $search);
     }
 
     /**
