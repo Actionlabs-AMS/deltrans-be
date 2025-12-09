@@ -22,12 +22,12 @@ class ContainerYardResource extends JsonResource
             'contact_name'   => $this->contact_name,
             'contact_mobile'   => $this->contact_mobile,
             'landlines'      => $this->landlines ?? [],
-            'type'           => $this->type,
+            'location_type'           => $this->location_type,
             'status'         => (int) $this->status, // Ensuring it's cast to integer
             'is_active'      => $this->status == 1,   // Adding a boolean helper
-            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
-            'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,         
+            'created_at'     => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null, // Line 28 is likely here    
+            'updated_at'     => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
+            'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,
         ];
     }
 }

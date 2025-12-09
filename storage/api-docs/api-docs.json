@@ -280,13 +280,13 @@
                                         "description": "User email address",
                                         "type": "string",
                                         "format": "email",
-                                        "example": "admin@example.com"
+                                        "example": "admin@deltrans.com"
                                     },
                                     "password": {
                                         "description": "User password",
                                         "type": "string",
                                         "format": "password",
-                                        "example": "Admin123!"
+                                        "example": "admin123"
                                     }
                                 },
                                 "type": "object"
@@ -13891,7 +13891,7 @@
                         },
                         "example": "['02-8123-4567','02-8123-4568']"
                     },
-                    "type": {
+                    "location_type": {
                         "type": "string",
                         "example": "Container Yard/Port"
                     },
@@ -13946,7 +13946,7 @@
                         },
                         "example": "['02-8123-4567','02-8123-4568']"
                     },
-                    "type": {
+                    "location_type": {
                         "type": "string",
                         "example": "Container Yard/Port"
                     },

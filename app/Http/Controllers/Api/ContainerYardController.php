@@ -23,7 +23,7 @@ use App\Http\Resources\ContainerYardResource;
  * @OA\Property(property="contact_name", type="string", example="John Doe"),                
  * @OA\Property(property="contact_mobile", type="string", example="09171234567"),                
  * @OA\Property(property="landlines", type="array", @OA\Items(type="string"), example="['02-8123-4567','02-8123-4568']"),
- * @OA\Property(property="type", type="string", example="Container Yard/Port"),                
+ * @OA\Property(property="location_type", type="string", example="Container Yard/Port"),                
  * @OA\Property(property="status", type="integer", example=1, description="1=Active, 0=Inactive"),                
  * @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),                
  * @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")                
@@ -38,7 +38,7 @@ use App\Http\Resources\ContainerYardResource;
  * @OA\Property(property="contact_name", type="string", example="John Doe"),                
  * @OA\Property(property="contact_mobile", type="string", example="09171234567"),                
  * @OA\Property(property="landlines", type="array",@OA\Items(type="string"), example="['02-8123-4567','02-8123-4568']"),      
- * @OA\Property(property="type", type="string", example="Container Yard/Port"),                
+ * @OA\Property(property="location_type", type="string", example="Container Yard/Port"),                
  * @OA\Property(property="status", type="integer", example=1),                
  * )
  */

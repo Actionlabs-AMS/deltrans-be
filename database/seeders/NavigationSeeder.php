@@ -29,6 +29,43 @@ class NavigationSeeder extends Seeder
                 'children' => [],
             ],
 
+            // Fleet Management
+            [
+                'name' => 'Fleet Management',
+                'slug' => 'Fleet management',
+                'icon' => 'truck',
+                'description' => 'Manage truck, drivers and helpers',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => true,
+                'children' => [
+                    [
+                        'name' => 'Trucks',
+                        'slug' => 'trucks',
+                        'icon' => 'truck',
+                        'description' => 'View and manage all registered trucks.',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Drivers',
+                        'slug' => 'drivers',
+                        'icon' => 'user-round',
+                        'description' => 'View and manage all registered drivers.',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Helpers',
+                        'slug' => 'helpers',
+                        'icon' => 'users-round',
+                        'description' =>  'View and manage all registered helpers.',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                ],
+            ],
+
             // Container Yard Section
             [
                 'name' => 'Container Yard',

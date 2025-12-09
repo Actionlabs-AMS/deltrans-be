@@ -20,8 +20,8 @@ class TruckResource extends JsonResource
             'plate_number' => $this->plate_number,
             'condition' => $this->condition,
             'status'    => (int) $this->status,
-            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+            'created_at'     => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null, // Line 28 is likely here    
+            'updated_at'     => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,
         ];
 
