@@ -553,7 +553,7 @@ class UserController extends BaseController
    *             @OA\Property(property="user_login", type="string", example="johndoe", description="Username"),
    *             @OA\Property(property="user_email", type="string", format="email", example="john@example.com", description="User email"),
    *             @OA\Property(property="user_pass", type="string", format="password", example="NewSecurePass123!", description="New password (optional)"),
-   *             @OA\Property(property="user_status", type="integer", example=1, description="User status (0=inactive, 1=active)"),
+   *             @OA\Property(property="user_status", type="integer", example=1, description="User status (0=inactive, 1=active, 2=suspended)"),
    *             @OA\Property(property="first_name", type="string", example="John", description="User first name"),
    *             @OA\Property(property="last_name", type="string", example="Doe", description="User last name"),
    *             @OA\Property(property="user_role", type="string", example="admin", description="User role")

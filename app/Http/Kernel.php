@@ -46,6 +46,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\InputSanitizationMiddleware::class,
             \App\Http\Middleware\SecurityMonitoringMiddleware::class,
             \App\Http\Middleware\AuditTrailMiddleware::class,
+            \App\Http\Middleware\CheckUserStatus::class,
         ],
     ];
 
@@ -68,5 +69,6 @@ class Kernel extends HttpKernel
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'check.user.status' => \App\Http\Middleware\CheckUserStatus::class,
     ];
 }

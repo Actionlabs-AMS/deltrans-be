@@ -49,7 +49,7 @@ use Illuminate\Support\Facades\RateLimiter;
  *     @OA\Property(property="id", type="integer", example=1, description="User ID"),
  *     @OA\Property(property="user_login", type="string", example="johndoe", description="Username"),
  *     @OA\Property(property="user_email", type="string", format="email", example="john@example.com", description="User email"),
- *     @OA\Property(property="user_status", type="integer", example=1, description="User status (0=inactive, 1=active)"),
+ *     @OA\Property(property="user_status", type="integer", example=1, description="User status (0=inactive, 1=active, 2=suspended)"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2024-01-01T00:00:00.000000Z", description="Creation timestamp"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2024-01-01T00:00:00.000000Z", description="Last update timestamp"),
  *     @OA\Property(property="user_details", type="object", description="User metadata"),
@@ -470,10 +470,23 @@ class AuthController extends Controller
 			], 422);
 		}
 
-		// Check if user is active
+		// Check if user is active (status = 1)
+		// Status values: 0 = Inactive, 1 = Active, 2 = Suspended
 		if ($user->user_status != 1) {
 			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
+
+			// Determine the specific reason based on status
+			$reason = 'User account is inactive';
+			$errorMessage = 'Your account is inactive. Please contact administrator.';
+			
+			if ($user->user_status === 0) {
+				$reason = 'User account is inactive';
+				$errorMessage = 'Your account is inactive. Please contact administrator.';
+			} elseif ($user->user_status === 2) {
+				$reason = 'User account is suspended';
+				$errorMessage = 'Your account has been suspended. Please contact administrator.';
+			}
 
 			// Log failed login attempt
 			$this->logAction(
@@ -482,7 +495,8 @@ class AuthController extends Controller
 				[
 					'user_id' => $user->id,
 					'email' => $this->anonymizeEmail($credentials['email']),
-					'reason' => 'User account is inactive',
+					'reason' => $reason,
+					'user_status' => $user->user_status,
 					'ip_address' => $ip,
 					'user_agent' => $request->userAgent()
 				],
@@ -490,7 +504,7 @@ class AuthController extends Controller
 			);
 
 			return response([
-				'errors' => ['Your account is inactive. Please contact administrator.'],
+				'errors' => [$errorMessage],
 				'status' => false,
 				'status_code' => 403,
 			], 403);
@@ -857,11 +871,38 @@ class AuthController extends Controller
 			]);
 		}
 
-		// Check if user is active
+		// Check if user is active (status = 1)
+		// Status values: 0 = Inactive, 1 = Active, 2 = Suspended
 		if ($user->user_status !== 1) {
+			// Determine the specific reason based on status
+			$reason = 'User account is inactive';
+			$errorMessage = 'Your account is inactive. Please contact administrator.';
+			
+			if ($user->user_status === 0) {
+				$reason = 'User account is inactive';
+				$errorMessage = 'Your account is inactive. Please contact administrator.';
+			} elseif ($user->user_status === 2) {
+				$reason = 'User account is suspended';
+				$errorMessage = 'Your account has been suspended. Please contact administrator.';
+			}
+
+			// Log the failure
+			$this->logAction(
+				'AUTHENTICATION',
+				'2FA_SETUP_BLOCKED',
+				[
+					'user_id' => $user->id,
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'reason' => $reason,
+					'user_status' => $user->user_status,
+					'ip_address' => $ip,
+				],
+				(string) $user->id
+			);
+
 			return response([
 				'success' => false,
-				'message' => 'Your account is inactive. Please contact administrator.',
+				'message' => $errorMessage,
 				'status' => false,
 				'status_code' => 403,
 			], 403);
