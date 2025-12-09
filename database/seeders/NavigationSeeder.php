@@ -29,18 +29,42 @@ class NavigationSeeder extends Seeder
                 'children' => [],
             ],
 
-            // Hidden Profile page (accessible via header menu)
+            // Fleet Management
             [
-                'name' => 'Profile',
-                'slug' => 'profile',
-                'icon' => 'user',
-                'description' => 'Manage personal profile information, password, and two-factor authentication',
+                'name' => 'Fleet Management',
+                'slug' => 'Fleet management',
+                'icon' => 'truck',
+                'description' => 'Manage truck, drivers and helpers',
                 'parent_id' => null,
                 'active' => true,
-                'show_in_menu' => false,
-                'children' => [],
+                'show_in_menu' => true,
+                'children' => [
+                    [
+                        'name' => 'Trucks',
+                        'slug' => 'trucks',
+                        'icon' => 'truck',
+                        'description' => 'View and manage all registered trucks.',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Drivers',
+                        'slug' => 'drivers',
+                        'icon' => 'user-round',
+                        'description' => 'View and manage all registered drivers.',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Helpers',
+                        'slug' => 'helpers',
+                        'icon' => 'users-round',
+                        'description' => 'View and manage all registered helpers.',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                ],
             ],
-
 
             // Container Yard Section
             [

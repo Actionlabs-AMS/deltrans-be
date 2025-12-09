@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;                
+use Illuminate\Http\Request;
 use App\Http\Requests\ContainerYardRequest; // Assumed new Request class                
 use App\Services\ContainerYardService;      // Assumed new Service class                
-use App\Services\MessageService;    
-use App\Http\Resources\ContainerYardResource;   
+use App\Services\MessageService;
+use App\Http\Resources\ContainerYardResource;
 
 /**
  * @OA\Tag(
@@ -23,7 +23,7 @@ use App\Http\Resources\ContainerYardResource;
  * @OA\Property(property="contact_name", type="string", example="John Doe"),                
  * @OA\Property(property="contact_mobile", type="string", example="09171234567"),                
  * @OA\Property(property="landlines", type="array", @OA\Items(type="string"), example="['02-8123-4567','02-8123-4568']"),
- * @OA\Property(property="type", type="string", example="Container Yard/Port"),                
+ * @OA\Property(property="location_type", type="string", example="Container Yard/Port"),                
  * @OA\Property(property="status", type="integer", example=1, description="1=Active, 0=Inactive"),                
  * @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),                
  * @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")                
@@ -38,25 +38,25 @@ use App\Http\Resources\ContainerYardResource;
  * @OA\Property(property="contact_name", type="string", example="John Doe"),                
  * @OA\Property(property="contact_mobile", type="string", example="09171234567"),                
  * @OA\Property(property="landlines", type="array",@OA\Items(type="string"), example="['02-8123-4567','02-8123-4568']"),      
- * @OA\Property(property="type", type="string", example="Container Yard/Port"),                
+ * @OA\Property(property="location_type", type="string", example="Container Yard/Port"),                
  * @OA\Property(property="status", type="integer", example=1),                
  * )
  */
-class ContainerYardController extends BaseController                
+class ContainerYardController extends BaseController
 {
     // Updated constructor to use ContainerYardService                
-    public function __construct(ContainerYardService $cyService, MessageService $messageService)                
-    {                
-        parent::__construct($cyService, $messageService);                
-    }                
+    public function __construct(ContainerYardService $cyService, MessageService $messageService)
+    {
+        parent::__construct($cyService, $messageService);
+    }
 
     /**
      * @OA\Get(
-     * path="/api/container-yards/yard-list",                
-     * operationId="getContainerYardsList",                
-     * tags={"Container Yard Management"},                
-     * summary="Get list of container yards",                
-     * description="Returns list of all container yards.",                
+     * path="/api/container-yards/yard-list",                
+     * operationId="getContainerYardsList",                
+     * tags={"Container Yard Management"},                
+     * summary="Get list of container yards",                
+     * description="Returns a paginated list of container yards with search filtering.",                
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="page",
@@ -69,14 +69,22 @@ class ContainerYardController extends BaseController
      * name="per_page",
      * in="query",
      * description="Items per page",
+     * required=false,
      * @OA\Schema(type="integer", example=10)
+     * ),
+     * @OA\Parameter(
+     * name="search",
+     * in="query",
+     * description="Search term for filtering by Name, Address, Contact Name, or Location Type.",
+     * required=false,
+     * @OA\Schema(type="string", example="North Yard")
      * ),
      * @OA\Response(
      * response=200,
      * description="Successful operation",
      * @OA\JsonContent(
      * type="array",
-     * @OA\Items(ref="#/components/schemas/ContainerYard")                
+     * @OA\Items(ref="#/components/schemas/ContainerYard")                
      * )
      * ),
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
@@ -84,7 +92,14 @@ class ContainerYardController extends BaseController
      */
     public function index()
     {
-        return parent::index();
+        //return parent::index();
+        //Pass all relevant query parameters explicitly to the service
+        $request = request();
+        $perPage = $request->get('per_page', 10);
+        $search = $request->get('search');
+        // ... get other filters
+
+        return $this->service->list($perPage, $search);
     }
 
     /**
@@ -109,13 +124,13 @@ class ContainerYardController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
-    public function store(ContainerYardRequest $request)                
+    public function store(ContainerYardRequest $request)
     {
         try {
             //NOTE landline is array, format should be ["02-1111-1111","02-1111-1111"]
             $data = $request->validated(); // Use validated data                
-            $containerYard = $this->service->store($data);                
-            return response($containerYard, 201);                
+            $containerYard = $this->service->store($data);
+            return response($containerYard, 201);
         } catch (\Exception $e) {
             return response()->json([
                 'status_code' => 500,
@@ -151,12 +166,12 @@ class ContainerYardController extends BaseController
     public function show($id)
     {
         try {
-            $containerYard = $this->service->get_yard_by_id($id);                
+            $containerYard = $this->service->get_yard_by_id($id);
             return response($containerYard, 200); // Usually 200 OK for GET                
         } catch (\Exception $e) {
-            return response()->json([                
+            return response()->json([
                 'status_code' => 404,
-                'message' => 'Container yard id not found.',                
+                'message' => 'Container yard id not found.',
             ], 404);
         }
     }
@@ -191,16 +206,16 @@ class ContainerYardController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
-    public function update(ContainerYardRequest $request, string $id)                
+    public function update(ContainerYardRequest $request, string $id)
     {
         try {
             $data = $request->validated(); // Use validated data                
-            $containerYard = $this->service->update($data, $id);                
-            return response($containerYard, 200);                
+            $containerYard = $this->service->update($data, $id);
+            return response($containerYard, 200);
         } catch (\Exception $e) {
-             return response()->json([                
+            return response()->json([
                 'status_code' => 404,
-                'message' => 'Container yard id not found.',                
+                'message' => 'Container yard id not found.',
             ], 404);
         }
     }
@@ -233,21 +248,21 @@ class ContainerYardController extends BaseController
      * )
      */
     public function destroy($id)
-    {                
-        try {                
-            $this->service->deactivate_yard_by_id($id);                 
-            
-            return response()->json([
-                'status_code' => 200,                
-                'message' => 'Container yard deactivated successfully.',                
-            ], 200);                
+    {
+        try {
+            $this->service->deactivate_yard_by_id($id);
 
-        } catch (\Exception $e) {                
-            return response()->json([                
-                'status_code' => 404,                
-                'message' => 'Container yard id not found.',                
-            ], 404);                
-        }                
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Container yard deactivated successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 404,
+                'message' => 'Container yard id not found.',
+            ], 404);
+        }
     }
 
     /**
@@ -277,22 +292,22 @@ class ContainerYardController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
-    public function restore($id)                
-    {                
-        try {                
-            $this->service->activate_yard_by_id($id); 
-            
-            return response()->json([
-                'status_code' => 200,                
-                'message' => 'Container yard activated successfully.',                
-            ], 200);                
+    public function restore($id)
+    {
+        try {
+            $this->service->activate_yard_by_id($id);
 
-        } catch (\Exception $e) {                
-            return response()->json([                
-                'status_code' => 404,                
-                'message' => 'Container yard id not found.',                
-            ], 404);                
-        }                
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Container yard activated successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 404,
+                'message' => 'Container yard id not found.',
+            ], 404);
+        }
     }
 
     /**
@@ -324,25 +339,25 @@ class ContainerYardController extends BaseController
      */
     public function search(Request $request)
     {
-        try {                
-           $searchTerm = $request->query('name');
-        
+        try {
+            $searchTerm = $request->query('name');
+
             if (!$searchTerm) {
                 return response()->json(['message' => 'Name search term is required.'], 400);
             }
-            
+
             $yards = $this->service->search_yard_by_name($searchTerm);
-            
+
             //return response($yards, 200);
-            
+
             return ContainerYardResource::collection($yards);
 
-        } catch (\Exception $e) {                
-            return response()->json([                
-                'status_code' => 404,                
-                'message' => 'Container yard name not found.',                
-            ], 404);                
-        }     
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 404,
+                'message' => 'Container yard name not found.',
+            ], 404);
+        }
 
     }
 

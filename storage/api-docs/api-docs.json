@@ -280,13 +280,13 @@
                                         "description": "User email address",
                                         "type": "string",
                                         "format": "email",
-                                        "example": "admin@example.com"
+                                        "example": "admin@deltrans.com"
                                     },
                                     "password": {
                                         "description": "User password",
                                         "type": "string",
                                         "format": "password",
-                                        "example": "Admin123!"
+                                        "example": "admin123"
                                     }
                                 },
                                 "type": "object"
@@ -1628,7 +1628,7 @@
                     "Container Yard Management"
                 ],
                 "summary": "Get list of container yards",
-                "description": "Returns list of all container yards.",
+                "description": "Returns a paginated list of container yards with search filtering.",
                 "operationId": "getContainerYardsList",
                 "parameters": [
                     {
@@ -1645,9 +1645,20 @@
                         "name": "per_page",
                         "in": "query",
                         "description": "Items per page",
+                        "required": false,
                         "schema": {
                             "type": "integer",
                             "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search term for filtering by Name, Address, Contact Name, or Type.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "North Yard"
                         }
                     }
                 ],
@@ -13891,7 +13902,7 @@
                         },
                         "example": "['02-8123-4567','02-8123-4568']"
                     },
-                    "type": {
+                    "location_type": {
                         "type": "string",
                         "example": "Container Yard/Port"
                     },
@@ -13946,7 +13957,7 @@
                         },
                         "example": "['02-8123-4567','02-8123-4568']"
                     },
-                    "type": {
+                    "location_type": {
                         "type": "string",
                         "example": "Container Yard/Port"
                     },
