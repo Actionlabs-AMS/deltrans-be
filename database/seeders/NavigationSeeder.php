@@ -28,7 +28,7 @@ class NavigationSeeder extends Seeder
                 'show_in_menu' => true,
                 'children' => [],
             ],
-            
+
             // Hidden Profile page (accessible via header menu)
             [
                 'name' => 'Profile',
@@ -40,18 +40,27 @@ class NavigationSeeder extends Seeder
                 'show_in_menu' => false,
                 'children' => [],
             ],
-            
+
 
             // Container Yard Section
             [
-                'name' => 'Container Yard',
-                'slug' => 'container-yard',
+                'name' => 'Container Yards',
+                'slug' => 'container-yards',
                 'icon' => 'map-pinned',
-                'description' => 'List of container yard locations',
+                'description' => 'List of container yards and their details',
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
-                'children' => [],
+                'children' => [
+                    [
+                        'name' => 'Yard List',
+                        'slug' => 'yard-list',
+                        'icon' => 'map-pinned',
+                        'description' => 'View and manage all container yards',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                ],
             ],
 
             // User Management Section
