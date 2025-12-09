@@ -25,9 +25,37 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
         
+        // Dynamically configure timezone from database options
+        $this->configureTimezoneFromDatabase();
+        
         // Dynamically configure mail settings from database options
         // Primary: Database options, Fallback: Environment variables
         $this->configureMailFromDatabase();
+    }
+
+    /**
+     * Configure timezone from database options with config fallback
+     */
+    protected function configureTimezoneFromDatabase(): void
+    {
+        try {
+            // Check if options table exists (for migrations/initial setup)
+            if (!Schema::hasTable('options')) {
+                return;
+            }
+
+            $optionService = app(OptionService::class);
+            $timezone = $optionService->getOption('timezone', config('app.timezone'));
+
+            // Set timezone configuration
+            if ($timezone) {
+                Config::set('app.timezone', $timezone);
+                date_default_timezone_set($timezone);
+            }
+        } catch (\Exception $e) {
+            // If database connection fails or any error occurs,
+            // fallback to config/app.php timezone setting
+        }
     }
 
     /**

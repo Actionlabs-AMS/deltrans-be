@@ -18,8 +18,8 @@ class PermissionResource extends JsonResource
       'id' => $this->id,
       'name' => $this->name,
       'label' => $this->label,
-      'updated_at' => $this->updated_at->format('Y-m-d H:m:s'),
-      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:m:s') : null
+      'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+      'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null
     ];
   }
 }
