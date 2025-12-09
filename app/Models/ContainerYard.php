@@ -17,7 +17,7 @@ class ContainerYard extends Model
         'contact_name',
         'contact_mobile',
         'landlines', // Ensure this is fillable
-        'type',
+        'location_type',
         'status',
     ];
 

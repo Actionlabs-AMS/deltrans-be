@@ -52,7 +52,7 @@ class ContainerYardService extends BaseService
                 //     $q->where('name', 'LIKE', $searchTerm)
                 //       ->orWhere('address', 'LIKE', $searchTerm)                
                 //       ->orWhere('contact_name', 'LIKE', $searchTerm)
-                //       ->orWhere('type', 'LIKE', $searchTerm);
+                //       ->orWhere('location_type', 'LIKE', $searchTerm);
                 // }); 
 
                 $query->where(function ($q) {                
@@ -60,7 +60,7 @@ class ContainerYardService extends BaseService
                     $q->where('name', 'LIKE', '%' . request('search') . '%')
                       ->orWhere('address', 'LIKE', '%' . request('search') . '%')                
                       ->orWhere('contact_name', 'LIKE', '%' . request('search') . '%')
-                      ->orWhere('type', 'LIKE', '%' . request('search') . '%');
+                      ->orWhere('location_type', 'LIKE', '%' . request('search') . '%');
                 }); 
 
             }

@@ -42,7 +42,7 @@ class ContainerYardRequest extends FormRequest
             'landlines'      => 'nullable|array',                
             'landlines.*'    => 'string|max:20|' . $numericDashRegex,                 
             
-            'type'           => 'required|string|max:50',                
+            'location_type'           => 'required|string|max:50',                
             
             // MIXED SYNTAX: string rules + in Rule object                
             'status' => [
