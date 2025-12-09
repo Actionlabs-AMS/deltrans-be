@@ -496,10 +496,23 @@ class AuthController extends Controller
 			], 403);
 		}
 
-		// Check if user has a role and if the role is active
-		if (!$user->role_id || !$user->role || !$user->role->active) {
+		// Check if user has a role and if the role is active and not deleted
+		$role = $user->role;
+		if (!$user->role_id || !$role || !$role->active || $role->trashed()) {
 			// Increment rate limiter
 			RateLimiter::hit('login:' . $ip, $lockoutDurationSeconds);
+
+			// Determine the specific reason for login failure
+			$reason = 'User role is inactive or missing';
+			if ($role) {
+				if ($role->trashed()) {
+					$reason = 'User role has been deleted';
+				} elseif (!$role->active) {
+					$reason = 'User role is inactive';
+				}
+			} else {
+				$reason = 'User role not found';
+			}
 
 			// Log failed login attempt
 			$this->logAction(
@@ -508,16 +521,23 @@ class AuthController extends Controller
 				[
 					'user_id' => $user->id,
 					'email' => $this->anonymizeEmail($credentials['email']),
-					'reason' => 'User role is inactive or missing',
+					'reason' => $reason,
 					'role_id' => $user->role_id,
+					'role_exists' => $role ? true : false,
+					'role_active' => $role ? $role->active : false,
+					'role_deleted' => $role ? $role->trashed() : false,
 					'ip_address' => $ip,
 					'user_agent' => $request->userAgent()
 				],
 				(string) $user->id
 			);
 
+			$errorMessage = $role && $role->trashed() 
+				? 'Your role has been deleted. Please contact administrator.'
+				: 'Your role is inactive. Please contact administrator.';
+
 			return response([
-				'errors' => ['Your role is inactive. Please contact administrator.'],
+				'errors' => [$errorMessage],
 				'status' => false,
 				'status_code' => 403,
 			], 403);
@@ -847,11 +867,46 @@ class AuthController extends Controller
 			], 403);
 		}
 
-		// Check if user has a role and if the role is active
-		if (!$user->role_id || !$user->role || !$user->role->active) {
+		// Check if user has a role and if the role is active and not deleted
+		$role = $user->role;
+		if (!$user->role_id || !$role || !$role->active || $role->trashed()) {
+			// Determine the specific reason for failure
+			$reason = 'User role is inactive or missing';
+			$errorMessage = 'Your role is inactive. Please contact administrator.';
+			
+			if ($role) {
+				if ($role->trashed()) {
+					$reason = 'User role has been deleted';
+					$errorMessage = 'Your role has been deleted. Please contact administrator.';
+				} elseif (!$role->active) {
+					$reason = 'User role is inactive';
+					$errorMessage = 'Your role is inactive. Please contact administrator.';
+				}
+			} else {
+				$reason = 'User role not found';
+				$errorMessage = 'Your role is not assigned. Please contact administrator.';
+			}
+
+			// Log the failure
+			$this->logAction(
+				'AUTHENTICATION',
+				'2FA_SETUP_BLOCKED',
+				[
+					'user_id' => $user->id,
+					'email' => $this->anonymizeEmail($credentials['email']),
+					'reason' => $reason,
+					'role_id' => $user->role_id,
+					'role_exists' => $role ? true : false,
+					'role_active' => $role ? $role->active : false,
+					'role_deleted' => $role ? $role->trashed() : false,
+					'ip_address' => $ip,
+				],
+				(string) $user->id
+			);
+
 			return response([
 				'success' => false,
-				'message' => 'Your role is inactive. Please contact administrator.',
+				'message' => $errorMessage,
 				'status' => false,
 				'status_code' => 403,
 			], 403);
