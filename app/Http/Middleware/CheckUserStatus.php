@@ -130,8 +130,6 @@ class CheckUserStatus
                 ], 403);
             }
         }
-        
-
         return $next($request);
     }
 }
