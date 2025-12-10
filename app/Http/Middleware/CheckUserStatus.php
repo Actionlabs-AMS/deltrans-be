@@ -117,7 +117,6 @@ class CheckUserStatus
             }
 
             // Check if role is inactive
-            // Explicitly check if role active status is false or null
             if ($role->active === false || $role->active === 0 || $role->active === null) {
                 // Delete all tokens to force logout
                 $user->tokens()->delete();
