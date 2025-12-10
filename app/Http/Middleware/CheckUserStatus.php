@@ -17,8 +17,11 @@ class CheckUserStatus
      * - Soft deleted
      * - Inactive (status = 0)
      * - Suspended (status = 2)
+     * - Have no role assigned
+     * - Have a role that has been deleted (soft-deleted)
+     * - Have a role that is inactive
      * 
-     * Only allows active users (status = 1) to continue.
+     * Only allows active users (status = 1) with active roles to continue.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
@@ -114,7 +117,8 @@ class CheckUserStatus
             }
 
             // Check if role is inactive
-            if (!$role->active) {
+            // Explicitly check if role active status is false or null
+            if ($role->active === false || $role->active === 0 || $role->active === null) {
                 // Delete all tokens to force logout
                 $user->tokens()->delete();
 
