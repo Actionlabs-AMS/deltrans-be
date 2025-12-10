@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\User;
+use App\Models\Role;
 
 class CheckUserStatus
 {
@@ -69,19 +70,56 @@ class CheckUserStatus
                 ], 403);
             }
 
-            // Check if user's role is active and not deleted
-            $role = $user->role;
-            if (!$user->role_id || !$role || !$role->active || $role->trashed()) {
+            // Check if user has a role assigned
+            if (!$user->role_id) {
                 // Delete all tokens to force logout
                 $user->tokens()->delete();
 
-                $errorMessage = 'Your role is inactive. Please contact administrator.';
-                if ($role && $role->trashed()) {
-                    $errorMessage = 'Your role has been deleted. Please contact administrator.';
-                }
+                return response()->json([
+                    'message' => 'Your role is not assigned. Please contact administrator.',
+                    'logout_required' => true,
+                    'status' => false,
+                    'status_code' => 403,
+                ], 403);
+            }
+
+            // Check if user's role exists (including soft-deleted roles)
+            // We need to check withTrashed() because belongsTo relationship won't load soft-deleted roles
+            $role = Role::withTrashed()->find($user->role_id);
+            
+            // Check if role doesn't exist at all
+            if (!$role) {
+                // Delete all tokens to force logout
+                $user->tokens()->delete();
 
                 return response()->json([
-                    'message' => $errorMessage,
+                    'message' => 'Your role has been deleted. Please contact administrator.',
+                    'logout_required' => true,
+                    'status' => false,
+                    'status_code' => 403,
+                ], 403);
+            }
+
+            // Check if role is soft-deleted
+            if ($role->trashed()) {
+                // Delete all tokens to force logout
+                $user->tokens()->delete();
+
+                return response()->json([
+                    'message' => 'Your role has been deleted. Please contact administrator.',
+                    'logout_required' => true,
+                    'status' => false,
+                    'status_code' => 403,
+                ], 403);
+            }
+
+            // Check if role is inactive
+            if (!$role->active) {
+                // Delete all tokens to force logout
+                $user->tokens()->delete();
+
+                return response()->json([
+                    'message' => 'Your role is inactive. Please contact administrator.',
                     'logout_required' => true,
                     'status' => false,
                     'status_code' => 403,
