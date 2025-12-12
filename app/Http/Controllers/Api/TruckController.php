@@ -47,20 +47,28 @@ class TruckController extends BaseController
      * operationId="getTrucksList",
      * tags={"Trucks Management"},
      * summary="Get list of trucks",
-     * description="Returns list of all trucks (paginated or filtered via parent::index()).",
+     * description="Returns a paginated list of all trucks with optional filtering via the 'search' parameter.",
      * security={{"sanctum": {}}},
      * @OA\Parameter(
-     *      name="page",
-     *      in="query",
-     *      description="Page number",
-     *      required=false,
-     *      @OA\Schema(type="integer", example=1)
+     * name="page",
+     * in="query",
+     * description="Page number",
+     * required=false,
+     * @OA\Schema(type="integer", example=1)
      * ),
      * @OA\Parameter(
-     *      name="per_page",
-     *      in="query",
-     *      description="Items per page",
-     *      @OA\Schema(type="integer", example=10)
+     * name="per_page",
+     * in="query",
+     * description="Items per page",
+     * required=false,
+     * @OA\Schema(type="integer", example=10)
+     * ),
+     * @OA\Parameter(
+     * name="search",
+     * in="query",
+     * description="Search term to filter trucks (e.g., by plate number or condition).",
+     * required=false,
+     * @OA\Schema(type="string", example="NCK6498")
      * ),
      * @OA\Response(
      * response=200,
@@ -69,14 +77,20 @@ class TruckController extends BaseController
      * type="array",
      * @OA\Items(ref="#/components/schemas/Truck")
      * )
-     * ),               
-     * @OA\Response(response=400, ref="#/components/responses/BadRequest"),               
+     * ),               
+     * @OA\Response(response=400, ref="#/components/responses/BadRequest"),               
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
     public function index()
     {
-        return parent::index();
+        //return parent::index();
+        $request = request();
+        $perPage = $request->get('per_page', 10);
+        $search = $request->get('search');
+        // ... get other filters
+
+        return $this->service->list($perPage, $search);
     }
 
     // `create()` is not an API method and is intentionally left without Swagger docs

@@ -17,7 +17,7 @@ class TruckService extends BaseService
     /**
      * Retrieve all resources with paginate.
      */
-    public function list($perPage = 10, $trash = false)
+    public function list($perPage = 10, $search = null, $trash = false)
     {
         try {
             $allFleetTruck = $this->getTotalCount();

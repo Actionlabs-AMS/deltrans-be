@@ -1654,7 +1654,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search term for filtering by Name, Address, Contact Name, or Type.",
+                        "description": "Search term for filtering by Name, Address, Contact Name, or Location Type.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -11243,7 +11243,7 @@
                     "Trucks Management"
                 ],
                 "summary": "Get list of trucks",
-                "description": "Returns list of all trucks (paginated or filtered via parent::index()).",
+                "description": "Returns a paginated list of all trucks with optional filtering via the 'search' parameter.",
                 "operationId": "getTrucksList",
                 "parameters": [
                     {
@@ -11260,9 +11260,20 @@
                         "name": "per_page",
                         "in": "query",
                         "description": "Items per page",
+                        "required": false,
                         "schema": {
                             "type": "integer",
                             "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search term to filter trucks (e.g., by plate number or condition).",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "NCK6498"
                         }
                     }
                 ],
