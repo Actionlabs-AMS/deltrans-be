@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -23,18 +22,15 @@ return new class extends Migration
             $table->string('container_size')->nullable();
             $table->decimal('rate_of_trip', 15, 2)->default(0);
             $table->decimal('total_amount', 15, 2)->default(0);
-            $table->string('soa_transaction_number')->nullable();
             $table->string('waybill_number')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('soa_transaction_number')->references('transaction_number')->on('statement_of_accounts')->onDelete('set null');
             $table->foreign('waybill_number')->references('waybill_number')->on('waybill_details')->onDelete('set null');
 
             // Indexes
             $table->index('transaction_date');
-            $table->index('soa_transaction_number');
             $table->index('waybill_number');
         });
 
@@ -49,9 +45,9 @@ return new class extends Migration
     {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
-        
+
         Schema::dropIfExists('billing_statements');
-        
+
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
