@@ -32,7 +32,7 @@ class NavigationSeeder extends Seeder
             // Fleet Management
             [
                 'name' => 'Fleet Management',
-                'slug' => 'Fleet management',
+                'slug' => 'fleet-management',
                 'icon' => 'truck',
                 'description' => 'Manage truck, drivers and helpers',
                 'parent_id' => null,
@@ -46,6 +46,14 @@ class NavigationSeeder extends Seeder
                         'description' => 'View and manage all registered trucks.',
                         'active' => true,
                         'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Maintenance History',
+                        'slug' => 'maintenance-history/:id',
+                        'icon' => 'activity',
+                        'description' => 'Review the maintenance history of a specific fleet truck',
+                        'active' => true,
+                        'show_in_menu' => false,
                     ],
                     [
                         'name' => 'Drivers',

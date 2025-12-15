@@ -19,7 +19,7 @@ class ContainerYardRequest extends FormRequest
     public function rules(): array
     {
         // Define regex for reuse
-        $numericDashRegex = 'regex:/^[0-9-]+$/';
+        $numericDashRegex = 'regex:/^[0-9+ -]+$/';
 
         // Get the ID for unique rule ignoring
         $yardId = $this->route('id');
