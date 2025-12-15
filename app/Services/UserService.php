@@ -158,7 +158,7 @@ class UserService extends BaseService
       
       // Build email body
       $userName = $user->user_login;
-      $emailBody = "<h2>Welcome to CorePanel!</h2>"
+      $emailBody = "<h2>Welcome to Deltrans / Deltrans Logistics Inc.</h2>"
           . "<p>Hello {$userName},</p>"
           . "<p>Your account has been created successfully. Please use the following credentials to log in:</p>"
           . "<p><strong>Username:</strong> {$user->user_login}</p>"
@@ -172,12 +172,12 @@ class UserService extends BaseService
           . "<p><a href='{$verify_url}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Verify Email Address</a></p>"
           . "<p>If the button doesn't work, you can copy and paste this link into your browser:</p>"
           . "<p>{$verify_url}</p>"
-          . "<p>Best regards,<br>The CorePanel Team</p>";
+          . "<p>Best regards,<br>The Deltrans Team</p>";
 
       // Send email using configured mailer from database settings
       $this->emailService->sendEmail(
         $user->user_email,
-        "Welcome to CorePanel - Verify Your Email",
+        "Welcome to Deltrans - Verify Your Email",
         $emailBody
       );
       
@@ -228,12 +228,12 @@ class UserService extends BaseService
           . "<p>{$login_url}</p>"
           . "<p><strong>Important:</strong> Please change your password after logging in for security reasons.</p>"
           . "<p>If you didn't request this password reset, please contact support immediately.</p>"
-          . "<p>Best regards,<br>The CorePanel Team</p>";
+          . "<p>Best regards,<br>The Deltrans Team</p>";
 
       // Send email using configured mailer from database settings
       $this->emailService->sendEmail(
         $user->user_email,
-        "CorePanel - Temporary Password",
+        "Deltrans - Temporary Password",
         $emailBody
       );
       
