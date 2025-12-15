@@ -48,6 +48,14 @@ class NavigationSeeder extends Seeder
                         'show_in_menu' => true,
                     ],
                     [
+                        'name' => 'Maintenance History',
+                        'slug' => 'maintenance-history/:id',
+                        'icon' => 'activity',
+                        'description' => 'Review the maintenance history of a specific fleet truck',
+                        'active' => true,
+                        'show_in_menu' => false,
+                    ],
+                    [
                         'name' => 'Drivers',
                         'slug' => 'drivers',
                         'icon' => 'user-round',
