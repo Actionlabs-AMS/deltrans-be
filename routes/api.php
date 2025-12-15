@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\HelperController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
+use App\Http\Controllers\Api\StatementOfAccountController;
 
 /*
 |--------------------------------------------------------------------------
@@ -250,6 +251,23 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [SoaDataOptionController::class, 'getTrashed']); // Retrieve soft-deleted SOA data options
 		Route::patch('/restore/{id}', [SoaDataOptionController::class, 'restore']); // Restore a soft-deleted SOA data option
 		Route::delete('/{id}', [SoaDataOptionController::class, 'forceDelete']); // Permanently delete a soft-deleted SOA data option
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Statement of Accounts Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Statement of Accounts CRUD Operations
+	|
+	*/
+	Route::prefix('statement-of-accounts')->group(function () {
+		// Generate SOA
+		Route::post('/generate', [StatementOfAccountController::class, 'generate']);  // Generate a new statement of account
+
+		// Standard CRUD operations
+		Route::get('/', [StatementOfAccountController::class, 'index']);  // Retrieve all statement of accounts
+		Route::get('/{id}', [StatementOfAccountController::class, 'show']);  // Retrieve a single statement of account
 	});
 
 	/*

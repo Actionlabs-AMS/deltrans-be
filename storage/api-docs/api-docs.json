@@ -9963,6 +9963,172 @@
                 ]
             }
         },
+        "/api/statement-of-accounts": {
+            "get": {
+                "tags": [
+                    "Statement of Accounts"
+                ],
+                "summary": "Get list of statement of accounts",
+                "description": "Display a listing of statement of accounts.",
+                "operationId": "22189e914e720908ae62e12923dfb046",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by DLI SA number or shipping line name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of statement of accounts retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/StatementOfAccount"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/statement-of-accounts/generate": {
+            "post": {
+                "tags": [
+                    "Statement of Accounts"
+                ],
+                "summary": "Generate a new statement of account",
+                "description": "Generate a new statement of account.",
+                "operationId": "87cb90433f868a7b75b4d6bb56bd1642",
+                "requestBody": {
+                    "description": "Statement of account data to generate",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GenerateSoaInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Statement of account generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatementOfAccount"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/statement-of-accounts/{id}": {
+            "get": {
+                "tags": [
+                    "Statement of Accounts"
+                ],
+                "summary": "Get a specific statement of account",
+                "description": "Display the specified statement of account.",
+                "operationId": "c7524f3dba0e395197af047b3274006a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the statement of account",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Statement of account retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatementOfAccount"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/content-management/tags": {
             "get": {
                 "tags": [
@@ -13979,6 +14145,106 @@
                 },
                 "type": "object"
             },
+            "StatementOfAccount": {
+                "title": "Statement of Account Model",
+                "description": "A statement of account resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "dli_sa_number": {
+                        "type": "string",
+                        "example": "SA-2024-001"
+                    },
+                    "soa_coverage_from": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-01"
+                    },
+                    "soa_coverage_to": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-31"
+                    },
+                    "waybill_id": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    },
+                    "signature": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-01T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-01T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "GenerateSoaInput": {
+                "title": "Generate SOA Input",
+                "description": "Data required to generate a statement of account",
+                "required": [
+                    "shipping_line_id",
+                    "dli_sa_number",
+                    "soa_coverage_from",
+                    "soa_coverage_to"
+                ],
+                "properties": {
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "dli_sa_number": {
+                        "type": "string",
+                        "example": "SA-2024-001"
+                    },
+                    "soa_coverage_from": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-01"
+                    },
+                    "soa_coverage_to": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-31"
+                    },
+                    "waybill_id": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    },
+                    "signature": {
+                        "type": "boolean",
+                        "example": false
+                    }
+                },
+                "type": "object"
+            },
             "Truck": {
                 "title": "Truck Model",
                 "description": "A truck resource",
@@ -14168,6 +14434,10 @@
         {
             "name": "SOA Data Option Management",
             "description": "API endpoints for SOA data option management"
+        },
+        {
+            "name": "Statement of Accounts",
+            "description": "API endpoints for managing statement of accounts"
         },
         {
             "name": "Tag Management",
