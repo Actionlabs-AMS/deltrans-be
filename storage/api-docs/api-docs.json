@@ -12579,7 +12579,7 @@
                                         "example": "NewSecurePass123!"
                                     },
                                     "user_status": {
-                                        "description": "User status (0=inactive, 1=active)",
+                                        "description": "User status (0=inactive, 1=active, 2=suspended)",
                                         "type": "integer",
                                         "example": 1
                                     },
@@ -13854,7 +13854,7 @@
                         "example": "john@example.com"
                     },
                     "user_status": {
-                        "description": "User status (0=inactive, 1=active)",
+                        "description": "User status (0=inactive, 1=active, 2=suspended)",
                         "type": "integer",
                         "example": 1
                     },
