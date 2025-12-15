@@ -16,6 +16,7 @@ class StatementOfAccountResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'transaction_number' => $this->transaction_number,
             'shipping_line_id' => $this->shipping_line_id,
             'shipping_line' => $this->whenLoaded('shippingLine', function () {
                 return [

@@ -17,6 +17,7 @@ return new class extends Migration {
         Schema::create('statement_of_accounts', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
+            $table->string('transaction_number')->unique();
             $table->bigInteger('shipping_line_id')->unsigned();
             $table->string('dli_sa_number');
             $table->date('soa_coverage_from');
@@ -33,6 +34,7 @@ return new class extends Migration {
                 ->onDelete('cascade');
 
             // Indexes
+            $table->index('transaction_number');
             $table->index('shipping_line_id');
             $table->index('dli_sa_number');
             $table->index('soa_coverage_from');
