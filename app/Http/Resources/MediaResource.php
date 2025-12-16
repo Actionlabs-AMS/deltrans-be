@@ -28,7 +28,7 @@ class MediaResource extends JsonResource
 			'caption' => $this->caption,
 			'short_descriptions' => $this->short_descriptions,
 			'created_at' => $this->updated_at->format('M d, Y'),
-			'updated_at' => $this->updated_at->format('Y-m-d H:m:s')
+			'updated_at' => $this->updated_at->format('Y-m-d H:i:s')
 		];
 	}
 }

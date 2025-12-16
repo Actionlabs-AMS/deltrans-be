@@ -14,10 +14,10 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $superAdminRole = Role::where('is_super_admin', true)->first() 
+        $superAdminRole = Role::where('is_super_admin', true)->first()
             ?? Role::where('name', 'Developer Account')->first()
             ?? Role::where('name', 'Super Admin')->first();
-        
+
         if (!$superAdminRole) {
             $this->command->error('Super Admin role not found. Please run RoleSeeder first.');
             return;
@@ -25,8 +25,8 @@ class UserSeeder extends Seeder
 
         // Create Super Admin user
         $salt = PasswordHelper::generateSalt();
-        $password = PasswordHelper::generatePassword($salt, 'admin123'); 
-        
+        $password = PasswordHelper::generatePassword($salt, 'admin123');
+
         $superAdmin = User::updateOrCreate(
             ['user_email' => 'admin@deltrans.com'],
             [
@@ -40,9 +40,26 @@ class UserSeeder extends Seeder
             ]
         );
 
+        // Create QA Super Admin user
+        $qaSalt = PasswordHelper::generateSalt();
+        $qaPassword = PasswordHelper::generatePassword($qaSalt, 'admin123');
+
+        $qaSuperAdmin = User::updateOrCreate(
+            ['user_email' => 'qa@email.com'],
+            [
+                'user_login' => 'qa',
+                'user_email' => 'qa@email.com',
+                'user_pass' => $qaPassword,
+                'user_salt' => $qaSalt,
+                'user_status' => 1,
+                'user_activation_key' => null,
+                'role_id' => $superAdminRole->id,
+            ]
+        );
+
         // Get all available roles (excluding Developer Account which is Super Admin)
         $availableRoles = Role::where('name', '!=', 'Developer Account')->get();
-        
+
         if ($availableRoles->isEmpty()) {
             $this->command->warn('No roles found. Creating users with Super Admin role.');
             $availableRoles = collect([$superAdminRole]);
@@ -51,7 +68,7 @@ class UserSeeder extends Seeder
         // Create 20 test users
         $firstNames = ['John', 'Jane', 'Mike', 'Sarah', 'David', 'Emma', 'Chris', 'Lisa', 'Tom', 'Amy', 'Mark', 'Julia', 'Paul', 'Rachel', 'Steve', 'Olivia', 'Dan', 'Sophia', 'Ryan', 'Emma'];
         $lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee'];
-        
+
         $roles = $availableRoles->toArray();
         $roleCount = count($roles);
 
@@ -59,19 +76,19 @@ class UserSeeder extends Seeder
             // Distribute roles evenly
             $roleIndex = ($i - 1) % $roleCount;
             $selectedRole = $availableRoles[$roleIndex];
-            
+
             $firstName = $firstNames[($i - 1) % count($firstNames)];
             $lastName = $lastNames[($i - 1) % count($lastNames)];
             $userLogin = strtolower($firstName . $i);
             $userEmail = $userLogin . '@deltrans.com';
             $password = 'password123'; // Same password for all test users
-            
+
             $salt = PasswordHelper::generateSalt();
             $hashedPassword = PasswordHelper::generatePassword($salt, $password);
-            
+
             // Random user status: 1 (Active), 0 (Inactive), or 2 (Suspended)
             $userStatus = [1, 1, 1, 0, 2][($i - 1) % 5]; // Mostly active users
-            
+
             $user = User::updateOrCreate(
                 ['user_email' => $userEmail],
                 [
@@ -84,7 +101,7 @@ class UserSeeder extends Seeder
                     'role_id' => $selectedRole->id,
                 ]
             );
-            
+
             // Save user meta for first_name and last_name
             if ($user->wasRecentlyCreated || !$user->getMeta('first_name')) {
                 $user->saveUserMeta([

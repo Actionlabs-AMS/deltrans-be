@@ -20,43 +20,69 @@ class PasswordHelper
     }
 
     /**
-     * Generate secure password hash with salt + pepper
-     * 
-     * @param string $salt
-     * @param string $password
-     * @return string
+     * Generate secure password hash with salt + pepper while staying within bcrypt limits.
      */
     public static function generatePassword(string $salt, string $password): string 
     {
-        // Use application key as pepper (more secure than env)
-        $pepper = config('app.key');
+        $hashedInput = self::buildHashInput($password, $salt);
         
-        // Combine salt + password + pepper (same order as in login verification)
-        $combined = $salt . $password . $pepper;
-        
-        // Use Laravel's bcrypt with high cost factor
-        return Hash::make($combined, [
-            'rounds' => 12 // Higher than default 10
+        return Hash::make($hashedInput, [
+            'rounds' => 12
         ]);
     }
 
     /**
-     * Verify password with salt + pepper
-     * 
-     * @param string $password
-     * @param string $salt
-     * @param string $hash
-     * @return bool
+     * Verify password with support for upgrading legacy hashes.
+     *
+     * @param string        $password
+     * @param string        $salt
+     * @param string        $hash
+     * @param callable|null $legacyUpgradeCallback Called when legacy hash matches (useful for rehashing)
      */
-    public static function verifyPassword(string $password, string $salt, string $hash): bool 
+    public static function verifyPassword(string $password, string $salt, string $hash, ?callable $legacyUpgradeCallback = null): bool 
     {
-        // Use application key as pepper (same as in password generation)
-        $pepper = config('app.key');
-        
-        // Combine salt + password + pepper (same order as in password generation)
-        $combined = $salt . $password . $pepper;
-        
-        return Hash::check($combined, $hash);
+        $newInput = self::buildHashInput($password, $salt);
+
+        if (Hash::check($newInput, $hash)) {
+            return true;
+        }
+
+        // Legacy behaviour combined salt+password+pepper directly which breaks when exceeding bcrypt's 72 byte limit.
+        $legacyInput = self::buildLegacyInput($password, $salt);
+        if (Hash::check($legacyInput, $hash)) {
+            if ($legacyUpgradeCallback) {
+                $legacyUpgradeCallback();
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Build the string that is actually hashed and stored (<=72 bytes to avoid bcrypt truncation).
+     */
+    protected static function buildHashInput(string $password, string $salt): string
+    {
+        $pepper = self::getPepper();
+        return hash('sha256', $salt . '|' . $password . '|' . $pepper);
+    }
+
+    /**
+     * Build the legacy hash input string (kept for backwards compatibility while we migrate hashes).
+     */
+    protected static function buildLegacyInput(string $password, string $salt): string
+    {
+        $pepper = self::getPepper();
+        return $salt . $password . $pepper;
+    }
+
+    /**
+     * Retrieve pepper value.
+     */
+    protected static function getPepper(): string
+    {
+        return (string) config('app.key');
     }
 
     /**

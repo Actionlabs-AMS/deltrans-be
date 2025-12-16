@@ -34,7 +34,7 @@ class ContainerYardService extends BaseService
     public function list($perPage = 10, $search = null, $trash = false)
     {
         try {
-    
+
             $allContainerYards = $this->getTotalCount();
             $trashedContainerYards = $this->getTrashedCount();
 
@@ -47,13 +47,13 @@ class ContainerYardService extends BaseService
 
             // FIX: Apply search conditions based on new columns
             if (request('search')) {
-                $query->where(function ($q) {                
+                $query->where(function ($q) {
                     //$searchTerm = '%' . request('search') . '%';
                     $q->where('name', 'LIKE', '%' . request('search') . '%')
-                      ->orWhere('address', 'LIKE', '%' . request('search') . '%')                
-                      ->orWhere('contact_name', 'LIKE', '%' . request('search') . '%')
-                      ->orWhere('location_type', 'LIKE', '%' . request('search') . '%');
-                }); 
+                        ->orWhere('address', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('contact_name', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('location_type', 'LIKE', '%' . request('search') . '%');
+                });
 
             }
 
@@ -68,11 +68,11 @@ class ContainerYardService extends BaseService
             return ContainerYardResource::collection(
                 $query->paginate($perPage)->withQueryString()
             )->additional([
-                'meta' => [
-                    'all' => $allContainerYards,                
-                    'trashed' => $trashedContainerYards                
-                ]
-            ]);
+                        'meta' => [
+                            'all' => $allContainerYards,
+                            'trashed' => $trashedContainerYards
+                        ]
+                    ]);
 
         } catch (\Exception $e) {
             // FIX: Updated error message
@@ -123,7 +123,7 @@ class ContainerYardService extends BaseService
     // public function update(array $data, int $id): ContainerYard
     // {
     //     $yard = $this->get_yard_by_id($id);
-        
+
     //     // Again, 'landlines' array is automatically handled by Model casting
     //     $yard->update($data);
 
@@ -140,7 +140,7 @@ class ContainerYardService extends BaseService
     {
         try {
             $yard = $this->get_yard_by_id($id);
-            $yard->update(['status' => 0]); 
+            $yard->update(['status' => 0]);
 
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch container yard details: ' . $e->getMessage());
@@ -156,7 +156,7 @@ class ContainerYardService extends BaseService
     {
         try {
             $yard = $this->get_yard_by_id($id);
-            $yard->update(['status' => 1]); 
+            $yard->update(['status' => 1]);
 
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch container yard details: ' . $e->getMessage());
@@ -175,8 +175,8 @@ class ContainerYardService extends BaseService
         try {
             // Using 'LIKE' to allow partial matching (e.g., searching "North" finds "North Yard")
             return ContainerYard::where('name', 'LIKE', '%' . $name . '%')
-            ->orderBy('name', 'asc') // Optional: Order alphabetically
-            ->get();
+                ->orderBy('name', 'asc') // Optional: Order alphabetically
+                ->get();
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch container yard details: ' . $e->getMessage());
         }

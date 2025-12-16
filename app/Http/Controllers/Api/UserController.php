@@ -491,8 +491,21 @@ class UserController extends BaseController
       if(isset($request->position))
         $meta_details['position'] = $request->position;
     
-      if(isset($request->user_role))
-        $meta_details['user_role'] = $request->user_role;
+      if(isset($request->user_role)) {
+        // Handle user_role as object/array or JSON string - convert to JSON string for user_meta
+        if (is_array($request->user_role) || is_object($request->user_role)) {
+          // Extract role_id from the object/array and persist it in users table
+          $roleId = is_array($request->user_role) ? ($request->user_role['id'] ?? null) : ($request->user_role->id ?? null);
+          if ($roleId) {
+            $data['role_id'] = $roleId;
+          }
+          // Convert to JSON string for user_meta
+          $meta_details['user_role'] = json_encode($request->user_role);
+        } else {
+          // Already a string, use as is
+          $meta_details['user_role'] = $request->user_role;
+        }
+      }
 
       // Debug: Log meta details being saved
       \Log::info('[UserController] Meta details to save:', $meta_details);
@@ -540,7 +553,7 @@ class UserController extends BaseController
    *             @OA\Property(property="user_login", type="string", example="johndoe", description="Username"),
    *             @OA\Property(property="user_email", type="string", format="email", example="john@example.com", description="User email"),
    *             @OA\Property(property="user_pass", type="string", format="password", example="NewSecurePass123!", description="New password (optional)"),
-   *             @OA\Property(property="user_status", type="integer", example=1, description="User status (0=inactive, 1=active)"),
+   *             @OA\Property(property="user_status", type="integer", example=1, description="User status (0=inactive, 1=active, 2=suspended)"),
    *             @OA\Property(property="first_name", type="string", example="John", description="User first name"),
    *             @OA\Property(property="last_name", type="string", example="Doe", description="User last name"),
    *             @OA\Property(property="user_role", type="string", example="admin", description="User role")

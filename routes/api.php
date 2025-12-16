@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\HelperController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
+use App\Http\Controllers\Api\StatementOfAccountController;
 
 /*
 |--------------------------------------------------------------------------
@@ -250,6 +251,23 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [SoaDataOptionController::class, 'getTrashed']); // Retrieve soft-deleted SOA data options
 		Route::patch('/restore/{id}', [SoaDataOptionController::class, 'restore']); // Restore a soft-deleted SOA data option
 		Route::delete('/{id}', [SoaDataOptionController::class, 'forceDelete']); // Permanently delete a soft-deleted SOA data option
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Statement of Accounts Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Statement of Accounts CRUD Operations
+	|
+	*/
+	Route::prefix('statement-of-accounts')->group(function () {
+		// Generate SOA
+		Route::post('/generate', [StatementOfAccountController::class, 'generate']);  // Generate a new statement of account
+
+		// Standard CRUD operations
+		Route::get('/', [StatementOfAccountController::class, 'index']);  // Retrieve all statement of accounts
+		Route::get('/{id}', [StatementOfAccountController::class, 'show']);  // Retrieve a single statement of account
 	});
 
 	/*
@@ -487,7 +505,10 @@ Route::post('/backups/webhook/trigger', [\App\Http\Controllers\Api\BackupControl
 
 Route::post('/signup', [AuthController::class, 'signup'])->middleware('throttle:auth');
 Route::post('/validate', [AuthController::class, 'activateUser'])->middleware('throttle:auth');
+// Legacy alias kept for backward compatibility
 Route::post('/generate-password', [AuthController::class, 'genTempPassword'])->middleware('throttle:auth');
+// New explicit forgot-password endpoint used by the frontend
+Route::post('/auth/forgot-password', [AuthController::class, 'genTempPassword'])->middleware('throttle:auth');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/enable-2fa-setup', [AuthController::class, 'enable2FASetup'])->middleware('throttle:login');
 

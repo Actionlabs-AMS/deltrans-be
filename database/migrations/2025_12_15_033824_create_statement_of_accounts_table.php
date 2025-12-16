@@ -14,24 +14,31 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::create('billing_statements', function (Blueprint $table) {
+        Schema::create('statement_of_accounts', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->string('transaction_number')->primary();
-            $table->date('transaction_date');
-            $table->text('description_of_charges')->nullable();
-            $table->string('container_size')->nullable();
-            $table->decimal('rate_of_trip', 15, 2)->default(0);
-            $table->decimal('total_amount', 15, 2)->default(0);
-            $table->string('waybill_number')->nullable();
+            $table->bigIncrements('id');
+            $table->string('transaction_number')->unique();
+            $table->bigInteger('shipping_line_id')->unsigned();
+            $table->string('dli_sa_number');
+            $table->date('soa_coverage_from');
+            $table->date('soa_coverage_to');
+            $table->json('waybill_id')->nullable();
+            $table->boolean('signature')->default(false);
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('waybill_number')->references('waybill_number')->on('waybill_details')->onDelete('set null');
+            $table->foreign('shipping_line_id')
+                ->references('id')
+                ->on('shipping_lines')
+                ->onDelete('cascade');
 
             // Indexes
-            $table->index('transaction_date');
-            $table->index('waybill_number');
+            $table->index('transaction_number');
+            $table->index('shipping_line_id');
+            $table->index('dli_sa_number');
+            $table->index('soa_coverage_from');
+            $table->index('soa_coverage_to');
         });
 
         // Re-enable foreign key checks
@@ -46,7 +53,7 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::dropIfExists('billing_statements');
+        Schema::dropIfExists('statement_of_accounts');
 
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;                
+use Illuminate\Http\Request;
 use App\Http\Requests\ContainerYardRequest; // Assumed new Request class                
 use App\Services\ContainerYardService;      // Assumed new Service class                
-use App\Services\MessageService;    
-use App\Http\Resources\ContainerYardResource;   
+use App\Services\MessageService;
+use App\Http\Resources\ContainerYardResource;
 
 /**
  * @OA\Tag(
@@ -42,13 +42,13 @@ use App\Http\Resources\ContainerYardResource;
  * @OA\Property(property="status", type="integer", example=1),                
  * )
  */
-class ContainerYardController extends BaseController                
+class ContainerYardController extends BaseController
 {
     // Updated constructor to use ContainerYardService                
-    public function __construct(ContainerYardService $cyService, MessageService $messageService)                
-    {                
-        parent::__construct($cyService, $messageService);                
-    }                
+    public function __construct(ContainerYardService $cyService, MessageService $messageService)
+    {
+        parent::__construct($cyService, $messageService);
+    }
 
     /**
      * @OA\Get(
@@ -124,13 +124,13 @@ class ContainerYardController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
-    public function store(ContainerYardRequest $request)                
+    public function store(ContainerYardRequest $request)
     {
         try {
             //NOTE landline is array, format should be ["02-1111-1111","02-1111-1111"]
             $data = $request->validated(); // Use validated data                
-            $containerYard = $this->service->store($data);                
-            return response($containerYard, 201);                
+            $containerYard = $this->service->store($data);
+            return response($containerYard, 201);
         } catch (\Exception $e) {
             return response()->json([
                 'status_code' => 500,
@@ -166,12 +166,12 @@ class ContainerYardController extends BaseController
     public function show($id)
     {
         try {
-            $containerYard = $this->service->get_yard_by_id($id);                
+            $containerYard = $this->service->get_yard_by_id($id);
             return response($containerYard, 200); // Usually 200 OK for GET                
         } catch (\Exception $e) {
-            return response()->json([                
+            return response()->json([
                 'status_code' => 404,
-                'message' => 'Container yard id not found.',                
+                'message' => 'Container yard id not found.',
             ], 404);
         }
     }
@@ -206,16 +206,16 @@ class ContainerYardController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
-    public function update(ContainerYardRequest $request, string $id)                
+    public function update(ContainerYardRequest $request, string $id)
     {
         try {
             $data = $request->validated(); // Use validated data                
-            $containerYard = $this->service->update($data, $id);                
-            return response($containerYard, 200);                
+            $containerYard = $this->service->update($data, $id);
+            return response($containerYard, 200);
         } catch (\Exception $e) {
-             return response()->json([                
+            return response()->json([
                 'status_code' => 404,
-                'message' => 'Container yard id not found.',                
+                'message' => 'Container yard id not found.',
             ], 404);
         }
     }
@@ -248,21 +248,21 @@ class ContainerYardController extends BaseController
      * )
      */
     public function destroy($id)
-    {                
-        try {                
-            $this->service->deactivate_yard_by_id($id);                 
-            
-            return response()->json([
-                'status_code' => 200,                
-                'message' => 'Container yard deactivated successfully.',                
-            ], 200);                
+    {
+        try {
+            $this->service->deactivate_yard_by_id($id);
 
-        } catch (\Exception $e) {                
-            return response()->json([                
-                'status_code' => 404,                
-                'message' => 'Container yard id not found.',                
-            ], 404);                
-        }                
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Container yard deactivated successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 404,
+                'message' => 'Container yard id not found.',
+            ], 404);
+        }
     }
 
     /**
@@ -292,22 +292,22 @@ class ContainerYardController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
-    public function restore($id)                
-    {                
-        try {                
-            $this->service->activate_yard_by_id($id); 
-            
-            return response()->json([
-                'status_code' => 200,                
-                'message' => 'Container yard activated successfully.',                
-            ], 200);                
+    public function restore($id)
+    {
+        try {
+            $this->service->activate_yard_by_id($id);
 
-        } catch (\Exception $e) {                
-            return response()->json([                
-                'status_code' => 404,                
-                'message' => 'Container yard id not found.',                
-            ], 404);                
-        }                
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Container yard activated successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 404,
+                'message' => 'Container yard id not found.',
+            ], 404);
+        }
     }
 
     /**
@@ -339,25 +339,25 @@ class ContainerYardController extends BaseController
      */
     public function search(Request $request)
     {
-        try {                
-           $searchTerm = $request->query('name');
-        
+        try {
+            $searchTerm = $request->query('name');
+
             if (!$searchTerm) {
                 return response()->json(['message' => 'Name search term is required.'], 400);
             }
-            
+
             $yards = $this->service->search_yard_by_name($searchTerm);
-            
+
             //return response($yards, 200);
-            
+
             return ContainerYardResource::collection($yards);
 
-        } catch (\Exception $e) {                
-            return response()->json([                
-                'status_code' => 404,                
-                'message' => 'Container yard name not found.',                
-            ], 404);                
-        }     
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 404,
+                'message' => 'Container yard name not found.',
+            ], 404);
+        }
 
     }
 

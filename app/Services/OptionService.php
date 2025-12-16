@@ -138,7 +138,7 @@ class OptionService extends BaseService
             'general' => [
                 'site_name' => $this->getOption('site_name', 'CorePanel'),
                 'site_description' => $this->getOption('site_description', 'Admin Panel'),
-                'timezone' => $this->getOption('timezone', 'UTC'),
+                'timezone' => $this->getOption('timezone', 'Asia/Manila'),
             ],
         ];
 
@@ -204,7 +204,7 @@ class OptionService extends BaseService
                 'sidenav_logo' => $sidenavLogo ? $getLogoUrl($sidenavLogo) : null,
             ],
             'date_time' => [
-                'timezone' => $this->getOption('timezone', 'UTC'),
+                'timezone' => $this->getOption('timezone', 'Asia/Manila'),
                 'date_format' => $this->getOption('date_format', 'Y-m-d'),
                 'time_format' => $this->getOption('time_format', 'H:i:s'),
             ],
@@ -266,206 +266,40 @@ class OptionService extends BaseService
 
     /**
      * Get email settings
+     * Uses EmailHelper for consistent email settings management
      */
     public function getEmailSettings()
     {
-        $settings = [
-            'mailer' => $this->getOption('mail_mailer', 'smtp'),
-            'mail_from_name' => $this->getOption('mail_from_name', 'CorePanel'),
-            'mail_from_address' => $this->getOption('mail_from_address', 'noreply@example.com'),
-            // SMTP settings
-            'smtp' => [
-                'host' => $this->getOption('mail_host', ''),
-                'port' => $this->getOption('mail_port', '587'),
-                'encryption' => $this->getOption('mail_encryption', 'tls'),
-                'username' => $this->getOption('mail_username', ''),
-                'password' => $this->getOption('mail_password', ''),
-            ],
-            // Mailgun settings
-            'mailgun' => [
-                'domain' => $this->getOption('mailgun_domain', ''),
-                'secret' => $this->getOption('mailgun_secret', ''),
-            ],
-            // Postmark settings
-            'postmark' => [
-                'token' => $this->getOption('postmark_token', ''),
-            ],
-            // SES settings
-            'ses' => [
-                'key' => $this->getOption('ses_key', ''),
-                'secret' => $this->getOption('ses_secret', ''),
-                'region' => $this->getOption('ses_region', 'us-east-1'),
-            ],
-            // Microsoft Graph settings
-            'microsoft' => [
-                'tenant_id' => $this->getOption('microsoft_tenant_id', ''),
-                'client_id' => $this->getOption('microsoft_client_id', ''),
-                'client_secret' => $this->getOption('microsoft_client_secret', ''),
-                'sender_email' => $this->getOption('microsoft_sender_email', ''),
-            ],
-        ];
-
-        return $settings;
+        $emailHelper = new \App\Helpers\EmailHelper($this);
+        return $emailHelper->getEmailSettings();
     }
 
     /**
      * Get email configuration for Laravel Mail config
      * Primary: Database options, Fallback: Environment variables
+     * Uses EmailHelper for consistent email settings management
      * 
      * @return array
      */
     public function getEmailConfig()
     {
-        $service = $this;
-        return Cache::remember('mail.config', 3600, function () use ($service) {
-            // Helper function to get option with env fallback
-            $getConfig = function ($optionKey, $envKey, $default = null) use ($service) {
-                try {
-                    $dbValue = $service->getOption($optionKey, null);
-                    if ($dbValue !== null && $dbValue !== '') {
-                        return $dbValue;
-                    }
-                } catch (\Exception $e) {
-                    // If database query fails, fallback to env
-                }
-                return env($envKey, $default);
-            };
-
-            // Get mailer (default mailer)
-            // Note: "microsoft" is not a Laravel mailer - it's handled via MicrosoftGraphService
-            // If microsoft is selected, use SMTP as fallback for Laravel Mail
-            $mailer = $getConfig('mail_mailer', 'MAIL_MAILER', 'smtp');
-            if ($mailer === 'microsoft') {
-                $mailer = 'smtp'; // Use SMTP for Laravel Mail, Microsoft Graph handled separately
-            }
-
-            // Get from address and name
-            $fromAddress = $getConfig('mail_from_address', 'MAIL_FROM_ADDRESS', 'hello@example.com');
-            $fromName = $getConfig('mail_from_name', 'MAIL_FROM_NAME', 'Example');
-
-            // Build mailers configuration
-            $mailers = [
-                'smtp' => [
-                    'transport' => 'smtp',
-                    'url' => env('MAIL_URL'),
-                    'host' => $getConfig('mail_host', 'MAIL_HOST', 'smtp.mailgun.org'),
-                    'port' => $getConfig('mail_port', 'MAIL_PORT', 587),
-                    'encryption' => $getConfig('mail_encryption', 'MAIL_ENCRYPTION', 'tls'),
-                    'username' => $getConfig('mail_username', 'MAIL_USERNAME'),
-                    'password' => $getConfig('mail_password', 'MAIL_PASSWORD'),
-                    'timeout' => null,
-                    'local_domain' => env('MAIL_EHLO_DOMAIN'),
-                ],
-                'ses' => [
-                    'transport' => 'ses',
-                ],
-                'postmark' => [
-                    'transport' => 'postmark',
-                ],
-                'mailgun' => [
-                    'transport' => 'mailgun',
-                ],
-                'sendmail' => [
-                    'transport' => 'sendmail',
-                    'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
-                ],
-                'log' => [
-                    'transport' => 'log',
-                    'channel' => env('MAIL_LOG_CHANNEL'),
-                ],
-                'array' => [
-                    'transport' => 'array',
-                ],
-                'failover' => [
-                    'transport' => 'failover',
-                    'mailers' => [
-                        'smtp',
-                        'log',
-                    ],
-                ],
-                'roundrobin' => [
-                    'transport' => 'roundrobin',
-                    'mailers' => [
-                        'ses',
-                        'postmark',
-                    ],
-                ],
-            ];
-
-            return [
-                'default' => $mailer,
-                'mailers' => $mailers,
-                'from' => [
-                    'address' => $fromAddress,
-                    'name' => $fromName,
-                ],
-                'markdown' => [
-                    'theme' => 'default',
-                    'paths' => [
-                        resource_path('views/vendor/mail'),
-                    ],
-                ],
-            ];
+        $emailHelper = new \App\Helpers\EmailHelper($this);
+        return Cache::remember('mail.config', 3600, function () use ($emailHelper) {
+            return $emailHelper->getLaravelMailConfig();
         });
     }
 
     /**
      * Update email settings
      */
+    /**
+     * Update email settings
+     * Uses EmailHelper for consistent email settings management
+     */
     public function updateEmailSettings(array $settings)
     {
-        $results = [];
-        
-        // Mailer and from settings
-        if (isset($settings['mailer'])) {
-            $results['mail_mailer'] = $this->setOption('mail_mailer', $settings['mailer'], 'string');
-        }
-        if (isset($settings['mail_from_name'])) {
-            $results['mail_from_name'] = $this->setOption('mail_from_name', $settings['mail_from_name'], 'string');
-        }
-        if (isset($settings['mail_from_address'])) {
-            $results['mail_from_address'] = $this->setOption('mail_from_address', $settings['mail_from_address'], 'string');
-        }
-        
-        // SMTP settings
-        if (isset($settings['smtp'])) {
-            foreach ($settings['smtp'] as $key => $value) {
-                $optionKey = 'mail_' . $key;
-                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
-            }
-        }
-        
-        // Mailgun settings
-        if (isset($settings['mailgun'])) {
-            foreach ($settings['mailgun'] as $key => $value) {
-                $optionKey = 'mailgun_' . $key;
-                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
-            }
-        }
-        
-        // Postmark settings
-        if (isset($settings['postmark'])) {
-            foreach ($settings['postmark'] as $key => $value) {
-                $optionKey = 'postmark_' . $key;
-                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
-            }
-        }
-        
-        // SES settings
-        if (isset($settings['ses'])) {
-            foreach ($settings['ses'] as $key => $value) {
-                $optionKey = 'ses_' . $key;
-                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
-            }
-        }
-        
-        // Microsoft Graph settings
-        if (isset($settings['microsoft'])) {
-            foreach ($settings['microsoft'] as $key => $value) {
-                $optionKey = 'microsoft_' . $key;
-                $results[$optionKey] = $this->setOption($optionKey, $value, 'string');
-            }
-        }
+        $emailHelper = new \App\Helpers\EmailHelper($this);
+        $results = $emailHelper->saveEmailSettings($settings);
         
         // Clear all option caches
         Cache::forget('options.all');
@@ -594,7 +428,7 @@ class OptionService extends BaseService
             // General Settings
             'site_name' => ['value' => 'CorePanel', 'type' => 'string', 'description' => 'Site name'],
             'site_description' => ['value' => 'Admin Panel', 'type' => 'string', 'description' => 'Site description'],
-            'timezone' => ['value' => 'UTC', 'type' => 'string', 'description' => 'Default timezone'],
+            'timezone' => ['value' => 'Asia/Manila', 'type' => 'string', 'description' => 'Default timezone'],
         ];
 
         foreach ($defaultOptions as $key => $data) {

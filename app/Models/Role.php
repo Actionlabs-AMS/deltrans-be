@@ -25,6 +25,8 @@ class Role extends Model
 	 * @var array<string, string>
 	 */
 	protected $casts = [
+		'active' => 'boolean',
+		'is_super_admin' => 'boolean',
 		'created_at' => 'datetime',
 		'updated_at' => 'datetime',
 		'deleted_at' => 'datetime',
