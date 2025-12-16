@@ -52,7 +52,14 @@ class RequestSeeder extends Seeder
         ];
 
         foreach ($requests as $request) {
-            DB::table('requests')->insert($request);
+            DB::table('requests')->updateOrInsert(
+                [
+                    'extra_money' => $request['extra_money'],
+                    'reason' => $request['reason'],
+                    'type' => $request['type'],
+                ],
+                $request
+            );
         }
     }
 }
