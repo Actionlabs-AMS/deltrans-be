@@ -99,14 +99,20 @@ class OptionSeeder extends Seeder
             
             // Email Settings
             [
+                'option_key' => 'mail_mailer',
+                'option_value' => 'sendmail',
+                'option_type' => 'string',
+                'description' => 'Mail driver/mailer to use for sending emails',
+            ],
+            [
                 'option_key' => 'mail_from_name',
-                'option_value' => 'CorePanel',
+                'option_value' => 'Deltrans Logistics',
                 'option_type' => 'string',
                 'description' => 'Default sender name for emails',
             ],
             [
                 'option_key' => 'mail_from_address',
-                'option_value' => 'noreply@corepanel.com',
+                'option_value' => 'MBE@deltranslogistics.com',
                 'option_type' => 'string',
                 'description' => 'Default sender email address',
             ],
