@@ -437,6 +437,10 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/bulk/delete', [TruckController::class, 'bulkDelete']);  // Bulk delete shipping lines
 		Route::post('/bulk/restore', [TruckController::class, 'bulkRestore']);  // Bulk restore shipping lines
 		Route::post('/bulk/force-delete', [TruckController::class, 'bulkForceDelete']);  // Bulk permanently delete shipping lines
+	
+		// Route for maintenance history
+    	Route::get('{truckId}/maintenance-history', [TruckMaintenanceController::class, 'getMaintenanceHistory']);
+	
 	});
 
 	// // Custom route for archived (trashed) shipping lines with a distinct prefix

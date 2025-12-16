@@ -11559,6 +11559,95 @@
                 ]
             }
         },
+        "/api/trucks/{truckId}/maintenance-history": {
+            "get": {
+                "tags": [
+                    "Truck Maintenance"
+                ],
+                "summary": "Get paginated maintenance records for a specific truck",
+                "description": "Returns a paginated list of maintenance records for the given truck ID, with searching capabilities on receipt number and article.",
+                "operationId": "getTruckMaintenanceHistory",
+                "parameters": [
+                    {
+                        "name": "truckId",
+                        "in": "path",
+                        "description": "ID of the truck to retrieve maintenance history for.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search term to filter maintenance records (by receipt_number or article).",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Oil Filter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TruckMaintenanceRecord"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Truck not found"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/2fa/send-code": {
             "post": {
                 "tags": [
@@ -14035,6 +14124,63 @@
                     }
                 },
                 "type": "object"
+            },
+            "TruckMaintenanceRecord": {
+                "title": "Truck Maintenance Record",
+                "description": "Details of a single maintenance event for a truck.",
+                "required": [
+                    "id",
+                    "receipt_number",
+                    "article",
+                    "quantity",
+                    "price",
+                    "maintenance_date",
+                    "fleet_truck_plate_number"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique ID of the maintenance record.",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "receipt_number": {
+                        "description": "Unique receipt or service number.",
+                        "type": "string"
+                    },
+                    "article": {
+                        "description": "Description of the part or service.",
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "description": "Quantity of the article/part used.",
+                        "type": "integer"
+                    },
+                    "price": {
+                        "description": "Unit price of the article.",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "maintenance_date": {
+                        "description": "The date the maintenance was performed.",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "fleet_truck_plate_number": {
+                        "description": "The plate number of the truck.",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "description": "Timestamp when the record was created.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp when the record was last updated.",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
             }
         },
         "responses": {
@@ -14200,6 +14346,10 @@
         {
             "name": "Authentication",
             "description": "Authentication"
+        },
+        {
+            "name": "Truck Maintenance",
+            "description": "Truck Maintenance"
         }
     ]
 }
