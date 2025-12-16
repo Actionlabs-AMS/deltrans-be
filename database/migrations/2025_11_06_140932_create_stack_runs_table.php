@@ -19,9 +19,11 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->bigInteger('shipping_line_id')->unsigned();
             $table->integer('quantity_of_container')->default(0);
+            $table->string('container_size')->nullable();
+            $table->integer('expected_no_of_waybill')->default(0); // Calculated based on quantity_of_container: 1 waybill = 2 20ft containers OR 1 waybill = 1 40ft container
             $table->bigInteger('cypa_id_from')->unsigned();
             $table->bigInteger('cypa_id_to')->unsigned();
-            $table->json('waybill')->nullable();
+            $table->json('waybill_number')->nullable();
             $table->decimal('total_amount', 15, 2)->default(0);
             $table->timestamps();
             $table->softDeletes();

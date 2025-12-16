@@ -182,6 +182,29 @@ class Role extends Model
 			$hasChildren = !empty($navigation['children']);
 			$childrenRoutes = $hasChildren ? $this->childRoutes($navigation['children'], $navigation->id) : [];
 
+			// For standalone routes (no children), also generate create/edit routes if permissions exist
+			if (!$hasChildren && !empty($permissions)) {
+				// Generate create route if can_create permission exists
+				if (!empty($permissions['can_create'])) {
+					$childrenRoutes[] = [
+						'path' => '/' . $navigation->slug . '/create',
+						'name' => 'Create ' . $navigation->name,
+						'side_nav' => 'false',
+						'icon' => $navigation->icon ?? '',
+					];
+				}
+
+				// Generate edit route if can_edit permission exists
+				if (!empty($permissions['can_edit'])) {
+					$childrenRoutes[] = [
+						'path' => '/' . $navigation->slug . '/:id',
+						'name' => 'Edit ' . $navigation->name,
+						'side_nav' => 'false',
+						'icon' => $navigation->icon ?? '',
+					];
+				}
+			}
+
 			// Include parent navigation based on these rules:
 			// 1. If it has children: only include if childrenRoutes is not empty (has children with permissions)
 			// 2. If it has no children (standalone route): include if it has direct permissions

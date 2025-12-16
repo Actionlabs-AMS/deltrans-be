@@ -28,8 +28,8 @@ class DatabaseSeeder extends Seeder
             DriverSeeder::class,
             RequestSeeder::class,
             FixedExpenseSeeder::class,
-            StackRunSeeder::class,
             WaybillDetailsSeeder::class,
+            StackRunSeeder::class,
             StatementOfAccountSeeder::class,
         ]);
     }

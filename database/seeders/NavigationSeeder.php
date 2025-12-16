@@ -95,6 +95,20 @@ class NavigationSeeder extends Seeder
                 ],
             ],
 
+            // Shipping Lines Section
+            [
+                'name' => 'Shipping Lines',
+                'slug' => 'shipping-lines',
+                'icon' => 'ship',
+                'description' => 'Manage shipping lines and their details',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => true,
+                'children' => [
+
+                ],
+            ],
+
             // User Management Section
             [
                 'name' => 'User Management',

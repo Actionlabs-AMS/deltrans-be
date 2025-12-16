@@ -18,16 +18,14 @@ return new class extends Migration {
             $table->engine = 'InnoDB';
             $table->string('waybill_number')->primary();
             $table->date('transaction_date');
-            $table->string('shipping_line_email_address'); //remove
             $table->bigInteger('shipping_line_id')->nullable()->unsigned();
             $table->bigInteger('cypa_id')->nullable()->unsigned();
             $table->bigInteger('driver_id')->nullable()->unsigned();
             $table->bigInteger('helper_id')->nullable()->unsigned();
             $table->string('truck_plate_number')->nullable();
             $table->bigInteger('fixed_expense_id')->nullable()->unsigned();
-            $table->string('container_size')->nullable();
             $table->decimal('other_expense', 15, 2)->default(0);
-            $table->string('container_id')->nullable();
+            $table->json('container_id')->nullable();
             $table->date('pickup_date')->nullable();
             $table->date('delivered_date')->nullable();
             $table->decimal('post_expense_amount', 15, 2)->default(0);
@@ -51,7 +49,8 @@ return new class extends Migration {
             $table->index('truck_plate_number');
             $table->index('shipping_line_id');
             $table->index('fixed_expense_id');
-            $table->index('container_id');
+            // Note: container_id is JSON type, cannot be directly indexed in MySQL
+            // If indexing is needed, use a generated column with JSON path
             $table->index('pickup_date');
             $table->index('delivered_date');
         });
