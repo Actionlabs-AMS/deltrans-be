@@ -150,7 +150,7 @@ class StackRunController extends BaseController
      *                 @OA\Property(property="quantity_of_container", type="integer", example=2),
      *                 @OA\Property(property="container_size", type="string", example="20ft"),
      *                 @OA\Property(property="total_amount", type="number", example=0),
-     *                 @OA\Property(property="status", type="integer", example=0),
+     *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )
@@ -223,7 +223,7 @@ class StackRunController extends BaseController
      *                 @OA\Property(property="quantity_of_container", type="integer", example=2),
      *                 @OA\Property(property="container_size", type="string", example="20ft"),
      *                 @OA\Property(property="total_amount", type="number", example=0),
-     *                 @OA\Property(property="status", type="integer", example=0),
+     *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )

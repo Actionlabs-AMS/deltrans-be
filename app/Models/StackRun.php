@@ -22,7 +22,7 @@ class StackRun extends Model
         'cypa_id_to',
         'quantity_of_container',
         'container_size',
-        'status',
+        'is_complete',
         'total_amount',
     ];
 
@@ -33,7 +33,7 @@ class StackRun extends Model
      */
     protected $casts = [
         'quantity_of_container' => 'integer',
-        'status' => 'integer',
+        'is_complete' => 'integer',
         'total_amount' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -53,7 +53,7 @@ class StackRun extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'status' => 0,
+        'is_complete' => 0,
         'total_amount' => 0.00,
     ];
 

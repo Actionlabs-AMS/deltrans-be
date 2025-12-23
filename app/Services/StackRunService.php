@@ -18,9 +18,9 @@ class StackRunService extends BaseService
      */
     public function store(array $data)
     {
-        // Remove status and total_amount from data if provided
+        // Remove is_complete and total_amount from data if provided
         // These fields are fillable but not allowed in this API (other APIs will update them)
-        unset($data['status'], $data['total_amount']);
+        unset($data['is_complete'], $data['total_amount']);
 
         // Create the model - defaults will be applied from model $attributes
         $model = $this->model::create($data);
@@ -43,9 +43,9 @@ class StackRunService extends BaseService
      */
     public function update(array $data, $id)
     {
-        // Remove status and total_amount from data if provided
+        // Remove is_complete and total_amount from data if provided
         // These fields are fillable but not allowed in this API (other APIs will update them)
-        unset($data['status'], $data['total_amount']);
+        unset($data['is_complete'], $data['total_amount']);
 
         $model = $this->model::findOrFail($id);
         $model->update($data);

@@ -35,7 +35,7 @@ class StackRunSeeder extends Seeder
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
                 'total_amount' => 8000.00,
-                'status' => 1,
+                'is_complete' => 1,
             ],
             [
                 'reference_number' => 'SR-002',
@@ -45,7 +45,7 @@ class StackRunSeeder extends Seeder
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
                 'total_amount' => 4000.00,
-                'status' => 1,
+                'is_complete' => 1,
             ],
             [
                 'reference_number' => 'SR-003',
@@ -55,7 +55,7 @@ class StackRunSeeder extends Seeder
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
                 'total_amount' => 12000.00,
-                'status' => 0,
+                'is_complete' => 0,
             ],
             [
                 'reference_number' => 'SR-004',
@@ -65,7 +65,7 @@ class StackRunSeeder extends Seeder
                 'cypa_id_from' => $cypaIds[1],
                 'cypa_id_to' => $cypaIds[0],
                 'total_amount' => 8000.00,
-                'status' => 1,
+                'is_complete' => 1,
             ],
             [
                 'reference_number' => 'SR-005',
@@ -75,7 +75,7 @@ class StackRunSeeder extends Seeder
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
                 'total_amount' => 4000.00,
-                'status' => 0,
+                'is_complete' => 0,
             ],
         ];
 

@@ -23,7 +23,7 @@ class StackRunResource extends JsonResource
             'quantity_of_container' => $this->quantity_of_container,
             'container_size' => $this->container_size,
             'total_amount' => $this->total_amount,
-            'status' => $this->status,
+            'is_complete' => (int) $this->is_complete,
             'shipping_line' => $this->whenLoaded('shippingLine'),
             'cypa_from' => $this->whenLoaded('cypaFrom'),
             'cypa_to' => $this->whenLoaded('cypaTo'),
