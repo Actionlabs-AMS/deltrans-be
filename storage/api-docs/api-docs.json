@@ -9963,6 +9963,326 @@
                 ]
             }
         },
+        "/api/stack-runs": {
+            "get": {
+                "tags": [
+                    "Stack Run Management"
+                ],
+                "summary": "Get list of stack runs",
+                "description": "Display a listing of stack runs.",
+                "operationId": "e64b9cb202d259c9f1b0eb178d6fe4ba",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by container size, shipping line name, or CYPA name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of stack runs retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Stack Run Management"
+                ],
+                "summary": "Create a new stack run",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "62f465e6107c9f0581142f11bb28d8b5",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "shipping_line_id",
+                                    "cypa_id_from",
+                                    "cypa_id_to",
+                                    "quantity_of_container",
+                                    "container_size"
+                                ],
+                                "properties": {
+                                    "shipping_line_id": {
+                                        "description": "Shipping line ID",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "cypa_id_from": {
+                                        "description": "CYPA ID (from)",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "cypa_id_to": {
+                                        "description": "CYPA ID (to)",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "quantity_of_container": {
+                                        "description": "Quantity of containers",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "container_size": {
+                                        "description": "Container size (20ft or 40ft)",
+                                        "type": "string",
+                                        "example": "20ft"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Stack run created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "shipping_line_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cypa_id_from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cypa_id_to": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "quantity_of_container": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "container_size": {
+                                                    "type": "string",
+                                                    "example": "20ft"
+                                                },
+                                                "expected_no_of_waybill": {
+                                                    "description": "Auto-calculated based on quantity and container size",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "waybill_number": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "nullable": true
+                                                },
+                                                "total_amount": {
+                                                    "type": "number",
+                                                    "example": 0
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "example": "2025-01-01 12:00:00"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "example": "2025-01-01 12:00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/stack-runs/{id}": {
+            "get": {
+                "tags": [
+                    "Stack Run Management"
+                ],
+                "summary": "Get a specific stack run",
+                "description": "Display the specified stack run.",
+                "operationId": "092f9b264b8deb5d6dc6d0f1b5b60332",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Stack Run ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Stack run retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stack run not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Stack run not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/statement-of-accounts": {
             "get": {
                 "tags": [
@@ -14434,6 +14754,10 @@
         {
             "name": "SOA Data Option Management",
             "description": "API endpoints for SOA data option management"
+        },
+        {
+            "name": "Stack Run Management",
+            "description": "API endpoints for stack run management"
         },
         {
             "name": "Statement of Accounts",

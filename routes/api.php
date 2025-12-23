@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\StatementOfAccountController;
+use App\Http\Controllers\Api\StackRunController;
 
 /*
 |--------------------------------------------------------------------------
@@ -297,6 +298,21 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [HelperController::class, 'getTrashed']); // Retrieve soft-deleted helpers
 		Route::patch('/restore/{id}', [HelperController::class, 'restore']); // Restore a soft-deleted helper
 		Route::delete('/{id}', [HelperController::class, 'forceDelete']); // Permanently delete a soft-deleted helper
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Stack Run Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Stack Runs CRUD Operations
+	|
+	*/
+	Route::prefix('stack-runs')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [StackRunController::class, 'index']);  // Retrieve all stack runs
+		Route::get('/{id}', [StackRunController::class, 'show']);  // Retrieve a single stack run
+		Route::post('/', [StackRunController::class, 'store']);  // Create a new stack run
 	});
 
 	/*

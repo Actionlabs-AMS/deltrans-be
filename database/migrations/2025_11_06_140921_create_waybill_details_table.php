@@ -49,8 +49,6 @@ return new class extends Migration {
             $table->index('truck_plate_number');
             $table->index('shipping_line_id');
             $table->index('fixed_expense_id');
-            // Note: container_id is JSON type, cannot be directly indexed in MySQL
-            // If indexing is needed, use a generated column with JSON path
             $table->index('pickup_date');
             $table->index('delivered_date');
         });

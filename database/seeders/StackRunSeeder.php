@@ -102,7 +102,10 @@ class StackRunSeeder extends Seeder
                     'cypa_id_to' => $stackRun['cypa_id_to'],
                     'container_size' => $stackRun['container_size'],
                 ],
-                $stackRun
+                array_merge($stackRun, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])
             );
         }
     }
