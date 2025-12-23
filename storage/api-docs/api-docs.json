@@ -3214,6 +3214,944 @@
                 ]
             }
         },
+        "/api/fixed-expenses": {
+            "get": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Get list of fixed expenses",
+                "description": "Display a listing of fixed expenses.",
+                "operationId": "68b747a916735594b5adf8baa440c87c",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by container size, shipping line name, or CYPA name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "cypa_id_from",
+                        "in": "query",
+                        "description": "Filter by CYPA ID (from)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "cypa_id_to",
+                        "in": "query",
+                        "description": "Filter by CYPA ID (to)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2
+                        }
+                    },
+                    {
+                        "name": "container_size",
+                        "in": "query",
+                        "description": "Filter by container size",
+                        "schema": {
+                            "type": "string",
+                            "example": "20ft"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of fixed expenses retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FixedExpense"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Create a new fixed expense",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "9e1c07a9b2d28f292d4cf2a60d6b9a61",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FixedExpenseInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Fixed expense created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FixedExpense"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/fixed-expenses/{id}": {
+            "get": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Get a specific fixed expense",
+                "description": "Display the specified fixed expense.",
+                "operationId": "0b36b9063c5e5f109d59d5731f559f2e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Fixed Expense ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fixed expense retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FixedExpense"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Fixed expense not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Fixed expense not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Update a fixed expense",
+                "description": "Update the specified resource in storage.",
+                "operationId": "ffbb397d52455c7c80e14f12eff4d768",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Fixed Expense ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FixedExpenseInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Fixed expense updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FixedExpense"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Fixed expense not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Fixed expense not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Delete a fixed expense",
+                "description": "Remove the specified resource from storage (soft delete).",
+                "operationId": "61ca9b8395252f5454d2e9a35f0d8e5b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Fixed Expense ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fixed expense moved to trash successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been moved to trash."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Fixed expense not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Fixed expense not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/fixed-expenses/bulk/delete": {
+            "post": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Bulk delete multiple fixed expenses",
+                "description": "Bulk delete multiple fixed expenses.",
+                "operationId": "196fe048c63b5e3911887b43b7c60723",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of fixed expense IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Fixed expenses deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/fixed-expenses": {
+            "get": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Get trashed fixed expenses",
+                "description": "Get trashed fixed expenses.",
+                "operationId": "fbc45351e7933020803c45e881572e5c",
+                "responses": {
+                    "200": {
+                        "description": "Trashed fixed expenses retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FixedExpense"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/fixed-expenses/restore/{id}": {
+            "patch": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Restore a trashed fixed expense",
+                "description": "Restore a trashed fixed expense.",
+                "operationId": "52f646bc6e67f1adc37c0875979428fc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Fixed Expense ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fixed expense restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been restored."
+                                        },
+                                        "resource": {
+                                            "$ref": "#/components/schemas/FixedExpense"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Fixed expense not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Fixed expense not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/fixed-expenses/bulk/restore": {
+            "post": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Bulk restore multiple trashed fixed expenses",
+                "description": "Bulk restore multiple trashed fixed expenses.",
+                "operationId": "d2b14ea0080f7cf92bb04c6479b36044",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of fixed expense IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Fixed expenses restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been restored."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/fixed-expenses/{id}": {
+            "delete": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Permanently delete a fixed expense",
+                "description": "Permanently delete a fixed expense.",
+                "operationId": "168f13a23ce81a5bec53aa42b85b321e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Fixed Expense ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fixed expense permanently deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been permanently deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Fixed expense not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Fixed expense not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/fixed-expenses/bulk/force-delete": {
+            "post": {
+                "tags": [
+                    "Fixed Expense Management"
+                ],
+                "summary": "Bulk permanently delete multiple fixed expenses",
+                "description": "Bulk permanently delete multiple fixed expenses.",
+                "operationId": "40605a6a03240d0aab12987337aff694",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of fixed expense IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Fixed expenses permanently deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been permanently deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/helpers": {
             "get": {
                 "tags": [
@@ -6309,6 +7247,944 @@
                 "responses": {
                     "200": {
                         "description": "Pages permanently deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been permanently deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/rate-per-clients": {
+            "get": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Get list of rate per clients",
+                "description": "Display a listing of rate per clients.",
+                "operationId": "680bb76b29e22d11d7a6fe819dc153a8",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by size, requirements, remarks, shipping line name, or CYPA name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_active",
+                        "in": "query",
+                        "description": "Filter by is_active (1 for active, 0 for inactive)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "cypa_id",
+                        "in": "query",
+                        "description": "Filter by CYPA ID (0 = all)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "description": "Filter by container size",
+                        "schema": {
+                            "type": "string",
+                            "example": "20ft"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of rate per clients retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RatePerClient"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Create a new rate per client",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "18e530c3fe837724a642eb219333351d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RatePerClientInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Rate per client created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RatePerClient"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/rate-per-clients/{id}": {
+            "get": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Get a specific rate per client",
+                "description": "Display the specified rate per client.",
+                "operationId": "f4339d42b5b63e303907d7982a956949",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rate Per Client ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rate per client retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RatePerClient"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Rate per client not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Rate per client not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Update a rate per client",
+                "description": "Update the specified resource in storage.",
+                "operationId": "5608bfa63da9ab0cfb2c1280a2200a2d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rate Per Client ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RatePerClientInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rate per client updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RatePerClient"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Rate per client not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Rate per client not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Delete a rate per client",
+                "description": "Remove the specified resource from storage (soft delete).",
+                "operationId": "9a0c16c2968518fd2604e5a900aa8bd6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rate Per Client ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rate per client moved to trash successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been moved to trash."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Rate per client not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Rate per client not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/rate-per-clients/bulk/delete": {
+            "post": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Bulk delete multiple rate per clients",
+                "description": "Bulk delete multiple rate per clients.",
+                "operationId": "322a17c162db4fac50b7efbbe2d48ae3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of rate per client IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rate per clients deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/rate-per-clients": {
+            "get": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Get trashed rate per clients",
+                "description": "Get trashed rate per clients.",
+                "operationId": "e8ff462e781274d6e167c5809e1549c1",
+                "responses": {
+                    "200": {
+                        "description": "Trashed rate per clients retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RatePerClient"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/rate-per-clients/restore/{id}": {
+            "patch": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Restore a trashed rate per client",
+                "description": "Restore a trashed rate per client.",
+                "operationId": "72c6f8569365448adcd1dcebd87b582a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rate Per Client ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rate per client restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been restored."
+                                        },
+                                        "resource": {
+                                            "$ref": "#/components/schemas/RatePerClient"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Rate per client not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Rate per client not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/rate-per-clients/bulk/restore": {
+            "post": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Bulk restore multiple trashed rate per clients",
+                "description": "Bulk restore multiple trashed rate per clients.",
+                "operationId": "e78475c88ba536fd581eafabe92ab109",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of rate per client IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rate per clients restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been restored."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/rate-per-clients/{id}": {
+            "delete": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Permanently delete a rate per client",
+                "description": "Permanently delete a rate per client.",
+                "operationId": "4e375d21ddc39a49003047b51575ba8c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rate Per Client ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rate per client permanently deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been permanently deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Rate per client not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Rate per client not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/rate-per-clients/bulk/force-delete": {
+            "post": {
+                "tags": [
+                    "Rate Per Client Management"
+                ],
+                "summary": "Bulk permanently delete multiple rate per clients",
+                "description": "Bulk permanently delete multiple rate per clients.",
+                "operationId": "55f6a936bbae0d2d43b6f98ed369af51",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of rate per client IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rate per clients permanently deleted successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -10009,13 +11885,41 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "type": "object"
+                                                "$ref": "#/components/schemas/StackRun"
                                             }
                                         },
                                         "meta": {
+                                            "properties": {
+                                                "all": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "trashed": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
                                             "type": "object"
                                         },
                                         "links": {
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/stack-runs?page=1"
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/stack-runs?page=5"
+                                                },
+                                                "prev": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "next": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/stack-runs?page=2"
+                                                }
+                                            },
                                             "type": "object"
                                         }
                                     },
@@ -10142,10 +12046,13 @@
                                                     "example": "20ft"
                                                 },
                                                 "total_amount": {
+                                                    "description": "Total amount",
                                                     "type": "number",
+                                                    "format": "float",
                                                     "example": 0
                                                 },
-                                                "status": {
+                                                "is_complete": {
+                                                    "description": "0=Incomplete, 1=Complete",
                                                     "type": "integer",
                                                     "example": 0
                                                 },
@@ -10237,7 +12144,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/StackRun"
                                         }
                                     },
                                     "type": "object"
@@ -10384,10 +12291,13 @@
                                                     "example": "20ft"
                                                 },
                                                 "total_amount": {
+                                                    "description": "Total amount",
                                                     "type": "number",
+                                                    "format": "float",
                                                     "example": 0
                                                 },
-                                                "status": {
+                                                "is_complete": {
+                                                    "description": "0=Incomplete, 1=Complete",
                                                     "type": "integer",
                                                     "example": 0
                                                 },
@@ -15023,6 +16933,294 @@
                 },
                 "type": "object"
             },
+            "FixedExpense": {
+                "title": "Fixed Expense Model",
+                "description": "A fixed expense resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "cypa_id_from": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "cypa_id_to": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "container_size": {
+                        "type": "string",
+                        "example": "20ft"
+                    },
+                    "docs_fee": {
+                        "description": "Documentation fee amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 500
+                    },
+                    "stack_run": {
+                        "description": "Stack run amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1500
+                    },
+                    "expenses": {
+                        "description": "Other expenses amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 2000
+                    },
+                    "total_expenses": {
+                        "description": "Total expenses (auto-calculated: docs_fee + stack_run + expenses)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 4000
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "FixedExpenseInput": {
+                "title": "Fixed Expense Input",
+                "description": "Data required to create or update a fixed expense",
+                "required": [
+                    "shipping_line_id",
+                    "cypa_id_from",
+                    "cypa_id_to",
+                    "container_size"
+                ],
+                "properties": {
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "cypa_id_from": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "cypa_id_to": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "container_size": {
+                        "type": "string",
+                        "example": "20ft"
+                    },
+                    "docs_fee": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 500
+                    },
+                    "stack_run": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 1500
+                    },
+                    "expenses": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2000
+                    }
+                },
+                "type": "object"
+            },
+            "RatePerClient": {
+                "title": "Rate Per Client Model",
+                "description": "A rate per client resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "no_of_days": {
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "requirements": {
+                        "type": "string",
+                        "example": "Standard documentation",
+                        "nullable": true
+                    },
+                    "remarks": {
+                        "type": "string",
+                        "example": "Standard rate for 7 days",
+                        "nullable": true
+                    },
+                    "cypa_id": {
+                        "description": "0 = all CYPA",
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "stack_run": {
+                        "description": "Stack run amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1000
+                    },
+                    "size": {
+                        "type": "string",
+                        "example": "20ft"
+                    },
+                    "rate": {
+                        "description": "Rate amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 5000
+                    },
+                    "is_active": {
+                        "description": "1=Active, 0=Inactive",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "RatePerClientInput": {
+                "title": "Rate Per Client Input",
+                "description": "Data required to create or update a rate per client",
+                "required": [
+                    "shipping_line_id",
+                    "no_of_days",
+                    "cypa_id",
+                    "stack_run",
+                    "size",
+                    "rate"
+                ],
+                "properties": {
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "no_of_days": {
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "requirements": {
+                        "type": "string",
+                        "example": "Standard documentation"
+                    },
+                    "remarks": {
+                        "type": "string",
+                        "example": "Standard rate for 7 days"
+                    },
+                    "cypa_id": {
+                        "description": "0 = all CYPA",
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "stack_run": {
+                        "description": "Stack run amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1000
+                    },
+                    "size": {
+                        "type": "string",
+                        "example": "20ft"
+                    },
+                    "rate": {
+                        "description": "Rate amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 5000
+                    },
+                    "is_active": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "StackRun": {
+                "title": "Stack Run Model",
+                "description": "A stack run resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "reference_number": {
+                        "type": "string",
+                        "example": "SR-001",
+                        "nullable": true
+                    },
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "cypa_id_from": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "cypa_id_to": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "quantity_of_container": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "container_size": {
+                        "type": "string",
+                        "example": "20ft"
+                    },
+                    "total_amount": {
+                        "description": "Total amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 0
+                    },
+                    "is_complete": {
+                        "description": "0=Incomplete, 1=Complete",
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "actual_no_of_waybill": {
+                        "description": "Actual number of waybills created for this stack run",
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
             "StatementOfAccount": {
                 "title": "Statement of Account Model",
                 "description": "A statement of account resource",
@@ -15288,6 +17486,10 @@
             "description": "API endpoints for driver management"
         },
         {
+            "name": "Fixed Expense Management",
+            "description": "API endpoints for fixed expense management"
+        },
+        {
             "name": "Helper Management",
             "description": "API endpoints for helper management"
         },
@@ -15298,6 +17500,10 @@
         {
             "name": "Page Management",
             "description": "API endpoints for page management"
+        },
+        {
+            "name": "Rate Per Client Management",
+            "description": "API endpoints for rate per client management"
         },
         {
             "name": "Role Management",

@@ -17,14 +17,14 @@ return new class extends Migration {
         Schema::create('fixed_expenses', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('shipping_line_id')->unsigned();
-            $table->bigInteger('cypa_id_from')->unsigned();
-            $table->bigInteger('cypa_id_to')->unsigned();
-            $table->string('container_size');
-            $table->integer('docs_fee')->default(0);
-            $table->integer('stack_run')->default(0);
-            $table->integer('expenses')->default(0);
-            $table->integer('total_expenses')->default(0);
+            $table->bigInteger('shipping_line_id')->unsigned(); //client input
+            $table->bigInteger('cypa_id_from')->unsigned(); //client input
+            $table->bigInteger('cypa_id_to')->unsigned(); //client input
+            $table->string('container_size'); //client input
+            $table->decimal('docs_fee', 10, 2)->default(0); //client input - amount value
+            $table->decimal('stack_run', 10, 2)->default(0); //client input - amount value
+            $table->decimal('expenses', 10, 2)->default(0); //client input - amount value
+            $table->decimal('total_expenses', 10, 2)->default(0); //this is auto compute based on docs_fee + stack_run + expenses
             $table->timestamps();
             $table->softDeletes();
 

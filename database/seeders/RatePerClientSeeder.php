@@ -21,9 +21,6 @@ class RatePerClientSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
-        $stackRunIds = DB::table('stack_runs')
-            ->pluck('id')
-            ->toArray();
 
         if (empty($shippingLineIds)) {
             $this->command->warn('Required related records not found. Please seed shipping_lines first.');
@@ -38,9 +35,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Standard documentation',
                 'remarks' => 'Standard rate for 7 days',
                 'cypa_id' => 0, // All CYPA
-                'stack_run_id' => null,
+                'stack_run' => 1000.00,
                 'size' => '20ft',
                 'rate' => 5000,
+                'is_active' => 1,
             ],
             [
                 'shipping_line_id' => $shippingLineIds[0],
@@ -48,9 +46,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Standard documentation',
                 'remarks' => 'Standard rate for 7 days',
                 'cypa_id' => 0, // All CYPA
-                'stack_run_id' => null,
+                'stack_run' => 1000.00,
                 'size' => '40ft',
                 'rate' => 8000,
+                'is_active' => 1,
             ],
             [
                 'shipping_line_id' => $shippingLineIds[0],
@@ -58,9 +57,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Extended storage',
                 'remarks' => 'Rate for 14 days storage',
                 'cypa_id' => 0, // All CYPA
-                'stack_run_id' => null,
+                'stack_run' => 1000.00,
                 'size' => '20ft',
                 'rate' => 7000,
+                'is_active' => 1,
             ],
             [
                 'shipping_line_id' => $shippingLineIds[0],
@@ -68,9 +68,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Extended storage',
                 'remarks' => 'Rate for 14 days storage',
                 'cypa_id' => 0, // All CYPA
-                'stack_run_id' => null,
+                'stack_run' => 1000.00,
                 'size' => '40ft',
                 'rate' => 11000,
+                'is_active' => 1,
             ],
             // Offhire rates
             [
@@ -79,9 +80,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Offhire documentation',
                 'remarks' => 'Offhire rate for 7 days',
                 'cypa_id' => 0, // All CYPA
-                'stack_run_id' => null,
+                'stack_run' => 1000.00,
                 'size' => '20ft(offhire)',
                 'rate' => 4500,
+                'is_active' => 1,
             ],
             [
                 'shipping_line_id' => $shippingLineIds[0],
@@ -89,9 +91,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Offhire documentation',
                 'remarks' => 'Offhire rate for 7 days',
                 'cypa_id' => 0, // All CYPA
-                'stack_run_id' => null,
+                'stack_run' => 1000.00,
                 'size' => '40ft(offhire)',
                 'rate' => 7500,
+                'is_active' => 1,
             ],
             // Rates for specific CYPA
             [
@@ -100,9 +103,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'CYPA specific rate',
                 'remarks' => 'Rate for specific CYPA location',
                 'cypa_id' => !empty($cypaIds) ? $cypaIds[0] : 0,
-                'stack_run_id' => null,
+                'stack_run' => 1000.00,
                 'size' => '20ft',
                 'rate' => 4800,
+                'is_active' => 1,
             ],
             [
                 'shipping_line_id' => $shippingLineIds[0],
@@ -110,9 +114,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'CYPA specific rate',
                 'remarks' => 'Rate for specific CYPA location',
                 'cypa_id' => !empty($cypaIds) ? $cypaIds[0] : 0,
-                'stack_run_id' => null,
+                'stack_run' => 1000.00,
                 'size' => '40ft',
                 'rate' => 7800,
+                'is_active' => 1,
             ],
             // Rates for specific stack run
             [
@@ -121,9 +126,10 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Stack run specific rate',
                 'remarks' => 'Rate for specific stack run',
                 'cypa_id' => 0, // All CYPA
-                'stack_run_id' => !empty($stackRunIds) ? $stackRunIds[0] : null,
+                'stack_run' => 1500.00,
                 'size' => '20ft',
                 'rate' => 5200,
+                'is_active' => 1,
             ],
             [
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
@@ -131,9 +137,33 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Special handling required',
                 'remarks' => 'Rate for 10 days with special handling',
                 'cypa_id' => !empty($cypaIds) && count($cypaIds) > 1 ? $cypaIds[1] : 0,
-                'stack_run_id' => !empty($stackRunIds) && count($stackRunIds) > 1 ? $stackRunIds[1] : null,
+                'stack_run' => 2000.00,
                 'size' => '40ft',
                 'rate' => 9000,
+                'is_active' => 1,
+            ],
+            // Inactive rates
+            [
+                'shipping_line_id' => $shippingLineIds[0],
+                'no_of_days' => 7,
+                'requirements' => 'Deprecated rate',
+                'remarks' => 'This rate is no longer active',
+                'cypa_id' => 0,
+                'stack_run' => 1000.00,
+                'size' => '20ft',
+                'rate' => 4500,
+                'is_active' => 0,
+            ],
+            [
+                'shipping_line_id' => $shippingLineIds[0],
+                'no_of_days' => 14,
+                'requirements' => 'Old rate structure',
+                'remarks' => 'Replaced by new rate structure',
+                'cypa_id' => !empty($cypaIds) ? $cypaIds[0] : 0,
+                'stack_run' => 1000.00,
+                'size' => '40ft',
+                'rate' => 10000,
+                'is_active' => 0,
             ],
         ];
 
@@ -142,7 +172,7 @@ class RatePerClientSeeder extends Seeder
                 [
                     'shipping_line_id' => $ratePerClient['shipping_line_id'],
                     'cypa_id' => $ratePerClient['cypa_id'],
-                    'stack_run_id' => $ratePerClient['stack_run_id'],
+                    'stack_run' => $ratePerClient['stack_run'],
                     'size' => $ratePerClient['size'],
                     'no_of_days' => $ratePerClient['no_of_days'],
                 ],

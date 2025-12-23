@@ -16,6 +16,23 @@ use Illuminate\Support\Facades\Validator;
  *     name="Stack Run Management",
  *     description="API endpoints for stack run management"
  * )
+ * @OA\Schema(
+ *     schema="StackRun",
+ *     title="Stack Run Model",
+ *     description="A stack run resource",
+ *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="reference_number", type="string", example="SR-001", nullable=true),
+ *     @OA\Property(property="shipping_line_id", type="integer", example=1),
+ *     @OA\Property(property="cypa_id_from", type="integer", example=1),
+ *     @OA\Property(property="cypa_id_to", type="integer", example=2),
+ *     @OA\Property(property="quantity_of_container", type="integer", example=2),
+ *     @OA\Property(property="container_size", type="string", example="20ft"),
+ *     @OA\Property(property="total_amount", type="number", format="float", example=0.00, description="Total amount"),
+ *     @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+ *     @OA\Property(property="actual_no_of_waybill", type="integer", example=5, description="Actual number of waybills created for this stack run"),
+ *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
+ * )
  */
 class StackRunController extends BaseController
 {
@@ -55,9 +72,17 @@ class StackRunController extends BaseController
      *         response=200,
      *         description="List of stack runs retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="array", @OA\Items(type="object")),
-     *             @OA\Property(property="meta", type="object"),
-     *             @OA\Property(property="links", type="object")
+     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/StackRun")),
+     *             @OA\Property(property="meta", type="object",
+     *                 @OA\Property(property="all", type="integer", example=10),
+     *                 @OA\Property(property="trashed", type="integer", example=2)
+     *             ),
+     *             @OA\Property(property="links", type="object",
+     *                 @OA\Property(property="first", type="string", example="http://example.com/api/stack-runs?page=1"),
+     *                 @OA\Property(property="last", type="string", example="http://example.com/api/stack-runs?page=5"),
+     *                 @OA\Property(property="prev", type="string", nullable=true),
+     *                 @OA\Property(property="next", type="string", example="http://example.com/api/stack-runs?page=2")
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -93,7 +118,7 @@ class StackRunController extends BaseController
      *         response=200,
      *         description="Stack run retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object")
+     *             @OA\Property(property="data", type="object", ref="#/components/schemas/StackRun")
      *         )
      *     ),
      *     @OA\Response(
@@ -149,7 +174,7 @@ class StackRunController extends BaseController
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="quantity_of_container", type="integer", example=2),
      *                 @OA\Property(property="container_size", type="string", example="20ft"),
-     *                 @OA\Property(property="total_amount", type="number", example=0),
+     *                 @OA\Property(property="total_amount", type="number", format="float", example=0.00, description="Total amount"),
      *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
@@ -222,7 +247,7 @@ class StackRunController extends BaseController
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="quantity_of_container", type="integer", example=2),
      *                 @OA\Property(property="container_size", type="string", example="20ft"),
-     *                 @OA\Property(property="total_amount", type="number", example=0),
+     *                 @OA\Property(property="total_amount", type="number", format="float", example=0.00, description="Total amount"),
      *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")

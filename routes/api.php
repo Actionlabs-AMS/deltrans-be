@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\StatementOfAccountController;
 use App\Http\Controllers\Api\StackRunController;
+use App\Http\Controllers\Api\RatePerClientController;
+use App\Http\Controllers\Api\FixedExpenseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -321,6 +323,64 @@ Route::middleware('auth:sanctum')->group(function () {
 
 		Route::get('/{id}', [StackRunController::class, 'show']);  // Retrieve a single stack run
 		Route::put('/{id}', [StackRunController::class, 'update']);  // Update a stack run
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Rate Per Client Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Rate Per Clients CRUD Operations
+	|
+	*/
+	Route::prefix('rate-per-clients')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [RatePerClientController::class, 'index']);  // Retrieve all rate per clients
+		Route::get('/{id}', [RatePerClientController::class, 'show']);  // Retrieve a single rate per client
+		Route::post('/', [RatePerClientController::class, 'store']);  // Create a new rate per client
+		Route::put('/{id}', [RatePerClientController::class, 'update']);  // Update an existing rate per client
+		Route::delete('/{id}', [RatePerClientController::class, 'destroy']);  // Delete a rate per client
+
+		// Bulk operations
+		Route::post('/bulk/delete', [RatePerClientController::class, 'bulkDelete']);  // Bulk delete rate per clients
+		Route::post('/bulk/restore', [RatePerClientController::class, 'bulkRestore']);  // Bulk restore rate per clients
+		Route::post('/bulk/force-delete', [RatePerClientController::class, 'bulkForceDelete']);  // Bulk permanently delete rate per clients
+	});
+
+	// Custom route for archived (trashed) rate per clients with a distinct prefix
+	Route::prefix('archived/rate-per-clients')->group(function () {
+		Route::get('/', [RatePerClientController::class, 'getTrashed']); // Retrieve soft-deleted rate per clients
+		Route::patch('/restore/{id}', [RatePerClientController::class, 'restore']); // Restore a soft-deleted rate per client
+		Route::delete('/{id}', [RatePerClientController::class, 'forceDelete']); // Permanently delete a soft-deleted rate per client
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Fixed Expense Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Fixed Expenses CRUD Operations
+	|
+	*/
+	Route::prefix('fixed-expenses')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [FixedExpenseController::class, 'index']);  // Retrieve all fixed expenses
+		Route::get('/{id}', [FixedExpenseController::class, 'show']);  // Retrieve a single fixed expense
+		Route::post('/', [FixedExpenseController::class, 'store']);  // Create a new fixed expense
+		Route::put('/{id}', [FixedExpenseController::class, 'update']);  // Update an existing fixed expense
+		Route::delete('/{id}', [FixedExpenseController::class, 'destroy']);  // Delete a fixed expense
+
+		// Bulk operations
+		Route::post('/bulk/delete', [FixedExpenseController::class, 'bulkDelete']);  // Bulk delete fixed expenses
+		Route::post('/bulk/restore', [FixedExpenseController::class, 'bulkRestore']);  // Bulk restore fixed expenses
+		Route::post('/bulk/force-delete', [FixedExpenseController::class, 'bulkForceDelete']);  // Bulk permanently delete fixed expenses
+	});
+
+	// Custom route for archived (trashed) fixed expenses with a distinct prefix
+	Route::prefix('archived/fixed-expenses')->group(function () {
+		Route::get('/', [FixedExpenseController::class, 'getTrashed']); // Retrieve soft-deleted fixed expenses
+		Route::patch('/restore/{id}', [FixedExpenseController::class, 'restore']); // Restore a soft-deleted fixed expense
+		Route::delete('/{id}', [FixedExpenseController::class, 'forceDelete']); // Permanently delete a soft-deleted fixed expense
 	});
 
 	/*

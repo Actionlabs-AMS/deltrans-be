@@ -35,6 +35,16 @@ class StackRunService extends BaseService
     {
         $model = $this->model::with(['shippingLine', 'cypaFrom', 'cypaTo', 'containers'])
             ->findOrFail($id);
+
+        // Count waybills for this stack run
+        $actualNoOfWaybill = \Illuminate\Support\Facades\DB::table('waybill_details')
+            ->where('stack_run_id', $id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        // Add the count to the model as an attribute
+        $model->actual_no_of_waybill = $actualNoOfWaybill;
+
         return $this->resource::make($model);
     }
 
@@ -99,3 +109,5 @@ class StackRunService extends BaseService
         }
     }
 }
+
+

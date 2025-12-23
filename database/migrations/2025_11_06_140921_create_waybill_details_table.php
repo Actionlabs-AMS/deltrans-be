@@ -21,7 +21,6 @@ return new class extends Migration {
             $table->date('transaction_date'); // this should be fillable from user input
             $table->bigInteger('shipping_line_id')->nullable()->unsigned(); // this should be fillable from user input
             $table->bigInteger('stack_run_id')->nullable()->unsigned();  // this should be fillable from user input
-            //$table->bigInteger('cypa_id')->nullable()->unsigned();
             $table->bigInteger('driver_id')->nullable()->unsigned(); // this should be fillable from user input, foreign key to drivers table
             $table->bigInteger('helper_id')->nullable()->unsigned(); // this should be fillable from user input, foreign key to helpers table
             $table->string('truck_plate_number')->nullable(); // this should be fillable from user input, foreign key to fleet_trucks table

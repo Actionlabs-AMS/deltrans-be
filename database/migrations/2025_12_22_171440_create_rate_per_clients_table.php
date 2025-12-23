@@ -17,14 +17,15 @@ return new class extends Migration {
         Schema::create('rate_per_clients', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('shipping_line_id')->unsigned();
-            $table->integer('no_of_days');
-            $table->string('requirements')->nullable();
-            $table->string('remarks')->nullable();
-            $table->bigInteger('cypa_id')->unsigned()->default(0); // 0 = all
-            $table->bigInteger('stack_run_id')->unsigned()->nullable();
+            $table->bigInteger('shipping_line_id')->unsigned(); //client input
+            $table->integer('no_of_days'); //client input
+            $table->string('requirements')->nullable(); //client input
+            $table->string('remarks')->nullable(); //client input
+            $table->bigInteger('cypa_id')->unsigned()->default(0); // 0 = all //client input
+            $table->decimal('stack_run', 10, 2); //client input - amount value
             $table->string('size'); // 20ft / 40ft / 20ft(offhire) / 40ft(offhire)
-            $table->integer('rate');
+            $table->decimal('rate', 10, 2); //client input - amount value
+            $table->tinyInteger('is_active')->default(1); //client input
             $table->timestamps();
             $table->softDeletes();
 
@@ -32,13 +33,13 @@ return new class extends Migration {
             $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
             // Note: cypa_id default 0 means "all", so no foreign key constraint
             // If cypa_id > 0, it references cypa_details.id
-            $table->foreign('stack_run_id')->references('id')->on('stack_runs')->onDelete('set null');
+            // Note: stack_run is an amount value, not a foreign key
 
             // Indexes
             $table->index('shipping_line_id');
             $table->index('cypa_id');
-            $table->index('stack_run_id');
             $table->index('size');
+            $table->index('is_active');
         });
 
         // Re-enable foreign key checks
