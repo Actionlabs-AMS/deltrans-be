@@ -30,6 +30,8 @@ class DatabaseSeeder extends Seeder
             FixedExpenseSeeder::class,
             WaybillDetailsSeeder::class,
             StackRunSeeder::class,
+            ContainerSeeder::class,
+            RatePerClientSeeder::class,
             StatementOfAccountSeeder::class,
         ]);
     }

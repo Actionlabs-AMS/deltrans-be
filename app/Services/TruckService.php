@@ -34,9 +34,13 @@ class TruckService extends BaseService
             if (request('search')) {
                 $query->where(function ($q) {
                     $q->where('plate_number', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('condition', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('status', 'LIKE', '%' . request('search') . '%');
+                        ->orWhere('condition', 'LIKE', '%' . request('search') . '%');
                 });
+            }
+
+            // Filter by is_active
+            if (request('is_active') !== null) {
+                $query->where('is_active', request('is_active'));
             }
 
             // Apply ordering
@@ -80,8 +84,8 @@ class TruckService extends BaseService
              // 1. Find the truck or throw 404
             $truck = FleetTruck::findOrFail($id);                
             
-            // 2. Only update the status to 0
-            $truck->update(['status' => 0]); 
+            // 2. Only update the is_active to 0
+            $truck->update(['is_active' => 0]); 
 
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());
@@ -94,8 +98,8 @@ class TruckService extends BaseService
             // 1. Find the truck or throw ModelNotFoundException (404)
             $truck = FleetTruck::findOrFail($id);                
             
-            // 2. Only update the status to 1
-            $truck->update(['status' => 1]); 
+            // 2. Only update the is_active to 1
+            $truck->update(['is_active' => 1]); 
 
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());

@@ -24,7 +24,7 @@ use App\Http\Resources\ContainerYardResource;
  * @OA\Property(property="contact_mobile", type="string", example="09171234567"),                
  * @OA\Property(property="landlines", type="array", @OA\Items(type="string"), example="['02-8123-4567','02-8123-4568']"),
  * @OA\Property(property="location_type", type="string", example="Container Yard/Port"),                
- * @OA\Property(property="status", type="integer", example=1, description="1=Active, 0=Inactive"),                
+ * @OA\Property(property="is_active", type="integer", example=1, description="1=Active, 0=Inactive"),                
  * @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),                
  * @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")                
  * )
@@ -32,14 +32,14 @@ use App\Http\Resources\ContainerYardResource;
  * schema="ContainerYardInput",                
  * title="Container Yard Input",                
  * description="Data required to create or update a container yard",                
- * required={"name", "address", "type", "status"},                
+ * required={"name", "address", "type", "is_active"},                
  * @OA\Property(property="name", type="string", example="North Yard"),                
  * @OA\Property(property="address", type="string", example="123 Port St."),                
  * @OA\Property(property="contact_name", type="string", example="John Doe"),                
  * @OA\Property(property="contact_mobile", type="string", example="09171234567"),                
  * @OA\Property(property="landlines", type="array",@OA\Items(type="string"), example="['02-8123-4567','02-8123-4568']"),      
  * @OA\Property(property="location_type", type="string", example="Container Yard/Port"),                
- * @OA\Property(property="status", type="integer", example=1),                
+ * @OA\Property(property="is_active", type="integer", example=1),                
  * )
  */
 class ContainerYardController extends BaseController
@@ -226,7 +226,7 @@ class ContainerYardController extends BaseController
      * operationId="deactivateContainerYard",                
      * tags={"Container Yard Management"},                
      * summary="Deactivate a container yard (Logical Delete)",                
-     * description="Updates the container yard status to 0 (inactive) by its ID.",                
+     * description="Updates the container yard is_active to 0 (inactive) by its ID.",                
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="id",
@@ -271,7 +271,7 @@ class ContainerYardController extends BaseController
      * operationId="activateContainerYard",                
      * tags={"Container Yard Management"},                
      * summary="Activate a container yard (Restore)",                
-     * description="Updates the container yard status to 1 (active) by its ID.",                
+     * description="Updates the container yard is_active to 1 (active) by its ID.",                
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="id",

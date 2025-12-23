@@ -61,6 +61,24 @@ class CypaDetailsSeeder extends Seeder
                 'landlines' => json_encode(['+63 47 6789 0123']),
                 'location_type' => 'Port Area',
             ],
+            [
+                'name' => 'Manila Container Yard C (Closed)',
+                'address' => 'Navotas, Metro Manila, Philippines',
+                'contact_name' => 'Roberto Dela Cruz',
+                'contact_mobile' => '+63 923 789 0123',
+                'landlines' => json_encode(['+63 2 5678 9012']),
+                'location_type' => 'Container Yard',
+                'is_active' => 0,
+            ],
+            [
+                'name' => 'Cavite Port Terminal (Inactive)',
+                'address' => 'Cavite City, Cavite, Philippines',
+                'contact_name' => 'Luis Fernandez',
+                'contact_mobile' => '+63 924 890 1234',
+                'landlines' => json_encode(['+63 46 6789 0123']),
+                'location_type' => 'Port Area',
+                'is_active' => 0,
+            ],
         ];
 
         foreach ($cypaDetails as $cypa) {

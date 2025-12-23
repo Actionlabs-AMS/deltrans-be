@@ -20,7 +20,7 @@ use App\Services\MessageService;
  * @OA\Property(property="id", type="integer", example=1),
  * @OA\Property(property="plate_number", type="string", example="ABC-1234"),
  * @OA\Property(property="condition", type="string", example="Good"),
- * @OA\Property(property="status", type="integer", example="1"),
+ * @OA\Property(property="is_active", type="integer", example=1, description="1=Active, 0=Inactive"),
  * @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  * @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
  * )
@@ -28,10 +28,10 @@ use App\Services\MessageService;
  * schema="TruckInput",
  * title="Truck Input",
  * description="Data required to create or update a truck",
- * required={"plate_number", "condition", "status"},
+ * required={"plate_number", "condition", "is_active"},
  * @OA\Property(property="plate_number", type="string", example="XYZ-5678"),
  * @OA\Property(property="condition", type="string", example="Good/Maintenance"),
- * @OA\Property(property="status", type="integer", example="1"),
+ * @OA\Property(property="is_active", type="integer", example=1, description="1=Active, 0=Inactive"),
  * )
  */
 class TruckController extends BaseController
@@ -229,7 +229,7 @@ class TruckController extends BaseController
      * operationId="deactivateTruck",
      * tags={"Trucks Management"},
      * summary="Deactivate a truck (Logical Delete)",
-     * description="Updates the truck status to 0 (inactive) by its ID.",                
+     * description="Updates the truck is_active to 0 (inactive) by its ID.",                
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="id",
@@ -253,7 +253,7 @@ class TruckController extends BaseController
     public function destroy($id)                
     {                
         try {                
-            // Assumption: The service method now updates status to 0
+            // Assumption: The service method now updates is_active to 0
             $this->service->deactivate_truck_by_id($id); 
             
             // Return 200 OK with a message instead of 204 No Content
@@ -278,7 +278,7 @@ class TruckController extends BaseController
      * operationId="activateTruck",
      * tags={"Trucks Management"},
      * summary="Activate a truck (Restore)",
-     * description="Updates the truck status to 1 (active) by its ID.",                
+     * description="Updates the truck is_active to 1 (active) by its ID.",                
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="id",
@@ -302,7 +302,7 @@ class TruckController extends BaseController
     public function restore($id)                
     {                
         try {                
-            // Call the service method to update status to 1
+            // Call the service method to update is_active to 1
             $this->service->activate_truck_by_id($id); 
             
             return response()->json([

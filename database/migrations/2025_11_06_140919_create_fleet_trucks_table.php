@@ -19,12 +19,12 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->string('plate_number')->unique();
             $table->string('condition')->nullable();
-            $table->tinyInteger('status')->default(1);
+            $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('status');
+            $table->index('is_active');
             $table->index('condition');
             $table->index('plate_number');
         });

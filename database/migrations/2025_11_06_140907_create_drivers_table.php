@@ -23,12 +23,12 @@ return new class extends Migration {
             $table->json('assigned_truck_plate_numbers')->nullable();
             $table->json('stack_run')->nullable();
             $table->json('helpers_id')->nullable();
-            $table->boolean('active_status')->default(true);
+            $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('active_status');
+            $table->index('is_active');
             $table->index(['first_name', 'last_name']);
         });
 

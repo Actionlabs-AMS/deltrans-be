@@ -311,8 +311,16 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::prefix('stack-runs')->group(function () {
 		// Standard CRUD operations
 		Route::get('/', [StackRunController::class, 'index']);  // Retrieve all stack runs
-		Route::get('/{id}', [StackRunController::class, 'show']);  // Retrieve a single stack run
 		Route::post('/', [StackRunController::class, 'store']);  // Create a new stack run
+
+		// Container management routes (must be before /{id} route to avoid conflicts)
+		Route::get('/containers', [StackRunController::class, 'getContainers']);  // Get containers by stack_run_id and optionally waybill_number
+		Route::post('/{stackRunId}/containers', [StackRunController::class, 'addContainer']);  // Add a container to a stack run
+		Route::put('/{stackRunId}/containers/{containerId}', [StackRunController::class, 'updateContainer']);  // Update a container
+		Route::delete('/{stackRunId}/containers/{containerId}', [StackRunController::class, 'deleteContainer']);  // Delete a container
+
+		Route::get('/{id}', [StackRunController::class, 'show']);  // Retrieve a single stack run
+		Route::put('/{id}', [StackRunController::class, 'update']);  // Update a stack run
 	});
 
 	/*

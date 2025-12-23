@@ -45,7 +45,7 @@ class ContainerYardRequest extends FormRequest
             'location_type' => 'required|string|max:50',
 
             // MIXED SYNTAX: string rules + in Rule object                
-            'status' => [
+            'is_active' => [
                 'required',
                 'integer',
                 Rule::in([0, 1]),

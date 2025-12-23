@@ -23,7 +23,7 @@ return new class extends Migration {
             $table->string('contact_mobile')->nullable();
             $table->json('landlines')->nullable();
             $table->enum('location_type', ['Container Yard', 'Port Area'])->nullable();
-            $table->tinyInteger('status')->default(1);
+            $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
             $table->softDeletes();
 

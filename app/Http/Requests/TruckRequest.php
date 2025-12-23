@@ -42,7 +42,7 @@ class TruckRequest extends FormRequest
             ],
             
             'condition' => 'required|string|max:255',
-            'status' => 'nullable|integer',
+            'is_active' => 'nullable|integer|in:0,1',
         ];
     }
 

@@ -18,7 +18,7 @@ class FleetTruck extends Model
     protected $fillable = [
         'plate_number',
         'condition',
-        'status',
+        'is_active',
     ];
 
     /**
@@ -27,6 +27,7 @@ class FleetTruck extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'is_active' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

@@ -14,19 +14,22 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::create('helpers', function (Blueprint $table) {
+        Schema::create('containers', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->string('contact_number');
-            $table->tinyInteger('is_active')->default(1);
+            $table->bigInteger('stack_run_id')->unsigned();
+            $table->string('waybill_number')->nullable();
+            $table->string('container_number');
             $table->timestamps();
-            $table->softDeletes();
+
+            // Foreign key constraints
+            $table->foreign('stack_run_id')->references('id')->on('stack_runs')->onDelete('cascade');
+            $table->foreign('waybill_number')->references('waybill_number')->on('waybill_details')->onDelete('set null');
 
             // Indexes
-            $table->index('is_active');
-            $table->index(['first_name', 'last_name']);
+            $table->index('stack_run_id');
+            $table->index('waybill_number');
+            $table->index('container_number');
         });
 
         // Re-enable foreign key checks
@@ -41,7 +44,7 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::dropIfExists('helpers');
+        Schema::dropIfExists('containers');
 
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');

@@ -1839,7 +1839,7 @@
                     "Container Yard Management"
                 ],
                 "summary": "Deactivate a container yard (Logical Delete)",
-                "description": "Updates the container yard status to 0 (inactive) by its ID.",
+                "description": "Updates the container yard is_active to 0 (inactive) by its ID.",
                 "operationId": "deactivateContainerYard",
                 "parameters": [
                     {
@@ -1893,7 +1893,7 @@
                     "Container Yard Management"
                 ],
                 "summary": "Activate a container yard (Restore)",
-                "description": "Updates the container yard status to 1 (active) by its ID.",
+                "description": "Updates the container yard is_active to 1 (active) by its ID.",
                 "operationId": "activateContainerYard",
                 "parameters": [
                     {
@@ -2211,9 +2211,9 @@
                         }
                     },
                     {
-                        "name": "active_status",
+                        "name": "is_active",
                         "in": "query",
-                        "description": "Filter by active status (1 for active, 0 for inactive)",
+                        "description": "Filter by is_active (1 for active, 0 for inactive)",
                         "schema": {
                             "type": "integer",
                             "example": 1
@@ -2301,10 +2301,10 @@
                                         "type": "string",
                                         "example": "+63 912 345 6789"
                                     },
-                                    "active_status": {
-                                        "description": "Driver active status",
-                                        "type": "boolean",
-                                        "example": true
+                                    "is_active": {
+                                        "description": "Driver is_active status (1=Active, 0=Inactive)",
+                                        "type": "integer",
+                                        "example": 1
                                     },
                                     "assigned_truck_plate_numbers": {
                                         "description": "Array of assigned truck plate numbers",
@@ -2523,10 +2523,10 @@
                                         "type": "string",
                                         "example": "+63 912 345 6789"
                                     },
-                                    "active_status": {
-                                        "description": "Driver active status",
-                                        "type": "boolean",
-                                        "example": true
+                                    "is_active": {
+                                        "description": "Driver is_active status (1=Active, 0=Inactive)",
+                                        "type": "integer",
+                                        "example": 1
                                     },
                                     "assigned_truck_plate_numbers": {
                                         "description": "Array of assigned truck plate numbers",
@@ -3250,9 +3250,9 @@
                         }
                     },
                     {
-                        "name": "active_status",
+                        "name": "is_active",
                         "in": "query",
-                        "description": "Filter by active status (1 for active, 0 for inactive)",
+                        "description": "Filter by is_active (1 for active, 0 for inactive)",
                         "schema": {
                             "type": "integer",
                             "example": 1
@@ -3340,10 +3340,10 @@
                                         "type": "string",
                                         "example": "+63 912 345 6789"
                                     },
-                                    "active_status": {
-                                        "description": "Helper active status",
-                                        "type": "boolean",
-                                        "example": true
+                                    "is_active": {
+                                        "description": "Helper is_active status (1=Active, 0=Inactive)",
+                                        "type": "integer",
+                                        "example": 1
                                     }
                                 },
                                 "type": "object"
@@ -3529,10 +3529,10 @@
                                         "type": "string",
                                         "example": "+63 912 345 6789"
                                     },
-                                    "active_status": {
-                                        "description": "Helper active status",
-                                        "type": "boolean",
-                                        "example": true
+                                    "is_active": {
+                                        "description": "Helper is_active status (1=Active, 0=Inactive)",
+                                        "type": "integer",
+                                        "example": 1
                                     }
                                 },
                                 "type": "object"
@@ -10067,6 +10067,11 @@
                                     "container_size"
                                 ],
                                 "properties": {
+                                    "reference_number": {
+                                        "description": "Reference number (optional)",
+                                        "type": "string",
+                                        "example": "SR-001"
+                                    },
                                     "shipping_line_id": {
                                         "description": "Shipping line ID",
                                         "type": "integer",
@@ -10111,6 +10116,11 @@
                                                     "type": "integer",
                                                     "example": 1
                                                 },
+                                                "reference_number": {
+                                                    "type": "string",
+                                                    "example": "SR-001",
+                                                    "nullable": true
+                                                },
                                                 "shipping_line_id": {
                                                     "type": "integer",
                                                     "example": 1
@@ -10131,20 +10141,12 @@
                                                     "type": "string",
                                                     "example": "20ft"
                                                 },
-                                                "expected_no_of_waybill": {
-                                                    "description": "Auto-calculated based on quantity and container size",
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "waybill_number": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string"
-                                                    },
-                                                    "nullable": true
-                                                },
                                                 "total_amount": {
                                                     "type": "number",
+                                                    "example": 0
+                                                },
+                                                "status": {
+                                                    "type": "integer",
                                                     "example": 0
                                                 },
                                                 "created_at": {
@@ -10268,6 +10270,562 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Stack Run Management"
+                ],
+                "summary": "Update a stack run",
+                "description": "Update the specified stack run in storage.",
+                "operationId": "1757a649f1a02063211a89294a0f08fc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Stack Run ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "reference_number": {
+                                        "description": "Reference number (optional)",
+                                        "type": "string",
+                                        "example": "SR-001"
+                                    },
+                                    "shipping_line_id": {
+                                        "description": "Shipping line ID",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "cypa_id_from": {
+                                        "description": "CYPA ID (from)",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "cypa_id_to": {
+                                        "description": "CYPA ID (to)",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "quantity_of_container": {
+                                        "description": "Quantity of containers",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "container_size": {
+                                        "description": "Container size (20ft or 40ft)",
+                                        "type": "string",
+                                        "example": "20ft"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Stack run updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "reference_number": {
+                                                    "type": "string",
+                                                    "example": "SR-001",
+                                                    "nullable": true
+                                                },
+                                                "shipping_line_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cypa_id_from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cypa_id_to": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "quantity_of_container": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "container_size": {
+                                                    "type": "string",
+                                                    "example": "20ft"
+                                                },
+                                                "total_amount": {
+                                                    "type": "number",
+                                                    "example": 0
+                                                },
+                                                "status": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "example": "2025-01-01 12:00:00"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "example": "2025-01-01 12:00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stack run not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Stack run not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/stack-runs/{stackRunId}/containers": {
+            "post": {
+                "tags": [
+                    "Stack Run Management"
+                ],
+                "summary": "Add a container to a stack run",
+                "description": "Add a container to a stack run.",
+                "operationId": "515b9626271d906c2ac03079c1ded230",
+                "parameters": [
+                    {
+                        "name": "stackRunId",
+                        "in": "path",
+                        "description": "Stack Run ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "container_number"
+                                ],
+                                "properties": {
+                                    "container_number": {
+                                        "description": "Container number",
+                                        "type": "string",
+                                        "example": "CONT-001"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Container added successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container added successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Stack run not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Stack run not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/stack-runs/{stackRunId}/containers/{containerId}": {
+            "put": {
+                "tags": [
+                    "Stack Run Management"
+                ],
+                "summary": "Update a container",
+                "description": "Update a container.",
+                "operationId": "fc18c821489eaf14a0e321289113f61b",
+                "parameters": [
+                    {
+                        "name": "stackRunId",
+                        "in": "path",
+                        "description": "Stack Run ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "containerId",
+                        "in": "path",
+                        "description": "Container ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "container_number": {
+                                        "description": "Container number",
+                                        "type": "string",
+                                        "example": "CONT-001"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Container updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container updated successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Container or stack run not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Stack Run Management"
+                ],
+                "summary": "Delete a container",
+                "description": "Delete a container.",
+                "operationId": "90ec810971538c6b46cb06184d3f3b87",
+                "parameters": [
+                    {
+                        "name": "stackRunId",
+                        "in": "path",
+                        "description": "Stack Run ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "containerId",
+                        "in": "path",
+                        "description": "Container ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Container deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Container or stack run not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/stack-runs/containers": {
+            "get": {
+                "tags": [
+                    "Stack Run Management"
+                ],
+                "summary": "Get containers by stack_run_id and optionally waybill_number",
+                "description": "Get containers based on stack_run_id and optionally waybill_number.",
+                "operationId": "6ccd812758517ab693c1af55dd0d3dd2",
+                "parameters": [
+                    {
+                        "name": "stack_run_id",
+                        "in": "query",
+                        "description": "Stack Run ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "waybill_number",
+                        "in": "query",
+                        "description": "Waybill number (optional - if provided, filters by both stack_run_id and waybill_number)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "WB-001"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Containers retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -11943,7 +12501,7 @@
                     "Trucks Management"
                 ],
                 "summary": "Deactivate a truck (Logical Delete)",
-                "description": "Updates the truck status to 0 (inactive) by its ID.",
+                "description": "Updates the truck is_active to 0 (inactive) by its ID.",
                 "operationId": "deactivateTruck",
                 "parameters": [
                     {
@@ -11997,7 +12555,7 @@
                     "Trucks Management"
                 ],
                 "summary": "Activate a truck (Restore)",
-                "description": "Updates the truck status to 1 (active) by its ID.",
+                "description": "Updates the truck is_active to 1 (active) by its ID.",
                 "operationId": "activateTruck",
                 "parameters": [
                     {
@@ -14403,7 +14961,7 @@
                         "type": "string",
                         "example": "Container Yard/Port"
                     },
-                    "status": {
+                    "is_active": {
                         "description": "1=Active, 0=Inactive",
                         "type": "integer",
                         "example": 1
@@ -14428,7 +14986,7 @@
                     "name",
                     "address",
                     "type",
-                    "status"
+                    "is_active"
                 ],
                 "properties": {
                     "name": {
@@ -14458,7 +15016,7 @@
                         "type": "string",
                         "example": "Container Yard/Port"
                     },
-                    "status": {
+                    "is_active": {
                         "type": "integer",
                         "example": 1
                     }
@@ -14581,9 +15139,10 @@
                         "type": "string",
                         "example": "Good"
                     },
-                    "status": {
+                    "is_active": {
+                        "description": "1=Active, 0=Inactive",
                         "type": "integer",
-                        "example": "1"
+                        "example": 1
                     },
                     "created_at": {
                         "type": "string",
@@ -14604,7 +15163,7 @@
                 "required": [
                     "plate_number",
                     "condition",
-                    "status"
+                    "is_active"
                 ],
                 "properties": {
                     "plate_number": {
@@ -14615,9 +15174,10 @@
                         "type": "string",
                         "example": "Good/Maintenance"
                     },
-                    "status": {
+                    "is_active": {
+                        "description": "1=Active, 0=Inactive",
                         "type": "integer",
-                        "example": "1"
+                        "example": 1
                     }
                 },
                 "type": "object"

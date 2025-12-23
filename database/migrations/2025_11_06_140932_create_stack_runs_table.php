@@ -16,15 +16,15 @@ return new class extends Migration {
 
         Schema::create('stack_runs', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->bigIncrements('id');
-            $table->bigInteger('shipping_line_id')->unsigned();
-            $table->integer('quantity_of_container')->default(0);
-            $table->string('container_size')->nullable();
-            $table->integer('expected_no_of_waybill')->default(0); // Calculated based on quantity_of_container: 1 waybill = 2 20ft containers OR 1 waybill = 1 40ft container
-            $table->bigInteger('cypa_id_from')->unsigned();
-            $table->bigInteger('cypa_id_to')->unsigned();
-            $table->json('waybill_number')->nullable();
-            $table->decimal('total_amount', 15, 2)->default(0);
+            $table->bigIncrements('id'); // auto increment
+            $table->string('reference_number')->nullable(); // fillable from user input
+            $table->bigInteger('shipping_line_id')->unsigned(); // user input
+            $table->integer('quantity_of_container')->default(0); // user input
+            $table->string('container_size')->nullable(); // fillable from user input
+            $table->bigInteger('cypa_id_from')->unsigned(); // fillable from user input
+            $table->bigInteger('cypa_id_to')->unsigned(); // fillable from user input
+            $table->decimal('total_amount', 15, 2)->default(0.00)->nullable(false); // this is not fillable for this api, other api will fill this field
+            $table->integer('status')->default(0)->nullable(false); // this is not fillable for this api, other api will fill this field
             $table->timestamps();
             $table->softDeletes();
 
@@ -34,9 +34,11 @@ return new class extends Migration {
             $table->foreign('cypa_id_to')->references('id')->on('cypa_details')->onDelete('cascade');
 
             // Indexes
+            $table->index('reference_number');
             $table->index('shipping_line_id');
             $table->index('cypa_id_from');
             $table->index('cypa_id_to');
+            $table->index('status');
         });
 
         // Re-enable foreign key checks
