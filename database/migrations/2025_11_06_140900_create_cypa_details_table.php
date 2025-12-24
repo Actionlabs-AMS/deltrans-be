@@ -11,7 +11,6 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
         Schema::create('cypa_details', function (Blueprint $table) {
@@ -27,26 +26,19 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes
             $table->index('name');
             $table->index('location_type');
         });
 
-        // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
         Schema::dropIfExists('cypa_details');
 
-        // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };

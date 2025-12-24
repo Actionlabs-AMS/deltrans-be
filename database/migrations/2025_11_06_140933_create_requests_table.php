@@ -11,7 +11,6 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
         Schema::create('requests', function (Blueprint $table) {
@@ -24,26 +23,19 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes
             $table->index('type');
             $table->index('status');
         });
 
-        // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
         Schema::dropIfExists('requests');
 
-        // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };

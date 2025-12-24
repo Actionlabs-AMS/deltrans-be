@@ -1,0 +1,184 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\WaybillDetail;
+use App\Http\Resources\WaybillDetailResource;
+
+class WaybillDetailService extends BaseService
+{
+    public function __construct()
+    {
+        // Pass the WaybillDetailResource class to the parent constructor
+        parent::__construct(new WaybillDetailResource(new WaybillDetail), new WaybillDetail());
+    }
+
+    /**
+     * Retrieve all resources with paginate.
+     */
+    public function list($perPage = 10, $trash = false)
+    {
+        try {
+            $allWaybillDetails = $this->getTotalCount();
+            $trashedWaybillDetails = $this->getTrashedCount();
+
+            $query = WaybillDetail::query()->with([
+                'shippingLine',
+                'stackRun',
+                'driver',
+                'helper',
+                'fleetTruck',
+                'fixedExpense',
+                'ratePerClient'
+            ]);
+
+            // Apply onlyTrashed() first if we're in trash view
+            if ($trash) {
+                $query->onlyTrashed();
+            }
+
+            // Then apply search conditions
+            if (request('search')) {
+                $query->where(function ($q) {
+                    $q->where('waybill_number', 'LIKE', '%' . request('search') . '%')
+                        ->orWhereHas('shippingLine', function ($q) {
+                            $q->where('name', 'LIKE', '%' . request('search') . '%');
+                        })
+                        ->orWhereHas('driver', function ($q) {
+                            $q->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . request('search') . '%']);
+                        })
+                        ->orWhereHas('helper', function ($q) {
+                            $q->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . request('search') . '%']);
+                        })
+                        ->orWhere('truck_plate_number', 'LIKE', '%' . request('search') . '%');
+                });
+            }
+
+            // Filter by shipping_line_id
+            if (request('shipping_line_id')) {
+                $query->where('shipping_line_id', request('shipping_line_id'));
+            }
+
+            // Filter by stack_run_id
+            if (request('stack_run_id')) {
+                $query->where('stack_run_id', request('stack_run_id'));
+            }
+
+            // Filter by driver_id
+            if (request('driver_id')) {
+                $query->where('driver_id', request('driver_id'));
+            }
+
+            // Filter by helper_id
+            if (request('helper_id')) {
+                $query->where('helper_id', request('helper_id'));
+            }
+
+            // Filter by truck_plate_number
+            if (request('truck_plate_number')) {
+                $query->where('truck_plate_number', request('truck_plate_number'));
+            }
+
+            // Filter by transaction_date
+            if (request('transaction_date')) {
+                $query->whereDate('transaction_date', request('transaction_date'));
+            }
+
+            // Filter by pickup_date
+            if (request('pickup_date')) {
+                $query->whereDate('pickup_date', request('pickup_date'));
+            }
+
+            // Filter by delivered_date
+            if (request('delivered_date')) {
+                $query->whereDate('delivered_date', request('delivered_date'));
+            }
+
+            // Apply ordering
+            if (request('order')) {
+                $query->orderBy(request('order'), request('sort') ?? 'asc');
+            } else {
+                $query->orderBy('id', 'desc');
+            }
+
+            return WaybillDetailResource::collection(
+                $query->paginate($perPage)->withQueryString()
+            )->additional(['meta' => ['all' => $allWaybillDetails, 'trashed' => $trashedWaybillDetails]]);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch waybill details: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(array $data)
+    {
+        // Remove auto-calculated fields if they exist in the data
+        unset($data['total_rate_per_client'], $data['total_expense']);
+        
+        $model = $this->model::create($data);
+        
+        // Reload relationships to ensure auto-calculation works
+        $model->load(['ratePerClient', 'fixedExpense']);
+        
+        // Trigger save again to recalculate auto-computed fields
+        $model->save();
+        
+        return $this->resource::make($model->load([
+            'shippingLine',
+            'stackRun',
+            'driver',
+            'helper',
+            'fleetTruck',
+            'fixedExpense',
+            'ratePerClient'
+        ]));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(array $data, int $id)
+    {
+        // Remove auto-calculated fields if they exist in the data
+        unset($data['total_rate_per_client'], $data['total_expense']);
+        
+        $model = $this->model::findOrFail($id);
+        $model->update($data);
+        
+        // Reload relationships to ensure auto-calculation works
+        $model->load(['ratePerClient', 'fixedExpense']);
+        
+        // Trigger save again to recalculate auto-computed fields
+        $model->save();
+        
+        return $this->resource::make($model->load([
+            'shippingLine',
+            'stackRun',
+            'driver',
+            'helper',
+            'fleetTruck',
+            'fixedExpense',
+            'ratePerClient'
+        ]));
+    }
+
+    /**
+     * Get Details for editing the specified resource.
+     */
+    public function show(int $id)
+    {
+        $model = $this->model::with([
+            'shippingLine',
+            'stackRun',
+            'driver',
+            'helper',
+            'fleetTruck',
+            'fixedExpense',
+            'ratePerClient'
+        ])->findOrFail($id);
+        return $this->resource::make($model);
+    }
+}
+

@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\StatementOfAccountController;
 use App\Http\Controllers\Api\StackRunController;
 use App\Http\Controllers\Api\RatePerClientController;
 use App\Http\Controllers\Api\FixedExpenseController;
+use App\Http\Controllers\Api\WaybillDetailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -381,6 +382,35 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [FixedExpenseController::class, 'getTrashed']); // Retrieve soft-deleted fixed expenses
 		Route::patch('/restore/{id}', [FixedExpenseController::class, 'restore']); // Restore a soft-deleted fixed expense
 		Route::delete('/{id}', [FixedExpenseController::class, 'forceDelete']); // Permanently delete a soft-deleted fixed expense
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Waybill Detail Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Waybill Details CRUD Operations
+	|
+	*/
+	Route::prefix('waybill-details')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [WaybillDetailController::class, 'index']);  // Retrieve all waybill details
+		Route::get('/{id}', [WaybillDetailController::class, 'show']);  // Retrieve a single waybill detail
+		Route::post('/', [WaybillDetailController::class, 'store']);  // Create a new waybill detail
+		Route::put('/{id}', [WaybillDetailController::class, 'update']);  // Update an existing waybill detail
+		Route::delete('/{id}', [WaybillDetailController::class, 'destroy']);  // Delete a waybill detail
+
+		// Bulk operations
+		Route::post('/bulk/delete', [WaybillDetailController::class, 'bulkDelete']);  // Bulk delete waybill details
+		Route::post('/bulk/restore', [WaybillDetailController::class, 'bulkRestore']);  // Bulk restore waybill details
+		Route::post('/bulk/force-delete', [WaybillDetailController::class, 'bulkForceDelete']);  // Bulk permanently delete waybill details
+	});
+
+	// Custom route for archived (trashed) waybill details with a distinct prefix
+	Route::prefix('archived/waybill-details')->group(function () {
+		Route::get('/', [WaybillDetailController::class, 'getTrashed']); // Retrieve soft-deleted waybill details
+		Route::patch('/restore/{id}', [WaybillDetailController::class, 'restore']); // Restore a soft-deleted waybill detail
+		Route::delete('/{id}', [WaybillDetailController::class, 'forceDelete']); // Permanently delete a soft-deleted waybill detail
 	});
 
 	/*
