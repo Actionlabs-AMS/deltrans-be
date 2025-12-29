@@ -9,13 +9,13 @@ class HelperService extends BaseService
 {
   public function __construct()
   {
-      // Pass the HelperResource class to the parent constructor
-      parent::__construct(new HelperResource(new Helper), new Helper());
+    // Pass the HelperResource class to the parent constructor
+    parent::__construct(new HelperResource(new Helper), new Helper());
   }
-  
+
   /**
-  * Retrieve all resources with paginate.
-  */
+   * Retrieve all resources with paginate.
+   */
   public function list($perPage = 10, $trash = false)
   {
     try {
@@ -23,7 +23,7 @@ class HelperService extends BaseService
       $trashedHelpers = $this->getTrashedCount();
 
       $query = Helper::query();
-      
+
       // Apply onlyTrashed() first if we're in trash view
       if ($trash) {
         $query->onlyTrashed();
@@ -31,16 +31,16 @@ class HelperService extends BaseService
 
       // Then apply search conditions
       if (request('search')) {
-        $query->where(function($q) {
+        $query->where(function ($q) {
           $q->where('first_name', 'LIKE', '%' . request('search') . '%')
             ->orWhere('last_name', 'LIKE', '%' . request('search') . '%')
             ->orWhere('contact_number', 'LIKE', '%' . request('search') . '%');
         });
       }
 
-      // Filter by active status
-      if (request('active_status') !== null) {
-        $query->where('active_status', request('active_status'));
+      // Filter by is_active
+      if (request('is_active') !== null) {
+        $query->where('is_active', request('is_active'));
       }
 
       // Apply ordering

@@ -19,7 +19,7 @@ class TruckResource extends JsonResource
             'id' => $this->id,
             'plate_number' => $this->plate_number,
             'condition' => $this->condition,
-            'status' => (int) $this->status,
+            'is_active' => (int) $this->is_active,
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null, // Line 28 is likely here    
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,

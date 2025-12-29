@@ -28,8 +28,10 @@ class DatabaseSeeder extends Seeder
             DriverSeeder::class,
             RequestSeeder::class,
             FixedExpenseSeeder::class,
-            WaybillDetailsSeeder::class,
+            RatePerClientSeeder::class,
             StackRunSeeder::class,
+            WaybillDetailsSeeder::class,
+            ContainerSeeder::class,
             StatementOfAccountSeeder::class,
             TruckMaintenanceRecordsSeeder::class,
         ]);

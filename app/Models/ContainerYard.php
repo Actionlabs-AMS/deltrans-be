@@ -18,7 +18,7 @@ class ContainerYard extends Model
         'contact_mobile',
         'landlines', // Ensure this is fillable
         'location_type',
-        'status',
+        'is_active',
     ];
 
     /**
@@ -27,7 +27,7 @@ class ContainerYard extends Model
     protected $casts = [
         // FIX: Cast 'landlines' to an array
         'landlines' => 'array',
-        'status' => 'integer',
+        'is_active' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

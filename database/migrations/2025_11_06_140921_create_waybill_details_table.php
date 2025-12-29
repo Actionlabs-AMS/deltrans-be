@@ -11,65 +11,58 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
         Schema::create('waybill_details', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->string('waybill_number')->primary();
+            $table->bigIncrements('id');
+            $table->string('waybill_number')->unique();
             $table->date('transaction_date');
-            $table->bigInteger('shipping_line_id')->nullable()->unsigned();
-            $table->bigInteger('cypa_id')->nullable()->unsigned();
-            $table->bigInteger('driver_id')->nullable()->unsigned();
-            $table->bigInteger('helper_id')->nullable()->unsigned();
-            $table->string('truck_plate_number')->nullable();
-            $table->bigInteger('fixed_expense_id')->nullable()->unsigned();
-            $table->decimal('other_expense', 15, 2)->default(0);
-            $table->json('container_id')->nullable();
-            $table->date('pickup_date')->nullable();
-            $table->date('delivered_date')->nullable();
+            $table->bigInteger('shipping_line_id')->unsigned();
+            $table->bigInteger('stack_run_id')->unsigned();
+            $table->bigInteger('driver_id')->unsigned();
+            $table->bigInteger('helper_id')->unsigned();
+            $table->string('truck_plate_number');
+            $table->bigInteger('fixed_expense_id')->unsigned();
+            $table->bigInteger('rate_per_client_id')->unsigned();
+            $table->decimal('extra_money', 15, 2)->default(0);
+            $table->date('pickup_date');
+            $table->date('delivered_date');
             $table->decimal('post_expense_amount', 15, 2)->default(0);
-            $table->decimal('total_amount', 15, 2)->default(0);
+            $table->decimal('total_rate_per_client', 15, 2)->default(0);
+            $table->decimal('total_expense', 15, 2)->default(0);
             $table->timestamps();
             $table->softDeletes();
 
-            // Foreign key constraints
-            $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('set null');
-            $table->foreign('cypa_id')->references('id')->on('cypa_details')->onDelete('set null');
-            $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('set null');
-            $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('set null');
-            $table->foreign('truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('set null');
-            $table->foreign('fixed_expense_id')->references('id')->on('fixed_expenses')->onDelete('set null');
+            $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
+            $table->foreign('stack_run_id')->references('id')->on('stack_runs')->onDelete('cascade');
+            $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('cascade');
+            $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('cascade');
+            $table->foreign('truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('cascade');
+            $table->foreign('fixed_expense_id')->references('id')->on('fixed_expenses')->onDelete('cascade');
+            $table->foreign('rate_per_client_id')->references('id')->on('rate_per_clients')->onDelete('cascade');
 
-            // Indexes for better query performance
             $table->index('transaction_date');
-            $table->index('cypa_id');
+            $table->index('stack_run_id');
             $table->index('driver_id');
             $table->index('helper_id');
             $table->index('truck_plate_number');
             $table->index('shipping_line_id');
             $table->index('fixed_expense_id');
-            // Note: container_id is JSON type, cannot be directly indexed in MySQL
-            // If indexing is needed, use a generated column with JSON path
+            $table->index('rate_per_client_id');
             $table->index('pickup_date');
             $table->index('delivered_date');
         });
 
-        // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
         Schema::dropIfExists('waybill_details');
 
-        // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };

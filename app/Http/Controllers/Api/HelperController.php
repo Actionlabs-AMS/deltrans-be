@@ -49,12 +49,12 @@ class HelperController extends BaseController
    *         description="Search by first name, last name, or contact number",
    *         @OA\Schema(type="string")
    *     ),
-   *     @OA\Parameter(
-   *         name="active_status",
-   *         in="query",
-   *         description="Filter by active status (1 for active, 0 for inactive)",
-   *         @OA\Schema(type="integer", example=1)
-   *     ),
+     *     @OA\Parameter(
+     *         name="is_active",
+     *         in="query",
+     *         description="Filter by is_active (1 for active, 0 for inactive)",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
    *     @OA\Response(
    *         response=200,
    *         description="List of helpers retrieved successfully",
@@ -427,7 +427,7 @@ class HelperController extends BaseController
    *             @OA\Property(property="first_name", type="string", example="Juan", description="Helper first name"),
    *             @OA\Property(property="last_name", type="string", example="Dela Cruz", description="Helper last name"),
    *             @OA\Property(property="contact_number", type="string", example="+63 912 345 6789", description="Helper contact number"),
-   *             @OA\Property(property="active_status", type="boolean", example=true, description="Helper active status")
+             *             @OA\Property(property="is_active", type="integer", example=1, description="Helper is_active status (1=Active, 0=Inactive)")
    *         )
    *     ),
    *     @OA\Response(
@@ -487,7 +487,7 @@ class HelperController extends BaseController
    *             @OA\Property(property="first_name", type="string", example="Juan", description="Helper first name"),
    *             @OA\Property(property="last_name", type="string", example="Dela Cruz", description="Helper last name"),
    *             @OA\Property(property="contact_number", type="string", example="+63 912 345 6789", description="Helper contact number"),
-   *             @OA\Property(property="active_status", type="boolean", example=true, description="Helper active status")
+             *             @OA\Property(property="is_active", type="integer", example=1, description="Helper is_active status (1=Active, 0=Inactive)")
    *         )
    *     ),
    *     @OA\Response(

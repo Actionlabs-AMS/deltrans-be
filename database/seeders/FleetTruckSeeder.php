@@ -16,52 +16,67 @@ class FleetTruckSeeder extends Seeder
             [
                 'plate_number' => 'ABC-1234',
                 'condition' => 'Excellent',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'XYZ-5678',
                 'condition' => 'Good',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'DEF-9012',
                 'condition' => 'Good',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'GHI-3456',
                 'condition' => 'Fair',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'JKL-7890',
                 'condition' => 'Excellent',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'MNO-2345',
                 'condition' => 'Good',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'PQR-6789',
                 'condition' => 'Needs Repair',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'STU-0123',
                 'condition' => 'Fair',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'VWX-4567',
                 'condition' => 'Excellent',
-                'status' => 1,
+                'is_active' => 1,
             ],
             [
                 'plate_number' => 'YZA-8901',
                 'condition' => 'Good',
-                'status' => 1,
+                'is_active' => 1,
+            ],
+            [
+                'plate_number' => 'BCD-2345',
+                'condition' => 'Needs Repair',
+                'is_active' => 0,
+            ],
+            [
+                'plate_number' => 'EFG-5678',
+                'condition' => 'Fair',
+                'is_active' => 0,
+            ],
+            [
+                'plate_number' => 'HIJ-9012',
+                'condition' => 'Needs Repair',
+                'is_active' => 0,
             ],
         ];
 

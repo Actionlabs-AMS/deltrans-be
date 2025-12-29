@@ -25,7 +25,7 @@ class HelperRequest extends FormRequest
       "first_name" => "required|string|max:191|regex:/^[a-zA-Z\s]+$/",
       "last_name" => "required|string|max:191|regex:/^[a-zA-Z\s]+$/",
       "contact_number" => "required|string|max:191|unique:helpers,contact_number,".$this->id,
-      "active_status" => "nullable|boolean",
+      "is_active" => "nullable|integer|in:0,1",
     ];
   }
 
@@ -38,7 +38,8 @@ class HelperRequest extends FormRequest
       "last_name.regex" => "The last name field must only contain letters and spaces.",
       "contact_number.required" => "The contact number field is required.",
       "contact_number.unique" => "This contact number is already registered.",
-      "active_status.boolean" => "The active status must be true or false.",
+      "is_active.integer" => "The is_active field must be an integer.",
+      "is_active.in" => "The is_active field must be either 0 or 1.",
     ];
   }
 }

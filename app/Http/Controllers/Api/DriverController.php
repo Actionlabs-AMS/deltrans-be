@@ -49,12 +49,12 @@ class DriverController extends BaseController
    *         description="Search by first name, last name, or contact number",
    *         @OA\Schema(type="string")
    *     ),
-   *     @OA\Parameter(
-   *         name="active_status",
-   *         in="query",
-   *         description="Filter by active status (1 for active, 0 for inactive)",
-   *         @OA\Schema(type="integer", example=1)
-   *     ),
+     *     @OA\Parameter(
+     *         name="is_active",
+     *         in="query",
+     *         description="Filter by is_active (1 for active, 0 for inactive)",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
    *     @OA\Response(
    *         response=200,
    *         description="List of drivers retrieved successfully",
@@ -427,7 +427,7 @@ class DriverController extends BaseController
    *             @OA\Property(property="first_name", type="string", example="Juan", description="Driver first name"),
    *             @OA\Property(property="last_name", type="string", example="Dela Cruz", description="Driver last name"),
    *             @OA\Property(property="contact_number", type="string", example="+63 912 345 6789", description="Driver contact number"),
-   *             @OA\Property(property="active_status", type="boolean", example=true, description="Driver active status"),
+             *             @OA\Property(property="is_active", type="integer", example=1, description="Driver is_active status (1=Active, 0=Inactive)"),
    *             @OA\Property(property="assigned_truck_plate_numbers", type="array", @OA\Items(type="string"), example={"ABC-1234", "XYZ-5678"}, description="Array of assigned truck plate numbers"),
    *             @OA\Property(property="stack_run", type="array", @OA\Items(type="string"), example={"Route A", "Route B"}, description="Array of stack run routes"),
    *             @OA\Property(property="helpers_id", type="array", @OA\Items(type="integer"), example={1, 2}, description="Array of helper IDs")
@@ -490,7 +490,7 @@ class DriverController extends BaseController
    *             @OA\Property(property="first_name", type="string", example="Juan", description="Driver first name"),
    *             @OA\Property(property="last_name", type="string", example="Dela Cruz", description="Driver last name"),
    *             @OA\Property(property="contact_number", type="string", example="+63 912 345 6789", description="Driver contact number"),
-   *             @OA\Property(property="active_status", type="boolean", example=true, description="Driver active status"),
+             *             @OA\Property(property="is_active", type="integer", example=1, description="Driver is_active status (1=Active, 0=Inactive)"),
    *             @OA\Property(property="assigned_truck_plate_numbers", type="array", @OA\Items(type="string"), example={"ABC-1234", "XYZ-5678"}, description="Array of assigned truck plate numbers"),
    *             @OA\Property(property="stack_run", type="array", @OA\Items(type="string"), example={"Route A", "Route B"}, description="Array of stack run routes"),
    *             @OA\Property(property="helpers_id", type="array", @OA\Items(type="integer"), example={1, 2}, description="Array of helper IDs")

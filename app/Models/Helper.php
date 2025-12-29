@@ -19,7 +19,7 @@ class Helper extends Model
         'first_name',
         'last_name',
         'contact_number',
-        'active_status',
+        'is_active',
     ];
 
     /**
@@ -28,7 +28,7 @@ class Helper extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'active_status' => 'boolean',
+        'is_active' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

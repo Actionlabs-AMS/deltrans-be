@@ -23,8 +23,7 @@ class ContainerYardResource extends JsonResource
             'contact_mobile' => $this->contact_mobile,
             'landlines' => $this->landlines ?? [],
             'location_type' => $this->location_type,
-            'status' => (int) $this->status, // Ensuring it's cast to integer
-            'is_active' => $this->status == 1,   // Adding a boolean helper
+            'is_active' => (int) $this->is_active, // Ensuring it's cast to integer
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null, // Line 28 is likely here    
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,

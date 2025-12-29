@@ -19,7 +19,7 @@ class Driver extends Model
         'first_name',
         'last_name',
         'contact_number',
-        'active_status',
+        'is_active',
         'assigned_truck_plate_numbers',
         'stack_run',
         'helpers_id',
@@ -31,7 +31,7 @@ class Driver extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'active_status' => 'boolean',
+        'is_active' => 'integer',
         'assigned_truck_plate_numbers' => 'array',
         'stack_run' => 'array',
         'helpers_id' => 'array',

@@ -127,7 +127,7 @@
                 "last_name": "Sanchez",
                 "full_name": "Alberto Sanchez",
                 "contact_number": "+63 935 012 3456",
-                "active_status": true,
+                "is_active": 1,
                 "assigned_truck_plate_numbers": [
                     "YZA-8901"
                 ],
@@ -141,8 +141,8 @@
             }
         ],
         "links": {
-            "first": "http://localhost:8000/api/drivers?per_page=10&active_status=1&page=1",
-            "last": "http://localhost:8000/api/drivers?per_page=10&active_status=1&page=1",
+            "first": "http://localhost:8000/api/drivers?per_page=10&is_active=1&page=1",
+            "last": "http://localhost:8000/api/drivers?per_page=10&is_active=1&page=1",
             "prev": null,
             "next": null
         },
@@ -157,7 +157,7 @@
                     "active": false
                 },
                 {
-                    "url": "http://localhost:8000/api/drivers?per_page=10&active_status=1&page=1",
+                    "url": "http://localhost:8000/api/drivers?per_page=10&is_active=1&page=1",
                     "label": "1",
                     "active": true
                 },
@@ -184,17 +184,17 @@
                 "last_name": "Bautista",
                 "full_name": "Elena Bautista",
                 "contact_number": "+63 927 234 5678",
-                "active_status": true,
+                "is_active": 1,
                 "created_at": "2025-11-17 05:42:46",
                 "updated_at": "2025-11-17 05:42:46",
                 "deleted_at": null
             }
         ],
         "links": {
-            "first": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=1",
-            "last": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=2",
+            "first": "http://localhost:8000/api/helpers?per_page=10&is_active=1&page=1",
+            "last": "http://localhost:8000/api/helpers?per_page=10&is_active=1&page=2",
             "prev": null,
-            "next": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=2"
+            "next": "http://localhost:8000/api/helpers?per_page=10&is_active=1&page=2"
         },
         "meta": {
             "current_page": 1,
@@ -207,17 +207,17 @@
                     "active": false
                 },
                 {
-                    "url": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=1",
+                    "url": "http://localhost:8000/api/helpers?per_page=10&is_active=1&page=1",
                     "label": "1",
                     "active": true
                 },
                 {
-                    "url": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=2",
+                    "url": "http://localhost:8000/api/helpers?per_page=10&is_active=1&page=2",
                     "label": "2",
                     "active": false
                 },
                 {
-                    "url": "http://localhost:8000/api/helpers?per_page=10&active_status=1&page=2",
+                    "url": "http://localhost:8000/api/helpers?per_page=10&is_active=1&page=2",
                     "label": "Next &raquo;",
                     "active": false
                 }
@@ -227,6 +227,473 @@
             "to": 10,
             "total": 11,
             "all": 12,
+            "trashed": 0
+        }
+    },
+    "Stack Run API Response": {
+        "url": "http://localhost:8000/api/stack-runs?page=1&per_page=10",
+        "data": [
+            {
+                "id": 5,
+                "reference_number": "SR-005",
+                "shipping_line_id": 7,
+                "cypa_id_from": 1,
+                "cypa_id_to": 2,
+                "quantity_of_container": 1,
+                "container_size": "20ft",
+                "total_amount": "4000.00",
+                "is_complete": 0,
+                "shipping_line": {
+                    "id": 7,
+                    "name": "ONE (Ocean Network Express)",
+                    "email_address": "contact@one-line.com",
+                    "address": "1-1, Uchisaiwaicho 1-chome, Chiyoda-ku, Tokyo, Japan",
+                    "contact_name": "Yuki Tanaka",
+                    "contact_mobile": "+81 3 3578 7000",
+                    "landlines": [
+                        "+81 3 3578 7001"
+                    ],
+                    "fax_no": "+81 3 3578 7002",
+                    "tin": "JP-1122334455",
+                    "shipping_lines_template": [
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8,
+                        9,
+                        10
+                    ],
+                    "transaction_information_template": [
+                        11,
+                        12,
+                        13,
+                        14,
+                        15,
+                        16,
+                        17,
+                        18,
+                        19,
+                        20,
+                        21,
+                        22,
+                        23,
+                        24,
+                        25
+                    ],
+                    "created_at": "2025-12-22T05:50:53.000000Z",
+                    "updated_at": "2025-12-22T05:50:53.000000Z",
+                    "deleted_at": null
+                },
+                "cypa_from": {
+                    "id": 1,
+                    "name": "Manila International Container Terminal",
+                    "address": "North Harbor, Manila, Philippines",
+                    "contact_name": "John Santos",
+                    "contact_mobile": "+63 917 123 4567",
+                    "landlines": [
+                        "+63 2 1234 5678",
+                        "+63 2 1234 5679"
+                    ],
+                    "location_type": "Port Area",
+                    "is_active": 1,
+                    "created_at": null,
+                    "updated_at": null,
+                    "deleted_at": null
+                },
+                "cypa_to": {
+                    "id": 2,
+                    "name": "South Harbor Container Terminal",
+                    "address": "South Harbor, Manila, Philippines",
+                    "contact_name": "Maria Garcia",
+                    "contact_mobile": "+63 918 234 5678",
+                    "landlines": [
+                        "+63 2 2345 6789"
+                    ],
+                    "location_type": "Port Area",
+                    "is_active": 1,
+                    "created_at": null,
+                    "updated_at": null,
+                    "deleted_at": null
+                },
+                "created_at": "2025-12-22 13:50:53",
+                "updated_at": "2025-12-22 13:50:53",
+                "deleted_at": null
+            }
+        ],
+        "links": {
+            "first": "http://localhost:8000/api/stack-runs?per_page=10&page=1",
+            "last": "http://localhost:8000/api/stack-runs?per_page=10&page=1",
+            "prev": null,
+            "next": null
+        },
+        "meta": {
+            "current_page": 1,
+            "from": 1,
+            "last_page": 1,
+            "links": [
+                {
+                    "url": null,
+                    "label": "&laquo; Previous",
+                    "active": false
+                },
+                {
+                    "url": "http://localhost:8000/api/stack-runs?per_page=10&page=1",
+                    "label": "1",
+                    "active": true
+                },
+                {
+                    "url": null,
+                    "label": "Next &raquo;",
+                    "active": false
+                }
+            ],
+            "path": "http://localhost:8000/api/stack-runs",
+            "per_page": 10,
+            "to": 5,
+            "total": 5,
+            "all": 5,
+            "trashed": 0
+        }
+    },
+    "Stack Run Detail API Response": {
+        "url": "http://localhost:8000/api/stack-runs/5",
+        "data": {
+            "id": 5,
+            "reference_number": "SR-005",
+            "shipping_line_id": 7,
+            "cypa_id_from": 1,
+            "cypa_id_to": 2,
+            "quantity_of_container": 1,
+            "container_size": "20ft",
+            "total_amount": "4000.00",
+            "is_complete": 0,
+            "actual_no_of_waybill": 3,
+            "shipping_line": {
+                "id": 7,
+                "name": "ONE (Ocean Network Express)",
+                "email_address": "contact@one-line.com",
+                "address": "1-1, Uchisaiwaicho 1-chome, Chiyoda-ku, Tokyo, Japan",
+                "contact_name": "Yuki Tanaka",
+                "contact_mobile": "+81 3 3578 7000",
+                "landlines": [
+                    "+81 3 3578 7001"
+                ],
+                "fax_no": "+81 3 3578 7002",
+                "tin": "JP-1122334455",
+                "created_at": "2025-12-22T05:50:53.000000Z",
+                "updated_at": "2025-12-22T05:50:53.000000Z",
+                "deleted_at": null
+            },
+            "cypa_from": {
+                "id": 1,
+                "name": "Manila International Container Terminal",
+                "address": "North Harbor, Manila, Philippines",
+                "contact_name": "John Santos",
+                "contact_mobile": "+63 917 123 4567",
+                "landlines": [
+                    "+63 2 1234 5678",
+                    "+63 2 1234 5679"
+                ],
+                "location_type": "Port Area",
+                "is_active": 1,
+                "created_at": null,
+                "updated_at": null,
+                "deleted_at": null
+            },
+            "cypa_to": {
+                "id": 2,
+                "name": "South Harbor Container Terminal",
+                "address": "South Harbor, Manila, Philippines",
+                "contact_name": "Maria Garcia",
+                "contact_mobile": "+63 918 234 5678",
+                "landlines": [
+                    "+63 2 2345 6789"
+                ],
+                "location_type": "Port Area",
+                "is_active": 1,
+                "created_at": null,
+                "updated_at": null,
+                "deleted_at": null
+            },
+            "containers": [],
+            "created_at": "2025-12-22 13:50:53",
+            "updated_at": "2025-12-22 13:50:53",
+            "deleted_at": null
+        }
+    },
+    "Rate Per Client API Response": {
+        "url": "http://localhost:8000/api/rate-per-clients?page=1&per_page=10",
+        "data": [
+            {
+                "id": 1,
+                "shipping_line_id": 1,
+                "no_of_days": 7,
+                "requirements": "Standard documentation",
+                "remarks": "Standard rate for 7 days",
+                "cypa_id": 0,
+                "stack_run": "1000.00",
+                "size": "20ft",
+                "rate": "5000.00",
+                "is_active": 1,
+                "shipping_line": {
+                    "id": 1,
+                    "name": "Maersk Line",
+                    "email_address": "info@maersk.com",
+                    "address": "Esplanaden 50, 1098 Copenhagen, Denmark",
+                    "contact_name": "John Doe",
+                    "contact_mobile": "+45 33 63 33 63",
+                    "landlines": [
+                        "+45 33 63 33 64"
+                    ],
+                    "fax_no": "+45 33 63 33 65",
+                    "tin": "DK-12345678",
+                    "created_at": "2025-11-14T06:27:37.000000Z",
+                    "updated_at": "2025-11-14T06:27:37.000000Z",
+                    "deleted_at": null
+                },
+                "cypa": null,
+                "created_at": "2025-12-22 14:00:00",
+                "updated_at": "2025-12-22 14:00:00",
+                "deleted_at": null
+            }
+        ],
+        "links": {
+            "first": "http://localhost:8000/api/rate-per-clients?per_page=10&page=1",
+            "last": "http://localhost:8000/api/rate-per-clients?per_page=10&page=1",
+            "prev": null,
+            "next": null
+        },
+        "meta": {
+            "current_page": 1,
+            "from": 1,
+            "last_page": 1,
+            "links": [
+                {
+                    "url": null,
+                    "label": "&laquo; Previous",
+                    "active": false
+                },
+                {
+                    "url": "http://localhost:8000/api/rate-per-clients?per_page=10&page=1",
+                    "label": "1",
+                    "active": true
+                },
+                {
+                    "url": null,
+                    "label": "Next &raquo;",
+                    "active": false
+                }
+            ],
+            "path": "http://localhost:8000/api/rate-per-clients",
+            "per_page": 10,
+            "to": 1,
+            "total": 1,
+            "all": 1,
+            "trashed": 0
+        }
+    },
+    "Fixed Expense API Response": {
+        "url": "http://localhost:8000/api/fixed-expenses?page=1&per_page=10",
+        "data": [
+            {
+                "id": 1,
+                "shipping_line_id": 1,
+                "cypa_id_from": 1,
+                "cypa_id_to": 2,
+                "container_size": "20ft",
+                "docs_fee": "500.00",
+                "stack_run": "1500.00",
+                "expenses": "2000.00",
+                "total_expenses": "4000.00",
+                "shipping_line": {
+                    "id": 1,
+                    "name": "Maersk Line",
+                    "email_address": "info@maersk.com",
+                    "address": "Esplanaden 50, 1098 Copenhagen, Denmark",
+                    "contact_name": "John Doe",
+                    "contact_mobile": "+45 33 63 33 63",
+                    "landlines": [
+                        "+45 33 63 33 64"
+                    ],
+                    "fax_no": "+45 33 63 33 65",
+                    "tin": "DK-12345678",
+                    "created_at": "2025-11-14T06:27:37.000000Z",
+                    "updated_at": "2025-11-14T06:27:37.000000Z",
+                    "deleted_at": null
+                },
+                "cypa_from": {
+                    "id": 1,
+                    "name": "Manila International Container Terminal",
+                    "address": "North Harbor, Manila, Philippines",
+                    "contact_name": "John Santos",
+                    "contact_mobile": "+63 917 123 4567",
+                    "landlines": [
+                        "+63 2 1234 5678",
+                        "+63 2 1234 5679"
+                    ],
+                    "location_type": "Port Area",
+                    "is_active": 1,
+                    "created_at": null,
+                    "updated_at": null,
+                    "deleted_at": null
+                },
+                "cypa_to": {
+                    "id": 2,
+                    "name": "South Harbor Container Terminal",
+                    "address": "South Harbor, Manila, Philippines",
+                    "contact_name": "Maria Garcia",
+                    "contact_mobile": "+63 918 234 5678",
+                    "landlines": [
+                        "+63 2 2345 6789"
+                    ],
+                    "location_type": "Port Area",
+                    "is_active": 1,
+                    "created_at": null,
+                    "updated_at": null,
+                    "deleted_at": null
+                },
+                "created_at": "2025-12-22 14:00:00",
+                "updated_at": "2025-12-22 14:00:00",
+                "deleted_at": null
+            }
+        ],
+        "links": {
+            "first": "http://localhost:8000/api/fixed-expenses?per_page=10&page=1",
+            "last": "http://localhost:8000/api/fixed-expenses?per_page=10&page=1",
+            "prev": null,
+            "next": null
+        },
+        "meta": {
+            "current_page": 1,
+            "from": 1,
+            "last_page": 1,
+            "links": [
+                {
+                    "url": null,
+                    "label": "&laquo; Previous",
+                    "active": false
+                },
+                {
+                    "url": "http://localhost:8000/api/fixed-expenses?per_page=10&page=1",
+                    "label": "1",
+                    "active": true
+                },
+                {
+                    "url": null,
+                    "label": "Next &raquo;",
+                    "active": false
+                }
+            ],
+            "path": "http://localhost:8000/api/fixed-expenses",
+            "per_page": 10,
+            "to": 1,
+            "total": 1,
+            "all": 1,
+            "trashed": 0
+        }
+    },
+    "Truck API Response": {
+        "url": "http://localhost:8000/api/trucks/truck-list?page=1&per_page=10",
+        "data": [
+            {
+                "id": 1,
+                "plate_number": "NCK-6498",
+                "condition": "Good",
+                "is_active": 1,
+                "created_at": "2025-11-17 05:42:46",
+                "updated_at": "2025-11-17 05:42:46",
+                "deleted_at": null
+            }
+        ],
+        "links": {
+            "first": "http://localhost:8000/api/trucks/truck-list?per_page=10&page=1",
+            "last": "http://localhost:8000/api/trucks/truck-list?per_page=10&page=1",
+            "prev": null,
+            "next": null
+        },
+        "meta": {
+            "current_page": 1,
+            "from": 1,
+            "last_page": 1,
+            "links": [
+                {
+                    "url": null,
+                    "label": "&laquo; Previous",
+                    "active": false
+                },
+                {
+                    "url": "http://localhost:8000/api/trucks/truck-list?per_page=10&page=1",
+                    "label": "1",
+                    "active": true
+                },
+                {
+                    "url": null,
+                    "label": "Next &raquo;",
+                    "active": false
+                }
+            ],
+            "path": "http://localhost:8000/api/trucks/truck-list",
+            "per_page": 10,
+            "to": 1,
+            "total": 1,
+            "all": 1,
+            "trashed": 0
+        }
+    },
+    "Container Yard API Response": {
+        "url": "http://localhost:8000/api/container-yards/yard-list?page=1&per_page=10",
+        "data": [
+            {
+                "id": 1,
+                "name": "Manila International Container Terminal",
+                "address": "North Harbor, Manila, Philippines",
+                "contact_name": "John Santos",
+                "contact_mobile": "+63 917 123 4567",
+                "landlines": [
+                    "+63 2 1234 5678",
+                    "+63 2 1234 5679"
+                ],
+                "location_type": "Port Area",
+                "is_active": 1,
+                "created_at": "2025-11-14 06:27:37",
+                "updated_at": "2025-11-14 06:27:37",
+                "deleted_at": null
+            }
+        ],
+        "links": {
+            "first": "http://localhost:8000/api/container-yards/yard-list?per_page=10&page=1",
+            "last": "http://localhost:8000/api/container-yards/yard-list?per_page=10&page=1",
+            "prev": null,
+            "next": null
+        },
+        "meta": {
+            "current_page": 1,
+            "from": 1,
+            "last_page": 1,
+            "links": [
+                {
+                    "url": null,
+                    "label": "&laquo; Previous",
+                    "active": false
+                },
+                {
+                    "url": "http://localhost:8000/api/container-yards/yard-list?per_page=10&page=1",
+                    "label": "1",
+                    "active": true
+                },
+                {
+                    "url": null,
+                    "label": "Next &raquo;",
+                    "active": false
+                }
+            ],
+            "path": "http://localhost:8000/api/container-yards/yard-list",
+            "per_page": 10,
+            "to": 1,
+            "total": 1,
+            "all": 1,
             "trashed": 0
         }
     }

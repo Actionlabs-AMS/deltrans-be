@@ -21,76 +21,61 @@ class StackRunSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
-        $waybillNumbers = DB::table('waybill_details')
-            ->pluck('waybill_number')
-            ->toArray();
-
         if (empty($shippingLineIds) || empty($cypaIds) || count($cypaIds) < 2) {
             $this->command->warn('Required related records not found. Please seed shipping_lines and cypa_details first.');
             return;
         }
 
-        // Helper function to calculate expected_no_of_waybill
-        // Logic: 1 waybill = 2 20ft containers OR 1 waybill = 1 40ft container
-        $calculateExpectedWaybills = function ($quantity, $containerSize) {
-            if ($containerSize === '20ft') {
-                return (int) ceil($quantity / 2); // 2 containers per waybill
-            } elseif ($containerSize === '40ft') {
-                return $quantity; // 1 container per waybill
-            }
-            return 0;
-        };
-
         $stackRuns = [
             [
+                'reference_number' => 'SR-001',
                 'shipping_line_id' => $shippingLineIds[0],
                 'quantity_of_container' => 2,
                 'container_size' => '20ft',
-                'expected_no_of_waybill' => $calculateExpectedWaybills(2, '20ft'), // 1 waybill
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
-                'waybill_number' => !empty($waybillNumbers) ? json_encode([$waybillNumbers[0], $waybillNumbers[1]]) : json_encode(['WB-001', 'WB-002']),
                 'total_amount' => 8000.00,
+                'is_complete' => 1,
             ],
             [
+                'reference_number' => 'SR-002',
                 'shipping_line_id' => $shippingLineIds[0],
                 'quantity_of_container' => 1,
                 'container_size' => '40ft',
-                'expected_no_of_waybill' => $calculateExpectedWaybills(1, '40ft'), // 1 waybill
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
-                'waybill_number' => !empty($waybillNumbers) && count($waybillNumbers) > 2 ? json_encode([$waybillNumbers[2]]) : json_encode(['WB-003']),
                 'total_amount' => 4000.00,
+                'is_complete' => 1,
             ],
             [
+                'reference_number' => 'SR-003',
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
                 'quantity_of_container' => 3,
                 'container_size' => '20ft',
-                'expected_no_of_waybill' => $calculateExpectedWaybills(3, '20ft'), // 2 waybills (ceil(3/2) = 2)
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
-                'waybill_number' => !empty($waybillNumbers) && count($waybillNumbers) > 5 ? json_encode([$waybillNumbers[3], $waybillNumbers[4], $waybillNumbers[5]]) : json_encode(['WB-004', 'WB-005', 'WB-006']),
                 'total_amount' => 12000.00,
+                'is_complete' => 0,
             ],
             [
+                'reference_number' => 'SR-004',
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
                 'quantity_of_container' => 2,
                 'container_size' => '40ft',
-                'expected_no_of_waybill' => $calculateExpectedWaybills(2, '40ft'), // 2 waybills
                 'cypa_id_from' => $cypaIds[1],
                 'cypa_id_to' => $cypaIds[0],
-                'waybill_number' => !empty($waybillNumbers) && count($waybillNumbers) > 7 ? json_encode([$waybillNumbers[6], $waybillNumbers[7]]) : json_encode(['WB-007', 'WB-008']),
                 'total_amount' => 8000.00,
+                'is_complete' => 1,
             ],
             [
+                'reference_number' => 'SR-005',
                 'shipping_line_id' => count($shippingLineIds) > 2 ? $shippingLineIds[2] : $shippingLineIds[0],
                 'quantity_of_container' => 1,
                 'container_size' => '20ft',
-                'expected_no_of_waybill' => $calculateExpectedWaybills(1, '20ft'), // 1 waybill (ceil(1/2) = 1)
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
-                'waybill_number' => !empty($waybillNumbers) && count($waybillNumbers) > 8 ? json_encode([$waybillNumbers[8]]) : json_encode(['WB-009']),
                 'total_amount' => 4000.00,
+                'is_complete' => 0,
             ],
         ];
 
@@ -102,7 +87,10 @@ class StackRunSeeder extends Seeder
                     'cypa_id_to' => $stackRun['cypa_id_to'],
                     'container_size' => $stackRun['container_size'],
                 ],
-                $stackRun
+                array_merge($stackRun, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])
             );
         }
     }

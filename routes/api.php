@@ -22,6 +22,10 @@ use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\StatementOfAccountController;
 use App\Http\Controllers\Api\TruckMaintenanceController;
+use App\Http\Controllers\Api\StackRunController;
+use App\Http\Controllers\Api\RatePerClientController;
+use App\Http\Controllers\Api\FixedExpenseController;
+use App\Http\Controllers\Api\WaybillDetailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -298,6 +302,116 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [HelperController::class, 'getTrashed']); // Retrieve soft-deleted helpers
 		Route::patch('/restore/{id}', [HelperController::class, 'restore']); // Restore a soft-deleted helper
 		Route::delete('/{id}', [HelperController::class, 'forceDelete']); // Permanently delete a soft-deleted helper
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Stack Run Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Stack Runs CRUD Operations
+	|
+	*/
+	Route::prefix('stack-runs')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [StackRunController::class, 'index']);  // Retrieve all stack runs
+		Route::post('/', [StackRunController::class, 'store']);  // Create a new stack run
+
+		// Container management routes (must be before /{id} route to avoid conflicts)
+		Route::get('/containers', [StackRunController::class, 'getContainers']);  // Get containers by stack_run_id and optionally waybill_number
+		Route::post('/{stackRunId}/containers', [StackRunController::class, 'addContainer']);  // Add a container to a stack run
+		Route::put('/{stackRunId}/containers/{containerId}', [StackRunController::class, 'updateContainer']);  // Update a container
+		Route::delete('/{stackRunId}/containers/{containerId}', [StackRunController::class, 'deleteContainer']);  // Delete a container
+
+		Route::get('/{id}', [StackRunController::class, 'show']);  // Retrieve a single stack run
+		Route::put('/{id}', [StackRunController::class, 'update']);  // Update a stack run
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Rate Per Client Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Rate Per Clients CRUD Operations
+	|
+	*/
+	Route::prefix('rate-per-clients')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [RatePerClientController::class, 'index']);  // Retrieve all rate per clients
+		Route::get('/{id}', [RatePerClientController::class, 'show']);  // Retrieve a single rate per client
+		Route::post('/', [RatePerClientController::class, 'store']);  // Create a new rate per client
+		Route::put('/{id}', [RatePerClientController::class, 'update']);  // Update an existing rate per client
+		Route::delete('/{id}', [RatePerClientController::class, 'destroy']);  // Delete a rate per client
+
+		// Bulk operations
+		Route::post('/bulk/delete', [RatePerClientController::class, 'bulkDelete']);  // Bulk delete rate per clients
+		Route::post('/bulk/restore', [RatePerClientController::class, 'bulkRestore']);  // Bulk restore rate per clients
+		Route::post('/bulk/force-delete', [RatePerClientController::class, 'bulkForceDelete']);  // Bulk permanently delete rate per clients
+	});
+
+	// Custom route for archived (trashed) rate per clients with a distinct prefix
+	Route::prefix('archived/rate-per-clients')->group(function () {
+		Route::get('/', [RatePerClientController::class, 'getTrashed']); // Retrieve soft-deleted rate per clients
+		Route::patch('/restore/{id}', [RatePerClientController::class, 'restore']); // Restore a soft-deleted rate per client
+		Route::delete('/{id}', [RatePerClientController::class, 'forceDelete']); // Permanently delete a soft-deleted rate per client
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Fixed Expense Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Fixed Expenses CRUD Operations
+	|
+	*/
+	Route::prefix('fixed-expenses')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [FixedExpenseController::class, 'index']);  // Retrieve all fixed expenses
+		Route::get('/{id}', [FixedExpenseController::class, 'show']);  // Retrieve a single fixed expense
+		Route::post('/', [FixedExpenseController::class, 'store']);  // Create a new fixed expense
+		Route::put('/{id}', [FixedExpenseController::class, 'update']);  // Update an existing fixed expense
+		Route::delete('/{id}', [FixedExpenseController::class, 'destroy']);  // Delete a fixed expense
+
+		// Bulk operations
+		Route::post('/bulk/delete', [FixedExpenseController::class, 'bulkDelete']);  // Bulk delete fixed expenses
+		Route::post('/bulk/restore', [FixedExpenseController::class, 'bulkRestore']);  // Bulk restore fixed expenses
+		Route::post('/bulk/force-delete', [FixedExpenseController::class, 'bulkForceDelete']);  // Bulk permanently delete fixed expenses
+	});
+
+	// Custom route for archived (trashed) fixed expenses with a distinct prefix
+	Route::prefix('archived/fixed-expenses')->group(function () {
+		Route::get('/', [FixedExpenseController::class, 'getTrashed']); // Retrieve soft-deleted fixed expenses
+		Route::patch('/restore/{id}', [FixedExpenseController::class, 'restore']); // Restore a soft-deleted fixed expense
+		Route::delete('/{id}', [FixedExpenseController::class, 'forceDelete']); // Permanently delete a soft-deleted fixed expense
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Waybill Detail Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Waybill Details CRUD Operations
+	|
+	*/
+	Route::prefix('waybill-details')->group(function () {
+		// Standard CRUD operations
+		Route::get('/', [WaybillDetailController::class, 'index']);  // Retrieve all waybill details
+		Route::get('/{id}', [WaybillDetailController::class, 'show']);  // Retrieve a single waybill detail
+		Route::post('/', [WaybillDetailController::class, 'store']);  // Create a new waybill detail
+		Route::put('/{id}', [WaybillDetailController::class, 'update']);  // Update an existing waybill detail
+		Route::delete('/{id}', [WaybillDetailController::class, 'destroy']);  // Delete a waybill detail
+
+		// Bulk operations
+		Route::post('/bulk/delete', [WaybillDetailController::class, 'bulkDelete']);  // Bulk delete waybill details
+		Route::post('/bulk/restore', [WaybillDetailController::class, 'bulkRestore']);  // Bulk restore waybill details
+		Route::post('/bulk/force-delete', [WaybillDetailController::class, 'bulkForceDelete']);  // Bulk permanently delete waybill details
+	});
+
+	// Custom route for archived (trashed) waybill details with a distinct prefix
+	Route::prefix('archived/waybill-details')->group(function () {
+		Route::get('/', [WaybillDetailController::class, 'getTrashed']); // Retrieve soft-deleted waybill details
+		Route::patch('/restore/{id}', [WaybillDetailController::class, 'restore']); // Restore a soft-deleted waybill detail
+		Route::delete('/{id}', [WaybillDetailController::class, 'forceDelete']); // Permanently delete a soft-deleted waybill detail
 	});
 
 	/*

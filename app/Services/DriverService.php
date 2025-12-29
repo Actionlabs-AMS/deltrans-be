@@ -38,9 +38,9 @@ class DriverService extends BaseService
         });
       }
 
-      // Filter by active status
-      if (request('active_status') !== null) {
-        $query->where('active_status', request('active_status'));
+      // Filter by is_active
+      if (request('is_active') !== null) {
+        $query->where('is_active', request('is_active'));
       }
 
       // Apply ordering

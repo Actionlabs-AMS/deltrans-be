@@ -41,9 +41,9 @@ class ContainerYardService extends BaseService
             // FIX: Use the ContainerYard model
             $query = ContainerYard::query();
 
-            // Note: Since we are using status-based logical deactivation (0/1) 
+            // Note: Since we are using is_active-based logical deactivation (0/1) 
             // rather than Laravel Soft Deletes, $trash handling should be adjusted 
-            // to check status if necessary. Assuming status check is done elsewhere for now.
+            // to check is_active if necessary. Assuming is_active check is done elsewhere for now.
 
             // FIX: Apply search conditions based on new columns
             if (request('search')) {
@@ -55,6 +55,11 @@ class ContainerYardService extends BaseService
                         ->orWhere('location_type', 'LIKE', '%' . request('search') . '%');
                 });
 
+            }
+
+            // Filter by is_active
+            if (request('is_active') !== null) {
+                $query->where('is_active', request('is_active'));
             }
 
             // Apply ordering
@@ -131,7 +136,7 @@ class ContainerYardService extends BaseService
     // }
 
     /**
-     * Deactivate a container yard (Status to 0).
+     * Deactivate a container yard (is_active to 0).
      *
      * @param int $id
      * @throws ModelNotFoundException
@@ -140,7 +145,7 @@ class ContainerYardService extends BaseService
     {
         try {
             $yard = $this->get_yard_by_id($id);
-            $yard->update(['status' => 0]);
+            $yard->update(['is_active' => 0]);
 
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch container yard details: ' . $e->getMessage());
@@ -148,7 +153,7 @@ class ContainerYardService extends BaseService
     }
 
     /**
-     * Activate a container yard (Status to 1).
+     * Activate a container yard (is_active to 1).
      * * @param int $id
      * @throws ModelNotFoundException
      */
@@ -156,7 +161,7 @@ class ContainerYardService extends BaseService
     {
         try {
             $yard = $this->get_yard_by_id($id);
-            $yard->update(['status' => 1]);
+            $yard->update(['is_active' => 1]);
 
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch container yard details: ' . $e->getMessage());
