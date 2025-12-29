@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             WaybillDetailsSeeder::class,
             StackRunSeeder::class,
             StatementOfAccountSeeder::class,
+            TruckMaintenanceRecordsSeeder::class,
         ]);
     }
 }

@@ -3,124 +3,97 @@
 namespace App\Services;
 
 use App\Models\TruckMaintenance;
+use App\Models\FleetTruck;
 use App\Http\Resources\TruckMaintenanceResource;
 
-class TruckService extends BaseService
+
+class TruckMaintenanceService extends BaseService
 {
     public function __construct()
     {
         parent::__construct(new TruckMaintenanceResource(new TruckMaintenance), new TruckMaintenance());
     }
 
-    //todo: add filter
-
-    public function listByTruckId(int $truckId, int $perPage, ?string $search)
+    public function listByTruckId(int $truckId, int $perPage, ?string $search, ?string $dateFrom = null, ?string $dateTo = null)
     {
         try {
-            
-            $query = TruckMaintenanceRecord::where('truck_id', $truckId);
+            // 1. Retrieve the Plate Number using the provided Truck ID
+            $truck = FleetTruck::find($truckId);
 
+            if (!$truck) {
+                // Handle case where the truck ID is invalid
+                throw new \Exception("Truck with ID {$truckId} not found in the fleet.", 404);
+            }
+            
+            $plateNumber = $truck->plate_number;
+
+            // 2. Start the query using the plate number on the correct column
+            // Note: The column name is 'fleet_truck_plate_number' as defined in your model
+            $query = TruckMaintenance::where('fleet_truck_plate_number', $plateNumber);
+
+            // Apply search filter (existing logic)
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('receipt_number', 'like', "%{$search}%")
-                    ->orWhere('article', 'like', "%{$search}%");
+                      ->orWhere('article', 'like', "%{$search}%");
                 });
             }
+
+            // START: NEW DATE FILTER LOGIC
+            if ($dateFrom) {
+                // Query records created ON or AFTER the dateFrom
+                $query->whereDate('maintenance_date', '>=', $dateFrom);
+            }
+
+            if ($dateTo) {
+                // Query records created ON or BEFORE the dateTo
+                $query->whereDate('maintenance_date', '<=', $dateTo);
+            }
+            // END: NEW DATE FILTER LOGIC
 
             return $query->paginate($perPage);
 
         } catch (\Exception $e) {
+            // Re-throw with more specific error details
             throw new \Exception('Failed to fetch truck maintenance history: ' . $e->getMessage());
         }
     }
+    
     /**
-     * Retrieve all resources with paginate.
+     * Delete a maintenance record after verifying ownership via plate number.
      */
-    public function list($perPage = 10, $search = null, $trash = false)
+    public function deleteMaintenance(int $truckId, int $maintenanceId)
     {
-        try {
-            $allFleetTruck = $this->getTotalCount();
-            $trashedFleetTruck = $this->getTrashedCount();
+        // 1. Find the truck
+        $truck = FleetTruck::findOrFail($truckId);
+        
+        // 2. Find the maintenance record
+        $maintenance = TruckMaintenance::findOrFail($maintenanceId);
 
-            $query = FleetTruck::query();
-
-            // Apply onlyTrashed() first if we're in trash view
-            // if ($trash) {
-            //     $query->onlyTrashed();
-            // }
-
-            // Then apply search conditions
-            if (request('search')) {
-                $query->where(function ($q) {
-                    $q->where('plate_number', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('condition', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('status', 'LIKE', '%' . request('search') . '%');
-                });
-            }
-
-            // Apply ordering
-            if (request('order')) {
-                $query->orderBy(request('order'), request('sort') ?? 'asc');
-            } else {
-                $query->orderBy('id', 'desc');
-            }
-
-            return TruckResource::collection(
-                $query->paginate($perPage)->withQueryString()
-            )->additional(['meta' => ['all' => $allFleetTruck, 'trashed' => $trashedFleetTruck]]);
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to fetch truck list: ' . $e->getMessage());
+        // 3. Business Logic: Ownership Check
+        if ($maintenance->fleet_truck_plate_number !== $truck->plate_number) {
+            throw new Exception("This record does not belong to the specified truck.", 403);
         }
+
+        // 4. Action
+        return $maintenance->delete();
     }
 
-
-
-    public function get_truck_by_id($id) {
-        try {
-            return FleetTruck::findOrFail($id);
-
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());
-        }
-    }
-
-    public function delete_truck_by_id($id) {
-        try {
-
-            $model = FleetTruck::findOrFail($id);
-            return $model->forcedelete();
-
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());
-        }
-    }
-
-    public function deactivate_truck_by_id($id)
+    public function updateMaintenance(int $truckId, int $maintenanceId, array $data)
     {
-         try {
-             // 1. Find the truck or throw 404
-            $truck = FleetTruck::findOrFail($id);                
-            
-            // 2. Only update the status to 0
-            $truck->update(['status' => 0]); 
+        // 1. Find the truck and the record
+        $truck = FleetTruck::findOrFail($truckId);
+        $maintenance = TruckMaintenance::findOrFail($maintenanceId);
 
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());
+        // 2. Ownership Check: Verify via plate number
+        if ($maintenance->fleet_truck_plate_number !== $truck->plate_number) {
+            throw new \Exception("This record does not belong to the specified truck.", 403);
         }
-    }
 
-    public function activate_truck_by_id($id)
-    {
-        try {
-            // 1. Find the truck or throw ModelNotFoundException (404)
-            $truck = FleetTruck::findOrFail($id);                
-            
-            // 2. Only update the status to 1
-            $truck->update(['status' => 1]); 
+        // 3. Update the record with the new data
+        $maintenance->update($data);
 
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());
-        }
+        return $maintenance;
     }
 
 

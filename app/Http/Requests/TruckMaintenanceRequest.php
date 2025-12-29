@@ -26,8 +26,6 @@ class TruckMaintenanceRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                // Assuming receipt numbers should be unique across all maintenance records
-                'unique:truck_maintenance_records,receipt_number', 
             ],
             
             'article' => [

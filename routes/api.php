@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\StatementOfAccountController;
+use App\Http\Controllers\Api\TruckMaintenanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -458,6 +459,9 @@ Route::middleware('auth:sanctum')->group(function () {
 	
 		// Route for maintenance history
     	Route::get('{truckId}/maintenance-history', [TruckMaintenanceController::class, 'getMaintenanceHistory']);
+		Route::delete('{truckId}/maintenance-history/{id}', [TruckMaintenanceController::class, 'destroy']); 
+		Route::put('{truckId}/maintenance-history/{id}', [TruckMaintenanceController::class, 'update']);
+		Route::post('/truck-maintenance', [TruckMaintenanceController::class, 'store']);
 	
 	});
 
