@@ -18496,7 +18496,16 @@
                 "description": "Data required to create or update a waybill detail",
                 "required": [
                     "waybill_number",
-                    "transaction_date"
+                    "transaction_date",
+                    "shipping_line_id",
+                    "stack_run_id",
+                    "driver_id",
+                    "helper_id",
+                    "truck_plate_number",
+                    "fixed_expense_id",
+                    "rate_per_client_id",
+                    "pickup_date",
+                    "delivered_date"
                 ],
                 "properties": {
                     "waybill_number": {
