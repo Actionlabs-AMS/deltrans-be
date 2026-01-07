@@ -79,21 +79,41 @@ class TruckMaintenanceService extends BaseService
         return $maintenance->delete();
     }
 
-    public function updateMaintenance(int $truckId, int $maintenanceId, array $data)
+   public function updateMaintenance(int $maintenanceId, array $data)
     {
-        // 1. Find the truck and the record
-        $truck = FleetTruck::findOrFail($truckId);
         $maintenance = TruckMaintenance::findOrFail($maintenanceId);
-
-        // 2. Ownership Check: Verify via plate number
-        if ($maintenance->fleet_truck_plate_number !== $truck->plate_number) {
-            throw new \Exception("This record does not belong to the specified truck.", 403);
-        }
-
-        // 3. Update the record with the new data
         $maintenance->update($data);
 
+        // Refresh to get the latest data from DB
+        $maintenance = $maintenance->fresh();
+
+        // Attach the truck_id manually
+        return $this->attachTruckId($maintenance);
+    }
+
+    /**
+     * Helper to find the numeric Truck ID via the plate number string
+     */
+    protected function attachTruckId($maintenance)
+    {
+        $truck = \DB::table('fleet_trucks')
+            ->where('plate_number', $maintenance->fleet_truck_plate_number)
+            ->select('id')
+            ->first();
+
+        // Dynamically add 'truck_id' to the object
+        $maintenance->truck_id = $truck ? $truck->id : null;
+        
         return $maintenance;
+    }
+
+    public function get_truck_maintenance_by_id($id) {
+        try {
+            return TruckMaintenance::findOrFail($id);
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());
+        }
     }
 
 

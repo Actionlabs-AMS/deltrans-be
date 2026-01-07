@@ -429,6 +429,8 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/', [DriverController::class, 'store']);  // Create a new driver
 		Route::put('/{id}', [DriverController::class, 'update']);  // Update an existing driver
 		Route::delete('/{id}', [DriverController::class, 'destroy']);  // Delete a driver
+		Route::patch('/deactivate/{id}', [DriverController::class, 'deactivate']);  // Deactivate a driver
+		Route::patch('/activate/{id}', [DriverController::class, 'activate']);  // Activate a driver
 
 		// Bulk operations
 		Route::post('/bulk/delete', [DriverController::class, 'bulkDelete']);  // Bulk delete drivers
@@ -572,10 +574,12 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/bulk/force-delete', [TruckController::class, 'bulkForceDelete']);  // Bulk permanently delete shipping lines
 	
 		// Route for maintenance history
+		Route::post('/truck-maintenance', [TruckMaintenanceController::class, 'store']);
+		Route::get('/truck-maintenance/{id}', [TruckMaintenanceController::class, 'show']);
     	Route::get('{truckId}/maintenance-history', [TruckMaintenanceController::class, 'getMaintenanceHistory']);
 		Route::delete('{truckId}/maintenance-history/{id}', [TruckMaintenanceController::class, 'destroy']); 
-		Route::put('{truckId}/maintenance-history/{id}', [TruckMaintenanceController::class, 'update']);
-		Route::post('/truck-maintenance', [TruckMaintenanceController::class, 'store']);
+		Route::put('/truck-maintenance/{id}', [TruckMaintenanceController::class, 'update']);
+
 	
 	});
 

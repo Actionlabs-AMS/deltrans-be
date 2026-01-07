@@ -30,7 +30,8 @@ use App\Http\Resources\TruckMaintenanceResource;
  * @OA\Property(property="maintenance_date", type="string", format="date", description="The date the maintenance was performed."),
  * @OA\Property(property="fleet_truck_plate_number", type="string", description="The plate number of the truck."),
  * @OA\Property(property="created_at", type="string", format="date-time", description="Timestamp when the record was created."),
- * @OA\Property(property="updated_at", type="string", format="date-time", description="Timestamp when the record was last updated.")
+ * @OA\Property(property="updated_at", type="string", format="date-time", description="Timestamp when the record was last updated."),
+ * @OA\Property(property="truck_id", type="integer", format="int64", description="Unique truck ID of fleet_plate_number.")
  * )
  */
 
@@ -335,13 +336,56 @@ class TruckMaintenanceController extends BaseController
         }
     }
 
+    // /**
+    //  * @OA\Put(
+    //  * path="/api/trucks/{truckId}/maintenance-history/{id}",
+    //  * tags={"Truck Maintenance"},
+    //  * summary="Update an existing maintenance record",
+    //  * security={{"sanctum": {}}},
+    //  * @OA\Parameter(name="truckId", in="path", required=true, @OA\Schema(type="integer")),
+    //  * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+    //  * @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/TruckMaintenanceRecord")),
+    //  * @OA\Response(response=200, description="Updated successfully"),
+    //  * @OA\Response(response=403, description="Ownership mismatch"),
+    //  * @OA\Response(response=404, description="Not found")
+    //  * )
+    //  */
+    // public function update(TruckMaintenanceRequest $request, $id)
+    // {
+    //     try {
+    //         // Grab IDs from the route
+    //         $truckId = (int) request()->route('truckId');
+    //         $maintenanceId = (int) request()->route('id') ?? $id;
+
+    //         // Delegate to service
+    //         $updatedRecord = $this->service->updateMaintenance(
+    //             $truckId, 
+    //             $maintenanceId, 
+    //             $request->validated() // Uses rules defined in your TruckMaintenanceRequest
+    //         );
+
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Maintenance record updated successfully.',
+    //             'data' => $updatedRecord
+    //         ], 200);
+
+    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+    //         return response()->json(['status' => false, 'message' => 'Record not found.'], 404);
+    //     } catch (\Exception $e) {
+    //         $code = $e->getCode() == 403 ? 403 : 500;
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => $e->getMessage()
+    //         ], $code);
+    //     }
+    // }
     /**
      * @OA\Put(
-     * path="/api/trucks/{truckId}/maintenance-history/{id}",
+     * path="/api/trucks/truck-maintenance/{id}",
      * tags={"Truck Maintenance"},
      * summary="Update an existing maintenance record",
      * security={{"sanctum": {}}},
-     * @OA\Parameter(name="truckId", in="path", required=true, @OA\Schema(type="integer")),
      * @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      * @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/TruckMaintenanceRecord")),
      * @OA\Response(response=200, description="Updated successfully"),
@@ -352,15 +396,10 @@ class TruckMaintenanceController extends BaseController
     public function update(TruckMaintenanceRequest $request, $id)
     {
         try {
-            // Grab IDs from the route
-            $truckId = (int) request()->route('truckId');
-            $maintenanceId = (int) request()->route('id') ?? $id;
-
-            // Delegate to service
+            // The service now handles finding and attaching the truck_id
             $updatedRecord = $this->service->updateMaintenance(
-                $truckId, 
-                $maintenanceId, 
-                $request->validated() // Uses rules defined in your TruckMaintenanceRequest
+                (int) $id, 
+                $request->validated() 
             );
 
             return response()->json([
@@ -369,14 +408,57 @@ class TruckMaintenanceController extends BaseController
                 'data' => $updatedRecord
             ], 200);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['status' => false, 'message' => 'Record not found.'], 404);
         } catch (\Exception $e) {
-            $code = $e->getCode() == 403 ? 403 : 500;
             return response()->json([
-                'status' => false,
+                'status' => false, 
                 'message' => $e->getMessage()
-            ], $code);
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     * path="/api/trucks/truck-maintenance/{id}",
+     * tags={"Truck Maintenance"},
+     * summary="Get specific maintenance record details",
+     * description="Retrieves the full details of a single maintenance record by its ID.",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(
+     * name="id",
+     * in="path",
+     * required=true,
+     * description="ID of the maintenance record",
+     * @OA\Schema(type="integer")
+     * ),
+     * @OA\Response(
+     * response=201,
+     * description="Maintenance details retrieved successfully",
+     * @OA\JsonContent(ref="#/components/schemas/TruckMaintenanceRecord")
+     * ),
+     * @OA\Response(
+     * response=404,
+     * description="Maintenance ID not found",
+     * @OA\JsonContent(
+     * @OA\Property(property="status_code", type="integer", example=404),
+     * @OA\Property(property="message", type="string", example="Truck maintenance id not found.")
+     * )
+     * )
+     * )
+     */
+    public function show($id)
+    {
+        //TODO create catch for error messages
+        //return parent::show($id);
+        
+        try {
+            //$data = $request->all();
+            $truckmaintenance = $this->service->get_truck_maintenance_by_id($id);
+            return response($truckmaintenance, 201);
+        } catch (\Exception $e) {
+            return response([
+                'status_code' => 404,
+                'message' => 'Truck maintenance id not found.',
+            ], 404);
         }
     }
 

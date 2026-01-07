@@ -60,4 +60,16 @@ class TruckMaintenance extends Model
     {
         return $this->quantity * $this->price;
     }
+
+    protected $appends = ['truck_id'];
+
+    public function getTruckIdAttribute()
+    {
+        // This looks up the ID automatically whenever the model is used
+        $truck = \DB::table('fleet_trucks')
+            ->where('plate_number', $this->fleet_truck_plate_number)
+            ->first();
+            
+        return $truck ? $truck->id : null;
+    }
 }

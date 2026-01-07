@@ -25,6 +25,7 @@ class TruckMaintenanceResource extends JsonResource
             'created_at'     => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null, // Line 28 is likely here    
             'updated_at'     => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,
+            'truck_id' => $this->truck_id,
         ];
     }
 }

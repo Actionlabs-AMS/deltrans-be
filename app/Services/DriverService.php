@@ -57,5 +57,33 @@ class DriverService extends BaseService
       throw new \Exception('Failed to fetch drivers: ' . $e->getMessage());
     }
   }
+
+  public function deactivate_driver_by_id($id)
+  {
+        try {
+            // 1. Find the truck or throw 404
+          $truck = Driver::findOrFail($id);                
+          
+          // 2. Only update the is_active to 0
+          $truck->update(['is_active' => 0]); 
+
+      } catch (\Exception $e) {
+          throw new \Exception('Failed to fetch driver details: ' . $e->getMessage());
+      }
+  }
+
+  public function activate_driver_by_id($id)
+  {
+      try {
+          // 1. Find the truck or throw ModelNotFoundException (404)
+          $truck = Driver::findOrFail($id);                
+          
+          // 2. Only update the is_active to 1
+          $truck->update(['is_active' => 1]); 
+
+      } catch (\Exception $e) {
+          throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());
+      }
+  }
 }
 

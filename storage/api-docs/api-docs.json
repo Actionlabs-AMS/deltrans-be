@@ -3214,6 +3214,116 @@
                 ]
             }
         },
+        "/api/drivers/activate/{id}": {
+            "patch": {
+                "tags": [
+                    "Driver Management"
+                ],
+                "summary": "Activate a driver",
+                "description": "Activate the specified driver.",
+                "operationId": "ada846d278bc0f6f6da80d6ac6d28001",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Driver ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Driver activated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Driver status updated successfully."
+                                        },
+                                        "status": {
+                                            "type": "integer",
+                                            "example": 1
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/drivers/deactivate/{id}": {
+            "patch": {
+                "tags": [
+                    "Driver Management"
+                ],
+                "summary": "Deactivate a driver",
+                "description": "Deactivate the specified driver.",
+                "operationId": "9f24569eed994867c0d32f390bd99380",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Driver ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Driver deactivated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Driver status updated successfully."
+                                        },
+                                        "status": {
+                                            "type": "integer",
+                                            "example": 0
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Driver not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/fixed-expenses": {
             "get": {
                 "tags": [
@@ -14823,6 +14933,107 @@
                 ]
             }
         },
+        "/api/trucks/truck-maintenance/{id}": {
+            "get": {
+                "tags": [
+                    "Truck Maintenance"
+                ],
+                "summary": "Get specific maintenance record details",
+                "description": "Retrieves the full details of a single maintenance record by its ID.",
+                "operationId": "8785b3ab1490830f7f05993b7fcd0122",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the maintenance record",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Maintenance details retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckMaintenanceRecord"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Maintenance ID not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 404
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Truck maintenance id not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Truck Maintenance"
+                ],
+                "summary": "Update an existing maintenance record",
+                "operationId": "3a26cc77057e14d0d004f8e073085114",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TruckMaintenanceRecord"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    },
+                    "403": {
+                        "description": "Ownership mismatch"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/2fa/send-code": {
             "post": {
                 "tags": [
@@ -18700,6 +18911,68 @@
                 },
                 "type": "object"
             },
+            "TruckMaintenanceRecord": {
+                "title": "Truck Maintenance Record",
+                "description": "Details of a single maintenance event for a truck.",
+                "required": [
+                    "id",
+                    "receipt_number",
+                    "article",
+                    "quantity",
+                    "price",
+                    "maintenance_date",
+                    "fleet_truck_plate_number"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique ID of the maintenance record.",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "receipt_number": {
+                        "description": "Unique receipt or service number.",
+                        "type": "string"
+                    },
+                    "article": {
+                        "description": "Description of the part or service.",
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "description": "Quantity of the article/part used.",
+                        "type": "integer"
+                    },
+                    "price": {
+                        "description": "Unit price of the article.",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "maintenance_date": {
+                        "description": "The date the maintenance was performed.",
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "fleet_truck_plate_number": {
+                        "description": "The plate number of the truck.",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "description": "Timestamp when the record was created.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp when the record was last updated.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "truck_id": {
+                        "description": "Unique truck ID of fleet_plate_number.",
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "type": "object"
+            },
             "WaybillDetail": {
                 "title": "Waybill Detail Model",
                 "description": "A waybill detail resource",
@@ -18874,63 +19147,6 @@
                         "type": "number",
                         "format": "float",
                         "example": 200
-                    }
-                },
-                "type": "object"
-            },
-            "TruckMaintenanceRecord": {
-                "title": "Truck Maintenance Record",
-                "description": "Details of a single maintenance event for a truck.",
-                "required": [
-                    "id",
-                    "receipt_number",
-                    "article",
-                    "quantity",
-                    "price",
-                    "maintenance_date",
-                    "fleet_truck_plate_number"
-                ],
-                "properties": {
-                    "id": {
-                        "description": "Unique ID of the maintenance record.",
-                        "type": "integer",
-                        "format": "int64"
-                    },
-                    "receipt_number": {
-                        "description": "Unique receipt or service number.",
-                        "type": "string"
-                    },
-                    "article": {
-                        "description": "Description of the part or service.",
-                        "type": "string"
-                    },
-                    "quantity": {
-                        "description": "Quantity of the article/part used.",
-                        "type": "integer"
-                    },
-                    "price": {
-                        "description": "Unit price of the article.",
-                        "type": "number",
-                        "format": "float"
-                    },
-                    "maintenance_date": {
-                        "description": "The date the maintenance was performed.",
-                        "type": "string",
-                        "format": "date"
-                    },
-                    "fleet_truck_plate_number": {
-                        "description": "The plate number of the truck.",
-                        "type": "string"
-                    },
-                    "created_at": {
-                        "description": "Timestamp when the record was created.",
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "updated_at": {
-                        "description": "Timestamp when the record was last updated.",
-                        "type": "string",
-                        "format": "date-time"
                     }
                 },
                 "type": "object"
