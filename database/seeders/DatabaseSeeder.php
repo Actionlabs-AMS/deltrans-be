@@ -33,6 +33,8 @@ class DatabaseSeeder extends Seeder
             WaybillDetailsSeeder::class,
             ContainerSeeder::class,
             StatementOfAccountSeeder::class,
+            TruckMaintenanceRecordsSeeder::class,
+            DriverCAHistorySeeder::class
         ]);
     }
 }

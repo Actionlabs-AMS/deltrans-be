@@ -64,6 +64,22 @@ class NavigationSeeder extends Seeder
                         'show_in_menu' => true,
                     ],
                     [
+                        'name' => 'Waybill History',
+                        'slug' => 'waybill-history/:id',
+                        'icon' => 'activity',
+                        'description' => 'Review the waybill history of a specific driver',
+                        'active' => true,
+                        'show_in_menu' => false,
+                    ],
+                    [
+                        'name' => 'Cash Advance History',
+                        'slug' => 'ca-history/:id',
+                        'icon' => 'activity',
+                        'description' => 'Review the cash advance history of a specific driver',
+                        'active' => true,
+                        'show_in_menu' => false,
+                    ],
+                    [
                         'name' => 'Helpers',
                         'slug' => 'helpers',
                         'icon' => 'users-round',

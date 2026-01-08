@@ -21,10 +21,12 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\StatementOfAccountController;
+use App\Http\Controllers\Api\TruckMaintenanceController;
 use App\Http\Controllers\Api\StackRunController;
 use App\Http\Controllers\Api\RatePerClientController;
 use App\Http\Controllers\Api\FixedExpenseController;
 use App\Http\Controllers\Api\WaybillDetailController;
+use App\Http\Controllers\Api\DriverCAHistoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -428,11 +430,19 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/', [DriverController::class, 'store']);  // Create a new driver
 		Route::put('/{id}', [DriverController::class, 'update']);  // Update an existing driver
 		Route::delete('/{id}', [DriverController::class, 'destroy']);  // Delete a driver
+		Route::patch('/deactivate/{id}', [DriverController::class, 'deactivate']);  // Deactivate a driver
+		Route::patch('/activate/{id}', [DriverController::class, 'activate']);  // Activate a driver
 
 		// Bulk operations
 		Route::post('/bulk/delete', [DriverController::class, 'bulkDelete']);  // Bulk delete drivers
 		Route::post('/bulk/restore', [DriverController::class, 'bulkRestore']);  // Bulk restore drivers
 		Route::post('/bulk/force-delete', [DriverController::class, 'bulkForceDelete']);  // Bulk permanently delete drivers
+
+		//For waybill
+		Route::get('/get-waybill/{id}', [DriverController::class, 'getWaybillByDriverId']); 
+
+		//For Drive CA History
+		Route::get('/get-cash-advance/{id}', [DriverCAHistoryController::class, 'getCashAdvances']);  
 	});
 
 	// Custom route for archived (trashed) drivers with a distinct prefix
@@ -569,6 +579,15 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/bulk/delete', [TruckController::class, 'bulkDelete']);  // Bulk delete shipping lines
 		Route::post('/bulk/restore', [TruckController::class, 'bulkRestore']);  // Bulk restore shipping lines
 		Route::post('/bulk/force-delete', [TruckController::class, 'bulkForceDelete']);  // Bulk permanently delete shipping lines
+	
+		// Route for maintenance history
+		Route::post('/truck-maintenance', [TruckMaintenanceController::class, 'store']);
+		Route::get('/truck-maintenance/{id}', [TruckMaintenanceController::class, 'show']);
+    	Route::get('{truckId}/maintenance-history', [TruckMaintenanceController::class, 'getMaintenanceHistory']);
+		Route::delete('{truckId}/maintenance-history/{id}', [TruckMaintenanceController::class, 'destroy']); 
+		Route::put('/truck-maintenance/{id}', [TruckMaintenanceController::class, 'update']);
+
+	
 	});
 
 	// // Custom route for archived (trashed) shipping lines with a distinct prefix
