@@ -26,13 +26,13 @@ class ShippingLineRequest extends FormRequest
             'email_address' => 'required|email|max:255|unique:shipping_lines,email_address,' . $this->id,
             'address' => 'nullable|string',
             'contact_name' => 'nullable|string|max:255',
-            'contact_mobile' => 'nullable|string|max:20',
+            'contact_mobile' => 'nullable|string|regex:/^[0-9,+-]+$/|max:20',
             'landlines' => 'nullable|array',
-            'landlines.*' => 'nullable|string|max:20',
+            'landlines.*' => 'nullable|string|regex:/^[0-9,+-]+$/|max:20',
             'shipping_lines_template' => 'nullable|array',
             'transaction_information_template' => 'nullable|array',
-            'fax_no' => 'nullable|string|max:20',
-            'tin' => 'nullable|string|max:50',
+            'fax_no' => 'nullable|string|regex:/^[0-9,+-]+$/|max:20',
+            'tin' => 'nullable|string|regex:/^[0-9,-]+$/|max:50',
         ];
     }
 
@@ -51,6 +51,7 @@ class ShippingLineRequest extends FormRequest
             'email_address.unique' => 'This email address is already registered.',
             'landlines.array' => 'Landlines must be an array.',
             'landlines.*.string' => 'Each landline must be a string.',
+            'landlines.*.regex' => 'Each landline must contain only numbers, commas, pluses, or hyphens.',
         ];
     }
 }
