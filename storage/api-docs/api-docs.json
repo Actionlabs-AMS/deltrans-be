@@ -2175,6 +2175,71 @@
                 ]
             }
         },
+        "/api/drivers/get-cash-advance/{id}": {
+            "get": {
+                "tags": [
+                    "Driver Cash Advance History"
+                ],
+                "summary": "Fetch cash advance details by driver ID",
+                "operationId": "ea4c3ab6ade57ce5cde057ce9d6f1a51",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Driver ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Filter by transaction date (YYYY-MM-DD) or shift",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DriverCashAdvanceRecord"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/drivers": {
             "get": {
                 "tags": [
@@ -3315,6 +3380,76 @@
                     },
                     "401": {
                         "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/drivers/get-waybill/{id}": {
+            "get": {
+                "tags": [
+                    "Driver Management"
+                ],
+                "summary": "Fetch waybill details by driver ID",
+                "description": "Fetch waybill details by driver ID with unified search.",
+                "operationId": "1f554897ec6a5f2fcb695013cee22404",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Driver ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by Waybill #, Plate #, or Date (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Waybill details fetched successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Waybill details fetched successfully."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -18464,6 +18599,63 @@
                 },
                 "type": "object"
             },
+            "DriverCashAdvanceRecord": {
+                "title": "Driver Cash Advance Record",
+                "description": "Details of a single cash advancement entry for a driver.",
+                "required": [
+                    "id",
+                    "amount",
+                    "transaction_date",
+                    "shift",
+                    "driver_id"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique ID of the cash advance record.",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "amount": {
+                        "description": "The amount of cash advanced.",
+                        "type": "number",
+                        "format": "float",
+                        "example": 500
+                    },
+                    "transaction_date": {
+                        "description": "The date the cash advance was issued.",
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-05-20"
+                    },
+                    "shift": {
+                        "description": "The work shift associated with the advance (e.g., Day, Night).",
+                        "type": "string",
+                        "example": "Day"
+                    },
+                    "driver_id": {
+                        "description": "The ID of the driver who received the advance.",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "created_at": {
+                        "description": "Timestamp when the record was created.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp when the record was last updated.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "deleted_at": {
+                        "description": "Timestamp for soft deletion.",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "FixedExpense": {
                 "title": "Fixed Expense Model",
                 "description": "A fixed expense resource",
@@ -19251,6 +19443,10 @@
         {
             "name": "Dashboard",
             "description": "API endpoints for dashboard statistics"
+        },
+        {
+            "name": "Driver Cash Advance History",
+            "description": "API Endpoints for managing driver cash advancement records"
         },
         {
             "name": "Driver Management",

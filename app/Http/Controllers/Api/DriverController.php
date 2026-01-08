@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\DriverRequest;
 use App\Services\DriverService;
 use App\Services\MessageService;
+use App\Http\Resources\WaybillDetailResource;
 
 /**
  * @OA\Tag(
@@ -634,6 +635,61 @@ class DriverController extends BaseController
             'message' => 'Driver id not found.',                
         ], 404);                
     }                
+  }
+
+  /**
+   * Fetch waybill details by driver ID with unified search.
+   * * @OA\Get(
+   * path="/api/drivers/get-waybill/{id}",
+   * summary="Fetch waybill details by driver ID",
+   * tags={"Driver Management"},
+   * security={{"sanctum": {}}},
+   * @OA\Parameter(
+   * name="id",
+   * in="path",
+   * required=true,
+   * description="Driver ID",
+   * @OA\Schema(type="integer", example=1)
+   * ),
+   * @OA\Parameter(
+   * name="search",
+   * in="query",
+   * required=false,
+   * description="Search by Waybill #, Plate #, or Date (YYYY-MM-DD)",
+   * @OA\Schema(type="string")
+   * ),
+   * @OA\Parameter(
+   * name="per_page",
+   * in="query",
+   * required=false,
+   * @OA\Schema(type="integer", example=10)
+   * ),
+   * @OA\Response(
+   * response=200,
+   * description="Waybill details fetched successfully",
+   * @OA\JsonContent(
+   * @OA\Property(property="status_code", type="integer", example=200),
+   * @OA\Property(property="message", type="string", example="Waybill details fetched successfully."),
+   * @OA\Property(property="data", type="object")
+   * )
+   * )
+   * )
+   */
+  public function getWaybillByDriverId($id)
+  {
+      try {
+        // Note: We pass the requested per_page or default to 10
+        $perPage = request('per_page', 10);
+        $waybills = $this->service->get_waybills_by_driver_id($id, $perPage);
+
+        return WaybillDetailResource::collection($waybills);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status_code' => 404,
+            'message' => $e->getMessage(),
+        ], 404);
+    }
   }
 }
 

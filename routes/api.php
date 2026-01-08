@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\StackRunController;
 use App\Http\Controllers\Api\RatePerClientController;
 use App\Http\Controllers\Api\FixedExpenseController;
 use App\Http\Controllers\Api\WaybillDetailController;
+use App\Http\Controllers\Api\DriverCAHistoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -436,6 +437,12 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/bulk/delete', [DriverController::class, 'bulkDelete']);  // Bulk delete drivers
 		Route::post('/bulk/restore', [DriverController::class, 'bulkRestore']);  // Bulk restore drivers
 		Route::post('/bulk/force-delete', [DriverController::class, 'bulkForceDelete']);  // Bulk permanently delete drivers
+
+		//For waybill
+		Route::get('/get-waybill/{id}', [DriverController::class, 'getWaybillByDriverId']); 
+
+		//For Drive CA History
+		Route::get('/get-cash-advance/{id}', [DriverCAHistoryController::class, 'getCashAdvances']);  
 	});
 
 	// Custom route for archived (trashed) drivers with a distinct prefix
