@@ -104,9 +104,19 @@ class NavigationSeeder extends Seeder
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
-                'children' => [
+                'children' => [],
+            ],
 
-                ],
+            // Fixed Expenses Section
+            [
+                'name' => 'Fixed Expenses',
+                'slug' => 'fixed-expenses',
+                'icon' => 'calculator',
+                'description' => 'Manage fixed expenses related to shipping lines and container yards',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => true,
+                'children' => [],
             ],
 
             // User Management Section

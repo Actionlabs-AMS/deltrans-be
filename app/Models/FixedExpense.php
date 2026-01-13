@@ -61,6 +61,17 @@ class FixedExpense extends Model
     ];
 
     /**
+	 * Append additiona info to the return data
+	 *
+	 * @var string
+	 */
+	public $appends = [
+        'shipping_line_name',
+        'cypa_from_name',
+        'cypa_to_name',
+	];
+
+    /**
      * Boot the model.
      */
     protected static function boot()
@@ -95,6 +106,24 @@ class FixedExpense extends Model
     public function cypaTo()
     {
         return $this->belongsTo(ContainerYard::class, 'cypa_id_to');
+    }
+
+    /****************************************
+	*           ATTRIBUTES PARTS            *
+	****************************************/
+    public function getShippingLineNameAttribute()
+    {
+        return $this->shippingLine?->name;
+    }
+
+    public function getCypaFromNameAttribute()
+    {
+        return $this->cypaFrom?->name;
+    }
+
+    public function getCypaToNameAttribute()
+    {   
+        return $this->cypaTo?->name;
     }
 }
 
