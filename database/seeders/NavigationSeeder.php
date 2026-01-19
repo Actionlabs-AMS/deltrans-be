@@ -83,16 +83,7 @@ class NavigationSeeder extends Seeder
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
-                'children' => [
-                    [
-                        'name' => 'Yard List',
-                        'slug' => 'yard-list',
-                        'icon' => 'map-pinned',
-                        'description' => 'View and manage all container yards',
-                        'active' => true,
-                        'show_in_menu' => true,
-                    ],
-                ],
+                'children' => [],
             ],
 
             // Shipping Lines Section
@@ -107,16 +98,33 @@ class NavigationSeeder extends Seeder
                 'children' => [],
             ],
 
-            // Fixed Expenses Section
+            // Rates and Expenses Section
             [
-                'name' => 'Fixed Expenses',
-                'slug' => 'fixed-expenses',
-                'icon' => 'calculator',
-                'description' => 'Manage fixed expenses related to shipping lines and container yards',
+                'name' => 'Rates and Expenses',
+                'slug' => 'rates-and-expenses',
+                'icon' => 'banknote',
+                'description' => 'Manage fixed expenses and rate per client',
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
-                'children' => [],
+                'children' => [
+                    [
+                        'name' => 'Fixed Expenses',
+                        'slug' => 'fixed-expenses',
+                        'icon' => 'calculator',
+                        'description' => 'Manage fixed expenses related to shipping lines and container yards',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Rate per Client',
+                        'slug' => 'rate-per-client',
+                        'icon' => 'circle-dollar-sign',
+                        'description' => 'Manage rate per client',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                ],
             ],
 
             // User Management Section
