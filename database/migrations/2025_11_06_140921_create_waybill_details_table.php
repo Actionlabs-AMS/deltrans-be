@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->string('waybill_number')->unique();
             $table->date('transaction_date');
             $table->bigInteger('shipping_line_id')->unsigned();
-            $table->bigInteger('stack_run_id')->unsigned();
+            $table->bigInteger('booking_id')->unsigned();
             $table->bigInteger('driver_id')->unsigned();
             $table->bigInteger('helper_id')->unsigned();
             $table->string('truck_plate_number');
@@ -35,7 +35,7 @@ return new class extends Migration {
             $table->softDeletes();
 
             $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
-            $table->foreign('stack_run_id')->references('id')->on('stack_runs')->onDelete('cascade');
+            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
             $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('cascade');
             $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('cascade');
             $table->foreign('truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('cascade');
@@ -43,7 +43,7 @@ return new class extends Migration {
             $table->foreign('rate_per_client_id')->references('id')->on('rate_per_clients')->onDelete('cascade');
 
             $table->index('transaction_date');
-            $table->index('stack_run_id');
+            $table->index('booking_id');
             $table->index('driver_id');
             $table->index('helper_id');
             $table->index('truck_plate_number');

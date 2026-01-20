@@ -24,7 +24,7 @@ class WaybillDetailService extends BaseService
 
             $query = WaybillDetail::query()->with([
                 'shippingLine',
-                'stackRun',
+                'booking',
                 'driver',
                 'helper',
                 'fleetTruck',
@@ -59,9 +59,9 @@ class WaybillDetailService extends BaseService
                 $query->where('shipping_line_id', request('shipping_line_id'));
             }
 
-            // Filter by stack_run_id
-            if (request('stack_run_id')) {
-                $query->where('stack_run_id', request('stack_run_id'));
+            // Filter by booking_id
+            if (request('booking_id')) {
+                $query->where('booking_id', request('booking_id'));
             }
 
             // Filter by driver_id
@@ -127,7 +127,7 @@ class WaybillDetailService extends BaseService
         
         return $this->resource::make($model->load([
             'shippingLine',
-            'stackRun',
+            'booking',
             'driver',
             'helper',
             'fleetTruck',
@@ -155,7 +155,7 @@ class WaybillDetailService extends BaseService
         
         return $this->resource::make($model->load([
             'shippingLine',
-            'stackRun',
+            'booking',
             'driver',
             'helper',
             'fleetTruck',
@@ -171,7 +171,7 @@ class WaybillDetailService extends BaseService
     {
         $model = $this->model::with([
             'shippingLine',
-            'stackRun',
+            'booking',
             'driver',
             'helper',
             'fleetTruck',

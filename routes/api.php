@@ -22,7 +22,8 @@ use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\StatementOfAccountController;
 use App\Http\Controllers\Api\TruckMaintenanceController;
-use App\Http\Controllers\Api\StackRunController;
+use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\ContainerController;
 use App\Http\Controllers\Api\RatePerClientController;
 use App\Http\Controllers\Api\FixedExpenseController;
 use App\Http\Controllers\Api\WaybillDetailController;
@@ -313,19 +314,52 @@ Route::middleware('auth:sanctum')->group(function () {
 	| Stack Runs CRUD Operations
 	|
 	*/
-	Route::prefix('stack-runs')->group(function () {
+	Route::prefix('bookings')->group(function () {
 		// Standard CRUD operations
-		Route::get('/', [StackRunController::class, 'index']);  // Retrieve all stack runs
-		Route::post('/', [StackRunController::class, 'store']);  // Create a new stack run
+		Route::get('/', [BookingController::class, 'index']);  // Retrieve all bookings
+		Route::post('/', [BookingController::class, 'store']);  // Create a new booking
+		Route::get('/{id}', [BookingController::class, 'show']);  // Retrieve a single booking
+		Route::put('/{id}', [BookingController::class, 'update']);  // Update a booking
+		Route::delete('/{id}', [BookingController::class, 'destroy']);  // Soft delete a booking
+		
+		// Bulk operations
+		Route::post('/bulk/delete', [BookingController::class, 'bulkDelete']);  // Bulk delete bookings
+		Route::post('/bulk/restore', [BookingController::class, 'bulkRestore']);  // Bulk restore bookings
+		Route::post('/bulk/force-delete', [BookingController::class, 'bulkForceDelete']);  // Bulk permanently delete bookings
+	});
 
-		// Container management routes (must be before /{id} route to avoid conflicts)
-		Route::get('/containers', [StackRunController::class, 'getContainers']);  // Get containers by stack_run_id and optionally waybill_number
-		Route::post('/{stackRunId}/containers', [StackRunController::class, 'addContainer']);  // Add a container to a stack run
-		Route::put('/{stackRunId}/containers/{containerId}', [StackRunController::class, 'updateContainer']);  // Update a container
-		Route::delete('/{stackRunId}/containers/{containerId}', [StackRunController::class, 'deleteContainer']);  // Delete a container
+	/*
+	|--------------------------------------------------------------------------
+	| Archived Bookings Routes
+	|--------------------------------------------------------------------------
+	|
+	| Trash/Archive Management for Bookings
+	|
+	*/
+	Route::prefix('archived/bookings')->group(function () {
+		Route::get('/', [BookingController::class, 'getTrashed']);  // Get trashed bookings
+		Route::patch('/restore/{id}', [BookingController::class, 'restore']);  // Restore a trashed booking
+		Route::delete('/{id}', [BookingController::class, 'forceDelete']);  // Permanently delete a booking
+	});
 
-		Route::get('/{id}', [StackRunController::class, 'show']);  // Retrieve a single stack run
-		Route::put('/{id}', [StackRunController::class, 'update']);  // Update a stack run
+	/*
+	|--------------------------------------------------------------------------
+	| Container Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Container CRUD Operations
+	|
+	*/
+	Route::prefix('containers')->group(function () {
+		Route::get('/', [ContainerController::class, 'getContainers']);  // Get containers by booking_id and optionally waybill_number
+		Route::get('/{id}', [ContainerController::class, 'show']);  // Get a specific container by ID
+	});
+	
+	Route::prefix('bookings')->group(function () {
+		// Container management routes
+		Route::post('/{bookingId}/containers', [ContainerController::class, 'addContainer']);  // Add a container to a booking
+		Route::put('/{bookingId}/containers/{containerId}', [ContainerController::class, 'updateContainer']);  // Update a container
+		Route::delete('/{bookingId}/containers/{containerId}', [ContainerController::class, 'deleteContainer']);  // Delete a container
 	});
 
 	/*

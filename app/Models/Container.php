@@ -16,7 +16,7 @@ class Container extends Model
      */
     protected $fillable = [
         'container_number',
-        'stack_run_id',
+        'booking_id',
         'waybill_number',
     ];
 
@@ -27,7 +27,7 @@ class Container extends Model
      */
     protected $casts = [
         'id' => 'integer',
-        'stack_run_id' => 'integer',
+        'booking_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -40,19 +40,18 @@ class Container extends Model
     protected $table = 'containers';
 
     /**
-     * Get the stack run that owns the container.
+     * Get the booking that owns the container.
      */
-    public function stackRun()
+    public function booking()
     {
-        return $this->belongsTo(StackRun::class, 'stack_run_id');
+        return $this->belongsTo(Booking::class, 'booking_id');
     }
 
     /**
      * Get the waybill detail associated with the container.
-     * Note: Uncomment when WaybillDetail model is created
      */
-    // public function waybill()
-    // {
-    //     return $this->belongsTo(\App\Models\WaybillDetail::class, 'waybill_number', 'waybill_number');
-    // }
+    public function waybill()
+    {
+        return $this->belongsTo(WaybillDetail::class, 'waybill_number', 'waybill_number');
+    }
 }

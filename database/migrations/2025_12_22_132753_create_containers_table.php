@@ -17,17 +17,17 @@ return new class extends Migration {
         Schema::create('containers', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('stack_run_id')->unsigned();
+            $table->bigInteger('booking_id')->unsigned();
             $table->string('waybill_number')->nullable();
             $table->string('container_number');
             $table->timestamps();
 
             // Foreign key constraints
-            $table->foreign('stack_run_id')->references('id')->on('stack_runs')->onDelete('cascade');
+            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
             $table->foreign('waybill_number')->references('waybill_number')->on('waybill_details')->onDelete('set null');
 
             // Indexes
-            $table->index('stack_run_id');
+            $table->index('booking_id');
             $table->index('waybill_number');
             $table->index('container_number');
         });

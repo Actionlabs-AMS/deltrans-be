@@ -37,7 +37,7 @@ class WaybillDetailsSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
-        $stackRunIds = DB::table('stack_runs')
+        $bookingIds = DB::table('bookings')
             ->pluck('id')
             ->toArray();
 
@@ -45,8 +45,8 @@ class WaybillDetailsSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
-        if (empty($shippingLineIds) || empty($driverIds) || empty($fleetTruckPlateNumbers) || empty($stackRunIds) || empty($ratePerClientIds)) {
-            $this->command->warn('Required related records not found. Please seed shipping_lines, drivers, fleet_trucks, stack_runs, and rate_per_clients first.');
+        if (empty($shippingLineIds) || empty($driverIds) || empty($fleetTruckPlateNumbers) || empty($bookingIds) || empty($ratePerClientIds)) {
+            $this->command->warn('Required related records not found. Please seed shipping_lines, drivers, fleet_trucks, bookings, and rate_per_clients first.');
             return;
         }
 
@@ -55,7 +55,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-001',
                 'transaction_date' => now()->subDays(2)->toDateString(),
                 'shipping_line_id' => $shippingLineIds[0],
-                'stack_run_id' => $stackRunIds[0],
+                'booking_id' => $bookingIds[0],
                 'driver_id' => $driverIds[0],
                 'helper_id' => !empty($helperIds) ? $helperIds[0] : null,
                 'truck_plate_number' => $fleetTruckPlateNumbers[0],
@@ -71,7 +71,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-002',
                 'transaction_date' => now()->subDays(2)->toDateString(),
                 'shipping_line_id' => $shippingLineIds[0],
-                'stack_run_id' => count($stackRunIds) > 1 ? $stackRunIds[1] : $stackRunIds[0],
+                'booking_id' => count($bookingIds) > 1 ? $bookingIds[1] : $bookingIds[0],
                 'driver_id' => count($driverIds) > 1 ? $driverIds[1] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 1 ? $helperIds[1] : (!empty($helperIds) ? $helperIds[0] : null),
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 1 ? $fleetTruckPlateNumbers[1] : $fleetTruckPlateNumbers[0],
@@ -87,7 +87,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-003',
                 'transaction_date' => now()->subDays(3)->toDateString(),
                 'shipping_line_id' => $shippingLineIds[0],
-                'stack_run_id' => count($stackRunIds) > 2 ? $stackRunIds[2] : $stackRunIds[0],
+                'booking_id' => count($bookingIds) > 2 ? $bookingIds[2] : $bookingIds[0],
                 'driver_id' => count($driverIds) > 2 ? $driverIds[2] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 2 ? $helperIds[2] : (!empty($helperIds) ? $helperIds[0] : null),
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 2 ? $fleetTruckPlateNumbers[2] : $fleetTruckPlateNumbers[0],
@@ -103,7 +103,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-004',
                 'transaction_date' => now()->subDays(4)->toDateString(),
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
-                'stack_run_id' => count($stackRunIds) > 3 ? $stackRunIds[3] : $stackRunIds[0],
+                'booking_id' => count($bookingIds) > 3 ? $bookingIds[3] : $bookingIds[0],
                 'driver_id' => count($driverIds) > 3 ? $driverIds[3] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 3 ? $helperIds[3] : (!empty($helperIds) ? $helperIds[0] : null),
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 3 ? $fleetTruckPlateNumbers[3] : $fleetTruckPlateNumbers[0],
@@ -119,7 +119,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-005',
                 'transaction_date' => now()->subDays(4)->toDateString(),
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
-                'stack_run_id' => count($stackRunIds) > 4 ? $stackRunIds[4] : $stackRunIds[0],
+                'booking_id' => count($bookingIds) > 4 ? $bookingIds[4] : $bookingIds[0],
                 'driver_id' => count($driverIds) > 4 ? $driverIds[4] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 4 ? $helperIds[4] : (!empty($helperIds) ? $helperIds[0] : null),
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 4 ? $fleetTruckPlateNumbers[4] : $fleetTruckPlateNumbers[0],
@@ -135,7 +135,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-006',
                 'transaction_date' => now()->subDays(5)->toDateString(),
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
-                'stack_run_id' => count($stackRunIds) > 1 ? $stackRunIds[1] : $stackRunIds[0],
+                'booking_id' => count($bookingIds) > 1 ? $bookingIds[1] : $bookingIds[0],
                 'driver_id' => count($driverIds) > 1 ? $driverIds[1] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 1 ? $helperIds[1] : (!empty($helperIds) ? $helperIds[0] : null),
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 1 ? $fleetTruckPlateNumbers[1] : $fleetTruckPlateNumbers[0],
@@ -151,7 +151,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-007',
                 'transaction_date' => now()->subDays(5)->toDateString(),
                 'shipping_line_id' => $shippingLineIds[0],
-                'stack_run_id' => $stackRunIds[0],
+                'booking_id' => $bookingIds[0],
                 'driver_id' => count($driverIds) > 2 ? $driverIds[2] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 2 ? $helperIds[2] : (!empty($helperIds) ? $helperIds[0] : null),
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 2 ? $fleetTruckPlateNumbers[2] : $fleetTruckPlateNumbers[0],
@@ -167,7 +167,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-008',
                 'transaction_date' => now()->subDays(6)->toDateString(),
                 'shipping_line_id' => $shippingLineIds[0],
-                'stack_run_id' => count($stackRunIds) > 1 ? $stackRunIds[1] : $stackRunIds[0],
+                'booking_id' => count($bookingIds) > 1 ? $bookingIds[1] : $bookingIds[0],
                 'driver_id' => count($driverIds) > 3 ? $driverIds[3] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 3 ? $helperIds[3] : (!empty($helperIds) ? $helperIds[0] : null),
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 3 ? $fleetTruckPlateNumbers[3] : $fleetTruckPlateNumbers[0],
@@ -183,7 +183,7 @@ class WaybillDetailsSeeder extends Seeder
                 'waybill_number' => 'WB-009',
                 'transaction_date' => now()->subDays(6)->toDateString(),
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
-                'stack_run_id' => count($stackRunIds) > 2 ? $stackRunIds[2] : $stackRunIds[0],
+                'booking_id' => count($bookingIds) > 2 ? $bookingIds[2] : $bookingIds[0],
                 'driver_id' => count($driverIds) > 4 ? $driverIds[4] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 4 ? $helperIds[4] : (!empty($helperIds) ? $helperIds[0] : null),
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 4 ? $fleetTruckPlateNumbers[4] : $fleetTruckPlateNumbers[0],
