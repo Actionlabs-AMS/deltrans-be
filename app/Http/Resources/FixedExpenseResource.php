@@ -30,6 +30,11 @@ class FixedExpenseResource extends JsonResource
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null,
+
+            // ✅ RELATED NAMES
+            'shipping_line_name' => $this->shippingLine?->name,
+            'cypa_from_name' => $this->cypaFrom?->name,
+            'cypa_to_name' => $this->cypaTo?->name,
         ];
     }
 }
