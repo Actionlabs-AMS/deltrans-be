@@ -19,7 +19,7 @@ class WaybillDetail extends Model
         'waybill_number',
         'transaction_date',
         'shipping_line_id',
-        'stack_run_id',
+        'booking_id',
         'driver_id',
         'helper_id',
         'truck_plate_number',
@@ -124,11 +124,11 @@ class WaybillDetail extends Model
     }
 
     /**
-     * Get the stack run that owns the waybill detail.
+     * Get the booking that owns the waybill detail.
      */
-    public function stackRun()
+    public function booking()
     {
-        return $this->belongsTo(StackRun::class, 'stack_run_id');
+        return $this->belongsTo(Booking::class, 'booking_id');
     }
 
     /**

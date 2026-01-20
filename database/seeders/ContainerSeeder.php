@@ -12,44 +12,71 @@ class ContainerSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get stack runs
-        $stackRuns = DB::table('stack_runs')
-            ->select('id', 'quantity_of_container')
+        // Get waybills with their rate_per_client to determine container size
+        $waybills = DB::table('waybill_details')
+            ->join('rate_per_clients', 'waybill_details.rate_per_client_id', '=', 'rate_per_clients.id')
+            ->select(
+                'waybill_details.waybill_number',
+                'waybill_details.booking_id',
+                'rate_per_clients.size as container_size'
+            )
             ->get();
 
-        if ($stackRuns->isEmpty()) {
-            $this->command->warn('No stack runs found. Please seed stack_runs first.');
+        if ($waybills->isEmpty()) {
+            $this->command->warn('No waybills found. Please seed waybills first.');
             return;
         }
 
-        // Get available waybill numbers (optional)
-        $waybillNumbers = DB::table('waybill_details')
-            ->pluck('waybill_number')
-            ->toArray();
-
         $containerCounter = 1;
-        $waybillIndex = 0;
 
-        foreach ($stackRuns as $stackRun) {
-            // Create containers based on quantity_of_container
-            for ($i = 0; $i < $stackRun->quantity_of_container; $i++) {
+        foreach ($waybills as $waybill) {
+            // Determine number of containers based on container size
+            // Size 40: 1 container per waybill
+            // Size 20: 2 containers per waybill
+            $containerSize = $waybill->container_size;
+            $containersPerWaybill = ($containerSize == '40') ? 1 : 2;
+
+            // Create containers for this waybill
+            for ($i = 0; $i < $containersPerWaybill; $i++) {
                 $containerNumber = 'CONT-' . str_pad($containerCounter, 3, '0', STR_PAD_LEFT);
-
-                // Assign waybill number if available (assign to some containers, not all)
-                $waybillNumber = null;
-                if (!empty($waybillNumbers) && $waybillIndex < count($waybillNumbers) && $i % 2 === 0) {
-                    // Assign waybill to every other container
-                    $waybillNumber = $waybillNumbers[$waybillIndex];
-                    $waybillIndex++;
-                }
 
                 DB::table('containers')->updateOrInsert(
                     [
-                        'stack_run_id' => $stackRun->id,
+                        'booking_id' => $waybill->booking_id,
                         'container_number' => $containerNumber,
                     ],
                     [
-                        'waybill_number' => $waybillNumber,
+                        'waybill_number' => $waybill->waybill_number,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+
+                $containerCounter++;
+            }
+        }
+
+        // Also create containers for bookings that don't have waybills yet
+        $bookingsWithoutContainers = DB::table('bookings')
+            ->leftJoin('containers', 'bookings.id', '=', 'containers.booking_id')
+            ->whereNull('containers.id')
+            ->select('bookings.id')
+            ->get();
+
+        foreach ($bookingsWithoutContainers as $booking) {
+            // Create 1-2 containers for bookings without waybills (default to size 20 behavior)
+            $containersToCreate = 2;
+            
+            for ($i = 0; $i < $containersToCreate; $i++) {
+                $containerNumber = 'CONT-' . str_pad($containerCounter, 3, '0', STR_PAD_LEFT);
+
+                DB::table('containers')->updateOrInsert(
+                    [
+                        'booking_id' => $booking->id,
+                        'container_number' => $containerNumber,
+                    ],
+                    [
+                        'waybill_number' => null, // No waybill assigned yet
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]

@@ -13,16 +13,14 @@ return new class extends Migration {
     {
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::create('stack_runs', function (Blueprint $table) {
+        Schema::create('bookings', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->string('reference_number')->nullable();
+            $table->string('reference_number')->unique()->nullable();
             $table->bigInteger('shipping_line_id')->unsigned();
-            $table->integer('quantity_of_container')->default(0);
-            $table->string('container_size')->nullable();
             $table->bigInteger('cypa_id_from')->unsigned();
             $table->bigInteger('cypa_id_to')->unsigned();
-            $table->decimal('total_amount', 15, 2)->default(0.00)->nullable(false);
+            $table->date('expected_date')->nullable();
             $table->tinyInteger('is_complete')->default(0)->nullable(false);
             $table->timestamps();
             $table->softDeletes();
@@ -35,6 +33,7 @@ return new class extends Migration {
             $table->index('shipping_line_id');
             $table->index('cypa_id_from');
             $table->index('cypa_id_to');
+            $table->index('expected_date');
             $table->index('is_complete');
         });
 
@@ -45,9 +44,8 @@ return new class extends Migration {
     {
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::dropIfExists('stack_runs');
+        Schema::dropIfExists('bookings');
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };
-

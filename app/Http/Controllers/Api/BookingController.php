@@ -2,74 +2,48 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Http\Requests\WaybillDetailRequest;
-use App\Services\WaybillDetailService;
+use App\Http\Requests\BookingRequest;
+use App\Services\BookingService;
 use App\Services\MessageService;
 
 /**
  * @OA\Tag(
- *     name="Waybill Detail Management",
- *     description="API endpoints for waybill detail management"
+ *     name="Booking Management",
+ *     description="API endpoints for booking management"
  * )
  * @OA\Schema(
- *     schema="WaybillDetail",
- *     title="Waybill Detail Model",
- *     description="A waybill detail resource",
+ *     schema="Booking",
+ *     title="Booking Model",
+ *     description="A booking resource",
  *     @OA\Property(property="id", type="integer", example=1),
- *     @OA\Property(property="waybill_number", type="string", example="WB-001"),
- *     @OA\Property(property="transaction_date", type="string", format="date", example="2025-12-22"),
- *     @OA\Property(property="shipping_line_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="booking_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="driver_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="helper_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498", nullable=true),
- *     @OA\Property(property="fixed_expense_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="rate_per_client_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="extra_money", type="number", format="float", example=500.00, description="Extra money amount"),
- *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22", nullable=true),
- *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23", nullable=true),
- *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00, description="Post expense amount"),
- *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, description="Auto-calculated: rate_per_client.rate + rate_per_client.stack_run"),
- *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, description="Auto-calculated: extra_money + post_expense_amount + fixed_expense.total_expenses"),
+ *     @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
+ *     @OA\Property(property="shipping_line_id", type="integer", example=1),
+ *     @OA\Property(property="cypa_id_from", type="integer", example=1),
+ *     @OA\Property(property="cypa_id_to", type="integer", example=2),
+ *     @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
+ *     @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+ *     @OA\Property(property="actual_no_of_waybill", type="integer", example=5, description="Actual number of waybills created for this booking"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
  * )
- * @OA\Schema(
- *     schema="WaybillDetailInput",
- *     title="Waybill Detail Input",
- *     description="Data required to create or update a waybill detail",
- *     required={"waybill_number", "transaction_date", "shipping_line_id", "booking_id", "driver_id", "helper_id", "truck_plate_number", "fixed_expense_id", "rate_per_client_id", "pickup_date", "delivered_date"},
- *     @OA\Property(property="waybill_number", type="string", example="WB-001"),
- *     @OA\Property(property="transaction_date", type="string", format="date", example="2025-12-22"),
- *     @OA\Property(property="shipping_line_id", type="integer", example=1),
- *     @OA\Property(property="booking_id", type="integer", example=1),
- *     @OA\Property(property="driver_id", type="integer", example=1),
- *     @OA\Property(property="helper_id", type="integer", example=1),
- *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498"),
- *     @OA\Property(property="fixed_expense_id", type="integer", example=1),
- *     @OA\Property(property="rate_per_client_id", type="integer", example=1),
- *     @OA\Property(property="extra_money", type="number", format="float", example=500.00),
- *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22"),
- *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23"),
- *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00)
- * )
  */
-class WaybillDetailController extends BaseController
+class BookingController extends BaseController
 {
-    public function __construct(WaybillDetailService $waybillDetailService, MessageService $messageService)
+    public function __construct(BookingService $bookingService, MessageService $messageService)
     {
         // Call the parent constructor to initialize services
-        parent::__construct($waybillDetailService, $messageService);
+        parent::__construct($bookingService, $messageService);
     }
 
     /**
-     * Display a listing of waybill details.
+     * Display a listing of bookings.
      * 
      * @OA\Get(
-     *     path="/api/waybill-details",
-     *     summary="Get list of waybill details",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/bookings",
+     *     summary="Get list of bookings",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="page",
@@ -86,7 +60,7 @@ class WaybillDetailController extends BaseController
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
-     *         description="Search by waybill number, shipping line name, driver name, helper name, or truck plate number",
+     *         description="Search by reference number, shipping line name, or CYPA name",
      *         @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
@@ -96,61 +70,43 @@ class WaybillDetailController extends BaseController
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
- *         name="booking_id",
- *         in="query",
- *         description="Filter by booking ID",
+     *         name="cypa_id_from",
+     *         in="query",
+     *         description="Filter by CYPA ID (from)",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
-     *         name="driver_id",
+     *         name="cypa_id_to",
      *         in="query",
-     *         description="Filter by driver ID",
-     *         @OA\Schema(type="integer", example=1)
+     *         description="Filter by CYPA ID (to)",
+     *         @OA\Schema(type="integer", example=2)
      *     ),
      *     @OA\Parameter(
-     *         name="helper_id",
+     *         name="is_complete",
      *         in="query",
-     *         description="Filter by helper ID",
-     *         @OA\Schema(type="integer", example=1)
+     *         description="Filter by completion status (0=Incomplete, 1=Complete)",
+     *         @OA\Schema(type="integer", example=0)
      *     ),
      *     @OA\Parameter(
-     *         name="truck_plate_number",
+     *         name="expected_date",
      *         in="query",
-     *         description="Filter by truck plate number",
-     *         @OA\Schema(type="string", example="NCK-6498")
-     *     ),
-     *     @OA\Parameter(
-     *         name="transaction_date",
-     *         in="query",
-     *         description="Filter by transaction date",
-     *         @OA\Schema(type="string", format="date", example="2025-12-22")
-     *     ),
-     *     @OA\Parameter(
-     *         name="pickup_date",
-     *         in="query",
-     *         description="Filter by pickup date",
-     *         @OA\Schema(type="string", format="date", example="2025-12-22")
-     *     ),
-     *     @OA\Parameter(
-     *         name="delivered_date",
-     *         in="query",
-     *         description="Filter by delivered date",
-     *         @OA\Schema(type="string", format="date", example="2025-12-23")
+     *         description="Filter by expected date",
+     *         @OA\Schema(type="string", format="date", example="2025-02-10")
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="List of waybill details retrieved successfully",
+     *         description="List of bookings retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/WaybillDetail")),
+     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Booking")),
      *             @OA\Property(property="meta", type="object",
      *                 @OA\Property(property="all", type="integer", example=10),
      *                 @OA\Property(property="trashed", type="integer", example=2)
      *             ),
      *             @OA\Property(property="links", type="object",
-     *                 @OA\Property(property="first", type="string", example="http://example.com/api/waybill-details?page=1"),
-     *                 @OA\Property(property="last", type="string", example="http://example.com/api/waybill-details?page=5"),
+     *                 @OA\Property(property="first", type="string", example="http://example.com/api/bookings?page=1"),
+     *                 @OA\Property(property="last", type="string", example="http://example.com/api/bookings?page=5"),
      *                 @OA\Property(property="prev", type="string", nullable=true),
-     *                 @OA\Property(property="next", type="string", example="http://example.com/api/waybill-details?page=2")
+     *                 @OA\Property(property="next", type="string", example="http://example.com/api/bookings?page=2")
      *             )
      *         )
      *     ),
@@ -165,39 +121,36 @@ class WaybillDetailController extends BaseController
      */
     public function index()
     {
-        $request = request();
-        $perPage = $request->get('per_page', 10);
-
-        return $this->service->list($perPage);
+        return parent::index();
     }
 
     /**
-     * Display the specified waybill detail.
+     * Display the specified booking.
      * 
      * @OA\Get(
-     *     path="/api/waybill-details/{id}",
-     *     summary="Get a specific waybill detail",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/bookings/{id}",
+     *     summary="Get a specific booking",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Waybill Detail ID",
+     *         description="Booking ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Waybill detail retrieved successfully",
+     *         description="Booking retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object", ref="#/components/schemas/WaybillDetail")
+     *             @OA\Property(property="data", type="object", ref="#/components/schemas/Booking")
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Waybill detail not found",
+     *         description="Booking not found",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Waybill detail not found.")
+     *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
      *     @OA\Response(
@@ -211,34 +164,43 @@ class WaybillDetailController extends BaseController
      */
     public function show($id)
     {
-        try {
-            $waybillDetail = $this->service->show($id);
-            return response($waybillDetail, 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status_code' => 404,
-                'message' => 'Waybill detail not found.',
-            ], 404);
-        }
+        return parent::show($id);
     }
 
     /**
      * Store a newly created resource in storage.
      * 
      * @OA\Post(
-     *     path="/api/waybill-details",
-     *     summary="Create a new waybill detail",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/bookings",
+     *     summary="Create a new booking",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/WaybillDetailInput")
+     *         @OA\JsonContent(
+ *             required={"shipping_line_id", "cypa_id_from", "cypa_id_to"},
+ *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional, unique)"),
+ *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
+ *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
+ *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
+ *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
+     *         )
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Waybill detail created successfully",
+     *         description="Booking created successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object", ref="#/components/schemas/WaybillDetail")
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
+     *                 @OA\Property(property="shipping_line_id", type="integer", example=1),
+     *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
+     *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
+ *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
+ *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+     *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
+     *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -258,48 +220,64 @@ class WaybillDetailController extends BaseController
      *     )
      * )
      */
-    public function store(WaybillDetailRequest $request)
+    public function store(BookingRequest $request)
     {
         try {
-            $data = $request->validated();
-            $waybillDetail = $this->service->store($data);
-            return response($waybillDetail, 201);
+            $data = $request->all();
+            $booking = $this->service->store($data);
+            return response($booking, 201);
         } catch (\Exception $e) {
             return $this->messageService->responseError();
         }
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified booking in storage.
      * 
      * @OA\Put(
-     *     path="/api/waybill-details/{id}",
-     *     summary="Update a waybill detail",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/bookings/{id}",
+     *     summary="Update a booking",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Waybill Detail ID",
+     *         description="Booking ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/WaybillDetailInput")
+     *         @OA\JsonContent(
+     *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional)"),
+     *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
+     *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
+     *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
+ *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Waybill detail updated successfully",
+     *         description="Booking updated successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="object", ref="#/components/schemas/WaybillDetail")
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
+     *                 @OA\Property(property="shipping_line_id", type="integer", example=1),
+     *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
+     *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
+ *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
+ *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+     *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
+     *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
+     *             )
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Waybill detail not found",
+     *         description="Booking not found",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Waybill detail not found.")
+     *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
      *     @OA\Response(
@@ -319,47 +297,49 @@ class WaybillDetailController extends BaseController
      *     )
      * )
      */
-    public function update(WaybillDetailRequest $request, string $id)
+    public function update(BookingRequest $request, $id)
     {
         try {
-            $data = $request->validated();
-            $waybillDetail = $this->service->update($data, $id);
-            return response($waybillDetail, 200);
-        } catch (\Exception $e) {
+            $data = $request->all();
+            $booking = $this->service->update($data, $id);
+            return response($booking, 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
-                'status_code' => 404,
-                'message' => 'Waybill detail not found.',
+                'success' => false,
+                'message' => 'Booking not found.'
             ], 404);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
         }
     }
 
     /**
-     * Remove the specified resource from storage (soft delete).
+     * Remove the specified booking from storage (soft delete).
      * 
      * @OA\Delete(
-     *     path="/api/waybill-details/{id}",
-     *     summary="Delete a waybill detail",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/bookings/{id}",
+     *     summary="Delete a booking",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Waybill Detail ID",
+     *         description="Booking ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Waybill detail moved to trash successfully",
+     *         description="Booking moved to trash successfully",
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Resource has been moved to trash.")
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Waybill detail not found",
+     *         description="Booking not found",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Waybill detail not found.")
+     *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
      *     @OA\Response(
@@ -377,23 +357,23 @@ class WaybillDetailController extends BaseController
     }
 
     /**
-     * Bulk delete multiple waybill details.
+     * Bulk delete multiple bookings.
      * 
      * @OA\Post(
-     *     path="/api/waybill-details/bulk/delete",
-     *     summary="Bulk delete multiple waybill details",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/bookings/bulk/delete",
+     *     summary="Bulk delete multiple bookings",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
      *             required={"ids"},
-     *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of waybill detail IDs")
+     *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs")
      *         )
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Waybill details deleted successfully",
+     *         description="Bookings deleted successfully",
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Resources have been deleted.")
      *         )
@@ -421,18 +401,30 @@ class WaybillDetailController extends BaseController
     }
 
     /**
-     * Get trashed waybill details.
+     * Get trashed bookings.
      * 
      * @OA\Get(
-     *     path="/api/archived/waybill-details",
-     *     summary="Get trashed waybill details",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/archived/bookings",
+     *     summary="Get trashed bookings",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Items per page",
+     *         @OA\Schema(type="integer", example=10)
+     *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Trashed waybill details retrieved successfully",
+     *         description="Trashed bookings retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/WaybillDetail"))
+     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Booking"))
      *         )
      *     ),
      *     @OA\Response(
@@ -450,33 +442,33 @@ class WaybillDetailController extends BaseController
     }
 
     /**
-     * Restore a trashed waybill detail.
+     * Restore a trashed booking.
      * 
      * @OA\Patch(
-     *     path="/api/archived/waybill-details/restore/{id}",
-     *     summary="Restore a trashed waybill detail",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/archived/bookings/restore/{id}",
+     *     summary="Restore a trashed booking",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Waybill Detail ID",
+     *         description="Booking ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Waybill detail restored successfully",
+     *         description="Booking restored successfully",
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Resource has been restored."),
-     *             @OA\Property(property="resource", type="object", ref="#/components/schemas/WaybillDetail")
+     *             @OA\Property(property="resource", type="object", ref="#/components/schemas/Booking")
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Waybill detail not found",
+     *         description="Booking not found",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Waybill detail not found.")
+     *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
      *     @OA\Response(
@@ -494,23 +486,23 @@ class WaybillDetailController extends BaseController
     }
 
     /**
-     * Bulk restore multiple trashed waybill details.
+     * Bulk restore multiple trashed bookings.
      * 
      * @OA\Post(
-     *     path="/api/waybill-details/bulk/restore",
-     *     summary="Bulk restore multiple trashed waybill details",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/bookings/bulk/restore",
+     *     summary="Bulk restore multiple trashed bookings",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
      *             required={"ids"},
-     *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of waybill detail IDs")
+     *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs")
      *         )
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Waybill details restored successfully",
+     *         description="Bookings restored successfully",
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Resources have been restored.")
      *         )
@@ -538,32 +530,32 @@ class WaybillDetailController extends BaseController
     }
 
     /**
-     * Permanently delete a waybill detail.
+     * Permanently delete a booking.
      * 
      * @OA\Delete(
-     *     path="/api/archived/waybill-details/{id}",
-     *     summary="Permanently delete a waybill detail",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/archived/bookings/{id}",
+     *     summary="Permanently delete a booking",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
-     *         description="Waybill Detail ID",
+     *         description="Booking ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Waybill detail permanently deleted successfully",
+     *         description="Booking permanently deleted successfully",
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Resource has been permanently deleted.")
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Waybill detail not found",
+     *         description="Booking not found",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Waybill detail not found.")
+     *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
      *     @OA\Response(
@@ -581,23 +573,23 @@ class WaybillDetailController extends BaseController
     }
 
     /**
-     * Bulk permanently delete multiple waybill details.
+     * Bulk permanently delete multiple bookings.
      * 
      * @OA\Post(
-     *     path="/api/waybill-details/bulk/force-delete",
-     *     summary="Bulk permanently delete multiple waybill details",
-     *     tags={"Waybill Detail Management"},
+     *     path="/api/bookings/bulk/force-delete",
+     *     summary="Bulk permanently delete multiple bookings",
+     *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
      *             required={"ids"},
-     *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of waybill detail IDs")
+     *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs")
      *         )
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Waybill details permanently deleted successfully",
+     *         description="Bookings permanently deleted successfully",
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Resources have been permanently deleted.")
      *         )
@@ -623,5 +615,5 @@ class WaybillDetailController extends BaseController
     {
         return parent::bulkForceDelete($request);
     }
-}
 
+}

@@ -25,7 +25,7 @@ class WaybillDetailRequest extends FormRequest
             'waybill_number' => 'required|string|max:255|unique:waybill_details,waybill_number',
             'transaction_date' => 'required|date',
             'shipping_line_id' => 'required|integer|exists:shipping_lines,id',
-            'stack_run_id' => 'required|integer|exists:stack_runs,id',
+            'booking_id' => 'required|integer|exists:bookings,id',
             'driver_id' => 'required|integer|exists:drivers,id',
             'helper_id' => 'required|integer|exists:helpers,id',
             'truck_plate_number' => 'required|string|exists:fleet_trucks,plate_number',
@@ -41,7 +41,7 @@ class WaybillDetailRequest extends FormRequest
             $rules['waybill_number'] = 'sometimes|required|string|max:255|unique:waybill_details,waybill_number,' . $this->route('id');
             $rules['transaction_date'] = 'sometimes|required|date';
             $rules['shipping_line_id'] = 'sometimes|required|integer|exists:shipping_lines,id';
-            $rules['stack_run_id'] = 'sometimes|required|integer|exists:stack_runs,id';
+            $rules['booking_id'] = 'sometimes|required|integer|exists:bookings,id';
             $rules['driver_id'] = 'sometimes|required|integer|exists:drivers,id';
             $rules['helper_id'] = 'sometimes|required|integer|exists:helpers,id';
             $rules['truck_plate_number'] = 'sometimes|required|string|exists:fleet_trucks,plate_number';
@@ -68,8 +68,8 @@ class WaybillDetailRequest extends FormRequest
             'transaction_date.date' => 'The transaction date must be a valid date.',
             'shipping_line_id.required' => 'The shipping line is required.',
             'shipping_line_id.exists' => 'The selected shipping line does not exist.',
-            'stack_run_id.required' => 'The stack run is required.',
-            'stack_run_id.exists' => 'The selected stack run does not exist.',
+            'booking_id.required' => 'The booking is required.',
+            'booking_id.exists' => 'The selected booking does not exist.',
             'driver_id.required' => 'The driver is required.',
             'driver_id.exists' => 'The selected driver does not exist.',
             'helper_id.required' => 'The helper is required.',
@@ -86,8 +86,6 @@ class WaybillDetailRequest extends FormRequest
             'delivered_date.date' => 'The delivered date must be a valid date.',
             'extra_money.numeric' => 'The extra money must be a valid number.',
             'extra_money.min' => 'The extra money must be at least 0.',
-            'pickup_date.date' => 'The pickup date must be a valid date.',
-            'delivered_date.date' => 'The delivered date must be a valid date.',
             'delivered_date.after_or_equal' => 'The delivered date must be after or equal to the pickup date.',
             'post_expense_amount.numeric' => 'The post expense amount must be a valid number.',
             'post_expense_amount.min' => 'The post expense amount must be at least 0.',
