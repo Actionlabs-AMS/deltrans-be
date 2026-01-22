@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->string('remarks')->nullable();
             $table->bigInteger('cypa_id')->unsigned()->default(0);
             $table->decimal('stack_run', 10, 2);
-            $table->string('size');
+            $table->string('container_size');
             $table->decimal('rate', 10, 2);
             $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
@@ -32,7 +32,7 @@ return new class extends Migration {
 
             $table->index('shipping_line_id');
             $table->index('cypa_id');
-            $table->index('size');
+            $table->index('container_size');
             $table->index('is_active');
         });
 

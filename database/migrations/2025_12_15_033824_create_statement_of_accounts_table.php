@@ -17,13 +17,9 @@ return new class extends Migration {
         Schema::create('statement_of_accounts', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->string('transaction_number')->unique();
             $table->bigInteger('shipping_line_id')->unsigned();
             $table->string('dli_sa_number');
-            $table->date('soa_coverage_from');
-            $table->date('soa_coverage_to');
-            $table->json('waybill_id')->nullable();
-            $table->boolean('signature')->default(false);
+            $table->bigInteger('booking_id')->unsigned();
             $table->timestamps();
             $table->softDeletes();
 
@@ -33,12 +29,15 @@ return new class extends Migration {
                 ->on('shipping_lines')
                 ->onDelete('cascade');
 
+            $table->foreign('booking_id')
+                ->references('id')
+                ->on('bookings')
+                ->onDelete('restrict');
+
             // Indexes
-            $table->index('transaction_number');
             $table->index('shipping_line_id');
             $table->index('dli_sa_number');
-            $table->index('soa_coverage_from');
-            $table->index('soa_coverage_to');
+            $table->index('booking_id');
         });
 
         // Re-enable foreign key checks

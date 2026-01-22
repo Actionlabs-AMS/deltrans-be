@@ -32,7 +32,7 @@ class RatePerClientService extends BaseService
             // Then apply search conditions
             if (request('search')) {
                 $query->where(function ($q) {
-                    $q->where('size', 'LIKE', '%' . request('search') . '%')
+                    $q->where('container_size', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('requirements', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('remarks', 'LIKE', '%' . request('search') . '%')
                         ->orWhereHas('shippingLine', function ($q) {
@@ -59,9 +59,9 @@ class RatePerClientService extends BaseService
                 $query->where('cypa_id', request('cypa_id'));
             }
 
-            // Filter by size
-            if (request('size')) {
-                $query->where('size', request('size'));
+            // Filter by container_size
+            if (request('container_size')) {
+                $query->where('container_size', request('container_size'));
             }
 
             // Apply ordering

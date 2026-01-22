@@ -22,7 +22,7 @@ class RatePerClient extends Model
         'remarks',
         'cypa_id',
         'stack_run',
-        'size',
+        'container_size',
         'rate',
         'is_active',
     ];
@@ -76,5 +76,12 @@ class RatePerClient extends Model
         return $this->belongsTo(ContainerYard::class, 'cypa_id');
     }
 
+    /**
+     * Get the waybill details for the rate per client.
+     */
+    public function waybillDetails()
+    {
+        return $this->hasMany(WaybillDetail::class, 'rate_per_client_id');
+    }
 }
 

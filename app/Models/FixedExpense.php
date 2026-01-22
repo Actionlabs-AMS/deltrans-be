@@ -125,5 +125,13 @@ class FixedExpense extends Model
     {   
         return $this->cypaTo?->name;
     }
+
+    /**
+     * Get the waybill details for the fixed expense.
+     */
+    public function waybillDetails()
+    {
+        return $this->hasMany(WaybillDetail::class, 'fixed_expense_id');
+    }
 }
 

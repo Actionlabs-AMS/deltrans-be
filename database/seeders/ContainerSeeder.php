@@ -12,13 +12,12 @@ class ContainerSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get waybills with their rate_per_client to determine container size
+        // Get waybills with their container_size
         $waybills = DB::table('waybill_details')
-            ->join('rate_per_clients', 'waybill_details.rate_per_client_id', '=', 'rate_per_clients.id')
             ->select(
-                'waybill_details.waybill_number',
+                'waybill_details.id as waybill_id',
                 'waybill_details.booking_id',
-                'rate_per_clients.size as container_size'
+                'waybill_details.container_size'
             )
             ->get();
 
@@ -31,10 +30,12 @@ class ContainerSeeder extends Seeder
 
         foreach ($waybills as $waybill) {
             // Determine number of containers based on container size
-            // Size 40: 1 container per waybill
-            // Size 20: 2 containers per waybill
+            // Size 40ft or 40: 1 container per waybill
+            // Size 20ft or 20: 2 containers per waybill
             $containerSize = $waybill->container_size;
-            $containersPerWaybill = ($containerSize == '40') ? 1 : 2;
+            // Handle both '40ft'/'20ft' format and '40'/'20' format
+            $sizeValue = preg_replace('/[^0-9]/', '', $containerSize);
+            $containersPerWaybill = ($sizeValue == '40') ? 1 : 2;
 
             // Create containers for this waybill
             for ($i = 0; $i < $containersPerWaybill; $i++) {
@@ -46,7 +47,7 @@ class ContainerSeeder extends Seeder
                         'container_number' => $containerNumber,
                     ],
                     [
-                        'waybill_number' => $waybill->waybill_number,
+                        'waybill_id' => $waybill->waybill_id,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]
@@ -76,7 +77,7 @@ class ContainerSeeder extends Seeder
                         'container_number' => $containerNumber,
                     ],
                     [
-                        'waybill_number' => null, // No waybill assigned yet
+                        'waybill_id' => null, // No waybill assigned yet
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]

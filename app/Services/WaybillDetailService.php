@@ -26,7 +26,6 @@ class WaybillDetailService extends BaseService
                 'shippingLine',
                 'booking',
                 'driver',
-                'helper',
                 'fleetTruck',
                 'fixedExpense',
                 'ratePerClient'
@@ -41,13 +40,11 @@ class WaybillDetailService extends BaseService
             if (request('search')) {
                 $query->where(function ($q) {
                     $q->where('waybill_number', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('container_size', 'LIKE', '%' . request('search') . '%')
                         ->orWhereHas('shippingLine', function ($q) {
                             $q->where('name', 'LIKE', '%' . request('search') . '%');
                         })
                         ->orWhereHas('driver', function ($q) {
-                            $q->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . request('search') . '%']);
-                        })
-                        ->orWhereHas('helper', function ($q) {
                             $q->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . request('search') . '%']);
                         })
                         ->orWhere('truck_plate_number', 'LIKE', '%' . request('search') . '%');
@@ -69,14 +66,20 @@ class WaybillDetailService extends BaseService
                 $query->where('driver_id', request('driver_id'));
             }
 
-            // Filter by helper_id
+            // Filter by helper_id (JSON array - check if array contains the helper_id)
             if (request('helper_id')) {
-                $query->where('helper_id', request('helper_id'));
+                $helperId = request('helper_id');
+                $query->whereJsonContains('helper_id', $helperId);
             }
 
             // Filter by truck_plate_number
             if (request('truck_plate_number')) {
                 $query->where('truck_plate_number', request('truck_plate_number'));
+            }
+
+            // Filter by container_size
+            if (request('container_size')) {
+                $query->where('container_size', request('container_size'));
             }
 
             // Filter by transaction_date
@@ -114,22 +117,14 @@ class WaybillDetailService extends BaseService
      */
     public function store(array $data)
     {
-        // Remove auto-calculated fields if they exist in the data
-        unset($data['total_rate_per_client'], $data['total_expense']);
+        // total_rate_per_client and total_expense are now manual inputs, no need to unset them
         
         $model = $this->model::create($data);
-        
-        // Reload relationships to ensure auto-calculation works
-        $model->load(['ratePerClient', 'fixedExpense']);
-        
-        // Trigger save again to recalculate auto-computed fields
-        $model->save();
         
         return $this->resource::make($model->load([
             'shippingLine',
             'booking',
             'driver',
-            'helper',
             'fleetTruck',
             'fixedExpense',
             'ratePerClient'
@@ -141,23 +136,15 @@ class WaybillDetailService extends BaseService
      */
     public function update(array $data, int $id)
     {
-        // Remove auto-calculated fields if they exist in the data
-        unset($data['total_rate_per_client'], $data['total_expense']);
+        // total_rate_per_client and total_expense are now manual inputs, no need to unset them
         
         $model = $this->model::findOrFail($id);
         $model->update($data);
-        
-        // Reload relationships to ensure auto-calculation works
-        $model->load(['ratePerClient', 'fixedExpense']);
-        
-        // Trigger save again to recalculate auto-computed fields
-        $model->save();
         
         return $this->resource::make($model->load([
             'shippingLine',
             'booking',
             'driver',
-            'helper',
             'fleetTruck',
             'fixedExpense',
             'ratePerClient'
@@ -173,7 +160,6 @@ class WaybillDetailService extends BaseService
             'shippingLine',
             'booking',
             'driver',
-            'helper',
             'fleetTruck',
             'fixedExpense',
             'ratePerClient'

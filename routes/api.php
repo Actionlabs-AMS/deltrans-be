@@ -272,6 +272,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Generate SOA
 		Route::post('/generate', [StatementOfAccountController::class, 'generate']);  // Generate a new statement of account
 
+		// Download PDF (must be before /{id} route)
+		Route::get('/{id}/download', [StatementOfAccountController::class, 'download']);  // Download SOA PDF
+
 		// Standard CRUD operations
 		Route::get('/', [StatementOfAccountController::class, 'index']);  // Retrieve all statement of accounts
 		Route::get('/{id}', [StatementOfAccountController::class, 'show']);  // Retrieve a single statement of account

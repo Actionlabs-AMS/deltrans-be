@@ -22,10 +22,10 @@ class WaybillDetail extends Model
         'booking_id',
         'driver_id',
         'helper_id',
+        'container_size',
         'truck_plate_number',
         'fixed_expense_id',
         'rate_per_client_id',
-        'extra_money',
         'pickup_date',
         'delivered_date',
         'post_expense_amount',
@@ -42,7 +42,7 @@ class WaybillDetail extends Model
         'transaction_date' => 'date',
         'pickup_date' => 'date',
         'delivered_date' => 'date',
-        'extra_money' => 'decimal:2',
+        'helper_id' => 'array', // JSON field cast to array
         'post_expense_amount' => 'decimal:2',
         'total_rate_per_client' => 'decimal:2',
         'total_expense' => 'decimal:2',
@@ -64,56 +64,12 @@ class WaybillDetail extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'extra_money' => 0.00,
         'post_expense_amount' => 0.00,
         'total_rate_per_client' => 0.00,
         'total_expense' => 0.00,
     ];
 
-    /**
-     * Boot the model.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Auto-calculate total_rate_per_client before saving
-        static::saving(function ($model) {
-            // Calculate total_rate_per_client from rate_per_client relationship
-            if ($model->rate_per_client_id) {
-                if ($model->ratePerClient) {
-                    $model->total_rate_per_client = $model->ratePerClient->rate + $model->ratePerClient->stack_run;
-                } elseif ($model->isDirty('rate_per_client_id')) {
-                    // If rate_per_client_id is being set but relationship not loaded, load it
-                    $ratePerClient = \App\Models\RatePerClient::find($model->rate_per_client_id);
-                    if ($ratePerClient) {
-                        $model->total_rate_per_client = $ratePerClient->rate + $ratePerClient->stack_run;
-                    } else {
-                        $model->total_rate_per_client = 0.00;
-                    }
-                }
-            } else {
-                // If rate_per_client_id is null, set total_rate_per_client to 0
-                $model->total_rate_per_client = 0.00;
-            }
-
-            // Calculate total_expense from extra_money + post_expense_amount + fixed_expense.total_expenses
-            $fixedExpenseTotal = 0.00;
-            if ($model->fixed_expense_id) {
-                if ($model->fixedExpense) {
-                    $fixedExpenseTotal = $model->fixedExpense->total_expenses;
-                } elseif ($model->isDirty('fixed_expense_id')) {
-                    // If fixed_expense_id is being set but relationship not loaded, load it
-                    $fixedExpense = \App\Models\FixedExpense::find($model->fixed_expense_id);
-                    if ($fixedExpense) {
-                        $fixedExpenseTotal = $fixedExpense->total_expenses;
-                    }
-                }
-            }
-
-            $model->total_expense = ($model->extra_money ?? 0.00) + ($model->post_expense_amount ?? 0.00) + $fixedExpenseTotal;
-        });
-    }
+    // Removed auto-calculation logic - total_rate_per_client and total_expense are now manual inputs
 
     /**
      * Get the shipping line that owns the waybill detail.
@@ -139,13 +95,7 @@ class WaybillDetail extends Model
         return $this->belongsTo(Driver::class, 'driver_id');
     }
 
-    /**
-     * Get the helper that owns the waybill detail.
-     */
-    public function helper()
-    {
-        return $this->belongsTo(Helper::class, 'helper_id');
-    }
+    // Removed helper() relationship - helper_id is now JSON array of helper IDs
 
     /**
      * Get the fleet truck that owns the waybill detail.
@@ -169,6 +119,14 @@ class WaybillDetail extends Model
     public function ratePerClient()
     {
         return $this->belongsTo(RatePerClient::class, 'rate_per_client_id');
+    }
+
+    /**
+     * Get the containers for the waybill detail.
+     */
+    public function containers()
+    {
+        return $this->hasMany(Container::class, 'waybill_id');
     }
 }
 
