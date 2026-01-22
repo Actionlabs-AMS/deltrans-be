@@ -13,102 +13,70 @@ class StatementOfAccountSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get available IDs from related tables
+        // Get available IDs from shipping lines
         $shippingLineIds = DB::table('shipping_lines')
             ->pluck('id')
             ->toArray();
 
-        $waybillNumbers = DB::table('waybill_details')
-            ->pluck('waybill_number')
-            ->toArray();
+        // Get bookings that have waybills (required)
+        $bookingsWithWaybills = DB::table('bookings')
+            ->join('waybill_details', 'bookings.id', '=', 'waybill_details.booking_id')
+            ->select('bookings.id', 'bookings.shipping_line_id')
+            ->distinct()
+            ->get();
 
         if (empty($shippingLineIds)) {
             $this->command->warn('Required shipping lines not found. Please seed shipping_lines first.');
             return;
         }
 
-        $statementOfAccounts = [
-            [
-                'shipping_line_id' => $shippingLineIds[0],
-                'dli_sa_number' => 'SA-2024-001',
-                'soa_coverage_from' => now()->subDays(30)->toDateString(),
-                'soa_coverage_to' => now()->subDays(1)->toDateString(),
-                'waybill_id' => !empty($waybillNumbers) && count($waybillNumbers) >= 3
-                    ? [$waybillNumbers[0], $waybillNumbers[1], $waybillNumbers[2]]
-                    : null,
-                'signature' => false,
-            ],
-            [
-                'shipping_line_id' => $shippingLineIds[0],
-                'dli_sa_number' => 'SA-2024-002',
-                'soa_coverage_from' => now()->subDays(60)->toDateString(),
-                'soa_coverage_to' => now()->subDays(31)->toDateString(),
-                'waybill_id' => !empty($waybillNumbers) && count($waybillNumbers) >= 5
-                    ? [$waybillNumbers[3], $waybillNumbers[4]]
-                    : null,
-                'signature' => true,
-            ],
-            [
-                'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
-                'dli_sa_number' => 'SA-2024-003',
-                'soa_coverage_from' => now()->subDays(15)->toDateString(),
-                'soa_coverage_to' => now()->toDateString(),
-                'waybill_id' => !empty($waybillNumbers) && count($waybillNumbers) >= 7
-                    ? [$waybillNumbers[5], $waybillNumbers[6]]
-                    : null,
-                'signature' => false,
-            ],
-            [
-                'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
-                'dli_sa_number' => 'SA-2024-004',
-                'soa_coverage_from' => now()->subDays(90)->toDateString(),
-                'soa_coverage_to' => now()->subDays(61)->toDateString(),
-                'waybill_id' => !empty($waybillNumbers) && count($waybillNumbers) >= 8
-                    ? [$waybillNumbers[7]]
-                    : null,
-                'signature' => true,
-            ],
-            [
-                'shipping_line_id' => count($shippingLineIds) > 2 ? $shippingLineIds[2] : $shippingLineIds[0],
-                'dli_sa_number' => 'SA-2024-005',
-                'soa_coverage_from' => now()->subDays(7)->toDateString(),
-                'soa_coverage_to' => now()->toDateString(),
-                'waybill_id' => !empty($waybillNumbers) && count($waybillNumbers) >= 9
-                    ? [$waybillNumbers[8]]
-                    : null,
-                'signature' => false,
-            ],
-            [
-                'shipping_line_id' => count($shippingLineIds) > 2 ? $shippingLineIds[2] : $shippingLineIds[0],
-                'dli_sa_number' => 'SA-2024-006',
-                'soa_coverage_from' => now()->subDays(45)->toDateString(),
-                'soa_coverage_to' => now()->subDays(16)->toDateString(),
-                'waybill_id' => !empty($waybillNumbers) && count($waybillNumbers) >= 6
-                    ? [$waybillNumbers[0], $waybillNumbers[1], $waybillNumbers[2], $waybillNumbers[3], $waybillNumbers[4], $waybillNumbers[5]]
-                    : null,
-                'signature' => true,
-            ],
-            [
-                'shipping_line_id' => count($shippingLineIds) > 3 ? $shippingLineIds[3] : $shippingLineIds[0],
-                'dli_sa_number' => 'SA-2024-007',
-                'soa_coverage_from' => now()->subDays(21)->toDateString(),
-                'soa_coverage_to' => now()->subDays(8)->toDateString(),
-                'waybill_id' => !empty($waybillNumbers) && count($waybillNumbers) >= 4
-                    ? [$waybillNumbers[0], $waybillNumbers[1], $waybillNumbers[2], $waybillNumbers[3]]
-                    : null,
-                'signature' => false,
-            ],
-            [
-                'shipping_line_id' => count($shippingLineIds) > 3 ? $shippingLineIds[3] : $shippingLineIds[0],
-                'dli_sa_number' => 'SA-2024-008',
-                'soa_coverage_from' => now()->subDays(120)->toDateString(),
-                'soa_coverage_to' => now()->subDays(91)->toDateString(),
-                'waybill_id' => !empty($waybillNumbers) && count($waybillNumbers) >= 2
-                    ? [$waybillNumbers[0], $waybillNumbers[1]]
-                    : null,
-                'signature' => true,
-            ],
-        ];
+        if ($bookingsWithWaybills->isEmpty()) {
+            $this->command->warn('No bookings with waybills found. Please seed bookings and waybill_details first.');
+            return;
+        }
+
+        $statementOfAccounts = [];
+        $saCounter = 1;
+        $bookingIndex = 0;
+
+        // Create SOAs for bookings that have waybills
+        foreach ($bookingsWithWaybills as $booking) {
+            if ($bookingIndex >= 8) {
+                break; // Limit to 8 SOAs
+            }
+
+            $statementOfAccounts[] = [
+                'shipping_line_id' => $booking->shipping_line_id,
+                'dli_sa_number' => 'SA-2024-' . str_pad($saCounter, 3, '0', STR_PAD_LEFT),
+                'booking_id' => $booking->id,
+            ];
+
+            $saCounter++;
+            $bookingIndex++;
+        }
+
+        // If we have less than 8 bookings with waybills, create additional SOAs using available bookings
+        if (count($statementOfAccounts) < 8) {
+            $remainingNeeded = 8 - count($statementOfAccounts);
+            $usedBookingIds = collect($statementOfAccounts)->pluck('booking_id')->toArray();
+            
+            $additionalBookings = DB::table('bookings')
+                ->join('waybill_details', 'bookings.id', '=', 'waybill_details.booking_id')
+                ->select('bookings.id', 'bookings.shipping_line_id')
+                ->whereNotIn('bookings.id', $usedBookingIds)
+                ->distinct()
+                ->limit($remainingNeeded)
+                ->get();
+
+            foreach ($additionalBookings as $booking) {
+                $statementOfAccounts[] = [
+                    'shipping_line_id' => $booking->shipping_line_id,
+                    'dli_sa_number' => 'SA-2024-' . str_pad($saCounter, 3, '0', STR_PAD_LEFT),
+                    'booking_id' => $booking->id,
+                ];
+                $saCounter++;
+            }
+        }
 
         foreach ($statementOfAccounts as $soa) {
             StatementOfAccount::updateOrCreate(
@@ -116,5 +84,7 @@ class StatementOfAccountSeeder extends Seeder
                 $soa
             );
         }
+
+        $this->command->info('Statement of accounts seeded successfully. Created ' . count($statementOfAccounts) . ' SOAs.');
     }
 }

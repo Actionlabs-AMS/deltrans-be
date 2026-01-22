@@ -17,7 +17,7 @@ class Container extends Model
     protected $fillable = [
         'container_number',
         'booking_id',
-        'waybill_number',
+        'waybill_id',
     ];
 
     /**
@@ -28,6 +28,7 @@ class Container extends Model
     protected $casts = [
         'id' => 'integer',
         'booking_id' => 'integer',
+        'waybill_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -52,6 +53,6 @@ class Container extends Model
      */
     public function waybill()
     {
-        return $this->belongsTo(WaybillDetail::class, 'waybill_number', 'waybill_number');
+        return $this->belongsTo(WaybillDetail::class, 'waybill_id');
     }
 }

@@ -26,11 +26,11 @@ class ContainerService
             throw new ValidationException($validator);
         }
 
-        // Create container - waybill_number will be null initially, can be updated later
+        // Create container - waybill_id will be null initially, can be updated later
         $container = Container::create([
             'container_number' => $data['container_number'],
             'booking_id' => $bookingId,
-            'waybill_number' => null,
+            'waybill_id' => null,
         ]);
 
         return $container;
@@ -49,7 +49,7 @@ class ContainerService
             ->where('booking_id', $bookingId)
             ->firstOrFail();
 
-        // Validate request data - only allow container_number (waybill_number will be updated by other APIs)
+        // Validate request data - only allow container_number (waybill_id will be updated by other APIs)
         $validator = Validator::make($data, [
             'container_number' => 'sometimes|required|string|max:255',
         ]);
@@ -58,7 +58,7 @@ class ContainerService
             throw new ValidationException($validator);
         }
 
-        // Remove waybill_number if provided (not allowed in this API)
+        // Remove waybill_id if provided (not allowed in this API)
         $updateData = array_intersect_key($data, array_flip(['container_number']));
 
         // Update container - only allow container_number
@@ -98,14 +98,14 @@ class ContainerService
     }
 
     /**
-     * Get containers based on booking_id and optionally waybill_number.
+     * Get containers based on booking_id and optionally waybill_id.
      */
     public function getContainers(array $filters)
     {
         // Validate request data
         $validator = Validator::make($filters, [
             'booking_id' => 'required|integer|exists:bookings,id',
-            'waybill_number' => 'nullable|string|max:255|exists:waybill_details,waybill_number',
+            'waybill_id' => 'nullable|integer|exists:waybill_details,id',
         ]);
 
         if ($validator->fails()) {
@@ -115,9 +115,9 @@ class ContainerService
         $query = Container::with(['booking', 'waybill'])
             ->where('booking_id', $filters['booking_id']);
 
-        // If waybill_number is provided, filter by both booking_id and waybill_number
-        if (isset($filters['waybill_number']) && $filters['waybill_number']) {
-            $query->where('waybill_number', $filters['waybill_number']);
+        // If waybill_id is provided, filter by both booking_id and waybill_id
+        if (isset($filters['waybill_id']) && $filters['waybill_id']) {
+            $query->where('waybill_id', $filters['waybill_id']);
         }
 
         return $query->get();

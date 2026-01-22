@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="container_number", type="string", example="CONT-001"),
  *     @OA\Property(property="booking_id", type="integer", example=1),
- *     @OA\Property(property="waybill_number", type="string", example="WB-001", nullable=true),
+ *     @OA\Property(property="waybill_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
  * )
@@ -313,11 +313,11 @@ class ContainerController extends Controller
     }
 
     /**
-     * Get containers based on booking_id and optionally waybill_number.
+     * Get containers based on booking_id and optionally waybill_id.
      * 
      * @OA\Get(
      *     path="/api/containers",
-     *     summary="Get containers by booking_id and optionally waybill_number",
+     *     summary="Get containers by booking_id and optionally waybill_id",
      *     tags={"Container Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(
@@ -328,11 +328,11 @@ class ContainerController extends Controller
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
-     *         name="waybill_number",
+     *         name="waybill_id",
      *         in="query",
      *         required=false,
-     *         description="Waybill number (optional - if provided, filters by both booking_id and waybill_number)",
-     *         @OA\Schema(type="string", example="WB-001")
+     *         description="Waybill ID (optional - if provided, filters by both booking_id and waybill_id)",
+     *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Response(
      *         response=200,

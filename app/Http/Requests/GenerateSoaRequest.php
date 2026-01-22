@@ -33,25 +33,10 @@ class GenerateSoaRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'soa_coverage_from' => [
+            'booking_id' => [
                 'required',
-                'date',
-            ],
-            'soa_coverage_to' => [
-                'required',
-                'date',
-                'after_or_equal:soa_coverage_from',
-            ],
-            'waybill_id' => [
-                'nullable',
-                'array',
-            ],
-            'waybill_id.*' => [
                 'integer',
-            ],
-            'signature' => [
-                'nullable',
-                'boolean',
+                'exists:bookings,id',
             ],
         ];
     }
@@ -67,14 +52,29 @@ class GenerateSoaRequest extends FormRequest
             'shipping_line_id.required' => 'The shipping line is required.',
             'shipping_line_id.exists' => 'The selected shipping line does not exist.',
             'dli_sa_number.required' => 'The DLI SA number is required.',
-            'soa_coverage_from.required' => 'The coverage start date is required.',
-            'soa_coverage_from.date' => 'The coverage start date must be a valid date.',
-            'soa_coverage_to.required' => 'The coverage end date is required.',
-            'soa_coverage_to.date' => 'The coverage end date must be a valid date.',
-            'soa_coverage_to.after_or_equal' => 'The coverage end date must be after or equal to the start date.',
-            'waybill_id.array' => 'The waybill IDs must be an array.',
-            'signature.boolean' => 'The signature field must be true or false.',
+            'booking_id.required' => 'The booking is required.',
+            'booking_id.exists' => 'The selected booking does not exist.',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            if ($this->has('booking_id')) {
+                $bookingId = $this->input('booking_id');
+                $waybillCount = \App\Models\WaybillDetail::where('booking_id', $bookingId)->count();
+                
+                if ($waybillCount === 0) {
+                    $validator->errors()->add('booking_id', 'The selected booking must have at least one waybill.');
+                }
+            }
+        });
     }
 }
 

@@ -18,58 +18,14 @@ class StatementOfAccount extends Model
     protected $table = 'statement_of_accounts';
 
     /**
-     * Boot the model.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($soa) {
-            if (empty($soa->transaction_number)) {
-                $soa->transaction_number = static::generateTransactionNumber();
-            }
-        });
-    }
-
-    /**
-     * Generate a unique transaction number.
-     *
-     * @return string
-     */
-    public static function generateTransactionNumber(): string
-    {
-        $year = date('Y');
-        $prefix = 'SOA-' . $year . '-';
-
-        // Get the last transaction number for this year
-        $lastSoa = static::where('transaction_number', 'like', $prefix . '%')
-            ->orderBy('transaction_number', 'desc')
-            ->first();
-
-        if ($lastSoa) {
-            // Extract the number part and increment
-            $lastNumber = (int) substr($lastSoa->transaction_number, strlen($prefix));
-            $nextNumber = $lastNumber + 1;
-        } else {
-            $nextNumber = 1;
-        }
-
-        return $prefix . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-    }
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'transaction_number',
         'shipping_line_id',
         'dli_sa_number',
-        'soa_coverage_from',
-        'soa_coverage_to',
-        'waybill_id',
-        'signature',
+        'booking_id',
     ];
 
     /**
@@ -79,10 +35,7 @@ class StatementOfAccount extends Model
      */
     protected $casts = [
         'shipping_line_id' => 'integer',
-        'soa_coverage_from' => 'date',
-        'soa_coverage_to' => 'date',
-        'waybill_id' => 'array',
-        'signature' => 'boolean',
+        'booking_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -94,5 +47,28 @@ class StatementOfAccount extends Model
     public function shippingLine()
     {
         return $this->belongsTo(ShippingLine::class, 'shipping_line_id');
+    }
+
+    /**
+     * Get the booking associated with the statement of account.
+     */
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class, 'booking_id');
+    }
+
+    /**
+     * Get the waybills through the booking.
+     */
+    public function waybills()
+    {
+        return $this->hasManyThrough(
+            WaybillDetail::class,
+            Booking::class,
+            'id', // Foreign key on bookings table
+            'booking_id', // Foreign key on waybill_details table
+            'booking_id', // Local key on statement_of_accounts table
+            'id' // Local key on bookings table
+        );
     }
 }

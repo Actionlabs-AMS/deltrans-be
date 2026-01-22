@@ -3171,8 +3171,8 @@
                 "tags": [
                     "Container Management"
                 ],
-                "summary": "Get containers by booking_id and optionally waybill_number",
-                "description": "Get containers based on booking_id and optionally waybill_number.",
+                "summary": "Get containers by booking_id and optionally waybill_id",
+                "description": "Get containers based on booking_id and optionally waybill_id.",
                 "operationId": "c8e76da8f5de9cab25b90a2557fd02f0",
                 "parameters": [
                     {
@@ -3186,13 +3186,13 @@
                         }
                     },
                     {
-                        "name": "waybill_number",
+                        "name": "waybill_id",
                         "in": "query",
-                        "description": "Waybill number (optional - if provided, filters by both booking_id and waybill_number)",
+                        "description": "Waybill ID (optional - if provided, filters by both booking_id and waybill_id)",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "example": "WB-001"
+                            "type": "integer",
+                            "example": 1
                         }
                     }
                 ],
@@ -9207,7 +9207,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search by size, requirements, remarks, shipping line name, or CYPA name",
+                        "description": "Search by container size, requirements, remarks, shipping line name, or CYPA name",
                         "schema": {
                             "type": "string"
                         }
@@ -9240,7 +9240,7 @@
                         }
                     },
                     {
-                        "name": "size",
+                        "name": "container_size",
                         "in": "query",
                         "description": "Filter by container size",
                         "schema": {
@@ -13839,8 +13839,8 @@
                 "tags": [
                     "Statement of Accounts"
                 ],
-                "summary": "Get a specific statement of account",
-                "description": "Display the specified statement of account.",
+                "summary": "Get a specific statement of account with booking and waybills",
+                "description": "Display the specified statement of account with booking and waybills.",
                 "operationId": "c7524f3dba0e395197af047b3274006a",
                 "parameters": [
                     {
@@ -13859,7 +13859,101 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/StatementOfAccount"
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "shipping_line_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "shipping_line": {
+                                                    "$ref": "#/components/schemas/ShippingLine"
+                                                },
+                                                "dli_sa_number": {
+                                                    "type": "string",
+                                                    "example": "SA-2024-001"
+                                                },
+                                                "booking_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "booking": {
+                                                    "$ref": "#/components/schemas/Booking"
+                                                },
+                                                "waybills": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/WaybillDetail"
+                                                    }
+                                                },
+                                                "total_amount": {
+                                                    "description": "Total amount calculated from waybills' total_rate_per_client",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 15000
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/statement-of-accounts/{id}/download": {
+            "get": {
+                "tags": [
+                    "Statement of Accounts"
+                ],
+                "summary": "Download Statement of Account PDF",
+                "description": "Download PDF for Statement of Account.",
+                "operationId": "88b5b025f19d4bed07077a71de9ffe59",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the statement of account",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file download",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         }
@@ -18186,7 +18280,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search by waybill number, shipping line name, driver name, helper name, or truck plate number",
+                        "description": "Search by waybill number, container size, shipping line name, driver name, helper name, or truck plate number",
                         "schema": {
                             "type": "string"
                         }
@@ -18221,7 +18315,7 @@
                     {
                         "name": "helper_id",
                         "in": "query",
-                        "description": "Filter by helper ID",
+                        "description": "Filter by helper ID (checks if JSON array contains this ID)",
                         "schema": {
                             "type": "integer",
                             "example": 1
@@ -18234,6 +18328,15 @@
                         "schema": {
                             "type": "string",
                             "example": "NCK-6498"
+                        }
+                    },
+                    {
+                        "name": "container_size",
+                        "in": "query",
+                        "description": "Filter by container size",
+                        "schema": {
+                            "type": "string",
+                            "example": "20ft"
                         }
                     },
                     {
@@ -19288,9 +19391,9 @@
                         "type": "integer",
                         "example": 1
                     },
-                    "waybill_number": {
-                        "type": "string",
-                        "example": "WB-001",
+                    "waybill_id": {
+                        "type": "integer",
+                        "example": 1,
                         "nullable": true
                     },
                     "created_at": {
@@ -19602,7 +19705,7 @@
                         "format": "float",
                         "example": 1000
                     },
-                    "size": {
+                    "container_size": {
                         "type": "string",
                         "example": "20ft"
                     },
@@ -19638,7 +19741,7 @@
                     "no_of_days",
                     "cypa_id",
                     "stack_run",
-                    "size",
+                    "container_size",
                     "rate"
                 ],
                 "properties": {
@@ -19669,7 +19772,7 @@
                         "format": "float",
                         "example": 1000
                     },
-                    "size": {
+                    "container_size": {
                         "type": "string",
                         "example": "20ft"
                     },
@@ -19686,6 +19789,89 @@
                 },
                 "type": "object"
             },
+            "ShippingLine": {
+                "title": "Shipping Line Model",
+                "description": "A shipping line resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Maersk Line"
+                    },
+                    "email_address": {
+                        "type": "string",
+                        "example": "contact@maersk.com"
+                    },
+                    "address": {
+                        "type": "string",
+                        "example": "123 Shipping St",
+                        "nullable": true
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "example": "John Doe",
+                        "nullable": true
+                    },
+                    "contact_mobile": {
+                        "type": "string",
+                        "example": "+1234567890",
+                        "nullable": true
+                    },
+                    "landlines": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "123-456-7890"
+                        ],
+                        "nullable": true
+                    },
+                    "fax_no": {
+                        "type": "string",
+                        "example": "123-456-7891",
+                        "nullable": true
+                    },
+                    "tin": {
+                        "type": "string",
+                        "example": "DK-12345678",
+                        "nullable": true
+                    },
+                    "shipping_lines_template": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "nullable": true
+                    },
+                    "transaction_information_template": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-01T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-01T10:00:00Z"
+                    },
+                    "deleted_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "StatementOfAccount": {
                 "title": "Statement of Account Model",
                 "description": "A statement of account resource",
@@ -19698,34 +19884,32 @@
                         "type": "integer",
                         "example": 1
                     },
+                    "shipping_line": {
+                        "$ref": "#/components/schemas/ShippingLine"
+                    },
                     "dli_sa_number": {
                         "type": "string",
                         "example": "SA-2024-001"
                     },
-                    "soa_coverage_from": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-01"
+                    "booking_id": {
+                        "description": "Required - booking must have waybills",
+                        "type": "integer",
+                        "example": 1
                     },
-                    "soa_coverage_to": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-31"
+                    "booking": {
+                        "$ref": "#/components/schemas/Booking"
                     },
-                    "waybill_id": {
+                    "waybills": {
                         "type": "array",
                         "items": {
-                            "type": "integer"
-                        },
-                        "example": [
-                            1,
-                            2,
-                            3
-                        ]
+                            "$ref": "#/components/schemas/WaybillDetail"
+                        }
                     },
-                    "signature": {
-                        "type": "boolean",
-                        "example": false
+                    "total_amount": {
+                        "description": "Total amount calculated from waybills' total_rate_per_client",
+                        "type": "number",
+                        "format": "float",
+                        "example": 15000
                     },
                     "created_at": {
                         "type": "string",
@@ -19746,8 +19930,7 @@
                 "required": [
                     "shipping_line_id",
                     "dli_sa_number",
-                    "soa_coverage_from",
-                    "soa_coverage_to"
+                    "booking_id"
                 ],
                 "properties": {
                     "shipping_line_id": {
@@ -19758,30 +19941,9 @@
                         "type": "string",
                         "example": "SA-2024-001"
                     },
-                    "soa_coverage_from": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-01"
-                    },
-                    "soa_coverage_to": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-31"
-                    },
-                    "waybill_id": {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "example": [
-                            1,
-                            2,
-                            3
-                        ]
-                    },
-                    "signature": {
-                        "type": "boolean",
-                        "example": false
+                    "booking_id": {
+                        "type": "integer",
+                        "example": 1
                     }
                 },
                 "type": "object"
@@ -19940,30 +20102,26 @@
                         "nullable": true
                     },
                     "helper_id": {
-                        "type": "integer",
-                        "example": 1,
+                        "description": "Array of helper IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2
+                        ],
+                        "nullable": true
+                    },
+                    "container_size": {
+                        "type": "string",
+                        "example": "20ft",
                         "nullable": true
                     },
                     "truck_plate_number": {
                         "type": "string",
                         "example": "NCK-6498",
                         "nullable": true
-                    },
-                    "fixed_expense_id": {
-                        "type": "integer",
-                        "example": 1,
-                        "nullable": true
-                    },
-                    "rate_per_client_id": {
-                        "type": "integer",
-                        "example": 1,
-                        "nullable": true
-                    },
-                    "extra_money": {
-                        "description": "Extra money amount",
-                        "type": "number",
-                        "format": "float",
-                        "example": 500
                     },
                     "pickup_date": {
                         "type": "string",
@@ -19977,23 +20135,34 @@
                         "example": "2025-12-23",
                         "nullable": true
                     },
+                    "fixed_expense_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "rate_per_client_id": {
+                        "description": "Nullable - no rate per client if null",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
                     "post_expense_amount": {
                         "description": "Post expense amount",
                         "type": "number",
                         "format": "float",
                         "example": 200
                     },
-                    "total_rate_per_client": {
-                        "description": "Auto-calculated: rate_per_client.rate + rate_per_client.stack_run",
-                        "type": "number",
-                        "format": "float",
-                        "example": 2500
-                    },
                     "total_expense": {
-                        "description": "Auto-calculated: extra_money + post_expense_amount + fixed_expense.total_expenses",
+                        "description": "Manual input field",
                         "type": "number",
                         "format": "float",
                         "example": 4700
+                    },
+                    "total_rate_per_client": {
+                        "description": "Manual input field",
+                        "type": "number",
+                        "format": "float",
+                        "example": 2500
                     },
                     "created_at": {
                         "type": "string",
@@ -20017,10 +20186,9 @@
                     "shipping_line_id",
                     "booking_id",
                     "driver_id",
-                    "helper_id",
+                    "container_size",
                     "truck_plate_number",
                     "fixed_expense_id",
-                    "rate_per_client_id",
                     "pickup_date",
                     "delivered_date"
                 ],
@@ -20047,25 +20215,24 @@
                         "example": 1
                     },
                     "helper_id": {
-                        "type": "integer",
-                        "example": 1
+                        "description": "Array of helper IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2
+                        ],
+                        "nullable": true
+                    },
+                    "container_size": {
+                        "type": "string",
+                        "example": "20ft"
                     },
                     "truck_plate_number": {
                         "type": "string",
                         "example": "NCK-6498"
-                    },
-                    "fixed_expense_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "rate_per_client_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "extra_money": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 500
                     },
                     "pickup_date": {
                         "type": "string",
@@ -20077,10 +20244,31 @@
                         "format": "date",
                         "example": "2025-12-23"
                     },
+                    "fixed_expense_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "rate_per_client_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
                     "post_expense_amount": {
                         "type": "number",
                         "format": "float",
                         "example": 200
+                    },
+                    "total_expense": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 4700,
+                        "nullable": true
+                    },
+                    "total_rate_per_client": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2500,
+                        "nullable": true
                     }
                 },
                 "type": "object"
