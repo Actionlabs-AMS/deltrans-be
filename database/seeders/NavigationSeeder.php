@@ -29,7 +29,19 @@ class NavigationSeeder extends Seeder
                 'children' => [],
             ],
 
-             // Booking Management Section
+            // Shipping Lines Section
+            [
+                'name' => 'Shipping Lines',
+                'slug' => 'shipping-lines',
+                'icon' => 'ship',
+                'description' => 'Manage shipping lines and their details',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => true,
+                'children' => [],
+            ],
+
+            // Booking Management Section
             [
                 'name' => 'Booking Management',
                 'slug' => 'bookings',
@@ -133,18 +145,6 @@ class NavigationSeeder extends Seeder
                 'slug' => 'container-yards',
                 'icon' => 'map-pinned',
                 'description' => 'List of container yards and their details',
-                'parent_id' => null,
-                'active' => true,
-                'show_in_menu' => true,
-                'children' => [],
-            ],
-
-            // Shipping Lines Section
-            [
-                'name' => 'Shipping Lines',
-                'slug' => 'shipping-lines',
-                'icon' => 'ship',
-                'description' => 'Manage shipping lines and their details',
                 'parent_id' => null,
                 'active' => true,
                 'show_in_menu' => true,
