@@ -29,6 +29,27 @@ class NavigationSeeder extends Seeder
                 'children' => [],
             ],
 
+             // Booking Management Section
+            [
+                'name' => 'Booking Management',
+                'slug' => 'bookings',
+                'icon' => 'booking',
+                'description' => 'Manage bookings, containers and waybills',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => true,
+                'children' => [
+                    [
+                        'name' => 'Waybills',
+                        'slug' => 'waybills/:bookingId',
+                        'icon' => 'booking',
+                        'description' => 'View and manage waybills for a specific booking',
+                        'active' => true,
+                        'show_in_menu' => false,
+                    ],
+                ],
+            ],
+
             // Fleet Management
             [
                 'name' => 'Fleet Management',
