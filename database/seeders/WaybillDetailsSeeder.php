@@ -73,6 +73,7 @@ class WaybillDetailsSeeder extends Seeder
 
         // Helper function to find rate_per_client_id based on booking and container_size
         // Match: shipping_line_id (booking) + cypa_id_from (booking) = cypa_id (rate_per_client) + container_size (waybill)
+        // Falls back to cypa_id = 0 (all CYPA) if specific match not found
         $findRatePerClientId = function($bookingId, $containerSize) use ($bookings) {
             if (!isset($bookings[$bookingId])) {
                 return null;
@@ -80,12 +81,23 @@ class WaybillDetailsSeeder extends Seeder
 
             $booking = $bookings[$bookingId];
             
+            // First try to find specific CYPA match
             $ratePerClient = DB::table('rate_per_clients')
                 ->where('shipping_line_id', $booking->shipping_line_id)
                 ->where('cypa_id', $booking->cypa_id_from)
                 ->where('container_size', $containerSize)
                 ->where('is_active', 1)
                 ->first();
+
+            // If not found, try cypa_id = 0 (all CYPA) as fallback
+            if (!$ratePerClient) {
+                $ratePerClient = DB::table('rate_per_clients')
+                    ->where('shipping_line_id', $booking->shipping_line_id)
+                    ->where('cypa_id', 0) // All CYPA
+                    ->where('container_size', $containerSize)
+                    ->where('is_active', 1)
+                    ->first();
+            }
 
             return $ratePerClient ? $ratePerClient->id : null;
         };
@@ -247,13 +259,27 @@ class WaybillDetailsSeeder extends Seeder
             if ($ratePerClientId) {
                 $ratePerClient = DB::table('rate_per_clients')->find($ratePerClientId);
                 $totalRatePerClient = $ratePerClient->rate ?? 0.00;
+            } else {
+                // If no rate_per_client found, try to find a matching one for display
+                // This ensures we have realistic amounts even if matching failed
+                $fallbackRate = DB::table('rate_per_clients')
+                    ->where('shipping_line_id', $booking->shipping_line_id)
+                    ->where('cypa_id', 0) // All CYPA
+                    ->where('container_size', $waybill['container_size'])
+                    ->where('is_active', 1)
+                    ->first();
+                if ($fallbackRate) {
+                    $totalRatePerClient = $fallbackRate->rate ?? 0.00;
+                    // Also set the rate_per_client_id for future reference
+                    $ratePerClientId = $fallbackRate->id;
+                }
             }
             
             // Set calculated values
             $waybill['fixed_expense_id'] = $fixedExpenseId;
-            $waybill['rate_per_client_id'] = $ratePerClientId; // Can be null
+            $waybill['rate_per_client_id'] = $ratePerClientId; // Can be null, but we try to find a match
             $waybill['total_expense'] = $totalExpense;
-            $waybill['total_rate_per_client'] = $totalRatePerClient;
+            $waybill['total_rate_per_client'] = $totalRatePerClient; // Now should have realistic values
             
             // Create waybill detail with auto-calculated values
             WaybillDetail::updateOrCreate(

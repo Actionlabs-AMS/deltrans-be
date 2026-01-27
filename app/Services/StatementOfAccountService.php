@@ -115,7 +115,6 @@ class StatementOfAccountService extends BaseService
                     $query->with([
                         'shippingLine',
                         'driver',
-                        'helper',
                         'fleetTruck',
                         'fixedExpense',
                         'ratePerClient'
@@ -167,7 +166,6 @@ class StatementOfAccountService extends BaseService
                     $query->with([
                         'shippingLine',
                         'driver',
-                        'helper',
                         'fleetTruck',
                         'fixedExpense',
                         'ratePerClient',
@@ -208,8 +206,30 @@ class StatementOfAccountService extends BaseService
                 $transactionData[] = $row;
             }
 
-            // Calculate totals
-            $totalAmount = $waybills->sum('total_rate_per_client');
+            // Calculate totals - use actual amounts (from total_rate_per_client or rate_per_client)
+            $totalAmount = 0;
+            foreach ($waybills as $waybill) {
+                $amount = $waybill->total_rate_per_client ?? 0;
+                // If amount is 0, try to get from rate_per_client relationship
+                if ($amount == 0 && $waybill->ratePerClient) {
+                    $amount = $waybill->ratePerClient->rate ?? 0;
+                }
+                // If still 0, try to find matching rate_per_client
+                if ($amount == 0 && $waybill->booking) {
+                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
+                        ->where('container_size', $waybill->container_size)
+                        ->where(function ($query) use ($waybill) {
+                            $query->where('cypa_id', $waybill->booking->cypa_id_from)
+                                ->orWhere('cypa_id', 0); // 0 means "all"
+                        })
+                        ->where('is_active', 1)
+                        ->first();
+                    if ($matchingRate) {
+                        $amount = $matchingRate->rate ?? 0;
+                    }
+                }
+                $totalAmount += $amount;
+            }
             $vatRate = 0.12; // 12% VAT
             $totalVat = $totalAmount * $vatRate;
             $grandTotal = $totalAmount + $totalVat;
@@ -272,19 +292,44 @@ class StatementOfAccountService extends BaseService
             case 'date':
             case 'bate':
                 return $waybill->transaction_date ? $waybill->transaction_date->format('d-M') : '-';
-            
+
             case 'plate number':
             case 'plt#':
             case 'plt':
                 return $waybill->fleetTruck ? $waybill->fleetTruck->plate_number : '-';
-            
+
+            case 'driver':
+            case 'driver name':
+                if ($waybill->driver) {
+                    return trim($waybill->driver->first_name . ' ' . $waybill->driver->last_name);
+                }
+                return '-';
+
+            case 'helper':
+            case 'helper name':
+            case 'helpers':
+                // helper_id is a JSON array of helper IDs
+                $helperIds = $waybill->helper_id ?? [];
+                if (!empty($helperIds) && is_array($helperIds)) {
+                    $helpers = \App\Models\Helper::whereIn('id', $helperIds)
+                        ->get(['first_name', 'last_name']);
+                    if ($helpers->isNotEmpty()) {
+                        $helperNames = $helpers->map(function ($helper) {
+                            return trim($helper->first_name . ' ' . $helper->last_name);
+                        })->implode(', ');
+                        return $helperNames;
+                    }
+                }
+                return '-';
+
             case 'waybill':
             case 'waybill number':
             case 'way bill#':
             case 'way bill':
                 return $waybill->waybill_number ?? '-';
-            
+
             case 'container number':
+            case 'container no':
             case 'container#':
                 // Try to get container from waybill's booking
                 $containers = $waybill->booking->containers ?? collect();
@@ -295,18 +340,20 @@ class StatementOfAccountService extends BaseService
                     $container = $containers->where('waybill_id', $waybill->id)->first();
                 }
                 return $container ? $container->container_number : '-';
-            
+
             case 'origin':
+            case 'from':
                 $originCypa = $waybill->booking->cypaFrom;
                 return $originCypa ? $originCypa->name : '-';
-            
+
             case 'destination':
+            case 'to':
                 $destCypa = $waybill->booking->cypaTo;
                 return $destCypa ? $destCypa->name : '-';
-            
+
             case 'remarks':
                 return $waybill->ratePerClient ? ($waybill->ratePerClient->remarks ?? '-') : '-';
-            
+
             case 'size':
                 // Use container_size from waybill_details table
                 $size = $waybill->container_size ?? '';
@@ -323,36 +370,107 @@ class StatementOfAccountService extends BaseService
                     }
                 }
                 return '-';
-            
+
             case 'amount':
-                return number_format($waybill->total_rate_per_client ?? 0, 2, '.', ',');
-            
+                // Try to get amount from total_rate_per_client, or from rate_per_client relationship
+                $amount = $waybill->total_rate_per_client ?? 0;
+                if ($amount == 0 && $waybill->ratePerClient) {
+                    $amount = $waybill->ratePerClient->rate ?? 0;
+                }
+                // If still 0, try to find matching rate_per_client
+                if ($amount == 0 && $waybill->booking) {
+                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
+                        ->where('container_size', $waybill->container_size)
+                        ->where(function ($query) use ($waybill) {
+                            $query->where('cypa_id', $waybill->booking->cypa_id_from)
+                                ->orWhere('cypa_id', 0); // 0 means "all"
+                        })
+                        ->where('is_active', 1)
+                        ->first();
+                    if ($matchingRate) {
+                        $amount = $matchingRate->rate ?? 0;
+                    }
+                }
+                return number_format($amount, 2, '.', ',');
+
             case 'vessel':
                 // Vessel information might be in booking or elsewhere
                 return '-'; // Placeholder - update based on actual data structure
-            
+
             case 'vat':
             case '12% vat':
             case '12%vat':
+                // Get amount using same logic as 'amount' case
                 $amount = $waybill->total_rate_per_client ?? 0;
+                if ($amount == 0 && $waybill->ratePerClient) {
+                    $amount = $waybill->ratePerClient->rate ?? 0;
+                }
+                if ($amount == 0 && $waybill->booking) {
+                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
+                        ->where('container_size', $waybill->container_size)
+                        ->where(function ($query) use ($waybill) {
+                            $query->where('cypa_id', $waybill->booking->cypa_id_from)
+                                ->orWhere('cypa_id', 0);
+                        })
+                        ->where('is_active', 1)
+                        ->first();
+                    if ($matchingRate) {
+                        $amount = $matchingRate->rate ?? 0;
+                    }
+                }
                 $vat = $amount * 0.12;
                 return number_format($vat, 2, '.', ',');
-            
+
             case 'total amount':
+                // Get amount using same logic as 'amount' case
                 $amount = $waybill->total_rate_per_client ?? 0;
+                if ($amount == 0 && $waybill->ratePerClient) {
+                    $amount = $waybill->ratePerClient->rate ?? 0;
+                }
+                if ($amount == 0 && $waybill->booking) {
+                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
+                        ->where('container_size', $waybill->container_size)
+                        ->where(function ($query) use ($waybill) {
+                            $query->where('cypa_id', $waybill->booking->cypa_id_from)
+                                ->orWhere('cypa_id', 0);
+                        })
+                        ->where('is_active', 1)
+                        ->first();
+                    if ($matchingRate) {
+                        $amount = $matchingRate->rate ?? 0;
+                    }
+                }
                 $vat = $amount * 0.12;
                 return number_format($amount + $vat, 2, '.', ',');
-            
+
             case 'booking number':
+            case 'booking no':
                 return $waybill->booking->reference_number ?? '-';
-            
+
             case 'work order':
                 // Work order might be in booking or elsewhere
                 return '-'; // Placeholder - update based on actual data structure
-            
+
             case 'stack run':
-                return $waybill->ratePerClient ? number_format($waybill->ratePerClient->stack_run ?? 0, 2, '.', ',') : '-';
-            
+                $stackRun = 0;
+                if ($waybill->ratePerClient) {
+                    $stackRun = $waybill->ratePerClient->stack_run ?? 0;
+                } else if ($waybill->booking) {
+                    // Try to find matching rate_per_client for stack_run
+                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
+                        ->where('container_size', $waybill->container_size)
+                        ->where(function ($query) use ($waybill) {
+                            $query->where('cypa_id', $waybill->booking->cypa_id_from)
+                                ->orWhere('cypa_id', 0);
+                        })
+                        ->where('is_active', 1)
+                        ->first();
+                    if ($matchingRate) {
+                        $stackRun = $matchingRate->stack_run ?? 0;
+                    }
+                }
+                return $stackRun > 0 ? number_format($stackRun, 2, '.', ',') : '-';
+
             default:
                 return '-';
         }
@@ -363,4 +481,3 @@ class StatementOfAccountService extends BaseService
 
 
 //todo: create api for email sender
-//todo: create api for download pdf of statement of account

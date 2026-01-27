@@ -70,6 +70,7 @@ class SoaDataOptionSeeder extends Seeder
         ];
 
         // Create child templates for Transaction Information (parent_id = 2)
+        // Order: Date, Booking Number, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, VAT, Amount, Total Amount
         $transactionInfoChildren = [
             [
                 'parent_id' => $transactionInfoParent->id,
@@ -78,18 +79,8 @@ class SoaDataOptionSeeder extends Seeder
             ],
             [
                 'parent_id' => $transactionInfoParent->id,
-                'name' => 'Plate Number',
-                'description' => 'Truck plate number',
-            ],
-            [
-                'parent_id' => $transactionInfoParent->id,
-                'name' => 'Waybill',
-                'description' => 'Waybill number',
-            ],
-            [
-                'parent_id' => $transactionInfoParent->id,
-                'name' => 'Container Number',
-                'description' => 'Container number',
+                'name' => 'Booking Number',
+                'description' => 'Booking number',
             ],
             [
                 'parent_id' => $transactionInfoParent->id,
@@ -103,8 +94,23 @@ class SoaDataOptionSeeder extends Seeder
             ],
             [
                 'parent_id' => $transactionInfoParent->id,
+                'name' => 'Waybill',
+                'description' => 'Waybill number',
+            ],
+            [
+                'parent_id' => $transactionInfoParent->id,
                 'name' => 'Remarks',
                 'description' => 'Transaction remarks',
+            ],
+            [
+                'parent_id' => $transactionInfoParent->id,
+                'name' => 'Plate Number',
+                'description' => 'Truck plate number',
+            ],
+            [
+                'parent_id' => $transactionInfoParent->id,
+                'name' => 'Container Number',
+                'description' => 'Container number',
             ],
             [
                 'parent_id' => $transactionInfoParent->id,
@@ -113,28 +119,8 @@ class SoaDataOptionSeeder extends Seeder
             ],
             [
                 'parent_id' => $transactionInfoParent->id,
-                'name' => 'Amount',
-                'description' => 'Price of container',
-            ],
-            [
-                'parent_id' => $transactionInfoParent->id,
                 'name' => 'Vessel',
                 'description' => 'Vessel name',
-            ],
-            [
-                'parent_id' => $transactionInfoParent->id,
-                'name' => 'VAT',
-                'description' => 'Value Added Tax',
-            ],
-            [
-                'parent_id' => $transactionInfoParent->id,
-                'name' => 'Total Amount',
-                'description' => 'Amount + VAT',
-            ],
-            [
-                'parent_id' => $transactionInfoParent->id,
-                'name' => 'Booking Number',
-                'description' => 'Booking number',
             ],
             [
                 'parent_id' => $transactionInfoParent->id,
@@ -145,6 +131,21 @@ class SoaDataOptionSeeder extends Seeder
                 'parent_id' => $transactionInfoParent->id,
                 'name' => 'Stack Run',
                 'description' => 'Stack run information',
+            ],
+            [
+                'parent_id' => $transactionInfoParent->id,
+                'name' => 'VAT',
+                'description' => 'Value Added Tax',
+            ],
+            [
+                'parent_id' => $transactionInfoParent->id,
+                'name' => 'Amount',
+                'description' => 'Price of container',
+            ],
+            [
+                'parent_id' => $transactionInfoParent->id,
+                'name' => 'Total Amount',
+                'description' => 'Amount + VAT',
             ],
         ];
 
