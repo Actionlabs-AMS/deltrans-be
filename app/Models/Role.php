@@ -181,30 +181,30 @@ class Role extends Model
 			$parentKey = 0; // Root items use 0 as parent key
 			$permissions = $this->permissions[$parentKey][$navigation->id] ?? [];
 
-		// Generate children routes first to check if any children have permissions
-		$hasChildren = !empty($navigation['children']);
-		$parentPath = '/' . $navigation->slug;
-		$childrenRoutes = $hasChildren ? $this->childRoutes($navigation['children'], $navigation->id, $parentPath) : [];
+			// Generate children routes first to check if any children have permissions
+			$hasChildren = !empty($navigation['children']);
+			$parentPath = '/' . $navigation->slug;
+			$childrenRoutes = $hasChildren ? $this->childRoutes($navigation['children'], $navigation->id, $parentPath) : [];
 
-		// Check if parent has any visible children based on navigation's show_in_menu property
-		// A child is visible if it has show_in_menu === true
-		$hasVisibleChildren = false;
-		if ($hasChildren && !empty($navigation['children'])) {
-			foreach ($navigation['children'] as $childNavigation) {
-				// Check if this child navigation has show_in_menu === true
-				if ($childNavigation->show_in_menu === true) {
-					$hasVisibleChildren = true;
-					break;
+			// Check if parent has any visible children based on navigation's show_in_menu property
+			// A child is visible if it has show_in_menu === true
+			$hasVisibleChildren = false;
+			if ($hasChildren && !empty($navigation['children'])) {
+				foreach ($navigation['children'] as $childNavigation) {
+					// Check if this child navigation has show_in_menu === true
+					if ($childNavigation->show_in_menu === true) {
+						$hasVisibleChildren = true;
+						break;
+					}
 				}
 			}
-		}
 
-		// Generate create/edit routes for parent if permissions exist
-		// Only generate parent create/edit routes when:
-		// 1. Parent has no children (standalone route), OR
-		// 2. Parent has children but ALL children are not visible (all have show_in_menu === false)
-		// This means: do NOT generate parent create/edit if parent has any visible children
-		if (!empty($permissions) && !$hasVisibleChildren) {
+			// Generate create/edit routes for parent if permissions exist
+			// Only generate parent create/edit routes when:
+			// 1. Parent has no children (standalone route), OR
+			// 2. Parent has children but ALL children are not visible (all have show_in_menu === false)
+			// This means: do NOT generate parent create/edit if parent has any visible children
+			if (!empty($permissions) && !$hasVisibleChildren) {
 				// Generate create route if can_create permission exists
 				if (!empty($permissions['can_create'])) {
 					$childrenRoutes[] = [
