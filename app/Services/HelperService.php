@@ -92,18 +92,24 @@ class HelperService extends BaseService
     public function getHelperById($id)
     {
         try {
-            $helper = Helper::query()
-                ->addSelect([
-                    'helpers.*',
-                    'assigned_truck_plate_numbers' => Driver::select(DB::raw('GROUP_CONCAT(assigned_truck_plate_numbers)'))
-                        ->whereRaw('JSON_CONTAINS(drivers.helpers_id, CAST(helpers.id AS JSON))')
-                ])
-                ->where('helpers.id', $id)
-                ->firstOrFail();
+            $helper = Helper::where('helpers.id', $id)->firstOrFail();
 
-            // Return as a single HelperResource instance
+            // Drivers store helpers_id as JSON array; filter in PHP to avoid JSON_CONTAINS (server-compatible)
+            $drivers = Driver::select('id', 'helpers_id', 'assigned_truck_plate_numbers')->get();
+            $helperId = (int) $id;
+            $allPlates = [];
+            foreach ($drivers as $driver) {
+                $helperIds = $driver->helpers_id;
+                if (is_array($helperIds) && in_array($helperId, $helperIds, true)) {
+                    $plates = $driver->assigned_truck_plate_numbers;
+                    if (is_array($plates)) {
+                        $allPlates = array_merge($allPlates, $plates);
+                    }
+                }
+            }
+            $helper->assigned_truck_plate_numbers = array_values(array_unique($allPlates));
+
             return new HelperResource($helper);
-
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             throw new \Exception('Helper not found.');
         } catch (\Exception $e) {

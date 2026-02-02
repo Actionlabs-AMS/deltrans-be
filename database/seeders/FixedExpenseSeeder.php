@@ -9,17 +9,13 @@ class FixedExpenseSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Creates fixed_expenses for every (shipping_line, cypa_from, cypa_to) route
+     * so all bookings have a matching fixed expense for waybills (no fallbacks).
      */
     public function run(): void
     {
-        // Get available IDs from related tables
-        $shippingLineIds = DB::table('shipping_lines')
-            ->pluck('id')
-            ->toArray();
-
-        $cypaIds = DB::table('cypa_details')
-            ->pluck('id')
-            ->toArray();
+        $shippingLineIds = DB::table('shipping_lines')->pluck('id')->toArray();
+        $cypaIds = DB::table('cypa_details')->where('is_active', 1)->pluck('id')->toArray();
 
         if (empty($shippingLineIds) || empty($cypaIds) || count($cypaIds) < 2) {
             $this->command->warn('Not enough related records found. Please seed shipping_lines and cypa_details first.');
@@ -27,81 +23,41 @@ class FixedExpenseSeeder extends Seeder
         }
 
         $fixedExpenses = [];
-        
-        // Create fixed expenses for all shipping lines
-        // For each shipping line, create combinations for common CYPA routes and container sizes
-        foreach ($shippingLineIds as $shippingLineId) {
-            // Common route: cypa[0] to cypa[1] - 20ft
-            $fixedExpenses[] = [
-                'shipping_line_id' => $shippingLineId,
-                'cypa_id_from' => $cypaIds[0],
-                'cypa_id_to' => $cypaIds[1],
-                'container_size' => '20ft',
-                'docs_fee' => 500.00,
-                'stack_run' => 1500.00,
-                'expenses' => 2000.00,
-                'total_expenses' => 4000.00,
-            ];
-            
-            // Common route: cypa[0] to cypa[1] - 40ft
-            $fixedExpenses[] = [
-                'shipping_line_id' => $shippingLineId,
-                'cypa_id_from' => $cypaIds[0],
-                'cypa_id_to' => $cypaIds[1],
-                'container_size' => '40ft',
-                'docs_fee' => 750.00,
-                'stack_run' => 2000.00,
-                'expenses' => 3000.00,
-                'total_expenses' => 5750.00,
-            ];
-            
-            // Reverse route: cypa[1] to cypa[0] - 20ft
-            $fixedExpenses[] = [
-                'shipping_line_id' => $shippingLineId,
-                'cypa_id_from' => $cypaIds[1],
-                'cypa_id_to' => $cypaIds[0],
-                'container_size' => '20ft',
-                'docs_fee' => 500.00,
-                'stack_run' => 1500.00,
-                'expenses' => 2000.00,
-                'total_expenses' => 4000.00,
-            ];
-            
-            // Reverse route: cypa[1] to cypa[0] - 40ft
-            $fixedExpenses[] = [
-                'shipping_line_id' => $shippingLineId,
-                'cypa_id_from' => $cypaIds[1],
-                'cypa_id_to' => $cypaIds[0],
-                'container_size' => '40ft',
-                'docs_fee' => 750.00,
-                'stack_run' => 2000.00,
-                'expenses' => 3000.00,
-                'total_expenses' => 5750.00,
-            ];
-            
-            // Additional routes if more CYPAs exist
-            if (count($cypaIds) > 2) {
-                $fixedExpenses[] = [
-                    'shipping_line_id' => $shippingLineId,
-                    'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
-                    'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
-                    'container_size' => '20ft',
-                    'docs_fee' => 600.00,
-                    'stack_run' => 1600.00,
-                    'expenses' => 2200.00,
-                    'total_expenses' => 4400.00,
-                ];
-                
-                $fixedExpenses[] = [
-                    'shipping_line_id' => $shippingLineId,
-                    'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
-                    'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
-                    'container_size' => '40ft',
-                    'docs_fee' => 850.00,
-                    'stack_run' => 2100.00,
-                    'expenses' => 3100.00,
-                    'total_expenses' => 6050.00,
-                ];
+        $baseFee20 = 500.00;
+        $baseFee40 = 750.00;
+        $baseStack20 = 1500.00;
+        $baseStack40 = 2000.00;
+        $baseExp20 = 2000.00;
+        $baseExp40 = 3000.00;
+
+        foreach ($shippingLineIds as $lineIdx => $shippingLineId) {
+            foreach ($cypaIds as $fromIdx => $cypaFrom) {
+                foreach ($cypaIds as $toIdx => $cypaTo) {
+                    if ($cypaFrom === $cypaTo) {
+                        continue;
+                    }
+                    $variation = ($lineIdx + $fromIdx + $toIdx) % 3;
+                    $fixedExpenses[] = [
+                        'shipping_line_id' => $shippingLineId,
+                        'cypa_id_from' => $cypaFrom,
+                        'cypa_id_to' => $cypaTo,
+                        'container_size' => '20ft',
+                        'docs_fee' => $baseFee20 + ($variation * 50),
+                        'stack_run' => $baseStack20 + ($variation * 100),
+                        'expenses' => $baseExp20 + ($variation * 200),
+                        'total_expenses' => $baseFee20 + $baseStack20 + $baseExp20 + ($variation * 350),
+                    ];
+                    $fixedExpenses[] = [
+                        'shipping_line_id' => $shippingLineId,
+                        'cypa_id_from' => $cypaFrom,
+                        'cypa_id_to' => $cypaTo,
+                        'container_size' => '40ft',
+                        'docs_fee' => $baseFee40 + ($variation * 75),
+                        'stack_run' => $baseStack40 + ($variation * 150),
+                        'expenses' => $baseExp40 + ($variation * 300),
+                        'total_expenses' => $baseFee40 + $baseStack40 + $baseExp40 + ($variation * 525),
+                    ];
+                }
             }
         }
 

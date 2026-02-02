@@ -16,13 +16,16 @@ class HelperResource extends JsonResource
   {
     $rawPlates = $this->assigned_truck_plate_numbers ?? '';
 
-    // 1. Clean the string: remove brackets and extra double quotes
-    $cleaned = is_string($rawPlates) ? str_replace(['[', ']', '"'], '', $rawPlates) : '';
-
-    // 2. Convert to array and trim whitespace
-    $platesArray = !empty($cleaned)
-      ? array_map('trim', explode(',', $cleaned))
-      : [];
+    // Already an array (e.g. from getHelperById joining drivers)
+    if (is_array($rawPlates)) {
+      $platesArray = array_values(array_filter($rawPlates));
+    } else {
+      // String from DB: clean and split
+      $cleaned = is_string($rawPlates) ? str_replace(['[', ']', '"'], '', $rawPlates) : '';
+      $platesArray = !empty($cleaned)
+        ? array_map('trim', explode(',', $cleaned))
+        : [];
+    }
 
 
     return [
