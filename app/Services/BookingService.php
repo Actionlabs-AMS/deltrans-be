@@ -18,10 +18,6 @@ class BookingService extends BaseService
      */
     public function store(array $data)
     {
-        // Remove is_complete from data if provided
-        // This field is fillable but not allowed in this API (other APIs will update it)
-        unset($data['is_complete']);
-
         // Create the model - defaults will be applied from model $attributes
         $model = $this->model::create($data);
 
@@ -53,10 +49,6 @@ class BookingService extends BaseService
      */
     public function update(array $data, $id)
     {
-        // Remove is_complete from data if provided
-        // This field is fillable but not allowed in this API (other APIs will update it)
-        unset($data['is_complete']);
-
         $model = $this->model::findOrFail($id);
         $model->update($data);
         return $this->resource::make($model->fresh()->load(['shippingLine', 'cypaFrom', 'cypaTo', 'containers']));

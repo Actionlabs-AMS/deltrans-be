@@ -24,6 +24,7 @@ class RatePerClientResource extends JsonResource
             'stack_run' => $this->stack_run,
             'container_size' => $this->container_size,
             'rate' => $this->rate,
+            'tax_percent' => $this->tax_percent,
             'is_active' => (int) $this->is_active,
             'shipping_line' => $this->whenLoaded('shippingLine'),
             'cypa' => $this->whenLoaded('cypa'),

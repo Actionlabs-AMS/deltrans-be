@@ -32,7 +32,7 @@ class Booking extends Model
      */
     protected $casts = [
         'expected_date' => 'date',
-        'is_complete' => 'integer',
+        'is_complete' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -51,7 +51,7 @@ class Booking extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'is_complete' => 0,
+        'is_complete' => false,
     ];
 
     /**

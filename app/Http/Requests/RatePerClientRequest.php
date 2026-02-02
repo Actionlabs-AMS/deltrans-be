@@ -36,6 +36,7 @@ class RatePerClientRequest extends FormRequest
                 Rule::in(['20ft', '40ft', '20ft(offhire)', '40ft(offhire)']),
             ],
             'rate' => 'required|numeric|min:0',
+            'tax_percent' => 'nullable|numeric|min:0|max:100',
             'is_active' => 'nullable|integer|in:0,1',
         ];
 
@@ -52,6 +53,7 @@ class RatePerClientRequest extends FormRequest
                 Rule::in(['20ft', '40ft', '20ft(offhire)', '40ft(offhire)']),
             ];
             $rules['rate'] = 'sometimes|required|numeric|min:0';
+            $rules['tax_percent'] = 'sometimes|nullable|numeric|min:0|max:100';
         }
 
         return $rules;
@@ -95,6 +97,9 @@ class RatePerClientRequest extends FormRequest
             'rate.required' => 'The rate is required.',
             'rate.numeric' => 'The rate must be a valid number.',
             'rate.min' => 'The rate must be at least 0.',
+            'tax_percent.numeric' => 'The tax percent must be a valid number.',
+            'tax_percent.min' => 'The tax percent must be at least 0.',
+            'tax_percent.max' => 'The tax percent must not exceed 100.',
             'is_active.in' => 'The is_active field must be either 0 or 1.',
         ];
     }

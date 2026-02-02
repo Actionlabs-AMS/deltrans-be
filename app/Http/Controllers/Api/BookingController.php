@@ -24,7 +24,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="cypa_id_from", type="integer", example=1),
  *     @OA\Property(property="cypa_id_to", type="integer", example=2),
  *     @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
- *     @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+ *     @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
  *     @OA\Property(property="actual_no_of_waybill", type="integer", example=5, description="Actual number of waybills created for this booking"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
@@ -190,7 +190,8 @@ class BookingController extends BaseController
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
-     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
+     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
+     *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)")
      *         )
      *     ),
      *     @OA\Response(
@@ -204,7 +205,7 @@ class BookingController extends BaseController
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
-     *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+     *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )
@@ -260,7 +261,8 @@ class BookingController extends BaseController
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
-     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
+     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
+     *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)")
      *         )
      *     ),
      *     @OA\Response(
@@ -274,7 +276,7 @@ class BookingController extends BaseController
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
-     *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+     *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )

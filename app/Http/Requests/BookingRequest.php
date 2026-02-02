@@ -29,6 +29,7 @@ class BookingRequest extends FormRequest
             'cypa_id_from' => 'required|integer|exists:cypa_details,id',
             'cypa_id_to' => 'required|integer|exists:cypa_details,id',
             'expected_date' => 'nullable|date',
+            'is_complete' => 'nullable|boolean',
         ];
 
         // For update, make some fields optional
@@ -39,6 +40,7 @@ class BookingRequest extends FormRequest
             $rules['cypa_id_from'] = 'sometimes|required|integer|exists:cypa_details,id';
             $rules['cypa_id_to'] = 'sometimes|required|integer|exists:cypa_details,id';
             $rules['expected_date'] = 'sometimes|nullable|date';
+            $rules['is_complete'] = 'sometimes|nullable|boolean';
         }
 
         return $rules;
@@ -62,6 +64,7 @@ class BookingRequest extends FormRequest
             'cypa_id_to.exists' => 'The selected CYPA (to) does not exist.',
             'expected_date.date' => 'The expected date must be a valid date.',
             'vessel.max' => 'The vessel must not exceed 255 characters.',
+            'is_complete.boolean' => 'The is_complete field must be true or false.',
         ];
     }
 }

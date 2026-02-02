@@ -628,6 +628,15 @@
                             "format": "date",
                             "example": "2025-02-10"
                         }
+                    },
+                    {
+                        "name": "vessel",
+                        "in": "query",
+                        "description": "Filter by vessel name (partial match)",
+                        "schema": {
+                            "type": "string",
+                            "example": "MSC"
+                        }
                     }
                 ],
                 "responses": {
@@ -749,6 +758,11 @@
                                         "type": "string",
                                         "format": "date",
                                         "example": "2025-02-10"
+                                    },
+                                    "is_complete": {
+                                        "description": "Whether the booking is complete (optional)",
+                                        "type": "boolean",
+                                        "example": false
                                     }
                                 },
                                 "type": "object"
@@ -793,9 +807,9 @@
                                                     "nullable": true
                                                 },
                                                 "is_complete": {
-                                                    "description": "0=Incomplete, 1=Complete",
-                                                    "type": "integer",
-                                                    "example": 0
+                                                    "description": "Whether the booking is complete",
+                                                    "type": "boolean",
+                                                    "example": false
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -982,6 +996,11 @@
                                         "type": "string",
                                         "format": "date",
                                         "example": "2025-02-10"
+                                    },
+                                    "is_complete": {
+                                        "description": "Whether the booking is complete (optional)",
+                                        "type": "boolean",
+                                        "example": false
                                     }
                                 },
                                 "type": "object"
@@ -1026,9 +1045,9 @@
                                                     "nullable": true
                                                 },
                                                 "is_complete": {
-                                                    "description": "0=Incomplete, 1=Complete",
-                                                    "type": "integer",
-                                                    "example": 0
+                                                    "description": "Whether the booking is complete",
+                                                    "type": "boolean",
+                                                    "example": false
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -12627,6 +12646,211 @@
                 ]
             }
         },
+        "/api/soa_and_billing": {
+            "get": {
+                "tags": [
+                    "soa_and_billing"
+                ],
+                "summary": "Get list of statement of accounts",
+                "operationId": "732baa2d661c86dcb620fa6796650470",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by DLI SA number, work order, or shipping line name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of statement of accounts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/soa_and_billing"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa_and_billing/generate": {
+            "post": {
+                "tags": [
+                    "soa_and_billing"
+                ],
+                "summary": "Generate a new statement of account",
+                "operationId": "fb6d6a71cf800597f6cd97d89a3574ee",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SoaAndBillingGenerateInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Statement of account generated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/soa_and_billing"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa_and_billing/{id}": {
+            "get": {
+                "tags": [
+                    "soa_and_billing"
+                ],
+                "summary": "Get a specific statement of account",
+                "operationId": "a30dd60fe5ccc2b87ae190a6dd507b51",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Statement of account retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/soa_and_billing"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa_and_billing/{id}/download": {
+            "get": {
+                "tags": [
+                    "soa_and_billing"
+                ],
+                "summary": "Download Statement of Account PDF",
+                "operationId": "645def9ef69b609b12851cb0454e09e7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file download",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/soa-data-options": {
             "get": {
                 "tags": [
@@ -13703,266 +13927,6 @@
                                 }
                             }
                         }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/statement-of-accounts": {
-            "get": {
-                "tags": [
-                    "Statement of Accounts"
-                ],
-                "summary": "Get list of statement of accounts",
-                "description": "Display a listing of statement of accounts.",
-                "operationId": "22189e914e720908ae62e12923dfb046",
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number",
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page",
-                        "schema": {
-                            "type": "integer",
-                            "example": 10
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Search by DLI SA number or shipping line name",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of statement of accounts retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/StatementOfAccount"
-                                            }
-                                        },
-                                        "meta": {
-                                            "type": "object"
-                                        },
-                                        "links": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/GeneralError"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/statement-of-accounts/generate": {
-            "post": {
-                "tags": [
-                    "Statement of Accounts"
-                ],
-                "summary": "Generate a new statement of account",
-                "description": "Generate a new statement of account.",
-                "operationId": "87cb90433f868a7b75b4d6bb56bd1642",
-                "requestBody": {
-                    "description": "Statement of account data to generate",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/GenerateSoaInput"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Statement of account generated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StatementOfAccount"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "$ref": "#/components/responses/BadRequest"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/GeneralError"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/statement-of-accounts/{id}": {
-            "get": {
-                "tags": [
-                    "Statement of Accounts"
-                ],
-                "summary": "Get a specific statement of account with booking and waybills",
-                "description": "Display the specified statement of account with booking and waybills.",
-                "operationId": "c7524f3dba0e395197af047b3274006a",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "ID of the statement of account",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Statement of account retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "shipping_line_id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "shipping_line": {
-                                                    "$ref": "#/components/schemas/ShippingLine"
-                                                },
-                                                "dli_sa_number": {
-                                                    "type": "string",
-                                                    "example": "SA-2024-001"
-                                                },
-                                                "booking_id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "booking": {
-                                                    "$ref": "#/components/schemas/Booking"
-                                                },
-                                                "waybills": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/WaybillDetail"
-                                                    }
-                                                },
-                                                "total_amount": {
-                                                    "description": "Total amount calculated from waybills' total_rate_per_client",
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 15000
-                                                },
-                                                "created_at": {
-                                                    "type": "string",
-                                                    "format": "date-time"
-                                                },
-                                                "updated_at": {
-                                                    "type": "string",
-                                                    "format": "date-time"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/NotFound"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/GeneralError"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/statement-of-accounts/{id}/download": {
-            "get": {
-                "tags": [
-                    "Statement of Accounts"
-                ],
-                "summary": "Download Statement of Account PDF",
-                "description": "Download PDF for Statement of Account.",
-                "operationId": "88b5b025f19d4bed07077a71de9ffe59",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "ID of the statement of account",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "PDF file download",
-                        "content": {
-                            "application/pdf": {
-                                "schema": {
-                                    "type": "string",
-                                    "format": "binary"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/NotFound"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/GeneralError"
                     }
                 },
                 "security": [
@@ -18280,7 +18244,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search by waybill number, container size, shipping line name, driver name, helper name, or truck plate number",
+                        "description": "Search by waybill number, container size, container type, shipping line name, driver name, helper name, or truck plate number",
                         "schema": {
                             "type": "string"
                         }
@@ -18337,6 +18301,15 @@
                         "schema": {
                             "type": "string",
                             "example": "20ft"
+                        }
+                    },
+                    {
+                        "name": "container_type",
+                        "in": "query",
+                        "description": "Filter by container type",
+                        "schema": {
+                            "type": "string",
+                            "example": "DRY"
                         }
                     },
                     {
@@ -19334,6 +19307,11 @@
                         "example": "RF-483624",
                         "nullable": true
                     },
+                    "vessel": {
+                        "type": "string",
+                        "example": "MSC OSCAR",
+                        "nullable": true
+                    },
                     "shipping_line_id": {
                         "type": "integer",
                         "example": 1
@@ -19353,9 +19331,9 @@
                         "nullable": true
                     },
                     "is_complete": {
-                        "description": "0=Incomplete, 1=Complete",
-                        "type": "integer",
-                        "example": 0
+                        "description": "Whether the booking is complete",
+                        "type": "boolean",
+                        "example": false
                     },
                     "actual_no_of_waybill": {
                         "description": "Actual number of waybills created for this booking",
@@ -19715,6 +19693,13 @@
                         "format": "float",
                         "example": 5000
                     },
+                    "tax_percent": {
+                        "description": "Tax percentage (for SOA)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12,
+                        "nullable": true
+                    },
                     "is_active": {
                         "description": "1=Active, 0=Inactive",
                         "type": "integer",
@@ -19782,6 +19767,13 @@
                         "format": "float",
                         "example": 5000
                     },
+                    "tax_percent": {
+                        "description": "Tax percentage (for SOA)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12,
+                        "nullable": true
+                    },
                     "is_active": {
                         "type": "integer",
                         "example": 1
@@ -19789,92 +19781,9 @@
                 },
                 "type": "object"
             },
-            "ShippingLine": {
-                "title": "Shipping Line Model",
-                "description": "A shipping line resource",
-                "properties": {
-                    "id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "name": {
-                        "type": "string",
-                        "example": "Maersk Line"
-                    },
-                    "email_address": {
-                        "type": "string",
-                        "example": "contact@maersk.com"
-                    },
-                    "address": {
-                        "type": "string",
-                        "example": "123 Shipping St",
-                        "nullable": true
-                    },
-                    "contact_name": {
-                        "type": "string",
-                        "example": "John Doe",
-                        "nullable": true
-                    },
-                    "contact_mobile": {
-                        "type": "string",
-                        "example": "+1234567890",
-                        "nullable": true
-                    },
-                    "landlines": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "example": [
-                            "123-456-7890"
-                        ],
-                        "nullable": true
-                    },
-                    "fax_no": {
-                        "type": "string",
-                        "example": "123-456-7891",
-                        "nullable": true
-                    },
-                    "tin": {
-                        "type": "string",
-                        "example": "DK-12345678",
-                        "nullable": true
-                    },
-                    "shipping_lines_template": {
-                        "type": "array",
-                        "items": {
-                            "type": "object"
-                        },
-                        "nullable": true
-                    },
-                    "transaction_information_template": {
-                        "type": "array",
-                        "items": {
-                            "type": "object"
-                        },
-                        "nullable": true
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2024-01-01T10:00:00Z"
-                    },
-                    "updated_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2024-01-01T10:00:00Z"
-                    },
-                    "deleted_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "nullable": true
-                    }
-                },
-                "type": "object"
-            },
-            "StatementOfAccount": {
-                "title": "Statement of Account Model",
-                "description": "A statement of account resource",
+            "soa_and_billing": {
+                "title": "SOA and Billing",
+                "description": "Statement of account resource",
                 "properties": {
                     "id": {
                         "type": "integer",
@@ -19884,49 +19793,37 @@
                         "type": "integer",
                         "example": 1
                     },
-                    "shipping_line": {
-                        "$ref": "#/components/schemas/ShippingLine"
-                    },
                     "dli_sa_number": {
                         "type": "string",
                         "example": "SA-2024-001"
                     },
                     "booking_id": {
-                        "description": "Required - booking must have waybills",
                         "type": "integer",
                         "example": 1
                     },
-                    "booking": {
-                        "$ref": "#/components/schemas/Booking"
-                    },
-                    "waybills": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/WaybillDetail"
-                        }
+                    "work_order": {
+                        "type": "string",
+                        "example": "WO-001",
+                        "nullable": true
                     },
                     "total_amount": {
-                        "description": "Total amount calculated from waybills' total_rate_per_client",
                         "type": "number",
                         "format": "float",
                         "example": 15000
                     },
                     "created_at": {
                         "type": "string",
-                        "format": "date-time",
-                        "example": "2024-01-01T10:00:00Z"
+                        "format": "date-time"
                     },
                     "updated_at": {
                         "type": "string",
-                        "format": "date-time",
-                        "example": "2024-01-01T10:00:00Z"
+                        "format": "date-time"
                     }
                 },
                 "type": "object"
             },
-            "GenerateSoaInput": {
+            "SoaAndBillingGenerateInput": {
                 "title": "Generate SOA Input",
-                "description": "Data required to generate a statement of account",
                 "required": [
                     "shipping_line_id",
                     "dli_sa_number",
@@ -19944,6 +19841,11 @@
                     "booking_id": {
                         "type": "integer",
                         "example": 1
+                    },
+                    "work_order": {
+                        "type": "string",
+                        "example": "WO-001",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -20118,6 +20020,11 @@
                         "example": "20ft",
                         "nullable": true
                     },
+                    "container_type": {
+                        "type": "string",
+                        "example": "DRY",
+                        "nullable": true
+                    },
                     "truck_plate_number": {
                         "type": "string",
                         "example": "NCK-6498",
@@ -20229,6 +20136,11 @@
                     "container_size": {
                         "type": "string",
                         "example": "20ft"
+                    },
+                    "container_type": {
+                        "type": "string",
+                        "example": "DRY",
+                        "nullable": true
                     },
                     "truck_plate_number": {
                         "type": "string",
@@ -20423,12 +20335,12 @@
             "description": "API endpoints for shipping line management"
         },
         {
-            "name": "SOA Data Option Management",
-            "description": "API endpoints for SOA data option management"
+            "name": "soa_and_billing",
+            "description": "API endpoints for SOA and billing management"
         },
         {
-            "name": "Statement of Accounts",
-            "description": "API endpoints for managing statement of accounts"
+            "name": "SOA Data Option Management",
+            "description": "API endpoints for SOA data option management"
         },
         {
             "name": "Tag Management",

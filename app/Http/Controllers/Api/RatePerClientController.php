@@ -25,6 +25,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="stack_run", type="number", format="float", example=1000.00, description="Stack run amount"),
  *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="rate", type="number", format="float", example=5000.00, description="Rate amount"),
+ *     @OA\Property(property="tax_percent", type="number", format="float", example=12.00, nullable=true, description="Tax percentage (for SOA)"),
  *     @OA\Property(property="is_active", type="integer", example=1, description="1=Active, 0=Inactive"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
@@ -42,6 +43,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="stack_run", type="number", format="float", example=1000.00, description="Stack run amount"),
  *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="rate", type="number", format="float", example=5000.00, description="Rate amount"),
+ *     @OA\Property(property="tax_percent", type="number", format="float", example=12.00, nullable=true, description="Tax percentage (for SOA)"),
  *     @OA\Property(property="is_active", type="integer", example=1)
  * )
  */
@@ -74,11 +76,11 @@ class RatePerClientController extends BaseController
      *         @OA\Schema(type="integer", example=10)
      *     ),
      *     @OA\Parameter(
- *         name="search",
- *         in="query",
- *         description="Search by container size, requirements, remarks, shipping line name, or CYPA name",
- *         @OA\Schema(type="string")
- *     ),
+     *         name="search",
+     *         in="query",
+     *         description="Search by container size, requirements, remarks, shipping line name, or CYPA name",
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(
      *         name="is_active",
      *         in="query",
@@ -97,12 +99,12 @@ class RatePerClientController extends BaseController
      *         description="Filter by CYPA ID (0 = all)",
      *         @OA\Schema(type="integer", example=0)
      *     ),
- *     @OA\Parameter(
- *         name="container_size",
- *         in="query",
- *         description="Filter by container size",
- *         @OA\Schema(type="string", example="20ft")
- *     ),
+     *     @OA\Parameter(
+     *         name="container_size",
+     *         in="query",
+     *         description="Filter by container size",
+     *         @OA\Schema(type="string", example="20ft")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of rate per clients retrieved successfully",
@@ -125,7 +127,7 @@ class RatePerClientController extends BaseController
     {
         $request = request();
         $perPage = $request->get('per_page', 10);
-        
+
         return $this->service->list($perPage);
     }
 

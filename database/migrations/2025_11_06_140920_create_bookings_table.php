@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->bigInteger('cypa_id_from')->unsigned();
             $table->bigInteger('cypa_id_to')->unsigned();
             $table->date('expected_date')->nullable();
-            $table->tinyInteger('is_complete')->default(0)->nullable(false);
+            $table->boolean('is_complete')->default(false);
             $table->timestamps();
             $table->softDeletes();
 
