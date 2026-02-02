@@ -4,8 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use App\Models\FleetTruck; // Assuming you have a Truck model
-use Illuminate\Support\Str;
+use App\Models\FleetTruck;
 use Carbon\Carbon;
 
 class TruckMaintenanceRecordsSeeder extends Seeder
@@ -27,42 +26,40 @@ class TruckMaintenanceRecordsSeeder extends Seeder
             return;
         }
 
-        $records = [];
         $faker = \Faker\Factory::create();
         $date = Carbon::now();
 
+        $articles = [
+            'Engine Oil Change',
+            'Tire Replacement',
+            'Brake Pad Service',
+            'Air Filter Replacement',
+            'Fuel Filter Replacement',
+            'Transmission Fluid Flush',
+            'Battery Check',
+            'Coolant Flush',
+        ];
+
         for ($i = 1; $i <= 50; $i++) {
-            // Pick a random plate number from the existing trucks
             $randomPlate = $faker->randomElement($plateNumbers);
-
-            // Determine a random date for maintenance (in the past 365 days)
             $maintenanceDate = $faker->dateTimeBetween('-1 year', 'now')->format('Y-m-d');
-            
-            // Randomly select a creation date close to the maintenance date
             $createdAt = Carbon::parse($maintenanceDate)->addHours($faker->numberBetween(1, 24));
-            
-            $records[] = [
-                'receipt_number' => 'RECEIPT-' . Str::upper(Str::random(8)) . $i,
-                'article' => $faker->randomElement([
-                    'Engine Oil Change', 
-                    'Tire Replacement', 
-                    'Brake Pad Service', 
-                    'Air Filter Replacement', 
-                    'Fuel Filter Replacement',
-                    'Transmission Fluid Flush'
-                ]),
-                'quantity' => $faker->numberBetween(1, 4),
-                // Generate a random price between 50 and 5000
-                'price' => $faker->randomFloat(2, 50, 5000), 
-                'maintenance_date' => $maintenanceDate,
-                'fleet_truck_plate_number' => $randomPlate,
-                'created_at' => $createdAt->toDateTimeString(),
-                'updated_at' => $createdAt->toDateTimeString(),
-                'deleted_at' => null,
-            ];
-        }
+            $receiptNumber = 'RCP-' . now()->format('Ymd') . '-' . str_pad((string) $i, 4, '0', STR_PAD_LEFT);
 
-        // Insert the data into the database table
-        DB::table('fleet_truck_maintenance_history')->insert($records);
+            DB::table('fleet_truck_maintenance_history')->updateOrInsert(
+                ['receipt_number' => $receiptNumber],
+                [
+                    'receipt_number' => $receiptNumber,
+                    'article' => $faker->randomElement($articles),
+                    'quantity' => $faker->numberBetween(1, 4),
+                    'price' => $faker->randomFloat(2, 50, 5000),
+                    'maintenance_date' => $maintenanceDate,
+                    'fleet_truck_plate_number' => $randomPlate,
+                    'created_at' => $createdAt->toDateTimeString(),
+                    'updated_at' => $createdAt->toDateTimeString(),
+                    'deleted_at' => null,
+                ]
+            );
+        }
     }
 }

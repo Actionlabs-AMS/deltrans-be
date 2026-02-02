@@ -11,18 +11,18 @@ class DriverSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Drivers are linked to fleet_trucks (assigned_truck_plate_numbers) and helpers (helpers_id JSON).
+     * Waybill details reference driver_id and use helper_id from this driver's helpers.
      */
     public function run(): void
     {
-        // Get available truck plate numbers from fleet_trucks table
-        $truckPlateNumbers = FleetTruck::where('is_active', 1)
-            ->pluck('plate_number')
-            ->toArray();
+        $truckPlateNumbers = FleetTruck::where('is_active', 1)->pluck('plate_number')->toArray();
+        $helperIds = Helper::where('is_active', 1)->pluck('id')->toArray();
 
-        // Get available helper IDs from helpers table
-        $helperIds = Helper::where('is_active', 1)
-            ->pluck('id')
-            ->toArray();
+        if (empty($truckPlateNumbers) || empty($helperIds)) {
+            $this->command->warn('Seed FleetTruck and Helper first.');
+            return;
+        }
 
         $drivers = [
             [
@@ -31,7 +31,7 @@ class DriverSeeder extends Seeder
                 'contact_number' => '+63 928 345 6789',
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 0, 1),
-                'stack_run' => null,
+                'stack_run' => ['MICT – South Harbor', 'MICT – Tondo CY'],
                 'helpers_id' => array_slice($helperIds, 0, 2),
             ],
             [
@@ -40,7 +40,7 @@ class DriverSeeder extends Seeder
                 'contact_number' => '+63 929 456 7890',
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 1, 1),
-                'stack_run' => null,
+                'stack_run' => ['South Harbor – Caloocan CY'],
                 'helpers_id' => array_slice($helperIds, 2, 2),
             ],
             [
@@ -49,7 +49,7 @@ class DriverSeeder extends Seeder
                 'contact_number' => '+63 930 567 8901',
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 2, 1),
-                'stack_run' => ['Route A', 'Route B'],
+                'stack_run' => ['MICT – Batangas', 'Tondo CY – Subic'],
                 'helpers_id' => array_slice($helperIds, 4, 2),
             ],
             [
@@ -58,7 +58,7 @@ class DriverSeeder extends Seeder
                 'contact_number' => '+63 931 678 9012',
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 3, 2),
-                'stack_run' => ['Route C'],
+                'stack_run' => ['MICT – Caloocan CY'],
                 'helpers_id' => array_slice($helperIds, 6, 1),
             ],
             [
@@ -76,7 +76,7 @@ class DriverSeeder extends Seeder
                 'contact_number' => '+63 933 890 1234',
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 6, 1),
-                'stack_run' => ['Route D', 'Route E'],
+                'stack_run' => ['South Harbor – Tondo CY', 'Batangas – Subic'],
                 'helpers_id' => array_slice($helperIds, 9, 1),
             ],
             [

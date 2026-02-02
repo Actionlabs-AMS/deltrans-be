@@ -47,9 +47,9 @@ class StatementOfAccountSeeder extends Seeder
 
             $statementOfAccounts[] = [
                 'shipping_line_id' => $booking->shipping_line_id,
-                'dli_sa_number' => 'SA-2024-' . str_pad($saCounter, 3, '0', STR_PAD_LEFT),
+                'dli_sa_number' => 'SA-' . now()->format('Y') . '-' . str_pad((string) $saCounter, 4, '0', STR_PAD_LEFT),
                 'booking_id' => $booking->id,
-                'work_order' => 'WO-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
+                'work_order' => 'WO-' . now()->format('ym') . '-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
             ];
 
             $saCounter++;
@@ -72,9 +72,9 @@ class StatementOfAccountSeeder extends Seeder
             foreach ($additionalBookings as $booking) {
                 $statementOfAccounts[] = [
                     'shipping_line_id' => $booking->shipping_line_id,
-                    'dli_sa_number' => 'SA-2024-' . str_pad($saCounter, 3, '0', STR_PAD_LEFT),
+                    'dli_sa_number' => 'SA-' . now()->format('Y') . '-' . str_pad((string) $saCounter, 4, '0', STR_PAD_LEFT),
                     'booking_id' => $booking->id,
-                    'work_order' => 'WO-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
+                    'work_order' => 'WO-' . now()->format('ym') . '-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
                 ];
                 $saCounter++;
             }

@@ -27,19 +27,16 @@ class ContainerSeeder extends Seeder
         }
 
         $containerCounter = 1;
+        $prefixes = ['MSCU', 'TEMU', 'CRLU', 'OOLU', 'HLCU', 'CMAU', 'ONEY', 'YMCU'];
 
         foreach ($waybills as $waybill) {
-            // Determine number of containers based on container size
-            // Size 40ft or 40: 1 container per waybill
-            // Size 20ft or 20: 2 containers per waybill
             $containerSize = $waybill->container_size;
-            // Handle both '40ft'/'20ft' format and '40'/'20' format
             $sizeValue = preg_replace('/[^0-9]/', '', $containerSize);
             $containersPerWaybill = ($sizeValue == '40') ? 1 : 2;
 
-            // Create containers for this waybill
             for ($i = 0; $i < $containersPerWaybill; $i++) {
-                $containerNumber = 'CONT-' . str_pad($containerCounter, 3, '0', STR_PAD_LEFT);
+                $prefix = $prefixes[($containerCounter - 1) % count($prefixes)];
+                $containerNumber = $prefix . str_pad((string) $containerCounter, 7, '0', STR_PAD_LEFT);
 
                 DB::table('containers')->updateOrInsert(
                     [
@@ -65,11 +62,10 @@ class ContainerSeeder extends Seeder
             ->get();
 
         foreach ($bookingsWithoutContainers as $booking) {
-            // Create 1-2 containers for bookings without waybills (default to size 20 behavior)
             $containersToCreate = 2;
-            
             for ($i = 0; $i < $containersToCreate; $i++) {
-                $containerNumber = 'CONT-' . str_pad($containerCounter, 3, '0', STR_PAD_LEFT);
+                $prefix = $prefixes[($containerCounter - 1) % count($prefixes)];
+                $containerNumber = $prefix . str_pad((string) $containerCounter, 7, '0', STR_PAD_LEFT);
 
                 DB::table('containers')->updateOrInsert(
                     [
@@ -77,7 +73,7 @@ class ContainerSeeder extends Seeder
                         'container_number' => $containerNumber,
                     ],
                     [
-                        'waybill_id' => null, // No waybill assigned yet
+                        'waybill_id' => null,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]

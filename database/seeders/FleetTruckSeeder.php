@@ -9,75 +9,25 @@ class FleetTruckSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Philippine plate format: 3 letters + 4 digits (e.g. ABC 1234). Fleet trucks for container hauling.
      */
     public function run(): void
     {
         $fleetTrucks = [
-            [
-                'plate_number' => 'ABC-1234',
-                'condition' => 'Excellent',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'XYZ-5678',
-                'condition' => 'Good',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'DEF-9012',
-                'condition' => 'Good',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'GHI-3456',
-                'condition' => 'Fair',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'JKL-7890',
-                'condition' => 'Excellent',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'MNO-2345',
-                'condition' => 'Good',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'PQR-6789',
-                'condition' => 'Needs Repair',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'STU-0123',
-                'condition' => 'Fair',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'VWX-4567',
-                'condition' => 'Excellent',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'YZA-8901',
-                'condition' => 'Good',
-                'is_active' => 1,
-            ],
-            [
-                'plate_number' => 'BCD-2345',
-                'condition' => 'Needs Repair',
-                'is_active' => 0,
-            ],
-            [
-                'plate_number' => 'EFG-5678',
-                'condition' => 'Fair',
-                'is_active' => 0,
-            ],
-            [
-                'plate_number' => 'HIJ-9012',
-                'condition' => 'Needs Repair',
-                'is_active' => 0,
-            ],
+            ['plate_number' => 'NAA 1123', 'condition' => 'Excellent', 'is_active' => 1],
+            ['plate_number' => 'NAB 2456', 'condition' => 'Good', 'is_active' => 1],
+            ['plate_number' => 'NAC 3789', 'condition' => 'Good', 'is_active' => 1],
+            ['plate_number' => 'NAD 4012', 'condition' => 'Fair', 'is_active' => 1],
+            ['plate_number' => 'NAE 5234', 'condition' => 'Excellent', 'is_active' => 1],
+            ['plate_number' => 'NAF 6567', 'condition' => 'Good', 'is_active' => 1],
+            ['plate_number' => 'NAG 7890', 'condition' => 'Needs Repair', 'is_active' => 1],
+            ['plate_number' => 'NAH 8123', 'condition' => 'Fair', 'is_active' => 1],
+            ['plate_number' => 'NAI 9345', 'condition' => 'Excellent', 'is_active' => 1],
+            ['plate_number' => 'NAJ 0456', 'condition' => 'Good', 'is_active' => 1],
+            ['plate_number' => 'NAK 1567', 'condition' => 'Good', 'is_active' => 1],
+            ['plate_number' => 'NAL 2678', 'condition' => 'Needs Repair', 'is_active' => 0],
+            ['plate_number' => 'NAM 3789', 'condition' => 'Fair', 'is_active' => 0],
+            ['plate_number' => 'NAN 4890', 'condition' => 'Needs Repair', 'is_active' => 0],
         ];
 
         foreach ($fleetTrucks as $truck) {

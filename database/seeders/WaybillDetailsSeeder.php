@@ -41,9 +41,13 @@ class WaybillDetailsSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
-        // Get bookings with their shipping_line_id, cypa_id_from, and cypa_id_to
         $bookings = DB::table('bookings')
             ->select('id', 'shipping_line_id', 'cypa_id_from', 'cypa_id_to')
+            ->get()
+            ->keyBy('id');
+
+        $driversWithHelpers = DB::table('drivers')
+            ->select('id', 'helpers_id')
             ->get()
             ->keyBy('id');
 
@@ -245,6 +249,14 @@ class WaybillDetailsSeeder extends Seeder
             if (!$booking) {
                 $this->command->warn("Booking {$waybill['booking_id']} not found. Skipping waybill {$waybill['waybill_number']}.");
                 continue;
+            }
+
+            $driver = $driversWithHelpers[$waybill['driver_id']] ?? null;
+            if ($driver && $driver->helpers_id) {
+                $driverHelpers = is_string($driver->helpers_id) ? json_decode($driver->helpers_id, true) : $driver->helpers_id;
+                $waybill['helper_id'] = is_array($driverHelpers) && !empty($driverHelpers) ? [$driverHelpers[0]] : null;
+            } else {
+                $waybill['helper_id'] = null;
             }
 
             // Find fixed_expense_id based on booking (shipping_line_id, cypa_id_from, cypa_id_to) and container_size
