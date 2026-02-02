@@ -20,18 +20,19 @@ use App\Services\MessageService;
  *     @OA\Property(property="waybill_number", type="string", example="WB-001"),
  *     @OA\Property(property="transaction_date", type="string", format="date", example="2025-12-22"),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="stack_run_id", type="integer", example=1, nullable=true),
+ *     @OA\Property(property="booking_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="driver_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="helper_id", type="integer", example=1, nullable=true),
+ *     @OA\Property(property="helper_id", type="array", @OA\Items(type="integer"), example={1, 2}, nullable=true, description="Array of helper IDs"),
+ *     @OA\Property(property="container_size", type="string", example="20ft", nullable=true),
+ *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498", nullable=true),
- *     @OA\Property(property="fixed_expense_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="rate_per_client_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="extra_money", type="number", format="float", example=500.00, description="Extra money amount"),
  *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22", nullable=true),
  *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23", nullable=true),
+ *     @OA\Property(property="fixed_expense_id", type="integer", example=1, nullable=true),
+ *     @OA\Property(property="rate_per_client_id", type="integer", example=1, nullable=true, description="Nullable - no rate per client if null"),
  *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00, description="Post expense amount"),
- *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, description="Auto-calculated: rate_per_client.rate + rate_per_client.stack_run"),
- *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, description="Auto-calculated: extra_money + post_expense_amount + fixed_expense.total_expenses"),
+ *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, description="Manual input field"),
+ *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, description="Manual input field"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
  * )
@@ -39,20 +40,23 @@ use App\Services\MessageService;
  *     schema="WaybillDetailInput",
  *     title="Waybill Detail Input",
  *     description="Data required to create or update a waybill detail",
- *     required={"waybill_number", "transaction_date", "shipping_line_id", "stack_run_id", "driver_id", "helper_id", "truck_plate_number", "fixed_expense_id", "rate_per_client_id", "pickup_date", "delivered_date"},
+ *     required={"waybill_number", "transaction_date", "shipping_line_id", "booking_id", "driver_id", "container_size", "truck_plate_number", "fixed_expense_id", "pickup_date", "delivered_date"},
  *     @OA\Property(property="waybill_number", type="string", example="WB-001"),
  *     @OA\Property(property="transaction_date", type="string", format="date", example="2025-12-22"),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
- *     @OA\Property(property="stack_run_id", type="integer", example=1),
+ *     @OA\Property(property="booking_id", type="integer", example=1),
  *     @OA\Property(property="driver_id", type="integer", example=1),
- *     @OA\Property(property="helper_id", type="integer", example=1),
+ *     @OA\Property(property="helper_id", type="array", @OA\Items(type="integer"), example={1, 2}, nullable=true, description="Array of helper IDs"),
+ *     @OA\Property(property="container_size", type="string", example="20ft"),
+ *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498"),
- *     @OA\Property(property="fixed_expense_id", type="integer", example=1),
- *     @OA\Property(property="rate_per_client_id", type="integer", example=1),
- *     @OA\Property(property="extra_money", type="number", format="float", example=500.00),
  *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22"),
  *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23"),
- *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00)
+ *     @OA\Property(property="fixed_expense_id", type="integer", example=1),
+ *     @OA\Property(property="rate_per_client_id", type="integer", example=1, nullable=true),
+ *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00),
+ *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, nullable=true),
+ *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, nullable=true)
  * )
  */
 class WaybillDetailController extends BaseController
@@ -86,7 +90,7 @@ class WaybillDetailController extends BaseController
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
-     *         description="Search by waybill number, shipping line name, driver name, helper name, or truck plate number",
+     *         description="Search by waybill number, container size, container type, shipping line name, driver name, helper name, or truck plate number",
      *         @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
@@ -96,9 +100,9 @@ class WaybillDetailController extends BaseController
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
-     *         name="stack_run_id",
+     *         name="booking_id",
      *         in="query",
-     *         description="Filter by stack run ID",
+     *         description="Filter by booking ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
@@ -110,7 +114,7 @@ class WaybillDetailController extends BaseController
      *     @OA\Parameter(
      *         name="helper_id",
      *         in="query",
-     *         description="Filter by helper ID",
+     *         description="Filter by helper ID (checks if JSON array contains this ID)",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
@@ -118,6 +122,18 @@ class WaybillDetailController extends BaseController
      *         in="query",
      *         description="Filter by truck plate number",
      *         @OA\Schema(type="string", example="NCK-6498")
+     *     ),
+     *     @OA\Parameter(
+     *         name="container_size",
+     *         in="query",
+     *         description="Filter by container size",
+     *         @OA\Schema(type="string", example="20ft")
+     *     ),
+     *     @OA\Parameter(
+     *         name="container_type",
+     *         in="query",
+     *         description="Filter by container type",
+     *         @OA\Schema(type="string", example="DRY")
      *     ),
      *     @OA\Parameter(
      *         name="transaction_date",

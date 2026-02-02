@@ -23,7 +23,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="remarks", type="string", example="Standard rate for 7 days", nullable=true),
  *     @OA\Property(property="cypa_id", type="integer", example=0, description="0 = all CYPA"),
  *     @OA\Property(property="stack_run", type="number", format="float", example=1000.00, description="Stack run amount"),
- *     @OA\Property(property="size", type="string", example="20ft"),
+ *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="rate", type="number", format="float", example=5000.00, description="Rate amount"),
  *     @OA\Property(property="is_active", type="integer", example=1, description="1=Active, 0=Inactive"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
@@ -33,14 +33,14 @@ use App\Services\MessageService;
  *     schema="RatePerClientInput",
  *     title="Rate Per Client Input",
  *     description="Data required to create or update a rate per client",
- *     required={"shipping_line_id", "no_of_days", "cypa_id", "stack_run", "size", "rate"},
+ *     required={"shipping_line_id", "no_of_days", "cypa_id", "stack_run", "container_size", "rate"},
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
  *     @OA\Property(property="no_of_days", type="integer", example=7),
  *     @OA\Property(property="requirements", type="string", example="Standard documentation"),
  *     @OA\Property(property="remarks", type="string", example="Standard rate for 7 days"),
  *     @OA\Property(property="cypa_id", type="integer", example=0, description="0 = all CYPA"),
  *     @OA\Property(property="stack_run", type="number", format="float", example=1000.00, description="Stack run amount"),
- *     @OA\Property(property="size", type="string", example="20ft"),
+ *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="rate", type="number", format="float", example=5000.00, description="Rate amount"),
  *     @OA\Property(property="is_active", type="integer", example=1)
  * )
@@ -74,11 +74,11 @@ class RatePerClientController extends BaseController
      *         @OA\Schema(type="integer", example=10)
      *     ),
      *     @OA\Parameter(
-     *         name="search",
-     *         in="query",
-     *         description="Search by size, requirements, remarks, shipping line name, or CYPA name",
-     *         @OA\Schema(type="string")
-     *     ),
+ *         name="search",
+ *         in="query",
+ *         description="Search by container size, requirements, remarks, shipping line name, or CYPA name",
+ *         @OA\Schema(type="string")
+ *     ),
      *     @OA\Parameter(
      *         name="is_active",
      *         in="query",
@@ -97,12 +97,12 @@ class RatePerClientController extends BaseController
      *         description="Filter by CYPA ID (0 = all)",
      *         @OA\Schema(type="integer", example=0)
      *     ),
-     *     @OA\Parameter(
-     *         name="size",
-     *         in="query",
-     *         description="Filter by container size",
-     *         @OA\Schema(type="string", example="20ft")
-     *     ),
+ *     @OA\Parameter(
+ *         name="container_size",
+ *         in="query",
+ *         description="Filter by container size",
+ *         @OA\Schema(type="string", example="20ft")
+ *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of rate per clients retrieved successfully",

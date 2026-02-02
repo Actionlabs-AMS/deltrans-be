@@ -22,7 +22,7 @@ class RatePerClientResource extends JsonResource
             'remarks' => $this->remarks,
             'cypa_id' => $this->cypa_id,
             'stack_run' => $this->stack_run,
-            'size' => $this->size,
+            'container_size' => $this->container_size,
             'rate' => $this->rate,
             'is_active' => (int) $this->is_active,
             'shipping_line' => $this->whenLoaded('shippingLine'),

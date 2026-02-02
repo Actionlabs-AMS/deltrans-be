@@ -3,9 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class GenerateSoaRequest extends FormRequest
+class SoaAndBillingRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -38,6 +37,11 @@ class GenerateSoaRequest extends FormRequest
                 'integer',
                 'exists:bookings,id',
             ],
+            'work_order' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
         ];
     }
 
@@ -54,6 +58,7 @@ class GenerateSoaRequest extends FormRequest
             'dli_sa_number.required' => 'The DLI SA number is required.',
             'booking_id.required' => 'The booking is required.',
             'booking_id.exists' => 'The selected booking does not exist.',
+            'work_order.max' => 'The work order must not exceed 255 characters.',
         ];
     }
 
@@ -67,9 +72,8 @@ class GenerateSoaRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if ($this->has('booking_id')) {
-                $bookingId = $this->input('booking_id');
-                $waybillCount = \App\Models\WaybillDetail::where('booking_id', $bookingId)->count();
-                
+                $waybillCount = \App\Models\WaybillDetail::where('booking_id', $this->input('booking_id'))->count();
+
                 if ($waybillCount === 0) {
                     $validator->errors()->add('booking_id', 'The selected booking must have at least one waybill.');
                 }
@@ -77,9 +81,3 @@ class GenerateSoaRequest extends FormRequest
         });
     }
 }
-
-
-
-
-
-

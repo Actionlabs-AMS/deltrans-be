@@ -30,7 +30,7 @@ class RatePerClientRequest extends FormRequest
             'remarks' => 'nullable|string|max:255',
             'cypa_id' => 'required|integer|min:0',
             'stack_run' => 'required|numeric|min:0',
-            'size' => [
+            'container_size' => [
                 'required',
                 'string',
                 Rule::in(['20ft', '40ft', '20ft(offhire)', '40ft(offhire)']),
@@ -45,7 +45,7 @@ class RatePerClientRequest extends FormRequest
             $rules['no_of_days'] = 'sometimes|required|integer|min:1';
             $rules['cypa_id'] = 'sometimes|required|integer|min:0';
             $rules['stack_run'] = 'sometimes|required|numeric|min:0';
-            $rules['size'] = [
+            $rules['container_size'] = [
                 'sometimes',
                 'required',
                 'string',
@@ -90,8 +90,8 @@ class RatePerClientRequest extends FormRequest
             'stack_run.required' => 'The stack run amount is required.',
             'stack_run.numeric' => 'The stack run must be a valid number.',
             'stack_run.min' => 'The stack run amount must be at least 0.',
-            'size.required' => 'The container size is required.',
-            'size.in' => 'The container size must be one of: 20ft, 40ft, 20ft(offhire), or 40ft(offhire).',
+            'container_size.required' => 'The container size is required.',
+            'container_size.in' => 'The container size must be one of: 20ft, 40ft, 20ft(offhire), or 40ft(offhire).',
             'rate.required' => 'The rate is required.',
             'rate.numeric' => 'The rate must be a valid number.',
             'rate.min' => 'The rate must be at least 0.',

@@ -29,10 +29,11 @@ class DatabaseSeeder extends Seeder
             RequestSeeder::class,
             FixedExpenseSeeder::class,
             RatePerClientSeeder::class,
-            StackRunSeeder::class,
+            BookingSeeder::class,
             WaybillDetailsSeeder::class,
             ContainerSeeder::class,
             StatementOfAccountSeeder::class,
+            BillingStatementSeeder::class,
             TruckMaintenanceRecordsSeeder::class,
             DriverCAHistorySeeder::class,
             HelperCAHistorySeeder::class

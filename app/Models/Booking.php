@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class StackRun extends Model
+class Booking extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -17,13 +17,12 @@ class StackRun extends Model
      */
     protected $fillable = [
         'reference_number',
+        'vessel',
         'shipping_line_id',
         'cypa_id_from',
         'cypa_id_to',
-        'quantity_of_container',
-        'container_size',
+        'expected_date',
         'is_complete',
-        'total_amount',
     ];
 
     /**
@@ -32,9 +31,8 @@ class StackRun extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'quantity_of_container' => 'integer',
+        'expected_date' => 'date',
         'is_complete' => 'integer',
-        'total_amount' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -45,7 +43,7 @@ class StackRun extends Model
      *
      * @var string
      */
-    protected $table = 'stack_runs';
+    protected $table = 'bookings';
 
     /**
      * The model's default values for attributes.
@@ -54,11 +52,10 @@ class StackRun extends Model
      */
     protected $attributes = [
         'is_complete' => 0,
-        'total_amount' => 0.00,
     ];
 
     /**
-     * Get the shipping line that owns the stack run.
+     * Get the shipping line that owns the booking.
      */
     public function shippingLine()
     {
@@ -66,7 +63,7 @@ class StackRun extends Model
     }
 
     /**
-     * Get the CYPA detail (from) that owns the stack run.
+     * Get the CYPA detail (from) that owns the booking.
      */
     public function cypaFrom()
     {
@@ -74,7 +71,7 @@ class StackRun extends Model
     }
 
     /**
-     * Get the CYPA detail (to) that owns the stack run.
+     * Get the CYPA detail (to) that owns the booking.
      */
     public function cypaTo()
     {
@@ -82,12 +79,18 @@ class StackRun extends Model
     }
 
     /**
-     * Get the containers for the stack run.
+     * Get the containers for the booking.
      */
     public function containers()
     {
-        return $this->hasMany(Container::class, 'stack_run_id');
+        return $this->hasMany(Container::class, 'booking_id');
+    }
+
+    /**
+     * Get the waybills for the booking.
+     */
+    public function waybills()
+    {
+        return $this->hasMany(WaybillDetail::class, 'booking_id');
     }
 }
-
-

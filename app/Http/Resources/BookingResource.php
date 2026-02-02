@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class StackRunResource extends JsonResource
+class BookingResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,23 +17,21 @@ class StackRunResource extends JsonResource
         return [
             'id' => $this->id,
             'reference_number' => $this->reference_number,
+            'vessel' => $this->vessel,
             'shipping_line_id' => $this->shipping_line_id,
             'cypa_id_from' => $this->cypa_id_from,
             'cypa_id_to' => $this->cypa_id_to,
-            'quantity_of_container' => $this->quantity_of_container,
-            'container_size' => $this->container_size,
-            'total_amount' => $this->total_amount,
+            'expected_date' => $this->expected_date ? $this->expected_date->format('Y-m-d') : null,
             'is_complete' => (int) $this->is_complete,
             'actual_no_of_waybill' => isset($this->actual_no_of_waybill) ? (int) $this->actual_no_of_waybill : 0,
             'shipping_line' => $this->whenLoaded('shippingLine'),
             'cypa_from' => $this->whenLoaded('cypaFrom'),
             'cypa_to' => $this->whenLoaded('cypaTo'),
             'containers' => $this->whenLoaded('containers'),
+            'waybills' => $this->whenLoaded('waybills'),
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null,
         ];
     }
 }
-
-

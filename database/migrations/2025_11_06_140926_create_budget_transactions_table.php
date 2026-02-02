@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -18,19 +17,15 @@ return new class extends Migration
         Schema::create('budget_transactions', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
+            $table->tinyInteger('shift')->default(0)->comment('0 = morning, 1 = night');
+            $table->tinyInteger('transaction_type')->default(0)->comment('0 = add budget, 1 = truck_trip expense, 2 = parts expense, 3 = funds for stack run, 4 = advance expense');
             $table->text('description')->nullable();
-            $table->decimal('total_amount', 15, 2)->default(0);
-            $table->string('budget_type')->nullable();
-            $table->date('tracked_date')->nullable();
-            $table->decimal('total_spent', 15, 2)->default(0);
-            $table->string('expense_type')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('budget_type');
-            $table->index('tracked_date');
-            $table->index('expense_type');
+            $table->index('shift', 'idx_shift');
+            $table->index('transaction_type', 'idx_transaction_type');
         });
 
         // Re-enable foreign key checks
@@ -44,9 +39,9 @@ return new class extends Migration
     {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
-        
+
         Schema::dropIfExists('budget_transactions');
-        
+
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }

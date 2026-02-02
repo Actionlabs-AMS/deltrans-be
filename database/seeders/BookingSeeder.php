@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class StackRunSeeder extends Seeder
+class BookingSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -26,68 +26,60 @@ class StackRunSeeder extends Seeder
             return;
         }
 
-        $stackRuns = [
+        $bookings = [
             [
-                'reference_number' => 'SR-001',
+                'reference_number' => 'RF-483624',
+                'vessel' => 'MSC OSCAR',
                 'shipping_line_id' => $shippingLineIds[0],
-                'quantity_of_container' => 2,
-                'container_size' => '20ft',
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
-                'total_amount' => 8000.00,
+                'expected_date' => now()->addDays(10)->toDateString(),
                 'is_complete' => 1,
             ],
             [
-                'reference_number' => 'SR-002',
+                'reference_number' => 'RF-483625',
+                'vessel' => 'EVER GIVEN',
                 'shipping_line_id' => $shippingLineIds[0],
-                'quantity_of_container' => 1,
-                'container_size' => '40ft',
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
-                'total_amount' => 4000.00,
+                'expected_date' => now()->addDays(15)->toDateString(),
                 'is_complete' => 1,
             ],
             [
-                'reference_number' => 'SR-003',
+                'reference_number' => 'RF-483626',
+                'vessel' => 'MAERSK EINDHOVEN',
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
-                'quantity_of_container' => 3,
-                'container_size' => '20ft',
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
-                'total_amount' => 12000.00,
+                'expected_date' => now()->addDays(20)->toDateString(),
                 'is_complete' => 0,
             ],
             [
-                'reference_number' => 'SR-004',
+                'reference_number' => 'RF-483627',
+                'vessel' => 'COSCO SHIPPING',
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
-                'quantity_of_container' => 2,
-                'container_size' => '40ft',
                 'cypa_id_from' => $cypaIds[1],
                 'cypa_id_to' => $cypaIds[0],
-                'total_amount' => 8000.00,
+                'expected_date' => now()->addDays(12)->toDateString(),
                 'is_complete' => 1,
             ],
             [
-                'reference_number' => 'SR-005',
+                'reference_number' => 'RF-483628',
+                'vessel' => 'HMM OSLO',
                 'shipping_line_id' => count($shippingLineIds) > 2 ? $shippingLineIds[2] : $shippingLineIds[0],
-                'quantity_of_container' => 1,
-                'container_size' => '20ft',
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
-                'total_amount' => 4000.00,
+                'expected_date' => now()->addDays(25)->toDateString(),
                 'is_complete' => 0,
             ],
         ];
 
-        foreach ($stackRuns as $stackRun) {
-            DB::table('stack_runs')->updateOrInsert(
+        foreach ($bookings as $booking) {
+            DB::table('bookings')->updateOrInsert(
                 [
-                    'shipping_line_id' => $stackRun['shipping_line_id'],
-                    'cypa_id_from' => $stackRun['cypa_id_from'],
-                    'cypa_id_to' => $stackRun['cypa_id_to'],
-                    'container_size' => $stackRun['container_size'],
+                    'reference_number' => $booking['reference_number'],
                 ],
-                array_merge($stackRun, [
+                array_merge($booking, [
                     'created_at' => now(),
                     'updated_at' => now(),
                 ])
@@ -95,4 +87,3 @@ class StackRunSeeder extends Seeder
         }
     }
 }
-

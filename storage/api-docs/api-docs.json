@@ -548,6 +548,1152 @@
                 }
             }
         },
+        "/api/bookings": {
+            "get": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Get list of bookings",
+                "description": "Display a listing of bookings.",
+                "operationId": "4535e967ef15bc76dadf1efa40192f0d",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by reference number, shipping line name, or CYPA name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "cypa_id_from",
+                        "in": "query",
+                        "description": "Filter by CYPA ID (from)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "cypa_id_to",
+                        "in": "query",
+                        "description": "Filter by CYPA ID (to)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2
+                        }
+                    },
+                    {
+                        "name": "is_complete",
+                        "in": "query",
+                        "description": "Filter by completion status (0=Incomplete, 1=Complete)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    },
+                    {
+                        "name": "expected_date",
+                        "in": "query",
+                        "description": "Filter by expected date",
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-02-10"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of bookings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Booking"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "all": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "trashed": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/bookings?page=1"
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/bookings?page=5"
+                                                },
+                                                "prev": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "next": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/bookings?page=2"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Create a new booking",
+                "description": "Store a newly created resource in storage.",
+                "operationId": "43e6dcca842886074084b8db86af7802",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "shipping_line_id",
+                                    "cypa_id_from",
+                                    "cypa_id_to"
+                                ],
+                                "properties": {
+                                    "reference_number": {
+                                        "description": "Reference number (optional, unique)",
+                                        "type": "string",
+                                        "example": "RF-483624"
+                                    },
+                                    "shipping_line_id": {
+                                        "description": "Shipping line ID",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "cypa_id_from": {
+                                        "description": "CYPA ID (from)",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "cypa_id_to": {
+                                        "description": "CYPA ID (to)",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "expected_date": {
+                                        "description": "Expected date (optional)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2025-02-10"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Booking created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "reference_number": {
+                                                    "type": "string",
+                                                    "example": "RF-483624",
+                                                    "nullable": true
+                                                },
+                                                "shipping_line_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cypa_id_from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cypa_id_to": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "expected_date": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2025-02-10",
+                                                    "nullable": true
+                                                },
+                                                "is_complete": {
+                                                    "description": "0=Incomplete, 1=Complete",
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "example": "2025-01-01 12:00:00"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "example": "2025-01-01 12:00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/{id}": {
+            "get": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Get a specific booking",
+                "description": "Display the specified booking.",
+                "operationId": "c383a28985575aa1a16f783b2f762554",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booking retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Booking"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Update a booking",
+                "description": "Update the specified booking in storage.",
+                "operationId": "de1ebc78c3adcb535d12d1c8dae98055",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "reference_number": {
+                                        "description": "Reference number (optional)",
+                                        "type": "string",
+                                        "example": "RF-483624"
+                                    },
+                                    "shipping_line_id": {
+                                        "description": "Shipping line ID",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "cypa_id_from": {
+                                        "description": "CYPA ID (from)",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "cypa_id_to": {
+                                        "description": "CYPA ID (to)",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "expected_date": {
+                                        "description": "Expected date (optional)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2025-02-10"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Booking updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "reference_number": {
+                                                    "type": "string",
+                                                    "example": "RF-483624",
+                                                    "nullable": true
+                                                },
+                                                "shipping_line_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cypa_id_from": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "cypa_id_to": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "expected_date": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2025-02-10",
+                                                    "nullable": true
+                                                },
+                                                "is_complete": {
+                                                    "description": "0=Incomplete, 1=Complete",
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "example": "2025-01-01 12:00:00"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "example": "2025-01-01 12:00:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Delete a booking",
+                "description": "Remove the specified booking from storage (soft delete).",
+                "operationId": "a53474f63d3a2fe2275fc0b6c8cc16cb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booking moved to trash successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been moved to trash."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/bulk/delete": {
+            "post": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Bulk delete multiple bookings",
+                "description": "Bulk delete multiple bookings.",
+                "operationId": "c8f7332973f24d59ac654eecf840c3d4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of booking IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Bookings deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/bookings": {
+            "get": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Get trashed bookings",
+                "description": "Get trashed bookings.",
+                "operationId": "8d697a173a7028d6c4a5807c6a28925f",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trashed bookings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Booking"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/bookings/restore/{id}": {
+            "patch": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Restore a trashed booking",
+                "description": "Restore a trashed booking.",
+                "operationId": "c4eef128dcd255a3548b23047784a7ec",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booking restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been restored."
+                                        },
+                                        "resource": {
+                                            "$ref": "#/components/schemas/Booking"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/bulk/restore": {
+            "post": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Bulk restore multiple trashed bookings",
+                "description": "Bulk restore multiple trashed bookings.",
+                "operationId": "251258828f63e99394d6a5dc8c75ab44",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of booking IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Bookings restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been restored."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/archived/bookings/{id}": {
+            "delete": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Permanently delete a booking",
+                "description": "Permanently delete a booking.",
+                "operationId": "5a5320ca96073d88e776221e4a29e496",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booking permanently deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been permanently deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/bulk/force-delete": {
+            "post": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Bulk permanently delete multiple bookings",
+                "description": "Bulk permanently delete multiple bookings.",
+                "operationId": "f34768f8a2f0f286740fd5996e122716",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ids"
+                                ],
+                                "properties": {
+                                    "ids": {
+                                        "description": "Array of booking IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Bookings permanently deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resources have been permanently deleted."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/content-management/categories": {
             "get": {
                 "tags": [
@@ -1607,6 +2753,488 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/{bookingId}/containers": {
+            "post": {
+                "tags": [
+                    "Container Management"
+                ],
+                "summary": "Add a container to a booking",
+                "description": "Add a container to a booking.",
+                "operationId": "b813f68b228154bfd2d57ef1bc543a64",
+                "parameters": [
+                    {
+                        "name": "bookingId",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "container_number"
+                                ],
+                                "properties": {
+                                    "container_number": {
+                                        "description": "Container number",
+                                        "type": "string",
+                                        "example": "CONT-001"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Container added successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container added successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Container"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/{bookingId}/containers/{containerId}": {
+            "put": {
+                "tags": [
+                    "Container Management"
+                ],
+                "summary": "Update a container",
+                "description": "Update a container.",
+                "operationId": "85ebdbaa8b6417c19e5ea97eb85bb8bd",
+                "parameters": [
+                    {
+                        "name": "bookingId",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "containerId",
+                        "in": "path",
+                        "description": "Container ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "container_number": {
+                                        "description": "Container number",
+                                        "type": "string",
+                                        "example": "CONT-001"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Container updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Container"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Container or booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container or booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Container Management"
+                ],
+                "summary": "Delete a container",
+                "description": "Delete a container.",
+                "operationId": "40d1c20dfc65b272c58bd384408af288",
+                "parameters": [
+                    {
+                        "name": "bookingId",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "containerId",
+                        "in": "path",
+                        "description": "Container ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Container deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Container or booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container or booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/containers/{id}": {
+            "get": {
+                "tags": [
+                    "Container Management"
+                ],
+                "summary": "Get a specific container",
+                "description": "Get a single container by ID.",
+                "operationId": "3de45eed179c43f4bca264c03f0d911d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Container ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Container retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Container"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Container not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Container not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/containers": {
+            "get": {
+                "tags": [
+                    "Container Management"
+                ],
+                "summary": "Get containers by booking_id and optionally waybill_id",
+                "description": "Get containers based on booking_id and optionally waybill_id.",
+                "operationId": "c8e76da8f5de9cab25b90a2557fd02f0",
+                "parameters": [
+                    {
+                        "name": "booking_id",
+                        "in": "query",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "waybill_id",
+                        "in": "query",
+                        "description": "Waybill ID (optional - if provided, filters by both booking_id and waybill_id)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Containers retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Container"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -8076,7 +9704,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search by size, requirements, remarks, shipping line name, or CYPA name",
+                        "description": "Search by container size, requirements, remarks, shipping line name, or CYPA name",
                         "schema": {
                             "type": "string"
                         }
@@ -8109,7 +9737,7 @@
                         }
                     },
                     {
-                        "name": "size",
+                        "name": "container_size",
                         "in": "query",
                         "description": "Filter by container size",
                         "schema": {
@@ -12581,918 +14209,6 @@
                 ]
             }
         },
-        "/api/stack-runs": {
-            "get": {
-                "tags": [
-                    "Stack Run Management"
-                ],
-                "summary": "Get list of stack runs",
-                "description": "Display a listing of stack runs.",
-                "operationId": "e64b9cb202d259c9f1b0eb178d6fe4ba",
-                "parameters": [
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number",
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Items per page",
-                        "schema": {
-                            "type": "integer",
-                            "example": 10
-                        }
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Search by container size, shipping line name, or CYPA name",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of stack runs retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/StackRun"
-                                            }
-                                        },
-                                        "meta": {
-                                            "properties": {
-                                                "all": {
-                                                    "type": "integer",
-                                                    "example": 10
-                                                },
-                                                "trashed": {
-                                                    "type": "integer",
-                                                    "example": 2
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        "links": {
-                                            "properties": {
-                                                "first": {
-                                                    "type": "string",
-                                                    "example": "http://example.com/api/stack-runs?page=1"
-                                                },
-                                                "last": {
-                                                    "type": "string",
-                                                    "example": "http://example.com/api/stack-runs?page=5"
-                                                },
-                                                "prev": {
-                                                    "type": "string",
-                                                    "nullable": true
-                                                },
-                                                "next": {
-                                                    "type": "string",
-                                                    "example": "http://example.com/api/stack-runs?page=2"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Unauthenticated."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            },
-            "post": {
-                "tags": [
-                    "Stack Run Management"
-                ],
-                "summary": "Create a new stack run",
-                "description": "Store a newly created resource in storage.",
-                "operationId": "62f465e6107c9f0581142f11bb28d8b5",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "shipping_line_id",
-                                    "cypa_id_from",
-                                    "cypa_id_to",
-                                    "quantity_of_container",
-                                    "container_size"
-                                ],
-                                "properties": {
-                                    "reference_number": {
-                                        "description": "Reference number (optional)",
-                                        "type": "string",
-                                        "example": "SR-001"
-                                    },
-                                    "shipping_line_id": {
-                                        "description": "Shipping line ID",
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "cypa_id_from": {
-                                        "description": "CYPA ID (from)",
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "cypa_id_to": {
-                                        "description": "CYPA ID (to)",
-                                        "type": "integer",
-                                        "example": 2
-                                    },
-                                    "quantity_of_container": {
-                                        "description": "Quantity of containers",
-                                        "type": "integer",
-                                        "example": 2
-                                    },
-                                    "container_size": {
-                                        "description": "Container size (20ft or 40ft)",
-                                        "type": "string",
-                                        "example": "20ft"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Stack run created successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "reference_number": {
-                                                    "type": "string",
-                                                    "example": "SR-001",
-                                                    "nullable": true
-                                                },
-                                                "shipping_line_id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "cypa_id_from": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "cypa_id_to": {
-                                                    "type": "integer",
-                                                    "example": 2
-                                                },
-                                                "quantity_of_container": {
-                                                    "type": "integer",
-                                                    "example": 2
-                                                },
-                                                "container_size": {
-                                                    "type": "string",
-                                                    "example": "20ft"
-                                                },
-                                                "total_amount": {
-                                                    "description": "Total amount",
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 0
-                                                },
-                                                "is_complete": {
-                                                    "description": "0=Incomplete, 1=Complete",
-                                                    "type": "integer",
-                                                    "example": 0
-                                                },
-                                                "created_at": {
-                                                    "type": "string",
-                                                    "example": "2025-01-01 12:00:00"
-                                                },
-                                                "updated_at": {
-                                                    "type": "string",
-                                                    "example": "2025-01-01 12:00:00"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Unauthenticated."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/stack-runs/{id}": {
-            "get": {
-                "tags": [
-                    "Stack Run Management"
-                ],
-                "summary": "Get a specific stack run",
-                "description": "Display the specified stack run.",
-                "operationId": "092f9b264b8deb5d6dc6d0f1b5b60332",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Stack Run ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Stack run retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/StackRun"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Stack run not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Stack run not found."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Unauthenticated."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            },
-            "put": {
-                "tags": [
-                    "Stack Run Management"
-                ],
-                "summary": "Update a stack run",
-                "description": "Update the specified stack run in storage.",
-                "operationId": "1757a649f1a02063211a89294a0f08fc",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Stack Run ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "reference_number": {
-                                        "description": "Reference number (optional)",
-                                        "type": "string",
-                                        "example": "SR-001"
-                                    },
-                                    "shipping_line_id": {
-                                        "description": "Shipping line ID",
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "cypa_id_from": {
-                                        "description": "CYPA ID (from)",
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "cypa_id_to": {
-                                        "description": "CYPA ID (to)",
-                                        "type": "integer",
-                                        "example": 2
-                                    },
-                                    "quantity_of_container": {
-                                        "description": "Quantity of containers",
-                                        "type": "integer",
-                                        "example": 2
-                                    },
-                                    "container_size": {
-                                        "description": "Container size (20ft or 40ft)",
-                                        "type": "string",
-                                        "example": "20ft"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Stack run updated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "reference_number": {
-                                                    "type": "string",
-                                                    "example": "SR-001",
-                                                    "nullable": true
-                                                },
-                                                "shipping_line_id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "cypa_id_from": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "cypa_id_to": {
-                                                    "type": "integer",
-                                                    "example": 2
-                                                },
-                                                "quantity_of_container": {
-                                                    "type": "integer",
-                                                    "example": 2
-                                                },
-                                                "container_size": {
-                                                    "type": "string",
-                                                    "example": "20ft"
-                                                },
-                                                "total_amount": {
-                                                    "description": "Total amount",
-                                                    "type": "number",
-                                                    "format": "float",
-                                                    "example": 0
-                                                },
-                                                "is_complete": {
-                                                    "description": "0=Incomplete, 1=Complete",
-                                                    "type": "integer",
-                                                    "example": 0
-                                                },
-                                                "created_at": {
-                                                    "type": "string",
-                                                    "example": "2025-01-01 12:00:00"
-                                                },
-                                                "updated_at": {
-                                                    "type": "string",
-                                                    "example": "2025-01-01 12:00:00"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Stack run not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Stack run not found."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Unauthenticated."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/stack-runs/{stackRunId}/containers": {
-            "post": {
-                "tags": [
-                    "Stack Run Management"
-                ],
-                "summary": "Add a container to a stack run",
-                "description": "Add a container to a stack run.",
-                "operationId": "515b9626271d906c2ac03079c1ded230",
-                "parameters": [
-                    {
-                        "name": "stackRunId",
-                        "in": "path",
-                        "description": "Stack Run ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "container_number"
-                                ],
-                                "properties": {
-                                    "container_number": {
-                                        "description": "Container number",
-                                        "type": "string",
-                                        "example": "CONT-001"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Container added successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Container added successfully"
-                                        },
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Stack run not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Stack run not found."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/stack-runs/{stackRunId}/containers/{containerId}": {
-            "put": {
-                "tags": [
-                    "Stack Run Management"
-                ],
-                "summary": "Update a container",
-                "description": "Update a container.",
-                "operationId": "fc18c821489eaf14a0e321289113f61b",
-                "parameters": [
-                    {
-                        "name": "stackRunId",
-                        "in": "path",
-                        "description": "Stack Run ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    },
-                    {
-                        "name": "containerId",
-                        "in": "path",
-                        "description": "Container ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "container_number": {
-                                        "description": "Container number",
-                                        "type": "string",
-                                        "example": "CONT-001"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Container updated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Container updated successfully"
-                                        },
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Container or stack run not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Container not found."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "Stack Run Management"
-                ],
-                "summary": "Delete a container",
-                "description": "Delete a container.",
-                "operationId": "90ec810971538c6b46cb06184d3f3b87",
-                "parameters": [
-                    {
-                        "name": "stackRunId",
-                        "in": "path",
-                        "description": "Stack Run ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    },
-                    {
-                        "name": "containerId",
-                        "in": "path",
-                        "description": "Container ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Container deleted successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Container deleted successfully"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Container or stack run not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Container not found."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/stack-runs/containers": {
-            "get": {
-                "tags": [
-                    "Stack Run Management"
-                ],
-                "summary": "Get containers by stack_run_id and optionally waybill_number",
-                "description": "Get containers based on stack_run_id and optionally waybill_number.",
-                "operationId": "6ccd812758517ab693c1af55dd0d3dd2",
-                "parameters": [
-                    {
-                        "name": "stack_run_id",
-                        "in": "query",
-                        "description": "Stack Run ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    },
-                    {
-                        "name": "waybill_number",
-                        "in": "query",
-                        "description": "Waybill number (optional - if provided, filters by both stack_run_id and waybill_number)",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "example": "WB-001"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Containers retrieved successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
         "/api/statement-of-accounts": {
             "get": {
                 "tags": [
@@ -13620,8 +14336,8 @@
                 "tags": [
                     "Statement of Accounts"
                 ],
-                "summary": "Get a specific statement of account",
-                "description": "Display the specified statement of account.",
+                "summary": "Get a specific statement of account with booking and waybills",
+                "description": "Display the specified statement of account with booking and waybills.",
                 "operationId": "c7524f3dba0e395197af047b3274006a",
                 "parameters": [
                     {
@@ -13640,7 +14356,101 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/StatementOfAccount"
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "shipping_line_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "shipping_line": {
+                                                    "$ref": "#/components/schemas/ShippingLine"
+                                                },
+                                                "dli_sa_number": {
+                                                    "type": "string",
+                                                    "example": "SA-2024-001"
+                                                },
+                                                "booking_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "booking": {
+                                                    "$ref": "#/components/schemas/Booking"
+                                                },
+                                                "waybills": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/WaybillDetail"
+                                                    }
+                                                },
+                                                "total_amount": {
+                                                    "description": "Total amount calculated from waybills' total_rate_per_client",
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 15000
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/statement-of-accounts/{id}/download": {
+            "get": {
+                "tags": [
+                    "Statement of Accounts"
+                ],
+                "summary": "Download Statement of Account PDF",
+                "description": "Download PDF for Statement of Account.",
+                "operationId": "88b5b025f19d4bed07077a71de9ffe59",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the statement of account",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file download",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         }
@@ -18102,7 +18912,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search by waybill number, shipping line name, driver name, helper name, or truck plate number",
+                        "description": "Search by waybill number, container size, shipping line name, driver name, helper name, or truck plate number",
                         "schema": {
                             "type": "string"
                         }
@@ -18117,9 +18927,9 @@
                         }
                     },
                     {
-                        "name": "stack_run_id",
+                        "name": "booking_id",
                         "in": "query",
-                        "description": "Filter by stack run ID",
+                        "description": "Filter by booking ID",
                         "schema": {
                             "type": "integer",
                             "example": 1
@@ -18137,7 +18947,7 @@
                     {
                         "name": "helper_id",
                         "in": "query",
-                        "description": "Filter by helper ID",
+                        "description": "Filter by helper ID (checks if JSON array contains this ID)",
                         "schema": {
                             "type": "integer",
                             "example": 1
@@ -18150,6 +18960,15 @@
                         "schema": {
                             "type": "string",
                             "example": "NCK-6498"
+                        }
+                    },
+                    {
+                        "name": "container_size",
+                        "in": "query",
+                        "description": "Filter by container size",
+                        "schema": {
+                            "type": "string",
+                            "example": "20ft"
                         }
                     },
                     {
@@ -19134,6 +19953,94 @@
                 },
                 "type": "object"
             },
+            "Booking": {
+                "title": "Booking Model",
+                "description": "A booking resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "reference_number": {
+                        "type": "string",
+                        "example": "RF-483624",
+                        "nullable": true
+                    },
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "cypa_id_from": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "cypa_id_to": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "expected_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2025-02-10",
+                        "nullable": true
+                    },
+                    "is_complete": {
+                        "description": "0=Incomplete, 1=Complete",
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "actual_no_of_waybill": {
+                        "description": "Actual number of waybills created for this booking",
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "Container": {
+                "title": "Container Model",
+                "description": "A container resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "container_number": {
+                        "type": "string",
+                        "example": "CONT-001"
+                    },
+                    "booking_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "waybill_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
             "ContainerYard": {
                 "title": "Container Yard Model",
                 "description": "A container yard resource",
@@ -19487,7 +20394,7 @@
                         "format": "float",
                         "example": 1000
                     },
-                    "size": {
+                    "container_size": {
                         "type": "string",
                         "example": "20ft"
                     },
@@ -19523,7 +20430,7 @@
                     "no_of_days",
                     "cypa_id",
                     "stack_run",
-                    "size",
+                    "container_size",
                     "rate"
                 ],
                 "properties": {
@@ -19554,7 +20461,7 @@
                         "format": "float",
                         "example": 1000
                     },
-                    "size": {
+                    "container_size": {
                         "type": "string",
                         "example": "20ft"
                     },
@@ -19571,64 +20478,85 @@
                 },
                 "type": "object"
             },
-            "StackRun": {
-                "title": "Stack Run Model",
-                "description": "A stack run resource",
+            "ShippingLine": {
+                "title": "Shipping Line Model",
+                "description": "A shipping line resource",
                 "properties": {
                     "id": {
                         "type": "integer",
                         "example": 1
                     },
-                    "reference_number": {
+                    "name": {
                         "type": "string",
-                        "example": "SR-001",
+                        "example": "Maersk Line"
+                    },
+                    "email_address": {
+                        "type": "string",
+                        "example": "contact@maersk.com"
+                    },
+                    "address": {
+                        "type": "string",
+                        "example": "123 Shipping St",
                         "nullable": true
                     },
-                    "shipping_line_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "cypa_id_from": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "cypa_id_to": {
-                        "type": "integer",
-                        "example": 2
-                    },
-                    "quantity_of_container": {
-                        "type": "integer",
-                        "example": 2
-                    },
-                    "container_size": {
+                    "contact_name": {
                         "type": "string",
-                        "example": "20ft"
+                        "example": "John Doe",
+                        "nullable": true
                     },
-                    "total_amount": {
-                        "description": "Total amount",
-                        "type": "number",
-                        "format": "float",
-                        "example": 0
+                    "contact_mobile": {
+                        "type": "string",
+                        "example": "+1234567890",
+                        "nullable": true
                     },
-                    "is_complete": {
-                        "description": "0=Incomplete, 1=Complete",
-                        "type": "integer",
-                        "example": 0
+                    "landlines": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "123-456-7890"
+                        ],
+                        "nullable": true
                     },
-                    "actual_no_of_waybill": {
-                        "description": "Actual number of waybills created for this stack run",
-                        "type": "integer",
-                        "example": 5
+                    "fax_no": {
+                        "type": "string",
+                        "example": "123-456-7891",
+                        "nullable": true
+                    },
+                    "tin": {
+                        "type": "string",
+                        "example": "DK-12345678",
+                        "nullable": true
+                    },
+                    "shipping_lines_template": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "nullable": true
+                    },
+                    "transaction_information_template": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "nullable": true
                     },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
-                        "example": "2023-10-27T10:00:00Z"
+                        "example": "2024-01-01T10:00:00Z"
                     },
                     "updated_at": {
                         "type": "string",
                         "format": "date-time",
-                        "example": "2023-10-27T10:00:00Z"
+                        "example": "2024-01-01T10:00:00Z"
+                    },
+                    "deleted_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -19645,34 +20573,32 @@
                         "type": "integer",
                         "example": 1
                     },
+                    "shipping_line": {
+                        "$ref": "#/components/schemas/ShippingLine"
+                    },
                     "dli_sa_number": {
                         "type": "string",
                         "example": "SA-2024-001"
                     },
-                    "soa_coverage_from": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-01"
+                    "booking_id": {
+                        "description": "Required - booking must have waybills",
+                        "type": "integer",
+                        "example": 1
                     },
-                    "soa_coverage_to": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-31"
+                    "booking": {
+                        "$ref": "#/components/schemas/Booking"
                     },
-                    "waybill_id": {
+                    "waybills": {
                         "type": "array",
                         "items": {
-                            "type": "integer"
-                        },
-                        "example": [
-                            1,
-                            2,
-                            3
-                        ]
+                            "$ref": "#/components/schemas/WaybillDetail"
+                        }
                     },
-                    "signature": {
-                        "type": "boolean",
-                        "example": false
+                    "total_amount": {
+                        "description": "Total amount calculated from waybills' total_rate_per_client",
+                        "type": "number",
+                        "format": "float",
+                        "example": 15000
                     },
                     "created_at": {
                         "type": "string",
@@ -19693,8 +20619,7 @@
                 "required": [
                     "shipping_line_id",
                     "dli_sa_number",
-                    "soa_coverage_from",
-                    "soa_coverage_to"
+                    "booking_id"
                 ],
                 "properties": {
                     "shipping_line_id": {
@@ -19705,30 +20630,9 @@
                         "type": "string",
                         "example": "SA-2024-001"
                     },
-                    "soa_coverage_from": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-01"
-                    },
-                    "soa_coverage_to": {
-                        "type": "string",
-                        "format": "date",
-                        "example": "2024-01-31"
-                    },
-                    "waybill_id": {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "example": [
-                            1,
-                            2,
-                            3
-                        ]
-                    },
-                    "signature": {
-                        "type": "boolean",
-                        "example": false
+                    "booking_id": {
+                        "type": "integer",
+                        "example": 1
                     }
                 },
                 "type": "object"
@@ -19876,7 +20780,7 @@
                         "example": 1,
                         "nullable": true
                     },
-                    "stack_run_id": {
+                    "booking_id": {
                         "type": "integer",
                         "example": 1,
                         "nullable": true
@@ -19887,30 +20791,26 @@
                         "nullable": true
                     },
                     "helper_id": {
-                        "type": "integer",
-                        "example": 1,
+                        "description": "Array of helper IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2
+                        ],
+                        "nullable": true
+                    },
+                    "container_size": {
+                        "type": "string",
+                        "example": "20ft",
                         "nullable": true
                     },
                     "truck_plate_number": {
                         "type": "string",
                         "example": "NCK-6498",
                         "nullable": true
-                    },
-                    "fixed_expense_id": {
-                        "type": "integer",
-                        "example": 1,
-                        "nullable": true
-                    },
-                    "rate_per_client_id": {
-                        "type": "integer",
-                        "example": 1,
-                        "nullable": true
-                    },
-                    "extra_money": {
-                        "description": "Extra money amount",
-                        "type": "number",
-                        "format": "float",
-                        "example": 500
                     },
                     "pickup_date": {
                         "type": "string",
@@ -19924,23 +20824,34 @@
                         "example": "2025-12-23",
                         "nullable": true
                     },
+                    "fixed_expense_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "rate_per_client_id": {
+                        "description": "Nullable - no rate per client if null",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
                     "post_expense_amount": {
                         "description": "Post expense amount",
                         "type": "number",
                         "format": "float",
                         "example": 200
                     },
-                    "total_rate_per_client": {
-                        "description": "Auto-calculated: rate_per_client.rate + rate_per_client.stack_run",
-                        "type": "number",
-                        "format": "float",
-                        "example": 2500
-                    },
                     "total_expense": {
-                        "description": "Auto-calculated: extra_money + post_expense_amount + fixed_expense.total_expenses",
+                        "description": "Manual input field",
                         "type": "number",
                         "format": "float",
                         "example": 4700
+                    },
+                    "total_rate_per_client": {
+                        "description": "Manual input field",
+                        "type": "number",
+                        "format": "float",
+                        "example": 2500
                     },
                     "created_at": {
                         "type": "string",
@@ -19962,12 +20873,11 @@
                     "waybill_number",
                     "transaction_date",
                     "shipping_line_id",
-                    "stack_run_id",
+                    "booking_id",
                     "driver_id",
-                    "helper_id",
+                    "container_size",
                     "truck_plate_number",
                     "fixed_expense_id",
-                    "rate_per_client_id",
                     "pickup_date",
                     "delivered_date"
                 ],
@@ -19985,7 +20895,7 @@
                         "type": "integer",
                         "example": 1
                     },
-                    "stack_run_id": {
+                    "booking_id": {
                         "type": "integer",
                         "example": 1
                     },
@@ -19994,25 +20904,24 @@
                         "example": 1
                     },
                     "helper_id": {
-                        "type": "integer",
-                        "example": 1
+                        "description": "Array of helper IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2
+                        ],
+                        "nullable": true
+                    },
+                    "container_size": {
+                        "type": "string",
+                        "example": "20ft"
                     },
                     "truck_plate_number": {
                         "type": "string",
                         "example": "NCK-6498"
-                    },
-                    "fixed_expense_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "rate_per_client_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "extra_money": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 500
                     },
                     "pickup_date": {
                         "type": "string",
@@ -20024,10 +20933,31 @@
                         "format": "date",
                         "example": "2025-12-23"
                     },
+                    "fixed_expense_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "rate_per_client_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
                     "post_expense_amount": {
                         "type": "number",
                         "format": "float",
                         "example": 200
+                    },
+                    "total_expense": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 4700,
+                        "nullable": true
+                    },
+                    "total_rate_per_client": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2500,
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -20118,8 +21048,16 @@
             "description": "API endpoints for analytics overview"
         },
         {
+            "name": "Booking Management",
+            "description": "API endpoints for booking management"
+        },
+        {
             "name": "Category Management",
             "description": "API endpoints for category management"
+        },
+        {
+            "name": "Container Management",
+            "description": "API endpoints for container management"
         },
         {
             "name": "Container Yard Management",
@@ -20180,10 +21118,6 @@
         {
             "name": "SOA Data Option Management",
             "description": "API endpoints for SOA data option management"
-        },
-        {
-            "name": "Stack Run Management",
-            "description": "API endpoints for stack run management"
         },
         {
             "name": "Statement of Accounts",

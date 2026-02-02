@@ -2,15 +2,15 @@
 
 namespace App\Services;
 
-use App\Models\StackRun;
-use App\Http\Resources\StackRunResource;
+use App\Models\Booking;
+use App\Http\Resources\BookingResource;
 
-class StackRunService extends BaseService
+class BookingService extends BaseService
 {
     public function __construct()
     {
-        // Pass the StackRunResource class to the parent constructor
-        parent::__construct(new StackRunResource(new StackRun), new StackRun());
+        // Pass the BookingResource class to the parent constructor
+        parent::__construct(new BookingResource(new Booking), new Booking());
     }
 
     /**
@@ -18,9 +18,9 @@ class StackRunService extends BaseService
      */
     public function store(array $data)
     {
-        // Remove is_complete and total_amount from data if provided
-        // These fields are fillable but not allowed in this API (other APIs will update them)
-        unset($data['is_complete'], $data['total_amount']);
+        // Remove is_complete from data if provided
+        // This field is fillable but not allowed in this API (other APIs will update it)
+        unset($data['is_complete']);
 
         // Create the model - defaults will be applied from model $attributes
         $model = $this->model::create($data);
@@ -36,9 +36,9 @@ class StackRunService extends BaseService
         $model = $this->model::with(['shippingLine', 'cypaFrom', 'cypaTo', 'containers'])
             ->findOrFail($id);
 
-        // Count waybills for this stack run
+        // Count waybills for this booking
         $actualNoOfWaybill = \Illuminate\Support\Facades\DB::table('waybill_details')
-            ->where('stack_run_id', $id)
+            ->where('booking_id', $id)
             ->whereNull('deleted_at')
             ->count();
 
@@ -53,9 +53,9 @@ class StackRunService extends BaseService
      */
     public function update(array $data, $id)
     {
-        // Remove is_complete and total_amount from data if provided
-        // These fields are fillable but not allowed in this API (other APIs will update them)
-        unset($data['is_complete'], $data['total_amount']);
+        // Remove is_complete from data if provided
+        // This field is fillable but not allowed in this API (other APIs will update it)
+        unset($data['is_complete']);
 
         $model = $this->model::findOrFail($id);
         $model->update($data);
@@ -68,10 +68,10 @@ class StackRunService extends BaseService
     public function list($perPage = 10, $trash = false)
     {
         try {
-            $allStackRuns = $this->getTotalCount();
-            $trashedStackRuns = $this->getTrashedCount();
+            $allBookings = $this->getTotalCount();
+            $trashedBookings = $this->getTrashedCount();
 
-            $query = StackRun::query()->with(['shippingLine', 'cypaFrom', 'cypaTo']);
+            $query = Booking::query()->with(['shippingLine', 'cypaFrom', 'cypaTo']);
 
             // Apply onlyTrashed() first if we're in trash view
             if ($trash) {
@@ -81,7 +81,8 @@ class StackRunService extends BaseService
             // Then apply search conditions
             if (request('search')) {
                 $query->where(function ($q) {
-                    $q->where('container_size', 'LIKE', '%' . request('search') . '%')
+                    $q->where('reference_number', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('vessel', 'LIKE', '%' . request('search') . '%')
                         ->orWhereHas('shippingLine', function ($q) {
                             $q->where('name', 'LIKE', '%' . request('search') . '%');
                         })
@@ -94,6 +95,36 @@ class StackRunService extends BaseService
                 });
             }
 
+            // Filter by vessel
+            if (request('vessel')) {
+                $query->where('vessel', 'LIKE', '%' . request('vessel') . '%');
+            }
+
+            // Filter by shipping_line_id
+            if (request('shipping_line_id')) {
+                $query->where('shipping_line_id', request('shipping_line_id'));
+            }
+
+            // Filter by cypa_id_from
+            if (request('cypa_id_from')) {
+                $query->where('cypa_id_from', request('cypa_id_from'));
+            }
+
+            // Filter by cypa_id_to
+            if (request('cypa_id_to')) {
+                $query->where('cypa_id_to', request('cypa_id_to'));
+            }
+
+            // Filter by is_complete
+            if (request()->has('is_complete')) {
+                $query->where('is_complete', request('is_complete'));
+            }
+
+            // Filter by expected_date
+            if (request('expected_date')) {
+                $query->whereDate('expected_date', request('expected_date'));
+            }
+
             // Apply ordering
             if (request('order')) {
                 $query->orderBy(request('order'), request('sort') ?? 'asc');
@@ -101,13 +132,11 @@ class StackRunService extends BaseService
                 $query->orderBy('id', 'desc');
             }
 
-            return StackRunResource::collection(
+            return BookingResource::collection(
                 $query->paginate($perPage)->withQueryString()
-            )->additional(['meta' => ['all' => $allStackRuns, 'trashed' => $trashedStackRuns]]);
+            )->additional(['meta' => ['all' => $allBookings, 'trashed' => $trashedBookings]]);
         } catch (\Exception $e) {
-            throw new \Exception('Failed to fetch stack runs: ' . $e->getMessage());
+            throw new \Exception('Failed to fetch bookings: ' . $e->getMessage());
         }
     }
 }
-
-
