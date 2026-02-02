@@ -17,6 +17,7 @@ class Booking extends Model
      */
     protected $fillable = [
         'reference_number',
+        'vessel',
         'shipping_line_id',
         'cypa_id_from',
         'cypa_id_to',

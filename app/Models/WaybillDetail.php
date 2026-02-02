@@ -23,6 +23,7 @@ class WaybillDetail extends Model
         'driver_id',
         'helper_id',
         'container_size',
+        'container_type',
         'truck_plate_number',
         'fixed_expense_id',
         'rate_per_client_id',

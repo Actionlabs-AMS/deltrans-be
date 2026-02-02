@@ -19,6 +19,7 @@ use App\Services\MessageService;
  *     description="A booking resource",
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
+ *     @OA\Property(property="vessel", type="string", example="MSC OSCAR", nullable=true),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
  *     @OA\Property(property="cypa_id_from", type="integer", example=1),
  *     @OA\Property(property="cypa_id_to", type="integer", example=2),
@@ -92,6 +93,12 @@ class BookingController extends BaseController
      *         in="query",
      *         description="Filter by expected date",
      *         @OA\Schema(type="string", format="date", example="2025-02-10")
+     *     ),
+     *     @OA\Parameter(
+     *         name="vessel",
+     *         in="query",
+     *         description="Filter by vessel name (partial match)",
+     *         @OA\Schema(type="string", example="MSC")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -178,12 +185,12 @@ class BookingController extends BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
- *             required={"shipping_line_id", "cypa_id_from", "cypa_id_to"},
- *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional, unique)"),
- *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
- *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
- *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
- *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
+     *             required={"shipping_line_id", "cypa_id_from", "cypa_id_to"},
+     *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional, unique)"),
+     *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
+     *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
+     *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
+     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
      *         )
      *     ),
      *     @OA\Response(
@@ -196,8 +203,8 @@ class BookingController extends BaseController
      *                 @OA\Property(property="shipping_line_id", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
- *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
- *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+     *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
+     *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )
@@ -253,7 +260,7 @@ class BookingController extends BaseController
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
- *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
+     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
      *         )
      *     ),
      *     @OA\Response(
@@ -266,8 +273,8 @@ class BookingController extends BaseController
      *                 @OA\Property(property="shipping_line_id", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
- *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
- *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+     *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
+     *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )

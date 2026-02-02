@@ -41,6 +41,7 @@ class WaybillDetailService extends BaseService
                 $query->where(function ($q) {
                     $q->where('waybill_number', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('container_size', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('container_type', 'LIKE', '%' . request('search') . '%')
                         ->orWhereHas('shippingLine', function ($q) {
                             $q->where('name', 'LIKE', '%' . request('search') . '%');
                         })
@@ -82,6 +83,11 @@ class WaybillDetailService extends BaseService
                 $query->where('container_size', request('container_size'));
             }
 
+            // Filter by container_type
+            if (request('container_type')) {
+                $query->where('container_type', request('container_type'));
+            }
+
             // Filter by transaction_date
             if (request('transaction_date')) {
                 $query->whereDate('transaction_date', request('transaction_date'));
@@ -118,9 +124,9 @@ class WaybillDetailService extends BaseService
     public function store(array $data)
     {
         // total_rate_per_client and total_expense are now manual inputs, no need to unset them
-        
+
         $model = $this->model::create($data);
-        
+
         return $this->resource::make($model->load([
             'shippingLine',
             'booking',
@@ -137,10 +143,10 @@ class WaybillDetailService extends BaseService
     public function update(array $data, int $id)
     {
         // total_rate_per_client and total_expense are now manual inputs, no need to unset them
-        
+
         $model = $this->model::findOrFail($id);
         $model->update($data);
-        
+
         return $this->resource::make($model->load([
             'shippingLine',
             'booking',

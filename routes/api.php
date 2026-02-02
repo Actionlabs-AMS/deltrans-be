@@ -20,7 +20,7 @@ use App\Http\Controllers\Api\HelperController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
-use App\Http\Controllers\Api\StatementOfAccountController;
+use App\Http\Controllers\Api\SoaAndBillingController;
 use App\Http\Controllers\Api\TruckMaintenanceController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ContainerController;
@@ -268,16 +268,16 @@ Route::middleware('auth:sanctum')->group(function () {
 	| Statement of Accounts CRUD Operations
 	|
 	*/
-	Route::prefix('statement-of-accounts')->group(function () {
+	Route::prefix('soa_and_billing')->group(function () {
 		// Generate SOA
-		Route::post('/generate', [StatementOfAccountController::class, 'generate']);  // Generate a new statement of account
+		Route::post('/generate', [SoaAndBillingController::class, 'generate']);  // Generate a new statement of account
 
 		// Download PDF (must be before /{id} route)
-		Route::get('/{id}/download', [StatementOfAccountController::class, 'download']);  // Download SOA PDF
+		Route::get('/{id}/download', [SoaAndBillingController::class, 'download']);  // Download SOA PDF
 
 		// Standard CRUD operations
-		Route::get('/', [StatementOfAccountController::class, 'index']);  // Retrieve all statement of accounts
-		Route::get('/{id}', [StatementOfAccountController::class, 'show']);  // Retrieve a single statement of account
+		Route::get('/', [SoaAndBillingController::class, 'index']);  // Retrieve all statement of accounts
+		Route::get('/{id}', [SoaAndBillingController::class, 'show']);  // Retrieve a single statement of account
 	});
 
 	/*
@@ -324,7 +324,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/{id}', [BookingController::class, 'show']);  // Retrieve a single booking
 		Route::put('/{id}', [BookingController::class, 'update']);  // Update a booking
 		Route::delete('/{id}', [BookingController::class, 'destroy']);  // Soft delete a booking
-		
+
 		// Bulk operations
 		Route::post('/bulk/delete', [BookingController::class, 'bulkDelete']);  // Bulk delete bookings
 		Route::post('/bulk/restore', [BookingController::class, 'bulkRestore']);  // Bulk restore bookings
@@ -357,7 +357,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [ContainerController::class, 'getContainers']);  // Get containers by booking_id and optionally waybill_number
 		Route::get('/{id}', [ContainerController::class, 'show']);  // Get a specific container by ID
 	});
-	
+
 	Route::prefix('bookings')->group(function () {
 		// Container management routes
 		Route::post('/{bookingId}/containers', [ContainerController::class, 'addContainer']);  // Add a container to a booking
@@ -476,10 +476,10 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/bulk/force-delete', [DriverController::class, 'bulkForceDelete']);  // Bulk permanently delete drivers
 
 		//For waybill
-		Route::get('/get-waybill/{id}', [DriverController::class, 'getWaybillByDriverId']); 
+		Route::get('/get-waybill/{id}', [DriverController::class, 'getWaybillByDriverId']);
 
 		//For Drive CA History
-		Route::get('/get-cash-advance/{id}', [DriverCAHistoryController::class, 'getCashAdvances']);  
+		Route::get('/get-cash-advance/{id}', [DriverCAHistoryController::class, 'getCashAdvances']);
 	});
 
 	// Custom route for archived (trashed) drivers with a distinct prefix
@@ -616,15 +616,15 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/bulk/delete', [TruckController::class, 'bulkDelete']);  // Bulk delete shipping lines
 		Route::post('/bulk/restore', [TruckController::class, 'bulkRestore']);  // Bulk restore shipping lines
 		Route::post('/bulk/force-delete', [TruckController::class, 'bulkForceDelete']);  // Bulk permanently delete shipping lines
-	
+
 		// Route for maintenance history
 		Route::post('/truck-maintenance', [TruckMaintenanceController::class, 'store']);
 		Route::get('/truck-maintenance/{id}', [TruckMaintenanceController::class, 'show']);
-    	Route::get('{truckId}/maintenance-history', [TruckMaintenanceController::class, 'getMaintenanceHistory']);
-		Route::delete('{truckId}/maintenance-history/{id}', [TruckMaintenanceController::class, 'destroy']); 
+		Route::get('{truckId}/maintenance-history', [TruckMaintenanceController::class, 'getMaintenanceHistory']);
+		Route::delete('{truckId}/maintenance-history/{id}', [TruckMaintenanceController::class, 'destroy']);
 		Route::put('/truck-maintenance/{id}', [TruckMaintenanceController::class, 'update']);
 
-	
+
 	});
 
 	// // Custom route for archived (trashed) shipping lines with a distinct prefix

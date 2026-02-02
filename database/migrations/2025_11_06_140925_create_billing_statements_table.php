@@ -16,22 +16,32 @@ return new class extends Migration {
 
         Schema::create('billing_statements', function (Blueprint $table) {
             $table->engine = 'InnoDB';
-            $table->string('transaction_number')->primary();
-            $table->date('transaction_date');
-            $table->text('description_of_charges')->nullable();
-            $table->string('container_size')->nullable();
-            $table->decimal('rate_of_trip', 15, 2)->default(0);
-            $table->decimal('total_amount', 15, 2)->default(0);
-            $table->string('waybill_number')->nullable();
+            $table->bigIncrements('id');
+            $table->bigInteger('shipping_line_id')->unsigned();
+            $table->bigInteger('booking_id')->unsigned();
+            $table->bigInteger('prepared_by')->unsigned()->comment('User ID of the logged-in user');
+            $table->string('billing_statement_no');
+            $table->string('payment_term')->nullable();
+            $table->date('ci_date')->nullable();
+            $table->date('due_date')->nullable();
+            $table->string('bus_style')->nullable();
+            $table->boolean('has_details')->default(false); //this will identify if the billing statement has details or not
+            $table->boolean('is_paid')->default(false); //this will identify if the billing statement is paid or not
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('waybill_number')->references('waybill_number')->on('waybill_details')->onDelete('set null');
+            $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
+            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
+            $table->foreign('prepared_by')->references('id')->on('users')->onDelete('cascade');
 
             // Indexes
-            $table->index('transaction_date');
-            $table->index('waybill_number');
+            $table->index('shipping_line_id');
+            $table->index('booking_id');
+            $table->index('prepared_by');
+            $table->index('billing_statement_no');
+            $table->index('ci_date');
+            $table->index('due_date');
         });
 
         // Re-enable foreign key checks

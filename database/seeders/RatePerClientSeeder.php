@@ -28,16 +28,16 @@ class RatePerClientSeeder extends Seeder
         }
 
         $ratePerClients = [
-            // Rates for all CYPA (cypa_id = 0)
+            // Rates for all CYPA (cypa_id = 0) - These will be used as fallback
             [
                 'shipping_line_id' => $shippingLineIds[0],
                 'no_of_days' => 7,
                 'requirements' => 'Standard documentation',
                 'remarks' => 'Standard rate for 7 days',
                 'cypa_id' => 0, // All CYPA
-                'stack_run' => 1000.00,
+                'stack_run' => 1500.00,
                 'container_size' => '20ft',
-                'rate' => 5000,
+                'rate' => 5500.00,
                 'is_active' => 1,
             ],
             [
@@ -46,9 +46,9 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Standard documentation',
                 'remarks' => 'Standard rate for 7 days',
                 'cypa_id' => 0, // All CYPA
-                'stack_run' => 1000.00,
+                'stack_run' => 2000.00,
                 'container_size' => '40ft',
-                'rate' => 8000,
+                'rate' => 8500.00,
                 'is_active' => 1,
             ],
             [
@@ -57,9 +57,9 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Extended storage',
                 'remarks' => 'Rate for 14 days storage',
                 'cypa_id' => 0, // All CYPA
-                'stack_run' => 1000.00,
+                'stack_run' => 1800.00,
                 'container_size' => '20ft',
-                'rate' => 7000,
+                'rate' => 7200.00,
                 'is_active' => 1,
             ],
             [
@@ -68,9 +68,9 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Extended storage',
                 'remarks' => 'Rate for 14 days storage',
                 'cypa_id' => 0, // All CYPA
-                'stack_run' => 1000.00,
+                'stack_run' => 2500.00,
                 'container_size' => '40ft',
-                'rate' => 11000,
+                'rate' => 11200.00,
                 'is_active' => 1,
             ],
             // Offhire rates
@@ -80,9 +80,9 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Offhire documentation',
                 'remarks' => 'Offhire rate for 7 days',
                 'cypa_id' => 0, // All CYPA
-                'stack_run' => 1000.00,
+                'stack_run' => 1200.00,
                 'container_size' => '20ft(offhire)',
-                'rate' => 4500,
+                'rate' => 4800.00,
                 'is_active' => 1,
             ],
             [
@@ -91,81 +91,129 @@ class RatePerClientSeeder extends Seeder
                 'requirements' => 'Offhire documentation',
                 'remarks' => 'Offhire rate for 7 days',
                 'cypa_id' => 0, // All CYPA
-                'stack_run' => 1000.00,
+                'stack_run' => 1800.00,
                 'container_size' => '40ft(offhire)',
-                'rate' => 7500,
+                'rate' => 7800.00,
                 'is_active' => 1,
             ],
-            // Rates for specific CYPA
+            // Rates for specific CYPA locations (matching actual bookings)
             [
                 'shipping_line_id' => $shippingLineIds[0],
                 'no_of_days' => 7,
                 'requirements' => 'CYPA specific rate',
-                'remarks' => 'Rate for specific CYPA location',
+                'remarks' => 'LOADING',
                 'cypa_id' => !empty($cypaIds) ? $cypaIds[0] : 0,
-                'stack_run' => 1000.00,
+                'stack_run' => 1500.00,
                 'container_size' => '20ft',
-                'rate' => 4800,
+                'rate' => 5200.00,
                 'is_active' => 1,
             ],
             [
                 'shipping_line_id' => $shippingLineIds[0],
                 'no_of_days' => 7,
                 'requirements' => 'CYPA specific rate',
-                'remarks' => 'Rate for specific CYPA location',
+                'remarks' => 'LOADING',
                 'cypa_id' => !empty($cypaIds) ? $cypaIds[0] : 0,
-                'stack_run' => 1000.00,
+                'stack_run' => 2000.00,
                 'container_size' => '40ft',
-                'rate' => 7800,
+                'rate' => 8200.00,
                 'is_active' => 1,
             ],
-            // Rates for specific stack run
+            // Additional CYPA rates for other locations
             [
                 'shipping_line_id' => $shippingLineIds[0],
                 'no_of_days' => 7,
-                'requirements' => 'Stack run specific rate',
-                'remarks' => 'Rate for specific stack run',
+                'requirements' => 'CYPA specific rate',
+                'remarks' => 'SHIP OUT',
+                'cypa_id' => !empty($cypaIds) && count($cypaIds) > 1 ? $cypaIds[1] : 0,
+                'stack_run' => 1600.00,
+                'container_size' => '20ft',
+                'rate' => 5300.00,
+                'is_active' => 1,
+            ],
+            [
+                'shipping_line_id' => $shippingLineIds[0],
+                'no_of_days' => 7,
+                'requirements' => 'CYPA specific rate',
+                'remarks' => 'SHIP OUT',
+                'cypa_id' => !empty($cypaIds) && count($cypaIds) > 1 ? $cypaIds[1] : 0,
+                'stack_run' => 2100.00,
+                'container_size' => '40ft',
+                'rate' => 8300.00,
+                'is_active' => 1,
+            ],
+            // Rates for other shipping lines
+            [
+                'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
+                'no_of_days' => 7,
+                'requirements' => 'Standard documentation',
+                'remarks' => 'SHIP OUT',
                 'cypa_id' => 0, // All CYPA
                 'stack_run' => 1500.00,
                 'container_size' => '20ft',
-                'rate' => 5200,
+                'rate' => 5600.00,
+                'is_active' => 1,
+            ],
+            [
+                'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
+                'no_of_days' => 7,
+                'requirements' => 'Standard documentation',
+                'remarks' => 'SHIP OUT',
+                'cypa_id' => 0, // All CYPA
+                'stack_run' => 2000.00,
+                'container_size' => '40ft',
+                'rate' => 8800.00,
                 'is_active' => 1,
             ],
             [
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
                 'no_of_days' => 10,
                 'requirements' => 'Special handling required',
-                'remarks' => 'Rate for 10 days with special handling',
-                'cypa_id' => !empty($cypaIds) && count($cypaIds) > 1 ? $cypaIds[1] : 0,
-                'stack_run' => 2000.00,
-                'container_size' => '40ft',
-                'rate' => 9000,
+                'remarks' => 'EXPORT LOADED',
+                'cypa_id' => !empty($cypaIds) && count($cypaIds) > 2 ? $cypaIds[2] : 0,
+                'stack_run' => 2200.00,
+                'container_size' => '20ft',
+                'rate' => 6200.00,
                 'is_active' => 1,
             ],
-            // Inactive rates
             [
-                'shipping_line_id' => $shippingLineIds[0],
-                'no_of_days' => 7,
-                'requirements' => 'Deprecated rate',
-                'remarks' => 'This rate is no longer active',
-                'cypa_id' => 0,
-                'stack_run' => 1000.00,
-                'container_size' => '20ft',
-                'rate' => 4500,
-                'is_active' => 0,
-            ],
-            [
-                'shipping_line_id' => $shippingLineIds[0],
-                'no_of_days' => 14,
-                'requirements' => 'Old rate structure',
-                'remarks' => 'Replaced by new rate structure',
-                'cypa_id' => !empty($cypaIds) ? $cypaIds[0] : 0,
-                'stack_run' => 1000.00,
+                'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
+                'no_of_days' => 10,
+                'requirements' => 'Special handling required',
+                'remarks' => 'EXPORT LOADED',
+                'cypa_id' => !empty($cypaIds) && count($cypaIds) > 2 ? $cypaIds[2] : 0,
+                'stack_run' => 2800.00,
                 'container_size' => '40ft',
-                'rate' => 10000,
-                'is_active' => 0,
+                'rate' => 9500.00,
+                'is_active' => 1,
             ],
         ];
+
+        // Additional rates for third shipping line if exists
+        if (count($shippingLineIds) > 2) {
+            $ratePerClients[] = [
+                'shipping_line_id' => $shippingLineIds[2],
+                'no_of_days' => 7,
+                'requirements' => 'Standard documentation',
+                'remarks' => 'LOADING',
+                'cypa_id' => 0,
+                'stack_run' => 1500.00,
+                'container_size' => '20ft',
+                'rate' => 5400.00,
+                'is_active' => 1,
+            ];
+            $ratePerClients[] = [
+                'shipping_line_id' => $shippingLineIds[2],
+                'no_of_days' => 7,
+                'requirements' => 'Standard documentation',
+                'remarks' => 'LOADING',
+                'cypa_id' => 0,
+                'stack_run' => 2000.00,
+                'container_size' => '40ft',
+                'rate' => 8600.00,
+                'is_active' => 1,
+            ];
+        }
 
         foreach ($ratePerClients as $ratePerClient) {
             DB::table('rate_per_clients')->updateOrInsert(

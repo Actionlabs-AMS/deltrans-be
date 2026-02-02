@@ -29,6 +29,7 @@ class BookingSeeder extends Seeder
         $bookings = [
             [
                 'reference_number' => 'RF-483624',
+                'vessel' => 'MSC OSCAR',
                 'shipping_line_id' => $shippingLineIds[0],
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
@@ -37,6 +38,7 @@ class BookingSeeder extends Seeder
             ],
             [
                 'reference_number' => 'RF-483625',
+                'vessel' => 'EVER GIVEN',
                 'shipping_line_id' => $shippingLineIds[0],
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
@@ -45,6 +47,7 @@ class BookingSeeder extends Seeder
             ],
             [
                 'reference_number' => 'RF-483626',
+                'vessel' => 'MAERSK EINDHOVEN',
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
@@ -53,6 +56,7 @@ class BookingSeeder extends Seeder
             ],
             [
                 'reference_number' => 'RF-483627',
+                'vessel' => 'COSCO SHIPPING',
                 'shipping_line_id' => count($shippingLineIds) > 1 ? $shippingLineIds[1] : $shippingLineIds[0],
                 'cypa_id_from' => $cypaIds[1],
                 'cypa_id_to' => $cypaIds[0],
@@ -61,6 +65,7 @@ class BookingSeeder extends Seeder
             ],
             [
                 'reference_number' => 'RF-483628',
+                'vessel' => 'HMM OSLO',
                 'shipping_line_id' => count($shippingLineIds) > 2 ? $shippingLineIds[2] : $shippingLineIds[0],
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],

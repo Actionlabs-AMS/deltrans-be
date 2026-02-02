@@ -30,6 +30,7 @@ class WaybillDetailRequest extends FormRequest
             'helper_id' => 'nullable|array',
             'helper_id.*' => 'integer|exists:helpers,id',
             'container_size' => 'required|string|max:255',
+            'container_type' => 'nullable|string|max:255',
             'truck_plate_number' => 'required|string|exists:fleet_trucks,plate_number',
             'fixed_expense_id' => 'required|integer|exists:fixed_expenses,id',
             'rate_per_client_id' => 'nullable|integer|exists:rate_per_clients,id',
@@ -49,6 +50,7 @@ class WaybillDetailRequest extends FormRequest
             $rules['helper_id'] = 'sometimes|nullable|array';
             $rules['helper_id.*'] = 'integer|exists:helpers,id';
             $rules['container_size'] = 'sometimes|required|string|max:255';
+            $rules['container_type'] = 'sometimes|nullable|string|max:255';
             $rules['truck_plate_number'] = 'sometimes|required|string|exists:fleet_trucks,plate_number';
             $rules['fixed_expense_id'] = 'sometimes|required|integer|exists:fixed_expenses,id';
             $rules['rate_per_client_id'] = 'sometimes|nullable|integer|exists:rate_per_clients,id';
@@ -85,6 +87,7 @@ class WaybillDetailRequest extends FormRequest
             'container_size.required' => 'The container size is required.',
             'container_size.string' => 'The container size must be a string.',
             'container_size.max' => 'The container size may not be greater than 255 characters.',
+            'container_type.max' => 'The container type may not be greater than 255 characters.',
             'truck_plate_number.required' => 'The truck plate number is required.',
             'truck_plate_number.exists' => 'The selected truck plate number does not exist.',
             'fixed_expense_id.required' => 'The fixed expense is required.',
