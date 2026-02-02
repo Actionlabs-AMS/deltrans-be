@@ -871,6 +871,151 @@
                 ]
             }
         },
+        "/api/bookings/by-shipping-line/{shipping_line_id}": {
+            "get": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Get bookings by shipping line",
+                "description": "Get bookings by shipping line ID, optionally filtered by expected_date range.",
+                "operationId": "4a27c71cfb532036551f5545fa42f5cf",
+                "parameters": [
+                    {
+                        "name": "shipping_line_id",
+                        "in": "path",
+                        "description": "Shipping line ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "expected_date_from",
+                        "in": "query",
+                        "description": "Filter expected_date from (inclusive), format Y-m-d",
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-01-01"
+                        }
+                    },
+                    {
+                        "name": "expected_date_to",
+                        "in": "query",
+                        "description": "Filter expected_date to (inclusive), format Y-m-d",
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-01-31"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Bookings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Booking"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        },
+                                        "total_cost": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 125000,
+                                            "description": "Sum of total_rate_per_client for all waybills in the filtered bookings"
+                                        },
+                                        "remaining_balance": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 50000,
+                                            "description": "Sum of total_rate_per_client for waybills where booking is_complete=false"
+                                        },
+                                        "total_paid": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 75000,
+                                            "description": "Sum of total_rate_per_client for waybills where booking is_complete=true"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Shipping line not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Shipping line not found."
+                                        },
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 404
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/bookings/{id}": {
             "get": {
                 "tags": [

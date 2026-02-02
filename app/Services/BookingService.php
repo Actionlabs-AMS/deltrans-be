@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\WaybillDetail;
 use App\Http\Resources\BookingResource;
 
 class BookingService extends BaseService
@@ -130,5 +131,41 @@ class BookingService extends BaseService
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch bookings: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get bookings by shipping line ID, optionally filtered by expected_date range.
+     * Includes total_cost, remaining_balance, total_paid based on waybills (total_rate_per_client) in the filtered set.
+     */
+    public function listByShippingLine(int $shippingLineId, ?string $expectedDateFrom = null, ?string $expectedDateTo = null, int $perPage = 10)
+    {
+        $baseQuery = Booking::query()
+            ->where('shipping_line_id', $shippingLineId);
+
+        if ($expectedDateFrom) {
+            $baseQuery->whereDate('expected_date', '>=', $expectedDateFrom);
+        }
+        if ($expectedDateTo) {
+            $baseQuery->whereDate('expected_date', '<=', $expectedDateTo);
+        }
+
+        $filteredBookingIds = (clone $baseQuery)->pluck('id');
+
+        $totalCost = (float) WaybillDetail::whereIn('booking_id', $filteredBookingIds)->sum('total_rate_per_client');
+        $remainingBalance = (float) WaybillDetail::whereIn('booking_id', (clone $baseQuery)->where('is_complete', false)->pluck('id'))->sum('total_rate_per_client');
+        $totalPaid = (float) WaybillDetail::whereIn('booking_id', (clone $baseQuery)->where('is_complete', true)->pluck('id'))->sum('total_rate_per_client');
+
+        $query = (clone $baseQuery)
+            ->with(['shippingLine', 'cypaFrom', 'cypaTo'])
+            ->orderBy('expected_date', 'asc')
+            ->orderBy('id', 'desc');
+
+        $paginator = $query->paginate($perPage)->withQueryString();
+
+        return BookingResource::collection($paginator)->additional([
+            'total_cost' => round($totalCost, 2),
+            'remaining_balance' => round($remainingBalance, 2),
+            'total_paid' => round($totalPaid, 2),
+        ]);
     }
 }
