@@ -87,41 +87,129 @@ class DriverService extends BaseService
       }
   }
 
-  public function get_waybills_by_driver_id($id, $perPage = 10)
+  // public function get_waybills_by_driver_id($id, $perPage = 10)
+  // {
+  //     try {
+  //         // Strict filter by driver_id first
+  //         $query = WaybillDetail::where('driver_id', $id);
+
+  //         // --- Single Search Box Logic (No Relationships) ---
+  //         if (request('search')) {
+  //             $searchTerm = request('search');
+
+  //             $query->where(function($q) use ($searchTerm) {
+  //                 // Search Waybill Number string
+  //                 $q->where('waybill_number', 'LIKE', '%' . $searchTerm . '%')
+  //                   // Search Truck Plate Number string directly in this table
+  //                   ->orWhere('truck_plate_number', 'LIKE', '%' . $searchTerm . '%');
+
+  //                 // Search Date (Only if the search term looks like a date YYYY-MM-DD)
+  //                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $searchTerm)) {
+  //                     $q->orWhereDate('transaction_date', $searchTerm);
+  //                 }
+  //             });
+  //         }
+
+  //         // --- Ordering ---
+  //         if (request('order')) {
+  //             $query->orderBy(request('order'), request('sort') ?? 'desc');
+  //         } else {
+  //             $query->orderBy('id', 'desc');
+  //         }
+
+  //         return $query->paginate($perPage)->withQueryString();
+
+  //     } catch (\Exception $e) {
+  //         throw new \Exception('Failed to fetch waybills: ' . $e->getMessage());
+  //     }
+  // }
+  public function get_waybills_by_driver_id($id, $perPage = 10, $searchTerm = null, $dateFrom = null, $dateTo = null)
   {
       try {
-          // Strict filter by driver_id first
+          // 1. Strict filter by driver_id first
           $query = WaybillDetail::where('driver_id', $id);
 
-          // --- Single Search Box Logic (No Relationships) ---
-          if (request('search')) {
-              $searchTerm = request('search');
+          // 2. --- Date Range Filter (Newly Implemented) ---
+          if ($dateFrom && $dateTo) {
+              $query->whereBetween('transaction_date', [$dateFrom, $dateTo]);
+          }
 
+          // 3. --- Single Search Box Logic ---
+          if ($searchTerm) {
               $query->where(function($q) use ($searchTerm) {
-                  // Search Waybill Number string
+                  // Search Waybill Number
                   $q->where('waybill_number', 'LIKE', '%' . $searchTerm . '%')
-                    // Search Truck Plate Number string directly in this table
+                    // Search Truck Plate Number
                     ->orWhere('truck_plate_number', 'LIKE', '%' . $searchTerm . '%');
 
-                  // Search Date (Only if the search term looks like a date YYYY-MM-DD)
+                  // Search specific Date if search term matches YYYY-MM-DD
                   if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $searchTerm)) {
                       $q->orWhereDate('transaction_date', $searchTerm);
                   }
               });
           }
 
-          // --- Ordering ---
-          if (request('order')) {
-              $query->orderBy(request('order'), request('sort') ?? 'desc');
-          } else {
-              $query->orderBy('id', 'desc');
-          }
+          // 4. --- Ordering ---
+          // Prioritize requested sort, otherwise default to latest transaction date
+          $sortColumn = request('order', 'transaction_date');
+          $sortDirection = request('sort', 'desc');
 
+          $query->orderBy($sortColumn, $sortDirection);
+
+          // 5. Return paginated results with query strings preserved
           return $query->paginate($perPage)->withQueryString();
 
       } catch (\Exception $e) {
           throw new \Exception('Failed to fetch waybills: ' . $e->getMessage());
       }
+  }
+
+  public function delete_driver_by_id($id) 
+  {
+      try {
+
+          $model = Driver::findOrFail($id);
+          return $model->delete();
+
+      } catch (\Exception $e) {
+          throw new \Exception('Failed to fetch driver details: ' . $e->getMessage());
+      }
+  }
+
+  public function store(array $data)
+  {
+      // 1. Check if ANY trashed record exists with this Name OR this Contact Number
+      $trashedDriver = Driver::onlyTrashed()
+          ->where(function ($query) use ($data) {
+              $query->where('contact_number', $data['contact_number'])
+                    ->orWhere(function ($q) use ($data) {
+                        $q->where('first_name', $data['first_name'])
+                          ->where('last_name', $data['last_name']);
+                    });
+          })
+          ->first();
+
+      if ($trashedDriver) {
+          // 2. Restore and OVERWRITE with the new data
+          // This handles the case where the name changed but the number is the same
+          $trashedDriver->restore();
+          $trashedDriver->update($data);
+
+          return [
+              'status' => true,
+              'message' => 'Driver record restored and updated successfully.',
+              'data' => $trashedDriver
+          ];
+      }
+
+      // 3. Create new if nothing was found in trash
+      $newDriver = Driver::create($data);
+
+      return [
+          'status' => true,
+          'message' => 'Driver created successfully.',
+          'data' => $newDriver
+      ];
   }
 }
 

@@ -38,7 +38,9 @@ class TruckRequest extends FormRequest
                 'max:255',
                 
                 // 3. APPLY THE EXCEPTION FOR THE CURRENT RECORD
-                Rule::unique('fleet_trucks', 'plate_number')->ignore($truckId, 'id'), 
+                Rule::unique('fleet_trucks', 'plate_number')
+                    ->ignore($truckId, 'id')
+                    ->whereNull('deleted_at')
             ],
             
             'condition' => 'required|string|max:255',

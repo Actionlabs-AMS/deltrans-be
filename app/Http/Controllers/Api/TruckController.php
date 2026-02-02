@@ -117,18 +117,36 @@ class TruckController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
+    // public function store(TruckRequest $request)
+    // {
+    //     try {
+    //         $data = $request->all();
+    //         $truck = $this->service->store($data);
+    //         return response($truck, 201);
+    //     } catch (\Exception $e) {
+    //         //return $this->messageService->responseError();
+    //         // This catch block is primarily for service-level or database errors (not validation errors)
+    //         return response()->json([
+    //             'status_code' => 500,
+    //             'message' => 'An unexpected server error occurred.',
+    //         ], 500);
+    //     }
+    // }
     public function store(TruckRequest $request)
     {
         try {
             $data = $request->all();
-            $truck = $this->service->store($data);
-            return response($truck, 201);
+            $result = $this->service->store($data);
+
+            // Determine status code: 200 for restored, 201 for brand new
+            $statusCode = ($result['message'] === 'Truck created successfully.') ? 201 : 200;
+
+            return response()->json($result, $statusCode);
+
         } catch (\Exception $e) {
-            //return $this->messageService->responseError();
-            // This catch block is primarily for service-level or database errors (not validation errors)
             return response()->json([
                 'status_code' => 500,
-                'message' => 'An unexpected server error occurred.',
+                'message' => 'An unexpected server error occurred: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -250,7 +268,7 @@ class TruckController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
-    public function destroy($id)                
+    public function deactivate($id)                
     {                
         try {                
             // Assumption: The service method now updates is_active to 0
@@ -317,6 +335,109 @@ class TruckController extends BaseController
                 'message' => 'Truck id not found.',                
             ], 404);                
         }                
+    }
+
+    /**
+     * @OA\Delete(
+     * path="/api/trucks/truck-list/{id}",
+     * operationId="destroyTruck",
+     * tags={"Trucks Management"},
+     * summary="Soft delete a truck record",
+     * description="Moves a truck record to the trash using its ID.",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(
+     * name="id",
+     * in="path",
+     * description="ID of the truck to delete",
+     * required=true,
+     * @OA\Schema(type="integer")
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Truck successfully deleted",
+     * @OA\JsonContent(
+     * @OA\Property(property="status", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Truck record has been successfully deleted."),
+     * @OA\Property(property="id", type="integer", example=1)
+     * )
+     * ),
+     * @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     * @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function destroy($id)
+    {
+        try {
+            // Grab the IDs from the route
+            $truckId = (int) request()->route('id');
+
+            // Delegate the work to the service
+            // Assuming $this->service is defined in your constructor or BaseController
+            $this->service->delete_truck_by_id($truckId);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Truck record has been successfully deleted.',
+                'id' => $truckId
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Record not found.'
+            ], 404);
+        } catch (\Exception $e) {
+            // If the Service threw a 403, we use that code, otherwise default to 500
+            $code = $e->getCode() == 403 ? 403 : 500;
+            
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+                'status_code' => $code
+            ], $code);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     * path="/api/trucks/active-list",
+     * operationId="getActiveTruckList",
+     * tags={"Trucks Management"},
+     * summary="Get list of all active trucks",
+     * description="Returns a list of trucks where is_active is 1",
+     * security={{"sanctum": {}}},
+     * @OA\Response(
+     * response=200,
+     * description="Successful operation",
+     * @OA\JsonContent(
+     * @OA\Property(property="status", type="boolean", example=true),
+     * @OA\Property(property="data", type="array", @OA\Items(
+     * @OA\Property(property="id", type="integer", example=1),
+     * @OA\Property(property="plate_number", type="string", example="ABC-1234")
+     * ))
+     * )
+     * ),
+     * @OA\Response(response=500, description="Internal Server Error")
+     * )
+     */
+    public function getActiveTruckList()
+    {
+        try {
+            $trucks = $this->service->getActiveTrucks();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Active trucks retrieved successfully.',
+                'data' => $trucks
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve truck list.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     // /**
@@ -496,4 +617,6 @@ class TruckController extends BaseController
     // {
     //     return parent::bulkForceDelete($request);
     // }
+
+    
 }
