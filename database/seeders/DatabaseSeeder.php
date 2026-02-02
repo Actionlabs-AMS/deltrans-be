@@ -35,7 +35,8 @@ class DatabaseSeeder extends Seeder
             StatementOfAccountSeeder::class,
             BillingStatementSeeder::class,
             TruckMaintenanceRecordsSeeder::class,
-            DriverCAHistorySeeder::class
+            DriverCAHistorySeeder::class,
+            HelperCAHistorySeeder::class
         ]);
     }
 }

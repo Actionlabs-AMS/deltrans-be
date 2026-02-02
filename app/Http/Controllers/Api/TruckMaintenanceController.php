@@ -43,13 +43,120 @@ class TruckMaintenanceController extends BaseController
         parent::__construct($truckService, $messageService);
     }
 
+    // /**
+    //  * @OA\Get(
+    //  * path="/api/trucks/{truckId}/maintenance-history",
+    //  * operationId="getTruckMaintenanceHistory",
+    //  * tags={"Truck Maintenance"},
+    //  * summary="Get paginated maintenance records for a specific truck",
+    //  * description="Returns a paginated list of maintenance records for the given truck ID, with searching and date filtering capabilities.",
+    //  * security={{"sanctum": {}}},
+    //  * @OA\Parameter(
+    //  * name="truckId",
+    //  * in="path",
+    //  * description="ID of the truck to retrieve maintenance history for.",
+    //  * required=true,
+    //  * @OA\Schema(type="integer", example=1)
+    //  * ),
+    //  * @OA\Parameter(
+    //  * name="page",
+    //  * in="query",
+    //  * description="Page number for pagination",
+    //  * required=false,
+    //  * @OA\Schema(type="integer", example=1)
+    //  * ),
+    //  * @OA\Parameter(
+    //  * name="per_page",
+    //  * in="query",
+    //  * description="Items per page for pagination",
+    //  * required=false,
+    //  * @OA\Schema(type="integer", example=10)
+    //  * ),
+    //  * @OA\Parameter(
+    //  * name="search",
+    //  * in="query",
+    //  * description="Search term to filter maintenance records (by receipt_number or article).",
+    //  * required=false,
+    //  * @OA\Schema(type="string", example="Oil Filter")
+    //  * ),
+    //  * @OA\Parameter(
+    //  * name="date_from",
+    //  * in="query",
+    //  * description="Start date filter for the record's creation date (created_at).",
+    //  * required=false,
+    //  * @OA\Schema(type="string", format="date", example="2025-01-01")
+    //  * ),
+    //  * @OA\Parameter(
+    //  * name="date_to",
+    //  * in="query",
+    //  * description="End date filter for the record's creation date (created_at).",
+    //  * required=false,
+    //  * @OA\Schema(type="string", format="date", example="2025-12-31")
+    //  * ),
+    //  * @OA\Response(
+    //  * response=200,
+    //  * description="Successful operation",
+    //  * @OA\JsonContent(
+    //  * type="object",
+    //  * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/TruckMaintenanceRecord")),
+    //  * @OA\Property(property="meta", type="object"),
+    //  * @OA\Property(property="links", type="object")
+    //  * )
+    //  * ),
+    //  * @OA\Response(response=404, description="Truck not found"),
+    //  * @OA\Response(response=500, ref="#/components/responses/GeneralError")
+    //  * )
+    //  */
+    // public function getMaintenanceHistory(Request $request, int $truckId)
+    // {
+    //     // Temporary debug line
+    //     \Log::info('Attempting to find Truck ID: ' . $truckId);
+    //     // 1. Check if the truck exists
+    //     if (!FleetTruck::find($truckId)) {
+    //         return response()->json([
+    //             'message' => 'Truck not found in fleet truck.'
+    //         ], 404);
+    //     }
+
+    //     // 1. Retrieve the Plate Number using the provided Truck ID
+    //     $truck = FleetTruck::find($truckId);
+
+    //     if (!$truck) {
+    //         // This condition is highly likely to be the source of your error.
+    //         throw new \Exception("Truck with ID {$truckId} not found in the fleet.", 404);
+    //     }
+        
+    //     $plateNumber = $truck->plate_number;
+
+    //     // 2. Extract pagination, search, and date filters
+    //     $perPage = $request->get('per_page', 10);
+    //     $search = $request->get('search');
+        
+    //     // START: NEW FILTER EXTRACTION
+    //     $dateFrom = $request->get('date_from');
+    //     $dateTo = $request->get('date_to');
+    //     // END: NEW FILTER EXTRACTION
+
+    //     // 3. Fetch data from the service layer, passing all filters
+    //     $maintenanceRecords = $this->service->listByTruckId(
+    //         $truckId, 
+    //         $perPage, 
+    //         $search,
+    //         $dateFrom, // New parameter
+    //         $dateTo    // New parameter
+    //     );
+
+    //     // 4. Return the paginated data using a Resource Collection
+    //     return TruckMaintenanceResource::collection($maintenanceRecords);
+    // }
+
     /**
      * @OA\Get(
      * path="/api/trucks/{truckId}/maintenance-history",
      * operationId="getTruckMaintenanceHistory",
      * tags={"Truck Maintenance"},
      * summary="Get paginated maintenance records for a specific truck",
-     * description="Returns a paginated list of maintenance records for the given truck ID, with searching and date filtering capabilities.",
+     * description="Returns a paginated list of maintenance records for the given truck ID. Supports keyword searching and smart date filtering (weekly/monthly) based on a reference date.",
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="truckId",
@@ -80,16 +187,30 @@ class TruckMaintenanceController extends BaseController
      * @OA\Schema(type="string", example="Oil Filter")
      * ),
      * @OA\Parameter(
+     * name="filter_type",
+     * in="query",
+     * description="The scope of the date filter. Used in conjunction with reference_date.",
+     * required=false,
+     * @OA\Schema(type="string", enum={"weekly", "monthly"}, default="weekly")
+     * ),
+     * @OA\Parameter(
+     * name="reference_date",
+     * in="query",
+     * description="The anchor date used to calculate the week (Mon-Sun) or month range.",
+     * required=false,
+     * @OA\Schema(type="string", format="date", example="2026-01-26")
+     * ),
+     * @OA\Parameter(
      * name="date_from",
      * in="query",
-     * description="Start date filter for the record's creation date (created_at).",
+     * description="Manual start date filter (YYYY-MM-DD). Overridden if reference_date is provided.",
      * required=false,
      * @OA\Schema(type="string", format="date", example="2025-01-01")
      * ),
      * @OA\Parameter(
      * name="date_to",
      * in="query",
-     * description="End date filter for the record's creation date (created_at).",
+     * description="Manual end date filter (YYYY-MM-DD). Overridden if reference_date is provided.",
      * required=false,
      * @OA\Schema(type="string", format="date", example="2025-12-31")
      * ),
@@ -109,44 +230,53 @@ class TruckMaintenanceController extends BaseController
      */
     public function getMaintenanceHistory(Request $request, int $truckId)
     {
-        // Temporary debug line
-        \Log::info('Attempting to find Truck ID: ' . $truckId);
         // 1. Check if the truck exists
-        if (!FleetTruck::find($truckId)) {
-            return response()->json([
-                'message' => 'Truck not found in fleet truck.'
-            ], 404);
-        }
-
-        // 1. Retrieve the Plate Number using the provided Truck ID
         $truck = FleetTruck::find($truckId);
-
         if (!$truck) {
-            // This condition is highly likely to be the source of your error.
-            throw new \Exception("Truck with ID {$truckId} not found in the fleet.", 404);
+            return response()->json(['message' => 'Truck not found.'], 404);
         }
-        
-        $plateNumber = $truck->plate_number;
 
-        // 2. Extract pagination, search, and date filters
+        // 2. Extract standard parameters
         $perPage = $request->get('per_page', 10);
         $search = $request->get('search');
         
-        // START: NEW FILTER EXTRACTION
-        $dateFrom = $request->get('date_from');
-        $dateTo = $request->get('date_to');
-        // END: NEW FILTER EXTRACTION
+        // 3. 🌟 NEW: Extract Filter Type and Reference Date
+        $filterType = $request->get('filter_type', 'weekly'); // default to weekly
+        $referenceDate = $request->get('reference_date'); // e.g., "2026-01-26"
 
-        // 3. Fetch data from the service layer, passing all filters
+        // Initialize date boundaries
+        $dateFrom = null;
+        $dateTo = null;
+
+        if ($referenceDate) {
+            $date = \Carbon\Carbon::parse($referenceDate);
+
+            if ($filterType === 'weekly') {
+                // 🌟 Calculate Monday to Sunday
+                $dateFrom = $date->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->toDateString();
+                $dateTo = $date->copy()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
+            } elseif ($filterType === 'monthly') {
+                // 🌟 Calculate Full Month
+                $dateFrom = $date->copy()->startOfMonth()->toDateString();
+                $dateTo = $date->copy()->endOfMonth()->toDateString();
+            }
+        } else {
+            // Fallback to your original manual filters if reference_date isn't provided
+            $dateFrom = $request->get('date_from');
+            $dateTo = $request->get('date_to');
+        }
+
+        // 4. Fetch data from service layer
+        // Note: Ensure listByTruckId is updated to filter by 'maintenance_date' 
+        // instead of 'created_at' to match your table data.
         $maintenanceRecords = $this->service->listByTruckId(
             $truckId, 
             $perPage, 
             $search,
-            $dateFrom, // New parameter
-            $dateTo    // New parameter
+            $dateFrom, 
+            $dateTo
         );
 
-        // 4. Return the paginated data using a Resource Collection
         return TruckMaintenanceResource::collection($maintenanceRecords);
     }
 

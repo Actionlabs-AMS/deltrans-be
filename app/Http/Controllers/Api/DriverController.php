@@ -160,9 +160,41 @@ class DriverController extends BaseController
    *     )
    * )
    */
+  // public function destroy($id)
+  // {
+  //   return parent::destroy($id);
+  // }
   public function destroy($id)
   {
-    return parent::destroy($id);
+      try {
+          // Grab the IDs from the route
+          $driverId = (int) request()->route('id');
+
+          // Delegate the work to the service
+          // Assuming $this->service is defined in your constructor or BaseController
+          $this->service->delete_driver_by_id($driverId);
+
+          return response()->json([
+              'status' => true,
+              'message' => 'Driver record has been successfully deleted.',
+              'id' => $driverId
+          ], 200);
+
+      } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+          return response()->json([
+              'status' => false,
+              'message' => 'Record not found.'
+          ], 404);
+      } catch (\Exception $e) {
+          // If the Service threw a 403, we use that code, otherwise default to 500
+          $code = $e->getCode() == 403 ? 403 : 500;
+          
+          return response()->json([
+              'status' => false,
+              'message' => $e->getMessage(),
+              'status_code' => $code
+          ], $code);
+      }
   }
 
   /**
@@ -637,59 +669,150 @@ class DriverController extends BaseController
     }                
   }
 
+  // /**
+  //  * Fetch waybill details by driver ID with unified search.
+  //  * * @OA\Get(
+  //  * path="/api/drivers/get-waybill/{id}",
+  //  * summary="Fetch waybill details by driver ID",
+  //  * tags={"Driver Management"},
+  //  * security={{"sanctum": {}}},
+  //  * @OA\Parameter(
+  //  * name="id",
+  //  * in="path",
+  //  * required=true,
+  //  * description="Driver ID",
+  //  * @OA\Schema(type="integer", example=1)
+  //  * ),
+  //  * @OA\Parameter(
+  //  * name="search",
+  //  * in="query",
+  //  * required=false,
+  //  * description="Search by Waybill #, Plate #, or Date (YYYY-MM-DD)",
+  //  * @OA\Schema(type="string")
+  //  * ),
+  //  * @OA\Parameter(
+  //  * name="per_page",
+  //  * in="query",
+  //  * required=false,
+  //  * @OA\Schema(type="integer", example=10)
+  //  * ),
+  //  * @OA\Response(
+  //  * response=200,
+  //  * description="Waybill details fetched successfully",
+  //  * @OA\JsonContent(
+  //  * @OA\Property(property="status_code", type="integer", example=200),
+  //  * @OA\Property(property="message", type="string", example="Waybill details fetched successfully."),
+  //  * @OA\Property(property="data", type="object")
+  //  * )
+  //  * )
+  //  * )
+  //  */
+  // public function getWaybillByDriverId($id)
+  // {
+  //     try {
+  //       // Note: We pass the requested per_page or default to 10
+  //       $perPage = request('per_page', 10);
+  //       $waybills = $this->service->get_waybills_by_driver_id($id, $perPage);
+
+  //       return WaybillDetailResource::collection($waybills);
+
+  //   } catch (\Exception $e) {
+  //       return response()->json([
+  //           'status_code' => 404,
+  //           'message' => $e->getMessage(),
+  //       ], 404);
+  //   }
+  // }
+
   /**
-   * Fetch waybill details by driver ID with unified search.
-   * * @OA\Get(
-   * path="/api/drivers/get-waybill/{id}",
-   * summary="Fetch waybill details by driver ID",
-   * tags={"Driver Management"},
-   * security={{"sanctum": {}}},
-   * @OA\Parameter(
-   * name="id",
-   * in="path",
-   * required=true,
-   * description="Driver ID",
-   * @OA\Schema(type="integer", example=1)
-   * ),
-   * @OA\Parameter(
-   * name="search",
-   * in="query",
-   * required=false,
-   * description="Search by Waybill #, Plate #, or Date (YYYY-MM-DD)",
-   * @OA\Schema(type="string")
-   * ),
-   * @OA\Parameter(
-   * name="per_page",
-   * in="query",
-   * required=false,
-   * @OA\Schema(type="integer", example=10)
-   * ),
-   * @OA\Response(
-   * response=200,
-   * description="Waybill details fetched successfully",
-   * @OA\JsonContent(
-   * @OA\Property(property="status_code", type="integer", example=200),
-   * @OA\Property(property="message", type="string", example="Waybill details fetched successfully."),
-   * @OA\Property(property="data", type="object")
-   * )
-   * )
-   * )
-   */
+ * Fetch waybill details by driver ID with dynamic date filtering and search.
+ * * @OA\Get(
+ * path="/api/drivers/get-waybill/{id}",
+ * summary="Fetch waybill details by driver ID",
+ * tags={"Driver Management"},
+ * security={{"sanctum": {}}},
+ * @OA\Parameter(
+ * name="id",
+ * in="path",
+ * required=true,
+ * description="Driver ID",
+ * @OA\Schema(type="integer", example=1)
+ * ),
+ * @OA\Parameter(
+ * name="search",
+ * in="query",
+ * required=false,
+ * description="Search by Waybill # or Truck Plate #",
+ * @OA\Schema(type="string")
+ * ),
+ * @OA\Parameter(
+ * name="filter_type",
+ * in="query",
+ * description="Filter scope: weekly or monthly",
+ * required=false,
+ * @OA\Schema(type="string", enum={"weekly", "monthly"}, default="weekly")
+ * ),
+ * @OA\Parameter(
+ * name="reference_date",
+ * in="query",
+ * description="The anchor date (YYYY-MM-DD) for the filter range",
+ * required=false,
+ * @OA\Schema(type="string", format="date", example="2026-01-26")
+ * ),
+ * @OA\Parameter(
+ * name="per_page",
+ * in="query",
+ * required=false,
+ * @OA\Schema(type="integer", example=10)
+ * ),
+ * @OA\Response(
+ * response=200,
+ * description="Waybill details fetched successfully"
+ * )
+ * )
+ */
   public function getWaybillByDriverId($id)
   {
       try {
-        // Note: We pass the requested per_page or default to 10
-        $perPage = request('per_page', 10);
-        $waybills = $this->service->get_waybills_by_driver_id($id, $perPage);
+          $perPage = request('per_page', 10);
+          $search = request('search');
+          $filterType = request('filter_type', 'weekly');
+          $referenceDate = request('reference_date');
 
-        return WaybillDetailResource::collection($waybills);
+          $dateFrom = null;
+          $dateTo = null;
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'status_code' => 404,
-            'message' => $e->getMessage(),
-        ], 404);
-    }
+          if ($referenceDate) {
+              $date = \Carbon\Carbon::parse($referenceDate);
+
+              if ($filterType === 'monthly') {
+                  $dateFrom = $date->copy()->startOfMonth()->toDateString();
+                  $dateTo = $date->copy()->endOfMonth()->toDateString();
+              } else {
+                  // Weekly: Mon - Sun
+                  $dateFrom = $date->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->toDateString();
+                  $dateTo = $date->copy()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
+              }
+          }
+
+          // Pass everything to the service layer
+          $waybills = $this->service->get_waybills_by_driver_id(
+              $id, 
+              $perPage, 
+              $search, 
+              $dateFrom, 
+              $dateTo
+          );
+
+          return WaybillDetailResource::collection($waybills);
+
+      } catch (\Exception $e) {
+          return response()->json([
+              'status_code' => 404,
+              'message' => $e->getMessage(),
+          ], 404);
+      }
   }
+
 }
 

@@ -3824,10 +3824,35 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Filter by transaction date (YYYY-MM-DD) or shift",
+                        "description": "Filter by shift or keyword",
                         "required": false,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "description": "Filter scope: weekly or monthly",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reference_date",
+                        "in": "query",
+                        "description": "The anchor date (YYYY-MM-DD) for the filter range",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-01-26"
                         }
                     },
                     {
@@ -5023,7 +5048,7 @@
                     "Driver Management"
                 ],
                 "summary": "Fetch waybill details by driver ID",
-                "description": "Fetch waybill details by driver ID with unified search.",
+                "description": "Fetch waybill details by driver ID with dynamic date filtering and search.",
                 "operationId": "1f554897ec6a5f2fcb695013cee22404",
                 "parameters": [
                     {
@@ -5039,10 +5064,35 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search by Waybill #, Plate #, or Date (YYYY-MM-DD)",
+                        "description": "Search by Waybill # or Truck Plate #",
                         "required": false,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "description": "Filter scope: weekly or monthly",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reference_date",
+                        "in": "query",
+                        "description": "The anchor date (YYYY-MM-DD) for the filter range",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-01-26"
                         }
                     },
                     {
@@ -5057,27 +5107,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Waybill details fetched successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "status_code": {
-                                            "type": "integer",
-                                            "example": 200
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Waybill details fetched successfully."
-                                        },
-                                        "data": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                        "description": "Waybill details fetched successfully"
                     }
                 },
                 "security": [
@@ -6016,6 +6046,108 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/helpers/get-cash-advance/{id}": {
+            "get": {
+                "tags": [
+                    "Helper Cash Advance History"
+                ],
+                "summary": "Fetch cash advance details by helper ID",
+                "operationId": "520903dd670c1e855840cb5d1d786471",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Helper ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by amount or shift",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "description": "Type of date filter: weekly or monthly",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reference_date",
+                        "in": "query",
+                        "description": "The base date for filtering (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/HelperCashAdvanceRecord"
+                                            }
+                                        },
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cash advance history fetched successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
                     }
                 },
                 "security": [
@@ -6989,6 +7121,371 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/helpers/activate/{id}": {
+            "patch": {
+                "tags": [
+                    "Helper Management"
+                ],
+                "summary": "Activate a helper",
+                "description": "Activate the specified helper.",
+                "operationId": "52d074e36cc549afb8e3e932d0bbc491",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Helper ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Helper activated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Helper activated successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Helper not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/helpers/deactivate/{id}": {
+            "patch": {
+                "tags": [
+                    "Helper Management"
+                ],
+                "summary": "Deactivate a helper",
+                "description": "Deactivate the specified helper.",
+                "operationId": "3f2c8f122d56c3e97ef9f9d0f051cc92",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Helper ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Helper deactivated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Helper deactivated successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Helper not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/helpers/details/{id}": {
+            "get": {
+                "tags": [
+                    "Helper Management"
+                ],
+                "summary": "Get helper details by ID",
+                "description": "Get specific helper details.",
+                "operationId": "d7b425a24ede76d3e0ea3ea03448bc22",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Helper ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Helper details retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Helper details retrieved successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "first_name": {
+                                                    "type": "string",
+                                                    "example": "Juan"
+                                                },
+                                                "last_name": {
+                                                    "type": "string",
+                                                    "example": "Luna"
+                                                },
+                                                "contact_number": {
+                                                    "type": "string",
+                                                    "example": "09123456789"
+                                                },
+                                                "is_active": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Helper not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/helpers/get-waybill/{id}": {
+            "get": {
+                "tags": [
+                    "Helper Management"
+                ],
+                "summary": "Fetch waybill details by helper ID",
+                "description": "Fetch waybill details by helper ID with unified search and date filtering.",
+                "operationId": "96f4e84980fe2087f047a56f72ee9ee3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Helper ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by Waybill # or Plate #",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "description": "Type of date filter: weekly or monthly",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reference_date",
+                        "in": "query",
+                        "description": "The base date for filtering (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-01-28"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Waybill details fetched successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 200
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Waybill details fetched successfully."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/helpers/active-list": {
+            "get": {
+                "tags": [
+                    "Helper Management"
+                ],
+                "summary": "Get list of all active helpers",
+                "description": "Returns a list of helpers where is_active is 1",
+                "operationId": "getActiveHelperList",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Active helpers retrieved successfully."
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "first_name": {
+                                                        "type": "string",
+                                                        "example": "John"
+                                                    },
+                                                    "last_name": {
+                                                        "type": "string",
+                                                        "example": "Doe"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
                     }
                 },
                 "security": [
@@ -15568,13 +16065,123 @@
                 ]
             }
         },
+        "/api/trucks/truck-list/{id}": {
+            "delete": {
+                "tags": [
+                    "Trucks Management"
+                ],
+                "summary": "Soft delete a truck record",
+                "description": "Moves a truck record to the trash using its ID.",
+                "operationId": "destroyTruck",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the truck to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Truck successfully deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Truck record has been successfully deleted."
+                                        },
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/trucks/active-list": {
+            "get": {
+                "tags": [
+                    "Trucks Management"
+                ],
+                "summary": "Get list of all active trucks",
+                "description": "Returns a list of trucks where is_active is 1",
+                "operationId": "getActiveTruckList",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "plate_number": {
+                                                        "type": "string",
+                                                        "example": "ABC-1234"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/trucks/{truckId}/maintenance-history": {
             "get": {
                 "tags": [
                     "Truck Maintenance"
                 ],
                 "summary": "Get paginated maintenance records for a specific truck",
-                "description": "Returns a paginated list of maintenance records for the given truck ID, with searching and date filtering capabilities.",
+                "description": "Returns a paginated list of maintenance records for the given truck ID. Supports keyword searching and smart date filtering (weekly/monthly) based on a reference date.",
                 "operationId": "getTruckMaintenanceHistory",
                 "parameters": [
                     {
@@ -15618,9 +16225,34 @@
                         }
                     },
                     {
+                        "name": "filter_type",
+                        "in": "query",
+                        "description": "The scope of the date filter. Used in conjunction with reference_date.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reference_date",
+                        "in": "query",
+                        "description": "The anchor date used to calculate the week (Mon-Sun) or month range.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-01-26"
+                        }
+                    },
+                    {
                         "name": "date_from",
                         "in": "query",
-                        "description": "Start date filter for the record's creation date (created_at).",
+                        "description": "Manual start date filter (YYYY-MM-DD). Overridden if reference_date is provided.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -15631,7 +16263,7 @@
                     {
                         "name": "date_to",
                         "in": "query",
-                        "description": "End date filter for the record's creation date (created_at).",
+                        "description": "Manual end date filter (YYYY-MM-DD). Overridden if reference_date is provided.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -19668,6 +20300,63 @@
                 },
                 "type": "object"
             },
+            "HelperCashAdvanceRecord": {
+                "title": "Helper Cash Advance Record",
+                "description": "Details of a single cash advancement entry for a helper.",
+                "required": [
+                    "id",
+                    "amount",
+                    "transaction_date",
+                    "shift",
+                    "helper_id"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "Unique ID of the cash advance record.",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "amount": {
+                        "description": "The amount of cash advanced.",
+                        "type": "number",
+                        "format": "float",
+                        "example": 500
+                    },
+                    "transaction_date": {
+                        "description": "The date the cash advance was issued.",
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-05-20"
+                    },
+                    "shift": {
+                        "description": "The work shift associated with the advance (e.g., Day, Night).",
+                        "type": "string",
+                        "example": "Day"
+                    },
+                    "helper_id": {
+                        "description": "The ID of the helper who received the advance.",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "created_at": {
+                        "description": "Timestamp when the record was created.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp when the record was last updated.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "deleted_at": {
+                        "description": "Timestamp for soft deletion.",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "RatePerClient": {
                 "title": "Rate Per Client Model",
                 "description": "A rate per client resource",
@@ -20393,6 +21082,10 @@
         {
             "name": "Fixed Expense Management",
             "description": "API endpoints for fixed expense management"
+        },
+        {
+            "name": "Helper Cash Advance History",
+            "description": "API Endpoints for managing helper cash advancement records"
         },
         {
             "name": "Helper Management",

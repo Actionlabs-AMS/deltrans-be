@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class HelperRequest extends FormRequest
 {
@@ -21,10 +22,33 @@ class HelperRequest extends FormRequest
    */
   public function rules(): array
   {
+
+    $helperId = $this->route('id') ?? $this->id;
+
     return [
-      "first_name" => "required|string|max:191|regex:/^[a-zA-Z\s]+$/",
+      //"first_name" => "required|string|max:191|regex:/^[a-zA-Z\s]+$/",
+      'first_name' => [
+          'required',
+          'string',
+          'max:255',
+          'regex:/^[a-zA-Z\s]+$/',
+          Rule::unique('helpers')
+              ->where(function ($query) {
+                  return $query->where('last_name', $this->last_name)
+                              ->whereNull('deleted_at');
+              })
+              ->ignore($helperId),
+      ],
       "last_name" => "required|string|max:191|regex:/^[a-zA-Z\s]+$/",
-      "contact_number" => "required|string|max:191|unique:helpers,contact_number,".$this->id,
+      //"contact_number" => "required|string|max:191|unique:helpers,contact_number,".$this->id,
+      "contact_number" => [
+          "required",
+          "string",
+          "max:191",
+          Rule::unique('helpers', 'contact_number')
+              ->ignore($this->id) 
+              ->whereNull('deleted_at')
+      ],
       "is_active" => "nullable|integer|in:0,1",
     ];
   }

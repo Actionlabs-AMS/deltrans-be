@@ -71,7 +71,7 @@ class TruckService extends BaseService
         try {
 
             $model = FleetTruck::findOrFail($id);
-            return $model->forcedelete();
+            return $model->delete();
 
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch truck details: ' . $e->getMessage());
@@ -106,6 +106,45 @@ class TruckService extends BaseService
         }
     }
 
+    public function store(array $data)
+    {
+        // 1. Check if a record with this plate exists in the trash
+        $trashedTruck = FleetTruck::onlyTrashed()
+            ->where('plate_number', $data['plate_number'])
+            ->first();
 
+        if ($trashedTruck) {
+            // 2. Restore and update the existing record
+            $trashedTruck->restore();
+            $trashedTruck->update([
+                'condition' => $data['condition'],
+                'is_active' => 1, // Reset to active
+            ]);
+
+            return [
+                'status' => true,
+                'message' => 'Truck record restored successfully.',
+                'data' => $trashedTruck
+            ];
+        }
+
+        // 3. If no trash found, create a new record
+        $newTruck = FleetTruck::create($data);
+
+        return [
+            'status' => true,
+            'message' => 'Truck created successfully.',
+            'data' => $newTruck
+        ];
+    }
+
+    public function getActiveTrucks()
+    {
+        return FleetTruck::where('is_active', 1)
+            ->whereNull('deleted_at') 
+            ->select('id', 'plate_number', 'condition')
+            ->orderBy('plate_number', 'asc')
+            ->get();
+    }
 }
 

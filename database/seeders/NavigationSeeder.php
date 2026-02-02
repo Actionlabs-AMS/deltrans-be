@@ -87,6 +87,22 @@ class NavigationSeeder extends Seeder
                         'active' => true,
                         'show_in_menu' => true,
                     ],
+                    [
+                        'name' => 'Helpers Waybill History',
+                        'slug' => 'helpers-waybill-history/:id',
+                        'icon' => 'activity',
+                        'description' => 'Review the waybill history of a specific helper',
+                        'active' => true,
+                        'show_in_menu' => false,
+                    ],
+                    [
+                        'name' => 'Helpers Cash Advance History',
+                        'slug' => 'helpers-ca-history/:id',
+                        'icon' => 'activity',
+                        'description' => 'Review the cash advance history of a specific helper',
+                        'active' => true,
+                        'show_in_menu' => false,
+                    ],
                 ],
             ],
 

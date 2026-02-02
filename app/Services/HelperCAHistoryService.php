@@ -2,22 +2,22 @@
 
 namespace App\Services;
 
-use App\Models\DriverCAHistory;
-use App\Http\Resources\DriverCAHistoryResource;
+use App\Models\HelperCAHistory;
+use App\Http\Resources\HelperCAHistoryResource;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class DriverCAHistoryService extends BaseService
+class HelperCAHistoryService extends BaseService
 {
     public function __construct()
     {
-        parent::__construct(new DriverCAHistoryResource(new DriverCAHistory), new DriverCAHistory());
+        parent::__construct(new HelperCAHistoryResource(new HelperCAHistory), new HelperCAHistory());
     }
 
-    // public function getDriverHistory(int $driverId, $perPage = 10): LengthAwarePaginator
+    // public function getHelperHistory(int $helperId, $perPage = 10): LengthAwarePaginator
     // {
     //     try {
     //         // Strict filter by driver_id first
-    //         $query = DriverCAHistory::where('driver_id', $driverId);
+    //         $query = HelperCAHistory::where('helper_id', $helperId);
 
     //         // --- Single Search Box Logic ---
     //         if (request('search')) {
@@ -48,41 +48,37 @@ class DriverCAHistoryService extends BaseService
     //         return $query->paginate($perPage)->withQueryString();
 
     //     } catch (\Exception $e) {
-    //         throw new \Exception('Failed to fetch driver cash advance history: ' . $e->getMessage());
+    //         throw new \Exception('Failed to fetch helper cash advance history: ' . $e->getMessage());
     //     }
     // }
-
-    public function getDriverHistory($driverId, $perPage = 10, $search = null, $dateFrom = null, $dateTo = null)
+    public function getHelperHistory($id, $perPage = 10, $searchTerm = null, $dateFrom = null, $dateTo = null)
     {
         try {
-            $query = DriverCAHistory::where('driver_id', $driverId);
+            $query = HelperCAHistory::where('helper_id', $id);
 
-            // Apply Date Range Filter
+            // Date Range Filter
             if ($dateFrom && $dateTo) {
                 $query->whereBetween('transaction_date', [$dateFrom, $dateTo]);
             }
 
-            // Apply Search Filter (Shift or general keyword)
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('shift', 'LIKE', "%{$search}%")
-                    ->orWhere('amount', 'LIKE', "%{$search}%");
+            // Search Logic
+            if ($searchTerm) {
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('amount', 'LIKE', '%' . $searchTerm . '%')
+                    ->orWhere('shift', 'LIKE', '%' . $searchTerm . '%');
                     
-                    // If search term looks like a date, check transaction_date directly
-                    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $search)) {
-                        $q->orWhereDate('transaction_date', $search);
+                    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $searchTerm)) {
+                        $q->orWhereDate('transaction_date', $searchTerm);
                     }
                 });
             }
 
-            // Always show newest first
             return $query->orderBy('transaction_date', 'desc')
-                        ->orderBy('id', 'desc')
                         ->paginate($perPage)
                         ->withQueryString();
 
         } catch (\Exception $e) {
-            throw new \Exception('Failed to fetch Cash Advance history: ' . $e->getMessage());
+            throw new \Exception('Failed to fetch history: ' . $e->getMessage());
         }
     }
 

@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\RatePerClientController;
 use App\Http\Controllers\Api\FixedExpenseController;
 use App\Http\Controllers\Api\WaybillDetailController;
 use App\Http\Controllers\Api\DriverCAHistoryController;
+use App\Http\Controllers\Api\HelperCAHistoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -290,16 +291,28 @@ Route::middleware('auth:sanctum')->group(function () {
 	*/
 	Route::prefix('helpers')->group(function () {
 		// Standard CRUD operations
+		Route::get('/active-list', [HelperController::class, 'getActiveHelperList']);
 		Route::get('/', [HelperController::class, 'index']);  // Retrieve all helpers
 		Route::get('/{id}', [HelperController::class, 'show']);  // Retrieve a single helper
 		Route::post('/', [HelperController::class, 'store']);  // Create a new helper
 		Route::put('/{id}', [HelperController::class, 'update']);  // Update an existing helper
 		Route::delete('/{id}', [HelperController::class, 'destroy']);  // Delete a helper
+		Route::patch('/deactivate/{id}', [HelperController::class, 'deactivate']);  // Deactivate a helper
+		Route::patch('/activate/{id}', [HelperController::class, 'activate']);  // Activate a helper
+		Route::get('/details/{id}', [HelperController::class, 'getHelperDetails']);  // Retrieve a single helper
+
+
 
 		// Bulk operations
 		Route::post('/bulk/delete', [HelperController::class, 'bulkDelete']);  // Bulk delete helpers
 		Route::post('/bulk/restore', [HelperController::class, 'bulkRestore']);  // Bulk restore helpers
 		Route::post('/bulk/force-delete', [HelperController::class, 'bulkForceDelete']);  // Bulk permanently delete helpers
+
+		//For waybill
+		Route::get('/get-waybill/{id}', [HelperController::class, 'getWaybillByHelperId']); 
+
+		//For Drive CA History
+		Route::get('/get-cash-advance/{id}', [HelperCAHistoryController::class, 'getHelperCashAdvances']);
 	});
 
 	// Custom route for archived (trashed) helpers with a distinct prefix
@@ -609,8 +622,10 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/get-truck-by-id/{id}', [TruckController::class, 'show']);  // Get a specific truck
 		Route::post('/add-truck', [TruckController::class, 'store']);  // Create a new truck
 		Route::put('/update-truck/{id}', [TruckController::class, 'update']);  // Update an existing truck details
-		Route::patch('/deactivate-truck/{id}', [TruckController::class, 'destroy']);  // Deactivate a truck
+		Route::patch('/deactivate-truck/{id}', [TruckController::class, 'deactivate']);  // Deactivate a truck
 		Route::patch('/activate-truck/{id}', [TruckController::class, 'restore']);  // Activate a truck
+		Route::delete('/truck-list/{id}', [TruckController::class, 'destroy']); 
+		Route::get('/active-list', [TruckController::class, 'getActiveTruckList']);
 
 		// Bulk operations
 		Route::post('/bulk/delete', [TruckController::class, 'bulkDelete']);  // Bulk delete shipping lines
