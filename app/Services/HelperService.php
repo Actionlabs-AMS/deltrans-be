@@ -6,150 +6,144 @@ use App\Models\Helper;
 use App\Models\Driver;
 use App\Models\WaybillDetail;
 use App\Http\Resources\HelperResource;
-use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class HelperService extends BaseService
 {
-  public function __construct()
-  {
-    // Pass the HelperResource class to the parent constructor
-    parent::__construct(new HelperResource(new Helper), new Helper());
-  }
-
-  /**
-   * Retrieve all resources with paginate.
-   */
-  public function list($perPage = 10, $trash = false)
-  {
-    try {
-      $allHelpers = $this->getTotalCount();
-      $trashedHelpers = $this->getTrashedCount();
-
-      $query = Helper::query();
-
-      $query->addSelect([
-            'helpers.*',
-            'assigned_truck_plate_numbers' => Driver::select(DB::raw('GROUP_CONCAT(assigned_truck_plate_numbers)'))
-                ->whereRaw('JSON_CONTAINS(drivers.helpers_id, CAST(helpers.id AS JSON))')
-        ]);
-
-      // Apply onlyTrashed() first if we're in trash view
-      if ($trash) {
-        $query->onlyTrashed();
-      }
-
-      // Then apply search conditions
-      if (request('search')) {
-        $query->where(function ($q) {
-          $q->where('first_name', 'LIKE', '%' . request('search') . '%')
-            ->orWhere('last_name', 'LIKE', '%' . request('search') . '%')
-            ->orWhere('contact_number', 'LIKE', '%' . request('search') . '%');
-        });
-      }
-
-      if (request('is_active') !== null) {
-            $query->where('helpers.is_active', request('is_active'));
-        }
-
-      // Apply ordering
-      if (request('order')) {
-        $query->orderBy(request('order'), request('sort'));
-      } else {
-        $query->orderBy('id', 'desc');
-      }
-
-      return HelperResource::collection(
-        $query->paginate($perPage)->withQueryString()
-      )->additional(['meta' => ['all' => $allHelpers, 'trashed' => $trashedHelpers]]);
-    } catch (\Exception $e) {
-      throw new \Exception('Failed to fetch helpers: ' . $e->getMessage());
+    public function __construct()
+    {
+        // Pass the HelperResource class to the parent constructor
+        parent::__construct(new HelperResource(new Helper), new Helper());
     }
-  }
 
-  public function deactivate_helper_by_id($id)
-  {
+    /**
+     * Retrieve all resources with paginate.
+     */
+    public function list($perPage = 10, $trash = false)
+    {
+        try {
+            $allHelpers = $this->getTotalCount();
+            $trashedHelpers = $this->getTrashedCount();
+
+            $query = Helper::query();
+
+            // Apply onlyTrashed() first if we're in trash view
+            if ($trash) {
+                $query->onlyTrashed();
+            }
+
+            // Then apply search conditions
+            if (request('search')) {
+                $query->where(function ($q) {
+                    $q->where('first_name', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('last_name', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('contact_number', 'LIKE', '%' . request('search') . '%');
+                });
+            }
+
+            if (request()->has('is_active')) {
+                $query->where('helpers.is_active', request('is_active'));
+            }
+
+            // Apply ordering
+            if (request('order')) {
+                $query->orderBy(request('order'), request('sort') ?? 'asc');
+            } else {
+                $query->orderBy('id', 'desc');
+            }
+
+            return HelperResource::collection(
+                $query->paginate($perPage)->withQueryString()
+            )->additional(['meta' => ['all' => $allHelpers, 'trashed' => $trashedHelpers]]);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch helpers: ' . $e->getMessage());
+        }
+    }
+
+    public function deactivate_helper_by_id($id)
+    {
         try {
             // 1. Find the truck or throw 404
-          $truck = Helper::findOrFail($id);                
-          
-          // 2. Only update the is_active to 0
-          $truck->update(['is_active' => 0]); 
+            $truck = Helper::findOrFail($id);
 
-      } catch (\Exception $e) {
-          throw new \Exception('Failed to fetch helper details: ' . $e->getMessage());
-      }
-  }
+            // 2. Only update the is_active to 0
+            $truck->update(['is_active' => 0]);
 
-  public function activate_helper_by_id($id)
-  {
-      try {
-          // 1. Find the truck or throw ModelNotFoundException (404)
-          $truck = Helper::findOrFail($id);                
-          
-          // 2. Only update the is_active to 1
-          $truck->update(['is_active' => 1]); 
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch helper details: ' . $e->getMessage());
+        }
+    }
 
-      } catch (\Exception $e) {
-          throw new \Exception('Failed to fetch helper details: ' . $e->getMessage());
-      }
-  }
+    public function activate_helper_by_id($id)
+    {
+        try {
+            // 1. Find the truck or throw ModelNotFoundException (404)
+            $truck = Helper::findOrFail($id);
 
-  public function getHelperById($id)
-  {
-      try {
-          $helper = Helper::query()
-              ->addSelect([
-                  'helpers.*',
-                  'assigned_truck_plate_numbers' => Driver::select(DB::raw('GROUP_CONCAT(assigned_truck_plate_numbers)'))
-                      ->whereRaw('JSON_CONTAINS(drivers.helpers_id, CAST(helpers.id AS JSON))')
-              ])
-              ->where('helpers.id', $id)
-              ->firstOrFail();
+            // 2. Only update the is_active to 1
+            $truck->update(['is_active' => 1]);
 
-          // Return as a single HelperResource instance
-          return new HelperResource($helper);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch helper details: ' . $e->getMessage());
+        }
+    }
 
-      } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-          throw new \Exception('Helper not found.');
-      } catch (\Exception $e) {
-          throw new \Exception('Failed to fetch helper details: ' . $e->getMessage());
-      }
-  }
+    public function getHelperById($id)
+    {
+        try {
+            $helper = Helper::query()
+                ->addSelect([
+                    'helpers.*',
+                    'assigned_truck_plate_numbers' => Driver::select(DB::raw('GROUP_CONCAT(assigned_truck_plate_numbers)'))
+                        ->whereRaw('JSON_CONTAINS(drivers.helpers_id, CAST(helpers.id AS JSON))')
+                ])
+                ->where('helpers.id', $id)
+                ->firstOrFail();
 
-//   public function get_waybills_by_helper_id($id, $perPage = 10)
+            // Return as a single HelperResource instance
+            return new HelperResource($helper);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            throw new \Exception('Helper not found.');
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch helper details: ' . $e->getMessage());
+        }
+    }
+
+    //   public function get_waybills_by_helper_id($id, $perPage = 10)
 //   {
 //       try {
 //           // Strict filter by driver_id first
 //           $query = WaybillDetail::where('helper_id', $id);
 
-//           // --- Single Search Box Logic (No Relationships) ---
+    //           // --- Single Search Box Logic (No Relationships) ---
 //           if (request('search')) {
 //               $searchTerm = request('search');
 
-//               $query->where(function($q) use ($searchTerm) {
+    //               $query->where(function($q) use ($searchTerm) {
 //                   // Search Waybill Number string
 //                   $q->where('waybill_number', 'LIKE', '%' . $searchTerm . '%')
 //                     // Search Truck Plate Number string directly in this table
 //                     ->orWhere('truck_plate_number', 'LIKE', '%' . $searchTerm . '%');
 
-//                   // Search Date (Only if the search term looks like a date YYYY-MM-DD)
+    //                   // Search Date (Only if the search term looks like a date YYYY-MM-DD)
 //                   if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $searchTerm)) {
 //                       $q->orWhereDate('transaction_date', $searchTerm);
 //                   }
 //               });
 //           }
 
-//           // --- Ordering ---
+    //           // --- Ordering ---
 //           if (request('order')) {
 //               $query->orderBy(request('order'), request('sort') ?? 'desc');
 //           } else {
 //               $query->orderBy('id', 'desc');
 //           }
 
-//           return $query->paginate($perPage)->withQueryString();
+    //           return $query->paginate($perPage)->withQueryString();
 
-//       } catch (\Exception $e) {
+    //       } catch (\Exception $e) {
 //           throw new \Exception('Failed to fetch waybills: ' . $e->getMessage());
 //       }
 //   }
@@ -167,11 +161,11 @@ class HelperService extends BaseService
 
             // 3. --- Single Search Box Logic ---
             if ($searchTerm) {
-                $query->where(function($q) use ($searchTerm) {
+                $query->where(function ($q) use ($searchTerm) {
                     // Search Waybill Number
                     $q->where('waybill_number', 'LIKE', '%' . $searchTerm . '%')
-                    // Search Truck Plate Number
-                    ->orWhere('truck_plate_number', 'LIKE', '%' . $searchTerm . '%');
+                        // Search Truck Plate Number
+                        ->orWhere('truck_plate_number', 'LIKE', '%' . $searchTerm . '%');
 
                     // Search specific Date if search term matches YYYY-MM-DD
                     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $searchTerm)) {
@@ -195,7 +189,7 @@ class HelperService extends BaseService
         }
     }
 
-    public function delete_helper_by_id($id) 
+    public function delete_helper_by_id($id)
     {
         try {
 
@@ -213,10 +207,10 @@ class HelperService extends BaseService
         $trashedHelper = Helper::onlyTrashed()
             ->where(function ($query) use ($data) {
                 $query->where('contact_number', $data['contact_number'])
-                        ->orWhere(function ($q) use ($data) {
-                            $q->where('first_name', $data['first_name'])
+                    ->orWhere(function ($q) use ($data) {
+                        $q->where('first_name', $data['first_name'])
                             ->where('last_name', $data['last_name']);
-                        });
+                    });
             })
             ->first();
 
@@ -246,7 +240,7 @@ class HelperService extends BaseService
     public function getActiveHelpers()
     {
         return Helper::where('is_active', 1)
-            ->whereNull('deleted_at') 
+            ->whereNull('deleted_at')
             ->select('id', 'first_name', 'last_name')
             ->orderBy('id', 'asc')
             ->get();

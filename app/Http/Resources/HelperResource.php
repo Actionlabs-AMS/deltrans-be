@@ -14,15 +14,15 @@ class HelperResource extends JsonResource
    */
   public function toArray(Request $request): array
   {
-    $rawPlates = $this->assigned_truck_plate_numbers;
+    $rawPlates = $this->assigned_truck_plate_numbers ?? '';
 
     // 1. Clean the string: remove brackets and extra double quotes
-    $cleaned = str_replace(['[', ']', '"'], '', $rawPlates);
+    $cleaned = is_string($rawPlates) ? str_replace(['[', ']', '"'], '', $rawPlates) : '';
 
     // 2. Convert to array and trim whitespace
-    $platesArray = !empty($cleaned) 
-        ? array_map('trim', explode(',', $cleaned)) 
-        : [];
+    $platesArray = !empty($cleaned)
+      ? array_map('trim', explode(',', $cleaned))
+      : [];
 
 
     return [
