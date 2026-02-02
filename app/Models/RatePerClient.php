@@ -24,6 +24,7 @@ class RatePerClient extends Model
         'stack_run',
         'container_size',
         'rate',
+        'tax_percent',
         'is_active',
     ];
 
@@ -37,6 +38,7 @@ class RatePerClient extends Model
         'cypa_id' => 'integer',
         'stack_run' => 'decimal:2',
         'rate' => 'decimal:2',
+        'tax_percent' => 'decimal:2',
         'is_active' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

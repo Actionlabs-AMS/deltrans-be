@@ -24,7 +24,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="cypa_id_from", type="integer", example=1),
  *     @OA\Property(property="cypa_id_to", type="integer", example=2),
  *     @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
- *     @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+ *     @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
  *     @OA\Property(property="actual_no_of_waybill", type="integer", example=5, description="Actual number of waybills created for this booking"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
@@ -132,6 +132,110 @@ class BookingController extends BaseController
     }
 
     /**
+     * Get bookings by shipping line ID, optionally filtered by expected_date range.
+     *
+     * @OA\Get(
+     *     path="/api/bookings/by-shipping-line/{shipping_line_id}",
+     *     summary="Get bookings by shipping line",
+     *     tags={"Booking Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(
+     *         name="shipping_line_id",
+     *         in="path",
+     *         required=true,
+     *         description="Shipping line ID",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="expected_date_from",
+     *         in="query",
+     *         description="Filter expected_date from (inclusive), format Y-m-d",
+     *         @OA\Schema(type="string", format="date", example="2025-01-01")
+     *     ),
+     *     @OA\Parameter(
+     *         name="expected_date_to",
+     *         in="query",
+     *         description="Filter expected_date to (inclusive), format Y-m-d",
+     *         @OA\Schema(type="string", format="date", example="2025-01-31")
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="query",
+     *         description="Page number",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Items per page",
+     *         @OA\Schema(type="integer", example=10)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Bookings retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Booking")),
+     *             @OA\Property(property="meta", type="object"),
+     *             @OA\Property(property="links", type="object"),
+     *             @OA\Property(property="total_cost", type="number", format="float", example=125000.00, description="Sum of total_rate_per_client for all waybills in the filtered bookings"),
+     *             @OA\Property(property="remaining_balance", type="number", format="float", example=50000.00, description="Sum of total_rate_per_client for waybills where booking is_complete=false"),
+     *             @OA\Property(property="total_paid", type="number", format="float", example=75000.00, description="Sum of total_rate_per_client for waybills where booking is_complete=true")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Shipping line not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Shipping line not found."),
+     *             @OA\Property(property="status_code", type="integer", example=404)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
+     */
+    public function byShippingLine($shipping_line_id)
+    {
+        $validated = request()->validate([
+            'expected_date_from' => 'nullable|date',
+            'expected_date_to' => 'nullable|date',
+        ], [
+            'expected_date_from.date' => 'The expected_date_from must be a valid date (Y-m-d).',
+            'expected_date_to.date' => 'The expected_date_to must be a valid date (Y-m-d).',
+        ]);
+
+        if (!empty($validated['expected_date_from']) && !empty($validated['expected_date_to']) && $validated['expected_date_from'] > $validated['expected_date_to']) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => ['expected_date_to' => ['The expected_date_to must be on or after expected_date_from.']],
+            ], 422);
+        }
+
+        if (!\App\Models\ShippingLine::where('id', $shipping_line_id)->exists()) {
+            return response()->json([
+                'message' => 'Shipping line not found.',
+                'status_code' => 404,
+            ], 404);
+        }
+
+        $perPage = request()->get('per_page', 10);
+        $expectedDateFrom = $validated['expected_date_from'] ?? null;
+        $expectedDateTo = $validated['expected_date_to'] ?? null;
+
+        return $this->service->listByShippingLine(
+            (int) $shipping_line_id,
+            $expectedDateFrom,
+            $expectedDateTo,
+            (int) $perPage
+        );
+    }
+
+    /**
      * Display the specified booking.
      * 
      * @OA\Get(
@@ -190,7 +294,8 @@ class BookingController extends BaseController
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
-     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
+     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
+     *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)")
      *         )
      *     ),
      *     @OA\Response(
@@ -204,7 +309,7 @@ class BookingController extends BaseController
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
-     *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+     *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )
@@ -260,7 +365,8 @@ class BookingController extends BaseController
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
-     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)")
+     *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
+     *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)")
      *         )
      *     ),
      *     @OA\Response(
@@ -274,7 +380,7 @@ class BookingController extends BaseController
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
-     *                 @OA\Property(property="is_complete", type="integer", example=0, description="0=Incomplete, 1=Complete"),
+     *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )

@@ -333,6 +333,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::prefix('bookings')->group(function () {
 		// Standard CRUD operations
 		Route::get('/', [BookingController::class, 'index']);  // Retrieve all bookings
+		Route::get('/by-shipping-line/{shipping_line_id}', [BookingController::class, 'byShippingLine']);  // Bookings by shipping line + optional expected_date range
 		Route::post('/', [BookingController::class, 'store']);  // Create a new booking
 		Route::get('/{id}', [BookingController::class, 'show']);  // Retrieve a single booking
 		Route::put('/{id}', [BookingController::class, 'update']);  // Update a booking

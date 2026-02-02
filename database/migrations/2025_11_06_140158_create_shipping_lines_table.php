@@ -25,6 +25,10 @@ return new class extends Migration {
             $table->json('landlines')->nullable();
             $table->string('fax_no')->nullable();
             $table->string('tin')->nullable();
+            //add tax
+            //total
+            //remaining balance
+            //total paid
             $table->json('shipping_lines_template')->nullable();
             $table->json('transaction_information_template')->nullable();
             $table->timestamps();

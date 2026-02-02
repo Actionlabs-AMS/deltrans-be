@@ -758,6 +758,11 @@
                                         "type": "string",
                                         "format": "date",
                                         "example": "2025-02-10"
+                                    },
+                                    "is_complete": {
+                                        "description": "Whether the booking is complete (optional)",
+                                        "type": "boolean",
+                                        "example": false
                                     }
                                 },
                                 "type": "object"
@@ -802,9 +807,9 @@
                                                     "nullable": true
                                                 },
                                                 "is_complete": {
-                                                    "description": "0=Incomplete, 1=Complete",
-                                                    "type": "integer",
-                                                    "example": 0
+                                                    "description": "Whether the booking is complete",
+                                                    "type": "boolean",
+                                                    "example": false
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -835,6 +840,151 @@
                                         },
                                         "errors": {
                                             "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/by-shipping-line/{shipping_line_id}": {
+            "get": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Get bookings by shipping line",
+                "description": "Get bookings by shipping line ID, optionally filtered by expected_date range.",
+                "operationId": "4a27c71cfb532036551f5545fa42f5cf",
+                "parameters": [
+                    {
+                        "name": "shipping_line_id",
+                        "in": "path",
+                        "description": "Shipping line ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "expected_date_from",
+                        "in": "query",
+                        "description": "Filter expected_date from (inclusive), format Y-m-d",
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-01-01"
+                        }
+                    },
+                    {
+                        "name": "expected_date_to",
+                        "in": "query",
+                        "description": "Filter expected_date to (inclusive), format Y-m-d",
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-01-31"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Bookings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Booking"
+                                            }
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        },
+                                        "total_cost": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 125000,
+                                            "description": "Sum of total_rate_per_client for all waybills in the filtered bookings"
+                                        },
+                                        "remaining_balance": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 50000,
+                                            "description": "Sum of total_rate_per_client for waybills where booking is_complete=false"
+                                        },
+                                        "total_paid": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 75000,
+                                            "description": "Sum of total_rate_per_client for waybills where booking is_complete=true"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Shipping line not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Shipping line not found."
+                                        },
+                                        "status_code": {
+                                            "type": "integer",
+                                            "example": 404
                                         }
                                     },
                                     "type": "object"
@@ -991,6 +1141,11 @@
                                         "type": "string",
                                         "format": "date",
                                         "example": "2025-02-10"
+                                    },
+                                    "is_complete": {
+                                        "description": "Whether the booking is complete (optional)",
+                                        "type": "boolean",
+                                        "example": false
                                     }
                                 },
                                 "type": "object"
@@ -1035,9 +1190,9 @@
                                                     "nullable": true
                                                 },
                                                 "is_complete": {
-                                                    "description": "0=Incomplete, 1=Complete",
-                                                    "type": "integer",
-                                                    "example": 0
+                                                    "description": "Whether the booking is complete",
+                                                    "type": "boolean",
+                                                    "example": false
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -19953,9 +20108,9 @@
                         "nullable": true
                     },
                     "is_complete": {
-                        "description": "0=Incomplete, 1=Complete",
-                        "type": "integer",
-                        "example": 0
+                        "description": "Whether the booking is complete",
+                        "type": "boolean",
+                        "example": false
                     },
                     "actual_no_of_waybill": {
                         "description": "Actual number of waybills created for this booking",
@@ -20372,6 +20527,13 @@
                         "format": "float",
                         "example": 5000
                     },
+                    "tax_percent": {
+                        "description": "Tax percentage (for SOA)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12,
+                        "nullable": true
+                    },
                     "is_active": {
                         "description": "1=Active, 0=Inactive",
                         "type": "integer",
@@ -20438,6 +20600,13 @@
                         "type": "number",
                         "format": "float",
                         "example": 5000
+                    },
+                    "tax_percent": {
+                        "description": "Tax percentage (for SOA)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12,
+                        "nullable": true
                     },
                     "is_active": {
                         "type": "integer",

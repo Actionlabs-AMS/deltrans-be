@@ -34,7 +34,7 @@ class BookingSeeder extends Seeder
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
                 'expected_date' => now()->addDays(10)->toDateString(),
-                'is_complete' => 1,
+                'is_complete' => true,
             ],
             [
                 'reference_number' => 'RF-483625',
@@ -43,7 +43,7 @@ class BookingSeeder extends Seeder
                 'cypa_id_from' => $cypaIds[0],
                 'cypa_id_to' => $cypaIds[1],
                 'expected_date' => now()->addDays(15)->toDateString(),
-                'is_complete' => 1,
+                'is_complete' => true,
             ],
             [
                 'reference_number' => 'RF-483626',
@@ -52,7 +52,7 @@ class BookingSeeder extends Seeder
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
                 'expected_date' => now()->addDays(20)->toDateString(),
-                'is_complete' => 0,
+                'is_complete' => false,
             ],
             [
                 'reference_number' => 'RF-483627',
@@ -61,7 +61,7 @@ class BookingSeeder extends Seeder
                 'cypa_id_from' => $cypaIds[1],
                 'cypa_id_to' => $cypaIds[0],
                 'expected_date' => now()->addDays(12)->toDateString(),
-                'is_complete' => 1,
+                'is_complete' => true,
             ],
             [
                 'reference_number' => 'RF-483628',
@@ -70,7 +70,7 @@ class BookingSeeder extends Seeder
                 'cypa_id_from' => count($cypaIds) > 2 ? $cypaIds[2] : $cypaIds[0],
                 'cypa_id_to' => count($cypaIds) > 3 ? $cypaIds[3] : $cypaIds[1],
                 'expected_date' => now()->addDays(25)->toDateString(),
-                'is_complete' => 0,
+                'is_complete' => false,
             ],
         ];
 

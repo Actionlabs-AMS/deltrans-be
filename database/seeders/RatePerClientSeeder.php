@@ -216,6 +216,7 @@ class RatePerClientSeeder extends Seeder
         }
 
         foreach ($ratePerClients as $ratePerClient) {
+            $ratePerClient['tax_percent'] = $ratePerClient['tax_percent'] ?? null;
             DB::table('rate_per_clients')->updateOrInsert(
                 [
                     'shipping_line_id' => $ratePerClient['shipping_line_id'],

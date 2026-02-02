@@ -24,6 +24,7 @@ return new class extends Migration {
             $table->decimal('stack_run', 10, 2);
             $table->string('container_size');
             $table->decimal('rate', 10, 2);
+            $table->decimal('tax_percent', 10, 2)->nullable();
             $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
             $table->softDeletes();

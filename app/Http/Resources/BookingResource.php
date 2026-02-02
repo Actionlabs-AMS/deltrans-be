@@ -22,7 +22,7 @@ class BookingResource extends JsonResource
             'cypa_id_from' => $this->cypa_id_from,
             'cypa_id_to' => $this->cypa_id_to,
             'expected_date' => $this->expected_date ? $this->expected_date->format('Y-m-d') : null,
-            'is_complete' => (int) $this->is_complete,
+            'is_complete' => (bool) $this->is_complete,
             'actual_no_of_waybill' => isset($this->actual_no_of_waybill) ? (int) $this->actual_no_of_waybill : 0,
             'shipping_line' => $this->whenLoaded('shippingLine'),
             'cypa_from' => $this->whenLoaded('cypaFrom'),
