@@ -23,6 +23,7 @@ class WaybillDetailResource extends JsonResource
             'driver_id' => $this->driver_id,
             'helper_id' => $this->helper_id,
             'container_size' => $this->container_size,
+            'container_type' => $this->container_type,
             'truck_plate_number' => $this->truck_plate_number,
             'pickup_date' => $this->pickup_date ? $this->pickup_date->format('Y-m-d') : null,
             'delivered_date' => $this->delivered_date ? $this->delivered_date->format('Y-m-d') : null,

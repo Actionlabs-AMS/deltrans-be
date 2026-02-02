@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class StatementOfAccount extends Model
+class BillingStatement extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -15,7 +15,7 @@ class StatementOfAccount extends Model
      *
      * @var string
      */
-    protected $table = 'statement_of_accounts';
+    protected $table = 'billing_statements';
 
     /**
      * The attributes that are mass assignable.
@@ -24,9 +24,15 @@ class StatementOfAccount extends Model
      */
     protected $fillable = [
         'shipping_line_id',
-        'dli_sa_number',
         'booking_id',
-        'work_order',
+        'prepared_by',
+        'billing_statement_no',
+        'payment_term',
+        'ci_date',
+        'due_date',
+        'bus_style',
+        'has_details',
+        'is_paid',
     ];
 
     /**
@@ -37,13 +43,18 @@ class StatementOfAccount extends Model
     protected $casts = [
         'shipping_line_id' => 'integer',
         'booking_id' => 'integer',
+        'prepared_by' => 'integer',
+        'ci_date' => 'date',
+        'due_date' => 'date',
+        'has_details' => 'boolean',
+        'is_paid' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
     /**
-     * Get the shipping line that owns the statement of account.
+     * Get the shipping line that owns the billing statement.
      */
     public function shippingLine()
     {
@@ -51,7 +62,7 @@ class StatementOfAccount extends Model
     }
 
     /**
-     * Get the booking associated with the statement of account.
+     * Get the booking associated with the billing statement.
      */
     public function booking()
     {
@@ -59,17 +70,10 @@ class StatementOfAccount extends Model
     }
 
     /**
-     * Get the waybills through the booking.
+     * Get the user who prepared the billing statement.
      */
-    public function waybills()
+    public function preparedByUser()
     {
-        return $this->hasManyThrough(
-            WaybillDetail::class,
-            Booking::class,
-            'id', // Foreign key on bookings table
-            'booking_id', // Foreign key on waybill_details table
-            'booking_id', // Local key on statement_of_accounts table
-            'id' // Local key on bookings table
-        );
+        return $this->belongsTo(User::class, 'prepared_by');
     }
 }

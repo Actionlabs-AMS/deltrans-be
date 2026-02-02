@@ -24,6 +24,7 @@ class BookingRequest extends FormRequest
     {
         $rules = [
             'reference_number' => 'nullable|string|max:255|unique:bookings,reference_number',
+            'vessel' => 'nullable|string|max:255',
             'shipping_line_id' => 'required|integer|exists:shipping_lines,id',
             'cypa_id_from' => 'required|integer|exists:cypa_details,id',
             'cypa_id_to' => 'required|integer|exists:cypa_details,id',
@@ -33,6 +34,7 @@ class BookingRequest extends FormRequest
         // For update, make some fields optional
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $rules['reference_number'] = 'sometimes|nullable|string|max:255|unique:bookings,reference_number,' . $this->route('id');
+            $rules['vessel'] = 'sometimes|nullable|string|max:255';
             $rules['shipping_line_id'] = 'sometimes|required|integer|exists:shipping_lines,id';
             $rules['cypa_id_from'] = 'sometimes|required|integer|exists:cypa_details,id';
             $rules['cypa_id_to'] = 'sometimes|required|integer|exists:cypa_details,id';
@@ -59,6 +61,7 @@ class BookingRequest extends FormRequest
             'cypa_id_to.required' => 'The CYPA ID (to) is required.',
             'cypa_id_to.exists' => 'The selected CYPA (to) does not exist.',
             'expected_date.date' => 'The expected date must be a valid date.',
+            'vessel.max' => 'The vessel must not exceed 255 characters.',
         ];
     }
 }

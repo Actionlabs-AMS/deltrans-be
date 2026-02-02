@@ -49,6 +49,7 @@ class StatementOfAccountSeeder extends Seeder
                 'shipping_line_id' => $booking->shipping_line_id,
                 'dli_sa_number' => 'SA-2024-' . str_pad($saCounter, 3, '0', STR_PAD_LEFT),
                 'booking_id' => $booking->id,
+                'work_order' => 'WO-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
             ];
 
             $saCounter++;
@@ -59,7 +60,7 @@ class StatementOfAccountSeeder extends Seeder
         if (count($statementOfAccounts) < 8) {
             $remainingNeeded = 8 - count($statementOfAccounts);
             $usedBookingIds = collect($statementOfAccounts)->pluck('booking_id')->toArray();
-            
+
             $additionalBookings = DB::table('bookings')
                 ->join('waybill_details', 'bookings.id', '=', 'waybill_details.booking_id')
                 ->select('bookings.id', 'bookings.shipping_line_id')
@@ -73,6 +74,7 @@ class StatementOfAccountSeeder extends Seeder
                     'shipping_line_id' => $booking->shipping_line_id,
                     'dli_sa_number' => 'SA-2024-' . str_pad($saCounter, 3, '0', STR_PAD_LEFT),
                     'booking_id' => $booking->id,
+                    'work_order' => 'WO-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
                 ];
                 $saCounter++;
             }

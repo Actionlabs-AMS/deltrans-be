@@ -54,13 +54,13 @@ class WaybillDetailsSeeder extends Seeder
 
         // Helper function to find fixed_expense_id based on booking and container_size
         // Match: shipping_line_id (booking) + cypa_id_from (booking) + cypa_id_to (booking) + container_size (waybill)
-        $findFixedExpenseId = function($bookingId, $containerSize) use ($bookings) {
+        $findFixedExpenseId = function ($bookingId, $containerSize) use ($bookings) {
             if (!isset($bookings[$bookingId])) {
                 return null;
             }
 
             $booking = $bookings[$bookingId];
-            
+
             $fixedExpense = DB::table('fixed_expenses')
                 ->where('shipping_line_id', $booking->shipping_line_id)
                 ->where('cypa_id_from', $booking->cypa_id_from)
@@ -74,13 +74,13 @@ class WaybillDetailsSeeder extends Seeder
         // Helper function to find rate_per_client_id based on booking and container_size
         // Match: shipping_line_id (booking) + cypa_id_from (booking) = cypa_id (rate_per_client) + container_size (waybill)
         // Falls back to cypa_id = 0 (all CYPA) if specific match not found
-        $findRatePerClientId = function($bookingId, $containerSize) use ($bookings) {
+        $findRatePerClientId = function ($bookingId, $containerSize) use ($bookings) {
             if (!isset($bookings[$bookingId])) {
                 return null;
             }
 
             $booking = $bookings[$bookingId];
-            
+
             // First try to find specific CYPA match
             $ratePerClient = DB::table('rate_per_clients')
                 ->where('shipping_line_id', $booking->shipping_line_id)
@@ -111,6 +111,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => $driverIds[0],
                 'helper_id' => !empty($helperIds) ? [$helperIds[0]] : null,
                 'container_size' => '20ft',
+                'container_type' => 'DRY',
                 'truck_plate_number' => $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(2)->toDateString(),
                 'delivered_date' => now()->subDays(1)->toDateString(),
@@ -124,6 +125,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => count($driverIds) > 1 ? $driverIds[1] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 1 ? [$helperIds[1]] : (!empty($helperIds) ? [$helperIds[0]] : null),
                 'container_size' => '40ft',
+                'container_type' => 'DRY',
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 1 ? $fleetTruckPlateNumbers[1] : $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(2)->toDateString(),
                 'delivered_date' => now()->subDays(1)->toDateString(),
@@ -137,6 +139,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => count($driverIds) > 2 ? $driverIds[2] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 2 ? [$helperIds[2]] : (!empty($helperIds) ? [$helperIds[0]] : null),
                 'container_size' => '20ft',
+                'container_type' => 'REEFER',
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 2 ? $fleetTruckPlateNumbers[2] : $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(3)->toDateString(),
                 'delivered_date' => now()->subDays(2)->toDateString(),
@@ -150,6 +153,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => count($driverIds) > 3 ? $driverIds[3] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 3 ? [$helperIds[3]] : (!empty($helperIds) ? [$helperIds[0]] : null),
                 'container_size' => '40ft',
+                'container_type' => 'DRY',
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 3 ? $fleetTruckPlateNumbers[3] : $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(4)->toDateString(),
                 'delivered_date' => now()->subDays(3)->toDateString(),
@@ -163,6 +167,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => count($driverIds) > 4 ? $driverIds[4] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 4 ? [$helperIds[4]] : (!empty($helperIds) ? [$helperIds[0]] : null),
                 'container_size' => '20ft',
+                'container_type' => 'DRY',
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 4 ? $fleetTruckPlateNumbers[4] : $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(4)->toDateString(),
                 'delivered_date' => now()->subDays(3)->toDateString(),
@@ -176,6 +181,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => count($driverIds) > 1 ? $driverIds[1] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 1 ? [$helperIds[1], $helperIds[0]] : (!empty($helperIds) ? [$helperIds[0]] : null), // Multiple helpers example
                 'container_size' => '40ft',
+                'container_type' => 'REEFER',
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 1 ? $fleetTruckPlateNumbers[1] : $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(5)->toDateString(),
                 'delivered_date' => now()->subDays(4)->toDateString(),
@@ -189,6 +195,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => count($driverIds) > 2 ? $driverIds[2] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 2 ? [$helperIds[2]] : (!empty($helperIds) ? [$helperIds[0]] : null),
                 'container_size' => '20ft',
+                'container_type' => 'DRY',
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 2 ? $fleetTruckPlateNumbers[2] : $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(5)->toDateString(),
                 'delivered_date' => now()->subDays(4)->toDateString(),
@@ -202,6 +209,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => count($driverIds) > 3 ? $driverIds[3] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 3 ? [$helperIds[3]] : (!empty($helperIds) ? [$helperIds[0]] : null),
                 'container_size' => '40ft',
+                'container_type' => 'DRY',
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 3 ? $fleetTruckPlateNumbers[3] : $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(6)->toDateString(),
                 'delivered_date' => now()->subDays(5)->toDateString(),
@@ -215,6 +223,7 @@ class WaybillDetailsSeeder extends Seeder
                 'driver_id' => count($driverIds) > 4 ? $driverIds[4] : $driverIds[0],
                 'helper_id' => !empty($helperIds) && count($helperIds) > 4 ? [$helperIds[4]] : (!empty($helperIds) ? [$helperIds[0]] : null),
                 'container_size' => '20ft',
+                'container_type' => 'REEFER',
                 'truck_plate_number' => count($fleetTruckPlateNumbers) > 4 ? $fleetTruckPlateNumbers[4] : $fleetTruckPlateNumbers[0],
                 'pickup_date' => now()->subDays(6)->toDateString(),
                 'delivered_date' => now()->subDays(5)->toDateString(), // Pending delivery
@@ -224,7 +233,7 @@ class WaybillDetailsSeeder extends Seeder
 
         // Get all fixed expense IDs as fallback
         $fixedExpenseIds = DB::table('fixed_expenses')->pluck('id')->toArray();
-        
+
         if (empty($fixedExpenseIds)) {
             $this->command->warn('No fixed expenses found. Please seed fixed_expenses first.');
             return;
@@ -232,7 +241,7 @@ class WaybillDetailsSeeder extends Seeder
 
         foreach ($waybillDetails as $waybill) {
             $booking = $bookings[$waybill['booking_id']] ?? null;
-            
+
             if (!$booking) {
                 $this->command->warn("Booking {$waybill['booking_id']} not found. Skipping waybill {$waybill['waybill_number']}.");
                 continue;
@@ -240,20 +249,20 @@ class WaybillDetailsSeeder extends Seeder
 
             // Find fixed_expense_id based on booking (shipping_line_id, cypa_id_from, cypa_id_to) and container_size
             $fixedExpenseId = $findFixedExpenseId($waybill['booking_id'], $waybill['container_size']);
-            
+
             if (!$fixedExpenseId) {
                 // Last resort: use the first available fixed expense
                 $fixedExpenseId = $fixedExpenseIds[0];
                 $this->command->warn("No matching fixed expense found for booking {$waybill['booking_id']} (shipping_line: {$booking->shipping_line_id}, cypa_from: {$booking->cypa_id_from}, cypa_to: {$booking->cypa_id_to}, container: {$waybill['container_size']}). Using fallback fixed_expense_id: {$fixedExpenseId}");
             }
-            
+
             // Get fixed expense to calculate total_expense
             $fixedExpense = DB::table('fixed_expenses')->find($fixedExpenseId);
             $totalExpense = ($waybill['post_expense_amount'] ?? 0) + ($fixedExpense->total_expenses ?? 0);
-            
+
             // Find rate_per_client_id based on booking (shipping_line_id, cypa_id_from) and container_size
             $ratePerClientId = $findRatePerClientId($waybill['booking_id'], $waybill['container_size']);
-            
+
             // Get rate_per_client to calculate total_rate_per_client
             $totalRatePerClient = 0.00;
             if ($ratePerClientId) {
@@ -274,13 +283,13 @@ class WaybillDetailsSeeder extends Seeder
                     $ratePerClientId = $fallbackRate->id;
                 }
             }
-            
+
             // Set calculated values
             $waybill['fixed_expense_id'] = $fixedExpenseId;
             $waybill['rate_per_client_id'] = $ratePerClientId; // Can be null, but we try to find a match
             $waybill['total_expense'] = $totalExpense;
             $waybill['total_rate_per_client'] = $totalRatePerClient; // Now should have realistic values
-            
+
             // Create waybill detail with auto-calculated values
             WaybillDetail::updateOrCreate(
                 ['waybill_number' => $waybill['waybill_number']],

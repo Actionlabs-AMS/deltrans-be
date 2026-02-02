@@ -82,6 +82,7 @@ class BookingService extends BaseService
             if (request('search')) {
                 $query->where(function ($q) {
                     $q->where('reference_number', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('vessel', 'LIKE', '%' . request('search') . '%')
                         ->orWhereHas('shippingLine', function ($q) {
                             $q->where('name', 'LIKE', '%' . request('search') . '%');
                         })
@@ -92,6 +93,11 @@ class BookingService extends BaseService
                             $q->where('name', 'LIKE', '%' . request('search') . '%');
                         });
                 });
+            }
+
+            // Filter by vessel
+            if (request('vessel')) {
+                $query->where('vessel', 'LIKE', '%' . request('vessel') . '%');
             }
 
             // Filter by shipping_line_id

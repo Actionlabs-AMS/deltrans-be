@@ -24,6 +24,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="driver_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="helper_id", type="array", @OA\Items(type="integer"), example={1, 2}, nullable=true, description="Array of helper IDs"),
  *     @OA\Property(property="container_size", type="string", example="20ft", nullable=true),
+ *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498", nullable=true),
  *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22", nullable=true),
  *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23", nullable=true),
@@ -47,6 +48,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="driver_id", type="integer", example=1),
  *     @OA\Property(property="helper_id", type="array", @OA\Items(type="integer"), example={1, 2}, nullable=true, description="Array of helper IDs"),
  *     @OA\Property(property="container_size", type="string", example="20ft"),
+ *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498"),
  *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22"),
  *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23"),
@@ -86,11 +88,11 @@ class WaybillDetailController extends BaseController
      *         @OA\Schema(type="integer", example=10)
      *     ),
      *     @OA\Parameter(
- *         name="search",
- *         in="query",
- *         description="Search by waybill number, container size, shipping line name, driver name, helper name, or truck plate number",
- *         @OA\Schema(type="string")
- *     ),
+     *         name="search",
+     *         in="query",
+     *         description="Search by waybill number, container size, container type, shipping line name, driver name, helper name, or truck plate number",
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(
      *         name="shipping_line_id",
      *         in="query",
@@ -98,9 +100,9 @@ class WaybillDetailController extends BaseController
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
- *         name="booking_id",
- *         in="query",
- *         description="Filter by booking ID",
+     *         name="booking_id",
+     *         in="query",
+     *         description="Filter by booking ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
@@ -109,26 +111,32 @@ class WaybillDetailController extends BaseController
      *         description="Filter by driver ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
- *     @OA\Parameter(
- *         name="helper_id",
- *         in="query",
- *         description="Filter by helper ID (checks if JSON array contains this ID)",
- *         @OA\Schema(type="integer", example=1)
- *     ),
- *     @OA\Parameter(
- *         name="truck_plate_number",
- *         in="query",
- *         description="Filter by truck plate number",
- *         @OA\Schema(type="string", example="NCK-6498")
- *     ),
- *     @OA\Parameter(
- *         name="container_size",
- *         in="query",
- *         description="Filter by container size",
- *         @OA\Schema(type="string", example="20ft")
- *     ),
- *     @OA\Parameter(
- *         name="transaction_date",
+     *     @OA\Parameter(
+     *         name="helper_id",
+     *         in="query",
+     *         description="Filter by helper ID (checks if JSON array contains this ID)",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="truck_plate_number",
+     *         in="query",
+     *         description="Filter by truck plate number",
+     *         @OA\Schema(type="string", example="NCK-6498")
+     *     ),
+     *     @OA\Parameter(
+     *         name="container_size",
+     *         in="query",
+     *         description="Filter by container size",
+     *         @OA\Schema(type="string", example="20ft")
+     *     ),
+     *     @OA\Parameter(
+     *         name="container_type",
+     *         in="query",
+     *         description="Filter by container type",
+     *         @OA\Schema(type="string", example="DRY")
+     *     ),
+     *     @OA\Parameter(
+     *         name="transaction_date",
      *         in="query",
      *         description="Filter by transaction date",
      *         @OA\Schema(type="string", format="date", example="2025-12-22")

@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('reference_number')->unique()->nullable();
+            $table->string('vessel')->nullable();
             $table->bigInteger('shipping_line_id')->unsigned();
             $table->bigInteger('cypa_id_from')->unsigned();
             $table->bigInteger('cypa_id_to')->unsigned();

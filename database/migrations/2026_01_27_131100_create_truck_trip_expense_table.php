@@ -5,7 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -14,31 +15,32 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::create('statement_of_accounts', function (Blueprint $table) {
+        Schema::create('truck_trip_expense', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('shipping_line_id')->unsigned();
-            $table->string('dli_sa_number');
-            $table->bigInteger('booking_id')->unsigned();
-            $table->string('work_order')->nullable(); // NEW
+            $table->bigInteger('budget_transaction_id')->unsigned();
+            $table->bigInteger('helper_id')->unsigned()->nullable();
+            $table->decimal('cash_on_hand', 15, 2)->default(0)->comment('Current money');
+            $table->decimal('issued_cash_amount', 15, 2)->default(0);
+            $table->date('date_issued');
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('shipping_line_id')
+            $table->foreign('budget_transaction_id')
                 ->references('id')
-                ->on('shipping_lines')
+                ->on('budget_transactions')
                 ->onDelete('cascade');
-
-            $table->foreign('booking_id')
+            
+            $table->foreign('helper_id')
                 ->references('id')
-                ->on('bookings')
-                ->onDelete('restrict');
+                ->on('helpers')
+                ->onDelete('set null');
 
             // Indexes
-            $table->index('shipping_line_id');
-            $table->index('dli_sa_number');
-            $table->index('booking_id');
+            $table->index('budget_transaction_id', 'idx_budget_transaction_id');
+            $table->index('helper_id', 'idx_helper_id');
+            $table->index('date_issued', 'idx_date_issued');
         });
 
         // Re-enable foreign key checks
@@ -53,7 +55,7 @@ return new class extends Migration {
         // Disable foreign key checks temporarily
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        Schema::dropIfExists('statement_of_accounts');
+        Schema::dropIfExists('truck_trip_expense');
 
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');

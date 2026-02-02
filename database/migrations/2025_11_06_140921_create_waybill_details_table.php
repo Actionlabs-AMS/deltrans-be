@@ -23,6 +23,7 @@ return new class extends Migration {
             $table->bigInteger('driver_id')->unsigned();
             $table->json('helper_id')->nullable(); // JSON field for multiple helper IDs
             $table->string('container_size');
+            $table->string('container_type')->nullable();
             $table->string('truck_plate_number');
             $table->bigInteger('fixed_expense_id')->unsigned();
             $table->bigInteger('rate_per_client_id')->unsigned()->nullable(); // nullable means no rate per client

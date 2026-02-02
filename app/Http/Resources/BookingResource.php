@@ -17,6 +17,7 @@ class BookingResource extends JsonResource
         return [
             'id' => $this->id,
             'reference_number' => $this->reference_number,
+            'vessel' => $this->vessel,
             'shipping_line_id' => $this->shipping_line_id,
             'cypa_id_from' => $this->cypa_id_from,
             'cypa_id_to' => $this->cypa_id_to,
