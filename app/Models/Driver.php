@@ -22,7 +22,7 @@ class Driver extends Model
         'is_active',
         'assigned_truck_plate_numbers',
         'stack_run',
-        'helpers_id',
+        'helper_id',
     ];
 
     /**
@@ -34,7 +34,7 @@ class Driver extends Model
         'is_active' => 'integer',
         'assigned_truck_plate_numbers' => 'array',
         'stack_run' => 'array',
-        'helpers_id' => 'array',
+        'helper_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -46,6 +46,14 @@ class Driver extends Model
      * @var string
      */
     protected $table = 'drivers';
+
+    /**
+     * Get the helper assigned to this driver.
+     */
+    public function helper()
+    {
+        return $this->belongsTo(Helper::class, 'helper_id');
+    }
 }
 
 

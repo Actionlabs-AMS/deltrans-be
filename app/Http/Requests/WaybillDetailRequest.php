@@ -27,8 +27,7 @@ class WaybillDetailRequest extends FormRequest
             'shipping_line_id' => 'required|integer|exists:shipping_lines,id',
             'booking_id' => 'required|integer|exists:bookings,id',
             'driver_id' => 'required|integer|exists:drivers,id',
-            'helper_id' => 'nullable|array',
-            'helper_id.*' => 'integer|exists:helpers,id',
+            'helper_id' => 'nullable|integer|exists:helpers,id',
             'container_size' => 'required|string|max:255',
             'container_type' => 'nullable|string|max:255',
             'truck_plate_number' => 'required|string|exists:fleet_trucks,plate_number',
@@ -47,8 +46,7 @@ class WaybillDetailRequest extends FormRequest
             $rules['shipping_line_id'] = 'sometimes|required|integer|exists:shipping_lines,id';
             $rules['booking_id'] = 'sometimes|required|integer|exists:bookings,id';
             $rules['driver_id'] = 'sometimes|required|integer|exists:drivers,id';
-            $rules['helper_id'] = 'sometimes|nullable|array';
-            $rules['helper_id.*'] = 'integer|exists:helpers,id';
+            $rules['helper_id'] = 'sometimes|nullable|integer|exists:helpers,id';
             $rules['container_size'] = 'sometimes|required|string|max:255';
             $rules['container_type'] = 'sometimes|nullable|string|max:255';
             $rules['truck_plate_number'] = 'sometimes|required|string|exists:fleet_trucks,plate_number';
@@ -81,9 +79,7 @@ class WaybillDetailRequest extends FormRequest
             'booking_id.exists' => 'The selected booking does not exist.',
             'driver_id.required' => 'The driver is required.',
             'driver_id.exists' => 'The selected driver does not exist.',
-            'helper_id.array' => 'The helper ID must be an array.',
-            'helper_id.*.integer' => 'Each helper ID must be an integer.',
-            'helper_id.*.exists' => 'One or more selected helpers do not exist.',
+            'helper_id.exists' => 'The selected helper does not exist.',
             'container_size.required' => 'The container size is required.',
             'container_size.string' => 'The container size must be a string.',
             'container_size.max' => 'The container size may not be greater than 255 characters.',

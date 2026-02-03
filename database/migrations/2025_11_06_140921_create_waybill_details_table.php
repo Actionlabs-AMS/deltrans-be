@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->bigInteger('shipping_line_id')->unsigned();
             $table->bigInteger('booking_id')->unsigned();
             $table->bigInteger('driver_id')->unsigned();
-            $table->json('helper_id')->nullable(); // JSON field for multiple helper IDs
+            $table->bigInteger('helper_id')->unsigned()->nullable();
             $table->string('container_size');
             $table->string('container_type')->nullable();
             $table->string('truck_plate_number');
@@ -38,6 +38,7 @@ return new class extends Migration {
             $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
             $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
             $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('cascade');
+            $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('set null');
             $table->foreign('truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('cascade');
             $table->foreign('fixed_expense_id')->references('id')->on('fixed_expenses')->onDelete('cascade');
             $table->foreign('rate_per_client_id')->references('id')->on('rate_per_clients')->onDelete('cascade');
@@ -45,6 +46,7 @@ return new class extends Migration {
             $table->index('transaction_date');
             $table->index('booking_id');
             $table->index('driver_id');
+            $table->index('helper_id');
             $table->index('truck_plate_number');
             $table->index('shipping_line_id');
             $table->index('fixed_expense_id');

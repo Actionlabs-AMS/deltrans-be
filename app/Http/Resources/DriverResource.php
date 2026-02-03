@@ -23,7 +23,7 @@ class DriverResource extends JsonResource
       'is_active' => (int) $this->is_active,
       'assigned_truck_plate_numbers' => $this->assigned_truck_plate_numbers ?? [],
       'stack_run' => $this->stack_run ?? [],
-      'helpers_id' => $this->helpers_id ?? [],
+      'helper_id' => $this->helper_id,
       'created_at' => $this->created_at->format('Y-m-d H:i:s'),
       'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
       'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null

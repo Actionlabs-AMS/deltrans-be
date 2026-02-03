@@ -50,12 +50,12 @@ class DriverController extends BaseController
    *         description="Search by first name, last name, or contact number",
    *         @OA\Schema(type="string")
    *     ),
-     *     @OA\Parameter(
-     *         name="is_active",
-     *         in="query",
-     *         description="Filter by is_active (1 for active, 0 for inactive)",
-     *         @OA\Schema(type="integer", example=1)
-     *     ),
+   *     @OA\Parameter(
+   *         name="is_active",
+   *         in="query",
+   *         description="Filter by is_active (1 for active, 0 for inactive)",
+   *         @OA\Schema(type="integer", example=1)
+   *     ),
    *     @OA\Response(
    *         response=200,
    *         description="List of drivers retrieved successfully",
@@ -166,35 +166,35 @@ class DriverController extends BaseController
   // }
   public function destroy($id)
   {
-      try {
-          // Grab the IDs from the route
-          $driverId = (int) request()->route('id');
+    try {
+      // Grab the IDs from the route
+      $driverId = (int) request()->route('id');
 
-          // Delegate the work to the service
-          // Assuming $this->service is defined in your constructor or BaseController
-          $this->service->delete_driver_by_id($driverId);
+      // Delegate the work to the service
+      // Assuming $this->service is defined in your constructor or BaseController
+      $this->service->delete_driver_by_id($driverId);
 
-          return response()->json([
-              'status' => true,
-              'message' => 'Driver record has been successfully deleted.',
-              'id' => $driverId
-          ], 200);
+      return response()->json([
+        'status' => true,
+        'message' => 'Driver record has been successfully deleted.',
+        'id' => $driverId
+      ], 200);
 
-      } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-          return response()->json([
-              'status' => false,
-              'message' => 'Record not found.'
-          ], 404);
-      } catch (\Exception $e) {
-          // If the Service threw a 403, we use that code, otherwise default to 500
-          $code = $e->getCode() == 403 ? 403 : 500;
-          
-          return response()->json([
-              'status' => false,
-              'message' => $e->getMessage(),
-              'status_code' => $code
-          ], $code);
-      }
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+      return response()->json([
+        'status' => false,
+        'message' => 'Record not found.'
+      ], 404);
+    } catch (\Exception $e) {
+      // If the Service threw a 403, we use that code, otherwise default to 500
+      $code = $e->getCode() == 403 ? 403 : 500;
+
+      return response()->json([
+        'status' => false,
+        'message' => $e->getMessage(),
+        'status_code' => $code
+      ], $code);
+    }
   }
 
   /**
@@ -444,7 +444,7 @@ class DriverController extends BaseController
   {
     return parent::bulkForceDelete($request);
   }
-  
+
   /**
    * Store a newly created resource in storage.
    * 
@@ -460,10 +460,10 @@ class DriverController extends BaseController
    *             @OA\Property(property="first_name", type="string", example="Juan", description="Driver first name"),
    *             @OA\Property(property="last_name", type="string", example="Dela Cruz", description="Driver last name"),
    *             @OA\Property(property="contact_number", type="string", example="+63 912 345 6789", description="Driver contact number"),
-             *             @OA\Property(property="is_active", type="integer", example=1, description="Driver is_active status (1=Active, 0=Inactive)"),
+   *             @OA\Property(property="is_active", type="integer", example=1, description="Driver is_active status (1=Active, 0=Inactive)"),
    *             @OA\Property(property="assigned_truck_plate_numbers", type="array", @OA\Items(type="string"), example={"ABC-1234", "XYZ-5678"}, description="Array of assigned truck plate numbers"),
    *             @OA\Property(property="stack_run", type="array", @OA\Items(type="string"), example={"Route A", "Route B"}, description="Array of stack run routes"),
-   *             @OA\Property(property="helpers_id", type="array", @OA\Items(type="integer"), example={1, 2}, description="Array of helper IDs")
+   *             @OA\Property(property="helper_id", type="integer", format="int64", nullable=true, description="Helper ID")
    *         )
    *     ),
    *     @OA\Response(
@@ -523,10 +523,10 @@ class DriverController extends BaseController
    *             @OA\Property(property="first_name", type="string", example="Juan", description="Driver first name"),
    *             @OA\Property(property="last_name", type="string", example="Dela Cruz", description="Driver last name"),
    *             @OA\Property(property="contact_number", type="string", example="+63 912 345 6789", description="Driver contact number"),
-             *             @OA\Property(property="is_active", type="integer", example=1, description="Driver is_active status (1=Active, 0=Inactive)"),
+   *             @OA\Property(property="is_active", type="integer", example=1, description="Driver is_active status (1=Active, 0=Inactive)"),
    *             @OA\Property(property="assigned_truck_plate_numbers", type="array", @OA\Items(type="string"), example={"ABC-1234", "XYZ-5678"}, description="Array of assigned truck plate numbers"),
    *             @OA\Property(property="stack_run", type="array", @OA\Items(type="string"), example={"Route A", "Route B"}, description="Array of stack run routes"),
-   *             @OA\Property(property="helpers_id", type="array", @OA\Items(type="integer"), example={1, 2}, description="Array of helper IDs")
+   *             @OA\Property(property="helper_id", type="integer", format="int64", nullable=true, description="Helper ID")
    *         )
    *     ),
    *     @OA\Response(
@@ -573,51 +573,51 @@ class DriverController extends BaseController
   }
 
   /**
- * Activate the specified driver.
- * * @OA\Patch(
- * path="/api/drivers/activate/{id}",
- * summary="Activate a driver",
- * tags={"Driver Management"},
- * security={{"sanctum": {}}},
- * @OA\Parameter(
- * name="id",
- * in="path",
- * required=true,
- * description="Driver ID",
- * @OA\Schema(type="integer", example=1)
- * ),
- * @OA\Response(
- * response=200,
- * description="Driver activated successfully",
- * @OA\JsonContent(
- * @OA\Property(property="message", type="string", example="Driver status updated successfully."),
- * @OA\Property(property="status", type="integer", example=1)
- * )
- * ),
- * @OA\Response(response=404, description="Driver not found"),
- * @OA\Response(response=401, description="Unauthenticated")
- * )
- */
-  public function deactivate($id)                
-  {                
-    try {                
-        // Assumption: The service method now updates is_active to 0
-        $this->service->deactivate_driver_by_id($id); 
-        
-        // Return 200 OK with a message instead of 204 No Content
-        // because we are technically updating, not destroying.
-        return response()->json([
-            'status_code' => 200,                
-            'message' => 'Driver deactivated successfully.',                
-        ], 200);                
+   * Activate the specified driver.
+   * * @OA\Patch(
+   * path="/api/drivers/activate/{id}",
+   * summary="Activate a driver",
+   * tags={"Driver Management"},
+   * security={{"sanctum": {}}},
+   * @OA\Parameter(
+   * name="id",
+   * in="path",
+   * required=true,
+   * description="Driver ID",
+   * @OA\Schema(type="integer", example=1)
+   * ),
+   * @OA\Response(
+   * response=200,
+   * description="Driver activated successfully",
+   * @OA\JsonContent(
+   * @OA\Property(property="message", type="string", example="Driver status updated successfully."),
+   * @OA\Property(property="status", type="integer", example=1)
+   * )
+   * ),
+   * @OA\Response(response=404, description="Driver not found"),
+   * @OA\Response(response=401, description="Unauthenticated")
+   * )
+   */
+  public function deactivate($id)
+  {
+    try {
+      // Assumption: The service method now updates is_active to 0
+      $this->service->deactivate_driver_by_id($id);
 
-    } catch (\Exception $e) {                
-        // This catches if the ID is not found in the service layer
-        return response()->json([                
-            'status_code' => 404,                
-            'message' => 'Driver id not found.',                
-        ], 404);                
-    }                
+      // Return 200 OK with a message instead of 204 No Content
+      // because we are technically updating, not destroying.
+      return response()->json([
+        'status_code' => 200,
+        'message' => 'Driver deactivated successfully.',
+      ], 200);
+
+    } catch (\Exception $e) {
+      // This catches if the ID is not found in the service layer
+      return response()->json([
+        'status_code' => 404,
+        'message' => 'Driver id not found.',
+      ], 404);
+    }
   }
 
   /**
@@ -647,26 +647,26 @@ class DriverController extends BaseController
    * )
    */
 
-  public function activate($id)                
-  {                
-    try {                
-        // Assumption: The service method now updates is_active to 0
-        $this->service->activate_driver_by_id($id); 
-        
-        // Return 200 OK with a message instead of 204 No Content
-        // because we are technically updating, not destroying.
-        return response()->json([
-            'status_code' => 200,                
-            'message' => 'Driver activated successfully.',                
-        ], 200);                
+  public function activate($id)
+  {
+    try {
+      // Assumption: The service method now updates is_active to 0
+      $this->service->activate_driver_by_id($id);
 
-    } catch (\Exception $e) {                
-        // This catches if the ID is not found in the service layer
-        return response()->json([                
-            'status_code' => 404,                
-            'message' => 'Driver id not found.',                
-        ], 404);                
-    }                
+      // Return 200 OK with a message instead of 204 No Content
+      // because we are technically updating, not destroying.
+      return response()->json([
+        'status_code' => 200,
+        'message' => 'Driver activated successfully.',
+      ], 200);
+
+    } catch (\Exception $e) {
+      // This catches if the ID is not found in the service layer
+      return response()->json([
+        'status_code' => 404,
+        'message' => 'Driver id not found.',
+      ], 404);
+    }
   }
 
   // /**
@@ -725,93 +725,93 @@ class DriverController extends BaseController
   // }
 
   /**
- * Fetch waybill details by driver ID with dynamic date filtering and search.
- * * @OA\Get(
- * path="/api/drivers/get-waybill/{id}",
- * summary="Fetch waybill details by driver ID",
- * tags={"Driver Management"},
- * security={{"sanctum": {}}},
- * @OA\Parameter(
- * name="id",
- * in="path",
- * required=true,
- * description="Driver ID",
- * @OA\Schema(type="integer", example=1)
- * ),
- * @OA\Parameter(
- * name="search",
- * in="query",
- * required=false,
- * description="Search by Waybill # or Truck Plate #",
- * @OA\Schema(type="string")
- * ),
- * @OA\Parameter(
- * name="filter_type",
- * in="query",
- * description="Filter scope: weekly or monthly",
- * required=false,
- * @OA\Schema(type="string", enum={"weekly", "monthly"}, default="weekly")
- * ),
- * @OA\Parameter(
- * name="reference_date",
- * in="query",
- * description="The anchor date (YYYY-MM-DD) for the filter range",
- * required=false,
- * @OA\Schema(type="string", format="date", example="2026-01-26")
- * ),
- * @OA\Parameter(
- * name="per_page",
- * in="query",
- * required=false,
- * @OA\Schema(type="integer", example=10)
- * ),
- * @OA\Response(
- * response=200,
- * description="Waybill details fetched successfully"
- * )
- * )
- */
+   * Fetch waybill details by driver ID with dynamic date filtering and search.
+   * * @OA\Get(
+   * path="/api/drivers/get-waybill/{id}",
+   * summary="Fetch waybill details by driver ID",
+   * tags={"Driver Management"},
+   * security={{"sanctum": {}}},
+   * @OA\Parameter(
+   * name="id",
+   * in="path",
+   * required=true,
+   * description="Driver ID",
+   * @OA\Schema(type="integer", example=1)
+   * ),
+   * @OA\Parameter(
+   * name="search",
+   * in="query",
+   * required=false,
+   * description="Search by Waybill # or Truck Plate #",
+   * @OA\Schema(type="string")
+   * ),
+   * @OA\Parameter(
+   * name="filter_type",
+   * in="query",
+   * description="Filter scope: weekly or monthly",
+   * required=false,
+   * @OA\Schema(type="string", enum={"weekly", "monthly"}, default="weekly")
+   * ),
+   * @OA\Parameter(
+   * name="reference_date",
+   * in="query",
+   * description="The anchor date (YYYY-MM-DD) for the filter range",
+   * required=false,
+   * @OA\Schema(type="string", format="date", example="2026-01-26")
+   * ),
+   * @OA\Parameter(
+   * name="per_page",
+   * in="query",
+   * required=false,
+   * @OA\Schema(type="integer", example=10)
+   * ),
+   * @OA\Response(
+   * response=200,
+   * description="Waybill details fetched successfully"
+   * )
+   * )
+   */
   public function getWaybillByDriverId($id)
   {
-      try {
-          $perPage = request('per_page', 10);
-          $search = request('search');
-          $filterType = request('filter_type', 'weekly');
-          $referenceDate = request('reference_date');
+    try {
+      $perPage = request('per_page', 10);
+      $search = request('search');
+      $filterType = request('filter_type', 'weekly');
+      $referenceDate = request('reference_date');
 
-          $dateFrom = null;
-          $dateTo = null;
+      $dateFrom = null;
+      $dateTo = null;
 
-          if ($referenceDate) {
-              $date = \Carbon\Carbon::parse($referenceDate);
+      if ($referenceDate) {
+        $date = \Carbon\Carbon::parse($referenceDate);
 
-              if ($filterType === 'monthly') {
-                  $dateFrom = $date->copy()->startOfMonth()->toDateString();
-                  $dateTo = $date->copy()->endOfMonth()->toDateString();
-              } else {
-                  // Weekly: Mon - Sun
-                  $dateFrom = $date->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->toDateString();
-                  $dateTo = $date->copy()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
-              }
-          }
-
-          // Pass everything to the service layer
-          $waybills = $this->service->get_waybills_by_driver_id(
-              $id, 
-              $perPage, 
-              $search, 
-              $dateFrom, 
-              $dateTo
-          );
-
-          return WaybillDetailResource::collection($waybills);
-
-      } catch (\Exception $e) {
-          return response()->json([
-              'status_code' => 404,
-              'message' => $e->getMessage(),
-          ], 404);
+        if ($filterType === 'monthly') {
+          $dateFrom = $date->copy()->startOfMonth()->toDateString();
+          $dateTo = $date->copy()->endOfMonth()->toDateString();
+        } else {
+          // Weekly: Mon - Sun
+          $dateFrom = $date->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->toDateString();
+          $dateTo = $date->copy()->endOfWeek(\Carbon\Carbon::SUNDAY)->toDateString();
+        }
       }
+
+      // Pass everything to the service layer
+      $waybills = $this->service->get_waybills_by_driver_id(
+        $id,
+        $perPage,
+        $search,
+        $dateFrom,
+        $dateTo
+      );
+
+      return WaybillDetailResource::collection($waybills);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'status_code' => 404,
+        'message' => $e->getMessage(),
+      ], 404);
+    }
   }
 
 }

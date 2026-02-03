@@ -11,8 +11,8 @@ class DriverSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Drivers are linked to fleet_trucks (assigned_truck_plate_numbers) and helpers (helpers_id JSON).
-     * Waybill details reference driver_id and use helper_id from this driver's helpers.
+     * Drivers are linked to fleet_trucks (assigned_truck_plate_numbers) and one helper (helper_id).
+     * Waybill details reference driver_id and helper_id.
      */
     public function run(): void
     {
@@ -32,7 +32,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 0, 1),
                 'stack_run' => ['MICT – South Harbor', 'MICT – Tondo CY'],
-                'helpers_id' => array_slice($helperIds, 0, 2),
+                'helper_id' => $helperIds[0] ?? null,
             ],
             [
                 'first_name' => 'Fernando',
@@ -41,7 +41,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 1, 1),
                 'stack_run' => ['South Harbor – Caloocan CY'],
-                'helpers_id' => array_slice($helperIds, 2, 2),
+                'helper_id' => $helperIds[1] ?? null,
             ],
             [
                 'first_name' => 'Ricardo',
@@ -50,7 +50,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 2, 1),
                 'stack_run' => ['MICT – Batangas', 'Tondo CY – Subic'],
-                'helpers_id' => array_slice($helperIds, 4, 2),
+                'helper_id' => $helperIds[2] ?? null,
             ],
             [
                 'first_name' => 'Antonio',
@@ -59,7 +59,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 3, 2),
                 'stack_run' => ['MICT – Caloocan CY'],
-                'helpers_id' => array_slice($helperIds, 6, 1),
+                'helper_id' => $helperIds[3] ?? null,
             ],
             [
                 'first_name' => 'Manuel',
@@ -68,7 +68,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 5, 1),
                 'stack_run' => null,
-                'helpers_id' => array_slice($helperIds, 7, 2),
+                'helper_id' => $helperIds[4] ?? null,
             ],
             [
                 'first_name' => 'Francisco',
@@ -77,7 +77,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 6, 1),
                 'stack_run' => ['South Harbor – Tondo CY', 'Batangas – Subic'],
-                'helpers_id' => array_slice($helperIds, 9, 1),
+                'helper_id' => $helperIds[5] ?? null,
             ],
             [
                 'first_name' => 'Eduardo',
@@ -86,7 +86,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 0,
                 'assigned_truck_plate_numbers' => null,
                 'stack_run' => null,
-                'helpers_id' => null,
+                'helper_id' => null,
             ],
             [
                 'first_name' => 'Alberto',
@@ -95,7 +95,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 1,
                 'assigned_truck_plate_numbers' => array_slice($truckPlateNumbers, 7, 1),
                 'stack_run' => null,
-                'helpers_id' => array_slice($helperIds, 10, 1),
+                'helper_id' => $helperIds[6] ?? null,
             ],
             [
                 'first_name' => 'Jose',
@@ -104,7 +104,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 0,
                 'assigned_truck_plate_numbers' => null,
                 'stack_run' => null,
-                'helpers_id' => null,
+                'helper_id' => null,
             ],
             [
                 'first_name' => 'Miguel',
@@ -113,7 +113,7 @@ class DriverSeeder extends Seeder
                 'is_active' => 0,
                 'assigned_truck_plate_numbers' => null,
                 'stack_run' => null,
-                'helpers_id' => null,
+                'helper_id' => null,
             ],
         ];
 

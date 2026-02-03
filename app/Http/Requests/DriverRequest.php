@@ -27,34 +27,33 @@ class DriverRequest extends FormRequest
     return [
       //"first_name" => "required|string|max:191|regex:/^[a-zA-Z\s]+$/",
       'first_name' => [
-          'required',
-          'string',
-          'max:255',
-          'regex:/^[a-zA-Z\s]+$/',
-          Rule::unique('drivers')
-              ->where(function ($query) {
-                  return $query->where('last_name', $this->last_name)
-                              ->whereNull('deleted_at');
-              })
-              ->ignore($driverId),
+        'required',
+        'string',
+        'max:255',
+        'regex:/^[a-zA-Z\s]+$/',
+        Rule::unique('drivers')
+          ->where(function ($query) {
+            return $query->where('last_name', $this->last_name)
+              ->whereNull('deleted_at');
+          })
+          ->ignore($driverId),
       ],
       "last_name" => "required|string|max:191|regex:/^[a-zA-Z\s]+$/",
       //"contact_number" => "required|string|max:191|unique:drivers,contact_number,".$this->id,
       "contact_number" => [
-          "required",
-          "string",
-          "max:191",
-          Rule::unique('drivers', 'contact_number')
-              ->ignore($this->id) 
-              ->whereNull('deleted_at')
+        "required",
+        "string",
+        "max:191",
+        Rule::unique('drivers', 'contact_number')
+          ->ignore($this->id)
+          ->whereNull('deleted_at')
       ],
       "is_active" => "nullable|integer|in:0,1",
       "assigned_truck_plate_numbers" => "nullable|array",
       "assigned_truck_plate_numbers.*" => "string|max:191",
       "stack_run" => "nullable|array",
       "stack_run.*" => "string|max:191",
-      "helpers_id" => "nullable|array",
-      "helpers_id.*" => "integer|exists:helpers,id",
+      "helper_id" => "nullable|integer|exists:helpers,id",
     ];
   }
 
@@ -71,8 +70,7 @@ class DriverRequest extends FormRequest
       "is_active.in" => "The is_active field must be either 0 or 1.",
       "assigned_truck_plate_numbers.array" => "The assigned truck plate numbers must be an array.",
       "stack_run.array" => "The stack run must be an array.",
-      "helpers_id.array" => "The helpers ID must be an array.",
-      "helpers_id.*.exists" => "One or more helper IDs do not exist.",
+      "helper_id.exists" => "The selected helper does not exist.",
     ];
   }
 }

@@ -738,6 +738,11 @@
                                         "type": "string",
                                         "example": "RF-483624"
                                     },
+                                    "vessel": {
+                                        "description": "Vessel name (optional)",
+                                        "type": "string",
+                                        "example": "MSC OSCAR"
+                                    },
                                     "shipping_line_id": {
                                         "description": "Shipping line ID",
                                         "type": "integer",
@@ -786,6 +791,11 @@
                                                 "reference_number": {
                                                     "type": "string",
                                                     "example": "RF-483624",
+                                                    "nullable": true
+                                                },
+                                                "vessel": {
+                                                    "type": "string",
+                                                    "example": "MSC OSCAR",
                                                     "nullable": true
                                                 },
                                                 "shipping_line_id": {
@@ -949,22 +959,22 @@
                                             "type": "object"
                                         },
                                         "total_cost": {
+                                            "description": "Sum of total_rate_per_client for all waybills in the filtered bookings",
                                             "type": "number",
                                             "format": "float",
-                                            "example": 125000,
-                                            "description": "Sum of total_rate_per_client for all waybills in the filtered bookings"
+                                            "example": 125000
                                         },
                                         "remaining_balance": {
+                                            "description": "Sum of total_rate_per_client for waybills where booking is_complete=false",
                                             "type": "number",
                                             "format": "float",
-                                            "example": 50000,
-                                            "description": "Sum of total_rate_per_client for waybills where booking is_complete=false"
+                                            "example": 50000
                                         },
                                         "total_paid": {
+                                            "description": "Sum of total_rate_per_client for waybills where booking is_complete=true",
                                             "type": "number",
                                             "format": "float",
-                                            "example": 75000,
-                                            "description": "Sum of total_rate_per_client for waybills where booking is_complete=true"
+                                            "example": 75000
                                         }
                                     },
                                     "type": "object"
@@ -1121,6 +1131,11 @@
                                         "type": "string",
                                         "example": "RF-483624"
                                     },
+                                    "vessel": {
+                                        "description": "Vessel name (optional)",
+                                        "type": "string",
+                                        "example": "MSC OSCAR"
+                                    },
                                     "shipping_line_id": {
                                         "description": "Shipping line ID",
                                         "type": "integer",
@@ -1169,6 +1184,11 @@
                                                 "reference_number": {
                                                     "type": "string",
                                                     "example": "RF-483624",
+                                                    "nullable": true
+                                                },
+                                                "vessel": {
+                                                    "type": "string",
+                                                    "example": "MSC OSCAR",
                                                     "nullable": true
                                                 },
                                                 "shipping_line_id": {
@@ -4210,16 +4230,11 @@
                                             "Route B"
                                         ]
                                     },
-                                    "helpers_id": {
-                                        "description": "Array of helper IDs",
-                                        "type": "array",
-                                        "items": {
-                                            "type": "integer"
-                                        },
-                                        "example": [
-                                            1,
-                                            2
-                                        ]
+                                    "helper_id": {
+                                        "description": "Helper ID",
+                                        "type": "integer",
+                                        "format": "int64",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -4432,16 +4447,11 @@
                                             "Route B"
                                         ]
                                     },
-                                    "helpers_id": {
-                                        "description": "Array of helper IDs",
-                                        "type": "array",
-                                        "items": {
-                                            "type": "integer"
-                                        },
-                                        "example": [
-                                            1,
-                                            2
-                                        ]
+                                    "helper_id": {
+                                        "description": "Helper ID",
+                                        "type": "integer",
+                                        "format": "int64",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -19056,7 +19066,7 @@
                     {
                         "name": "helper_id",
                         "in": "query",
-                        "description": "Filter by helper ID (checks if JSON array contains this ID)",
+                        "description": "Filter by helper ID",
                         "schema": {
                             "type": "integer",
                             "example": 1
@@ -20838,15 +20848,9 @@
                         "nullable": true
                     },
                     "helper_id": {
-                        "description": "Array of helper IDs",
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "example": [
-                            1,
-                            2
-                        ],
+                        "description": "Helper ID",
+                        "type": "integer",
+                        "format": "int64",
                         "nullable": true
                     },
                     "container_size": {
@@ -20956,15 +20960,9 @@
                         "example": 1
                     },
                     "helper_id": {
-                        "description": "Array of helper IDs",
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "example": [
-                            1,
-                            2
-                        ],
+                        "description": "Helper ID",
+                        "type": "integer",
+                        "format": "int64",
                         "nullable": true
                     },
                     "container_size": {

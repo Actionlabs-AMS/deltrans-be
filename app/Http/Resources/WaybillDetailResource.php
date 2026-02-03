@@ -22,6 +22,7 @@ class WaybillDetailResource extends JsonResource
             'booking_id' => $this->booking_id,
             'driver_id' => $this->driver_id,
             'helper_id' => $this->helper_id,
+            'helper' => $this->whenLoaded('helper'),
             'container_size' => $this->container_size,
             'container_type' => $this->container_type,
             'truck_plate_number' => $this->truck_plate_number,
@@ -35,7 +36,6 @@ class WaybillDetailResource extends JsonResource
             'shipping_line' => $this->whenLoaded('shippingLine'),
             'booking' => $this->whenLoaded('booking'),
             'driver' => $this->whenLoaded('driver'),
-            // helper_id is now JSON array, no relationship
             'fleet_truck' => $this->whenLoaded('fleetTruck'),
             'fixed_expense' => $this->whenLoaded('fixedExpense'),
             'rate_per_client' => $this->whenLoaded('ratePerClient'),

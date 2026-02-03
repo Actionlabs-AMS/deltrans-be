@@ -67,10 +67,9 @@ class WaybillDetailService extends BaseService
                 $query->where('driver_id', request('driver_id'));
             }
 
-            // Filter by helper_id (JSON array - check if array contains the helper_id)
+            // Filter by helper_id
             if (request('helper_id')) {
-                $helperId = request('helper_id');
-                $query->whereJsonContains('helper_id', $helperId);
+                $query->where('helper_id', request('helper_id'));
             }
 
             // Filter by truck_plate_number

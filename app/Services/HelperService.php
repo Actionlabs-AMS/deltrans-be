@@ -94,17 +94,15 @@ class HelperService extends BaseService
         try {
             $helper = Helper::where('helpers.id', $id)->firstOrFail();
 
-            // Drivers store helpers_id as JSON array; filter in PHP to avoid JSON_CONTAINS (server-compatible)
-            $drivers = Driver::select('id', 'helpers_id', 'assigned_truck_plate_numbers')->get();
-            $helperId = (int) $id;
+            // Drivers have helper_id (int); get all drivers assigned to this helper
+            $drivers = Driver::select('id', 'helper_id', 'assigned_truck_plate_numbers')
+                ->where('helper_id', (int) $id)
+                ->get();
             $allPlates = [];
             foreach ($drivers as $driver) {
-                $helperIds = $driver->helpers_id;
-                if (is_array($helperIds) && in_array($helperId, $helperIds, true)) {
-                    $plates = $driver->assigned_truck_plate_numbers;
-                    if (is_array($plates)) {
-                        $allPlates = array_merge($allPlates, $plates);
-                    }
+                $plates = $driver->assigned_truck_plate_numbers;
+                if (is_array($plates)) {
+                    $allPlates = array_merge($allPlates, $plates);
                 }
             }
             $helper->assigned_truck_plate_numbers = array_values(array_unique($allPlates));

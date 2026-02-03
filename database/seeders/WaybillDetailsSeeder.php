@@ -46,8 +46,8 @@ class WaybillDetailsSeeder extends Seeder
             ->get()
             ->keyBy('id');
 
-        $driversWithHelpers = DB::table('drivers')
-            ->select('id', 'helpers_id')
+        $driversWithHelperId = DB::table('drivers')
+            ->select('id', 'helper_id')
             ->get()
             ->keyBy('id');
 
@@ -117,12 +117,8 @@ class WaybillDetailsSeeder extends Seeder
                 $booking = $bookings[$bookingId];
                 $driverIdx = $created % count($driverIds);
                 $truckIdx = $created % count($fleetTruckPlateNumbers);
-                $driver = $driversWithHelpers[$driverIds[$driverIdx]] ?? null;
-                $helperId = null;
-                if ($driver && $driver->helpers_id) {
-                    $driverHelpers = is_string($driver->helpers_id) ? json_decode($driver->helpers_id, true) : $driver->helpers_id;
-                    $helperId = is_array($driverHelpers) && !empty($driverHelpers) ? [$driverHelpers[0]] : null;
-                }
+                $driver = $driversWithHelperId[$driverIds[$driverIdx]] ?? null;
+                $helperId = ($driver && $driver->helper_id) ? $driver->helper_id : null;
                 $fixedExpense = DB::table('fixed_expenses')->find($fixedExpenseId);
                 $ratePerClient = DB::table('rate_per_clients')->find($ratePerClientId);
                 $postExpense = ($created % 3 === 0) ? 0.00 : (($created % 3 === 1) ? 200.00 : 300.00);

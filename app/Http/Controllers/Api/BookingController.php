@@ -291,6 +291,7 @@ class BookingController extends BaseController
      *         @OA\JsonContent(
      *             required={"shipping_line_id", "cypa_id_from", "cypa_id_to"},
      *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional, unique)"),
+     *             @OA\Property(property="vessel", type="string", example="MSC OSCAR", description="Vessel name (optional)"),
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
@@ -305,6 +306,7 @@ class BookingController extends BaseController
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
      *                 @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
+     *                 @OA\Property(property="vessel", type="string", example="MSC OSCAR", nullable=true),
      *                 @OA\Property(property="shipping_line_id", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
@@ -362,6 +364,7 @@ class BookingController extends BaseController
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional)"),
+     *             @OA\Property(property="vessel", type="string", example="MSC OSCAR", description="Vessel name (optional)"),
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
@@ -376,6 +379,7 @@ class BookingController extends BaseController
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
      *                 @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
+     *                 @OA\Property(property="vessel", type="string", example="MSC OSCAR", nullable=true),
      *                 @OA\Property(property="shipping_line_id", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),

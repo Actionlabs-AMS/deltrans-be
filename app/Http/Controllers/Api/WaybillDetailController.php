@@ -22,7 +22,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="shipping_line_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="booking_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="driver_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="helper_id", type="array", @OA\Items(type="integer"), example={1, 2}, nullable=true, description="Array of helper IDs"),
+ *     @OA\Property(property="helper_id", type="integer", format="int64", nullable=true, description="Helper ID"),
  *     @OA\Property(property="container_size", type="string", example="20ft", nullable=true),
  *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498", nullable=true),
@@ -46,7 +46,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
  *     @OA\Property(property="booking_id", type="integer", example=1),
  *     @OA\Property(property="driver_id", type="integer", example=1),
- *     @OA\Property(property="helper_id", type="array", @OA\Items(type="integer"), example={1, 2}, nullable=true, description="Array of helper IDs"),
+ *     @OA\Property(property="helper_id", type="integer", format="int64", nullable=true, description="Helper ID"),
  *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498"),
@@ -114,7 +114,7 @@ class WaybillDetailController extends BaseController
      *     @OA\Parameter(
      *         name="helper_id",
      *         in="query",
-     *         description="Filter by helper ID (checks if JSON array contains this ID)",
+     *         description="Filter by helper ID",
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(

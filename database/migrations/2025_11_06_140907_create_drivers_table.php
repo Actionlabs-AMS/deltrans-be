@@ -20,13 +20,14 @@ return new class extends Migration {
             $table->string('last_name');
             $table->string('contact_number');
             $table->json('assigned_truck_plate_numbers')->nullable();
-            $table->json('stack_run')->nullable();
-            $table->json('helpers_id')->nullable();
+            $table->json('stack_run')->nullable(); //we can remove this
+            $table->bigInteger('helper_id')->unsigned()->nullable();
             $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
             $table->softDeletes();
 
             $table->index('is_active');
+            $table->index('helper_id');
             $table->index(['first_name', 'last_name']);
         });
 

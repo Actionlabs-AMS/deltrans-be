@@ -43,7 +43,7 @@ class WaybillDetail extends Model
         'transaction_date' => 'date',
         'pickup_date' => 'date',
         'delivered_date' => 'date',
-        'helper_id' => 'array', // JSON field cast to array
+        'helper_id' => 'integer',
         'post_expense_amount' => 'decimal:2',
         'total_rate_per_client' => 'decimal:2',
         'total_expense' => 'decimal:2',
@@ -96,7 +96,13 @@ class WaybillDetail extends Model
         return $this->belongsTo(Driver::class, 'driver_id');
     }
 
-    // Removed helper() relationship - helper_id is now JSON array of helper IDs
+    /**
+     * Get the helper that owns the waybill detail.
+     */
+    public function helper()
+    {
+        return $this->belongsTo(Helper::class, 'helper_id');
+    }
 
     /**
      * Get the fleet truck that owns the waybill detail.

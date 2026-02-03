@@ -255,11 +255,11 @@ class SoaAndBillingService extends BaseService
             case 'helper':
             case 'helper name':
             case 'helpers':
-                $helperIds = $waybill->helper_id ?? [];
-                if (!empty($helperIds) && is_array($helperIds)) {
-                    $helpers = \App\Models\Helper::whereIn('id', $helperIds)->get(['first_name', 'last_name']);
-                    if ($helpers->isNotEmpty()) {
-                        return $helpers->map(fn($h) => trim($h->first_name . ' ' . $h->last_name))->implode(', ');
+                $helperId = $waybill->helper_id ?? null;
+                if ($helperId) {
+                    $helper = \App\Models\Helper::find($helperId);
+                    if ($helper) {
+                        return trim($helper->first_name . ' ' . $helper->last_name);
                     }
                 }
                 return '-';

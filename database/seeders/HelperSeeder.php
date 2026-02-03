@@ -9,7 +9,7 @@ class HelperSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Helpers assist drivers on container hauling. Linked to drivers via drivers.helpers_id (JSON).
+     * Helpers assist drivers on container hauling. Linked to drivers via drivers.helper_id.
      */
     public function run(): void
     {
