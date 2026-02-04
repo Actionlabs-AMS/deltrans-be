@@ -81,7 +81,7 @@ class SoaAndBillingService extends BaseService
             }
 
             $soa = StatementOfAccount::create($data);
-            $soa->load('shippingLine');
+            $soa->load(['shippingLine', 'booking']);
 
             return SoaAndBillingResource::make($soa);
         } catch (ModelNotFoundException $e) {
@@ -163,6 +163,29 @@ class SoaAndBillingService extends BaseService
                 $transactionColumns = SoaDataOption::whereIn('id', $transactionTemplateIds)
                     ->orderByRaw('FIELD(id, ' . implode(',', $transactionTemplateIds) . ')')
                     ->get(['id', 'name', 'description']);
+
+                // Reorder columns: put AMOUNT before VAT
+                $columnNames = $transactionColumns->pluck('name')->map('strtolower')->toArray();
+                $amountIndex = array_search('amount', $columnNames);
+
+                // Find VAT column (try different variations)
+                $vatIndex = array_search('vat', $columnNames);
+                if ($vatIndex === false) {
+                    $vatIndex = array_search('12% vat', $columnNames);
+                }
+                if ($vatIndex === false) {
+                    $vatIndex = array_search('12%vat', $columnNames);
+                }
+
+                if ($amountIndex !== false && $vatIndex !== false && $amountIndex > $vatIndex) {
+                    // Swap positions: move AMOUNT before VAT (preserve model objects)
+                    $columnsArray = $transactionColumns->all();
+                    $amountColumn = $columnsArray[$amountIndex];
+                    $vatColumn = $columnsArray[$vatIndex];
+                    $columnsArray[$vatIndex] = $amountColumn;
+                    $columnsArray[$amountIndex] = $vatColumn;
+                    $transactionColumns = collect($columnsArray);
+                }
             }
 
             $waybills = $soa->booking->waybills ?? collect();
@@ -176,10 +199,26 @@ class SoaAndBillingService extends BaseService
             }
 
             $totalAmount = 0;
+            $totalVat = 0;
+
+            // Get tax_percent from rate_per_clients for this shipping line
+            $shippingLineRate = \App\Models\RatePerClient::where('shipping_line_id', $soa->shipping_line_id)
+                ->where('is_active', 1)
+                ->whereNotNull('tax_percent')
+                ->first();
+            // Default fallback to 12% if no tax_percent found
+            $taxPercent = $shippingLineRate ? $shippingLineRate->tax_percent : 12.00;
+
             foreach ($waybills as $waybill) {
                 $amount = $waybill->total_rate_per_client ?? 0;
+                $waybillTaxPercent = $taxPercent;
+
                 if ($amount == 0 && $waybill->ratePerClient) {
                     $amount = $waybill->ratePerClient->rate ?? 0;
+                    // Use tax_percent from this specific rate if available
+                    if ($waybill->ratePerClient->tax_percent !== null) {
+                        $waybillTaxPercent = $waybill->ratePerClient->tax_percent;
+                    }
                 }
                 if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
@@ -192,12 +231,17 @@ class SoaAndBillingService extends BaseService
                         ->first();
                     if ($matchingRate) {
                         $amount = $matchingRate->rate ?? 0;
+                        // Use tax_percent from this specific rate if available
+                        if ($matchingRate->tax_percent !== null) {
+                            $waybillTaxPercent = $matchingRate->tax_percent;
+                        }
                     }
                 }
                 $totalAmount += $amount;
+                $totalVat += $amount * ($waybillTaxPercent / 100);
             }
-            $vatRate = 0.12;
-            $totalVat = $totalAmount * $vatRate;
+
+            $vatRate = $taxPercent / 100;
             $grandTotal = $totalAmount + $totalVat;
 
             $companyInfo = [
@@ -214,6 +258,7 @@ class SoaAndBillingService extends BaseService
                 'transactionData' => $transactionData,
                 'totalAmount' => $totalAmount,
                 'vatRate' => $vatRate,
+                'taxPercent' => $taxPercent,
                 'totalVat' => $totalVat,
                 'grandTotal' => $grandTotal,
                 'issueDate' => now()->format('F d, Y'),
@@ -313,35 +358,65 @@ class SoaAndBillingService extends BaseService
             case 'vat':
             case '12% vat':
             case '12%vat':
+                // Get amount (base rate)
                 $amount = $waybill->total_rate_per_client ?? 0;
-                if ($amount == 0 && $waybill->ratePerClient) {
-                    $amount = $waybill->ratePerClient->rate ?? 0;
-                }
-                if ($amount == 0 && $waybill->booking) {
+                $taxPercent = 12.00; // Default fallback
+
+                // Always try to get tax_percent from rate_per_client
+                if ($waybill->ratePerClient && $waybill->ratePerClient->tax_percent !== null) {
+                    $taxPercent = $waybill->ratePerClient->tax_percent;
+                    if ($amount == 0) {
+                        $amount = $waybill->ratePerClient->rate ?? 0;
+                    }
+                } elseif ($waybill->booking) {
+                    // Try to find matching rate_per_client to get tax_percent
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
                         ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
-                        ->where('is_active', 1)->first();
+                        ->where('is_active', 1)
+                        ->first();
                     if ($matchingRate) {
-                        $amount = $matchingRate->rate ?? 0;
+                        if ($matchingRate->tax_percent !== null) {
+                            $taxPercent = $matchingRate->tax_percent;
+                        }
+                        if ($amount == 0) {
+                            $amount = $matchingRate->rate ?? 0;
+                        }
                     }
                 }
-                return number_format($amount * 0.12, 2, '.', ',');
+
+                // Calculate VAT using tax_percent from rate_per_clients
+                return number_format($amount * ($taxPercent / 100), 2, '.', ',');
             case 'total amount':
+                // Get amount (base rate)
                 $amount = $waybill->total_rate_per_client ?? 0;
-                if ($amount == 0 && $waybill->ratePerClient) {
-                    $amount = $waybill->ratePerClient->rate ?? 0;
-                }
-                if ($amount == 0 && $waybill->booking) {
+                $taxPercent = 12.00; // Default fallback
+
+                // Always try to get tax_percent from rate_per_client
+                if ($waybill->ratePerClient && $waybill->ratePerClient->tax_percent !== null) {
+                    $taxPercent = $waybill->ratePerClient->tax_percent;
+                    if ($amount == 0) {
+                        $amount = $waybill->ratePerClient->rate ?? 0;
+                    }
+                } elseif ($waybill->booking) {
+                    // Try to find matching rate_per_client to get tax_percent
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
                         ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
-                        ->where('is_active', 1)->first();
+                        ->where('is_active', 1)
+                        ->first();
                     if ($matchingRate) {
-                        $amount = $matchingRate->rate ?? 0;
+                        if ($matchingRate->tax_percent !== null) {
+                            $taxPercent = $matchingRate->tax_percent;
+                        }
+                        if ($amount == 0) {
+                            $amount = $matchingRate->rate ?? 0;
+                        }
                     }
                 }
-                return number_format($amount + $amount * 0.12, 2, '.', ',');
+
+                // Calculate total amount (amount + VAT using tax_percent from rate_per_clients)
+                return number_format($amount + ($amount * ($taxPercent / 100)), 2, '.', ',');
             case 'booking number':
             case 'booking no':
                 return $waybill->booking->reference_number ?? '-';

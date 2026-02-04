@@ -12337,13 +12337,41 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "type": "object"
+                                                "$ref": "#/components/schemas/ShippingLine"
                                             }
                                         },
                                         "meta": {
+                                            "properties": {
+                                                "all": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "trashed": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
                                             "type": "object"
                                         },
                                         "links": {
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/shipping-lines?page=1"
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/shipping-lines?page=5"
+                                                },
+                                                "prev": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "next": {
+                                                    "type": "string",
+                                                    "example": "http://example.com/api/shipping-lines?page=2"
+                                                }
+                                            },
                                             "type": "object"
                                         }
                                     },
@@ -12452,7 +12480,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/ShippingLine"
                                         }
                                     },
                                     "type": "object"
@@ -12531,7 +12559,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/ShippingLine"
                                         }
                                     },
                                     "type": "object"
@@ -12663,7 +12691,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/ShippingLine"
                                         }
                                     },
                                     "type": "object"
@@ -12918,7 +12946,7 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "type": "object"
+                                                "$ref": "#/components/schemas/ShippingLine"
                                             }
                                         }
                                     },
@@ -12983,7 +13011,7 @@
                                             "example": "Resource has been restored."
                                         },
                                         "resource": {
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/ShippingLine"
                                         }
                                     },
                                     "type": "object"
@@ -20621,6 +20649,94 @@
                     "is_active": {
                         "type": "integer",
                         "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "ShippingLine": {
+                "title": "Shipping Line Model",
+                "description": "A shipping line resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Maersk Line"
+                    },
+                    "email_address": {
+                        "type": "string",
+                        "example": "contact@maersk.com"
+                    },
+                    "address": {
+                        "type": "string",
+                        "example": "Esplanaden 50, 1098 Copenhagen K, Denmark",
+                        "nullable": true
+                    },
+                    "contact_name": {
+                        "type": "string",
+                        "example": "John Anderson",
+                        "nullable": true
+                    },
+                    "contact_mobile": {
+                        "type": "string",
+                        "example": "+45 33 63 33 63",
+                        "nullable": true
+                    },
+                    "landlines": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "+45 33 63 33 64",
+                            "+45 33 63 33 65"
+                        ]
+                    },
+                    "shipping_lines_template": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "transaction_information_template": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "fax_no": {
+                        "type": "string",
+                        "example": "+45 33 63 33 66",
+                        "nullable": true
+                    },
+                    "tin": {
+                        "type": "string",
+                        "example": "DK-12345678",
+                        "nullable": true
+                    },
+                    "tax_percent": {
+                        "description": "Tax percentage from rate_per_clients",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-27T10:00:00Z"
+                    },
+                    "deleted_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
                     }
                 },
                 "type": "object"

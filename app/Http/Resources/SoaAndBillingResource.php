@@ -29,6 +29,15 @@ class SoaAndBillingResource extends JsonResource
             $totalAmount = $waybills->sum('total_rate_per_client');
         }
 
+        // Get vessel from booking
+        $vessel = null;
+        if ($this->relationLoaded('booking') && $this->booking) {
+            $vessel = $this->booking->vessel;
+        } elseif ($this->booking_id) {
+            $booking = \App\Models\Booking::find($this->booking_id);
+            $vessel = $booking ? $booking->vessel : null;
+        }
+
         return [
             'id' => $this->id,
             'shipping_line_id' => $this->shipping_line_id,
@@ -38,6 +47,7 @@ class SoaAndBillingResource extends JsonResource
             'dli_sa_number' => $this->dli_sa_number,
             'booking_id' => $this->booking_id,
             'work_order' => $this->work_order ?? null,
+            'vessel' => $vessel,
             'booking' => $this->whenLoaded('booking', function () {
                 return new BookingResource($this->booking);
             }),

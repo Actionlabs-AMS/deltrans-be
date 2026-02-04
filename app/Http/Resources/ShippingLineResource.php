@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\SoaDataOption;
+use App\Models\RatePerClient;
 
 class ShippingLineResource extends JsonResource
 {
@@ -43,6 +44,16 @@ class ShippingLineResource extends JsonResource
             })->toArray();
         }
 
+        // Get tax_percent from rate_per_clients based on shipping_line_id
+        $taxPercent = null;
+        $ratePerClient = RatePerClient::where('shipping_line_id', $this->id)
+            ->where('is_active', 1)
+            ->whereNotNull('tax_percent')
+            ->first();
+        if ($ratePerClient) {
+            $taxPercent = $ratePerClient->tax_percent;
+        }
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -55,6 +66,7 @@ class ShippingLineResource extends JsonResource
             'transaction_information_template' => $transactionInformationTemplate,
             'fax_no' => $this->fax_no,
             'tin' => $this->tin,
+            'tax_percent' => $taxPercent,
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
             'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,
