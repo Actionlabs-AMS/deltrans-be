@@ -21,9 +21,23 @@
         }
 
         .header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
             margin-bottom: 25px;
             border-bottom: 2px solid #000;
             padding-bottom: 10px;
+        }
+
+        .header-logo {
+            flex-shrink: 0;
+            width: 80px;
+            height: auto;
+        }
+
+        .header-company {
+            flex: 1;
+            min-width: 0;
         }
 
         .company-name {
@@ -254,9 +268,14 @@
 <body>
     <!-- Header -->
     <div class="header">
-        <div class="company-name">{{ $companyInfo['name'] }}</div>
-        <div class="company-address">{{ $companyInfo['address'] }}</div>
-        <div class="company-phone">{{ $companyInfo['phone'] }}</div>
+        @if(!empty($logoPath) && file_exists($logoPath))
+            <img src="{{ $logoPath }}" alt="Logo" class="header-logo" />
+        @endif
+        <div class="header-company">
+            <div class="company-name">{{ $companyInfo['name'] }}</div>
+            <div class="company-address">{{ $companyInfo['address'] }}</div>
+            <div class="company-phone">{{ $companyInfo['phone'] }}</div>
+        </div>
     </div>
 
     <!-- Document Title -->

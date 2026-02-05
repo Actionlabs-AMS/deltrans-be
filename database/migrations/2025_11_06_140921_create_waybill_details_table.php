@@ -16,24 +16,34 @@ return new class extends Migration {
         Schema::create('waybill_details', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements(column: 'id');
-            $table->string('waybill_number')->unique();
-            $table->date('transaction_date');
-            $table->bigInteger('shipping_line_id')->unsigned();
-            $table->bigInteger('booking_id')->unsigned();
-            $table->bigInteger('driver_id')->unsigned();
-            $table->bigInteger('helper_id')->unsigned()->nullable();
-            $table->string('container_size');
-            $table->string('container_type')->nullable();
-            $table->string('truck_plate_number');
-            $table->bigInteger('fixed_expense_id')->unsigned();
-            $table->bigInteger('rate_per_client_id')->unsigned();
-            $table->date('pickup_date');
-            $table->date('delivered_date');
-            $table->decimal('post_expense_amount', 15, 2)->default(0); // price 20: 2500
-            //rate_per_container: 
-            $table->decimal('total_rate_per_client', 15, 2)->default(0); //fields 5k -> 6k
-            //rate per container = total_rate_per_client / container quantity
-            $table->decimal('total_expense', 15, 2)->default(0);
+            $table->string('waybill_number')->unique(); // field
+            $table->date('transaction_date'); // field
+            $table->bigInteger('shipping_line_id')->unsigned(); // field
+            $table->bigInteger('booking_id')->unsigned(); // field
+            $table->bigInteger('driver_id')->unsigned(); // field
+            $table->bigInteger('helper_id')->unsigned()->nullable(); // field
+            $table->string('container_size'); // field
+            $table->string('container_type')->nullable(); // field
+            $table->string('truck_plate_number'); // field
+            $table->date('pickup_date'); // field
+            $table->date('delivered_date'); // field
+
+            //rate per client details
+            $table->integer('no_of_days'); // field, not editable
+            $table->string('requirements')->nullable(); // field, not editable
+            $table->string('remarks')->nullable(); // field, not editable
+            $table->decimal('stack_run', 10, 2); // field
+            $table->decimal('rate', 10, 2); // field
+            $table->decimal('tax_percent', 10, 2)->nullable(); // field, not editable
+            $table->boolean('has_vat')->default(true); // field, not editable
+            $table->decimal('total_rate_per_client', 15, 2)->default(0); // field
+
+
+            //fixed expenses details
+            $table->bigInteger('fixed_expense_id')->unsigned(); //auto
+            $table->decimal('post_expense_amount', 15, 2)->default(0); // field
+            $table->decimal('total_expense', 15, 2)->default(0); // field
+
             $table->timestamps();
             $table->softDeletes();
 
@@ -43,7 +53,6 @@ return new class extends Migration {
             $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('set null');
             $table->foreign('truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('cascade');
             $table->foreign('fixed_expense_id')->references('id')->on('fixed_expenses')->onDelete('cascade');
-            $table->foreign('rate_per_client_id')->references('id')->on('rate_per_clients')->onDelete('cascade');
 
             $table->index('transaction_date');
             $table->index('booking_id');
@@ -52,7 +61,6 @@ return new class extends Migration {
             $table->index('truck_plate_number');
             $table->index('shipping_line_id');
             $table->index('fixed_expense_id');
-            $table->index('rate_per_client_id');
             $table->index('pickup_date');
             $table->index('delivered_date');
         });

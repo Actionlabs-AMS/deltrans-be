@@ -81,12 +81,5 @@ class RatePerClient extends Model
         return $this->belongsTo(ContainerYard::class, 'cypa_id');
     }
 
-    /**
-     * Get the waybill details for the rate per client.
-     */
-    public function waybillDetails()
-    {
-        return $this->hasMany(WaybillDetail::class, 'rate_per_client_id');
-    }
 }
 

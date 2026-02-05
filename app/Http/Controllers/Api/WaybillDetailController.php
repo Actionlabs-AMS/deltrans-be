@@ -28,11 +28,17 @@ use App\Services\MessageService;
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498", nullable=true),
  *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22", nullable=true),
  *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23", nullable=true),
+ *     @OA\Property(property="no_of_days", type="integer", example=1),
+ *     @OA\Property(property="requirements", type="string", nullable=true),
+ *     @OA\Property(property="remarks", type="string", nullable=true),
+ *     @OA\Property(property="stack_run", type="number", format="float", example=100.00),
+ *     @OA\Property(property="rate", type="number", format="float", example=2500.00),
+ *     @OA\Property(property="tax_percent", type="number", format="float", nullable=true),
+ *     @OA\Property(property="has_vat", type="boolean", example=true),
+ *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00),
  *     @OA\Property(property="fixed_expense_id", type="integer", example=1, nullable=true),
- *     @OA\Property(property="rate_per_client_id", type="integer", example=1, nullable=true, description="Nullable - no rate per client if null"),
  *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00, description="Post expense amount"),
- *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, description="Manual input field"),
- *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, description="Manual input field"),
+ *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
  * )
@@ -40,7 +46,7 @@ use App\Services\MessageService;
  *     schema="WaybillDetailInput",
  *     title="Waybill Detail Input",
  *     description="Data required to create or update a waybill detail",
- *     required={"waybill_number", "transaction_date", "shipping_line_id", "booking_id", "driver_id", "container_size", "truck_plate_number", "fixed_expense_id", "pickup_date", "delivered_date"},
+ *     required={"waybill_number", "transaction_date", "shipping_line_id", "booking_id", "driver_id", "container_size", "truck_plate_number", "fixed_expense_id", "pickup_date", "delivered_date", "no_of_days", "stack_run", "rate"},
  *     @OA\Property(property="waybill_number", type="string", example="WB-001"),
  *     @OA\Property(property="transaction_date", type="string", format="date", example="2025-12-22"),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
@@ -52,11 +58,17 @@ use App\Services\MessageService;
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498"),
  *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22"),
  *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23"),
+ *     @OA\Property(property="no_of_days", type="integer", example=1),
+ *     @OA\Property(property="requirements", type="string", nullable=true),
+ *     @OA\Property(property="remarks", type="string", nullable=true),
+ *     @OA\Property(property="stack_run", type="number", format="float", example=100.00),
+ *     @OA\Property(property="rate", type="number", format="float", example=2500.00),
+ *     @OA\Property(property="tax_percent", type="number", format="float", nullable=true),
+ *     @OA\Property(property="has_vat", type="boolean", example=true, nullable=true),
+ *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, nullable=true),
  *     @OA\Property(property="fixed_expense_id", type="integer", example=1),
- *     @OA\Property(property="rate_per_client_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00),
- *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, nullable=true),
- *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, nullable=true)
+ *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, nullable=true)
  * )
  */
 class WaybillDetailController extends BaseController

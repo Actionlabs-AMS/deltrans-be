@@ -16,17 +16,19 @@ return new class extends Migration {
         Schema::create('rate_per_clients', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
+
             $table->bigInteger('shipping_line_id')->unsigned();
             $table->integer('no_of_days');
             $table->string('requirements')->nullable();
             $table->string('remarks')->nullable();
             $table->bigInteger('cypa_id')->unsigned()->default(0);
-            $table->decimal('stack_run', 10, 2);
             $table->string('container_size');
+
+            $table->decimal('stack_run', 10, 2);
             $table->decimal('rate', 10, 2);
             $table->decimal('tax_percent', 10, 2)->nullable();
             $table->boolean('has_vat')->default(true);
-            $table->tinyInteger('is_active')->default(1);
+            $table->tinyInteger(column: 'is_active')->default(1);
             $table->timestamps();
             $table->softDeletes();
 

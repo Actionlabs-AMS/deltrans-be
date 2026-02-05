@@ -37,10 +37,6 @@ class WaybillDetailsSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
-        $ratePerClientIds = DB::table('rate_per_clients')
-            ->pluck('id')
-            ->toArray();
-
         $bookings = DB::table('bookings')
             ->select('id', 'shipping_line_id', 'cypa_id_from', 'cypa_id_to')
             ->get()
@@ -51,7 +47,7 @@ class WaybillDetailsSeeder extends Seeder
             ->get()
             ->keyBy('id');
 
-        if (empty($shippingLineIds) || empty($driverIds) || empty($fleetTruckPlateNumbers) || empty($bookingIds) || empty($ratePerClientIds)) {
+        if (empty($shippingLineIds) || empty($driverIds) || empty($fleetTruckPlateNumbers) || empty($bookingIds)) {
             $this->command->warn('Required related records not found. Please seed shipping_lines, drivers, fleet_trucks, bookings, and rate_per_clients first.');
             return;
         }
@@ -71,8 +67,8 @@ class WaybillDetailsSeeder extends Seeder
             return $row ? $row->id : null;
         };
 
-        // Find rate_per_client_id by (shipping_line_id, cypa_id_from, container_size); prefer specific cypa then cypa_id=0
-        $findRatePerClientId = function ($bookingId, $containerSize) use ($bookings) {
+        // Find rate_per_client row by (shipping_line_id, cypa_id_from, container_size); prefer specific cypa then cypa_id=0 (for redundant copy into waybill_details)
+        $findRatePerClient = function ($bookingId, $containerSize) use ($bookings) {
             if (!isset($bookings[$bookingId])) {
                 return null;
             }
@@ -91,7 +87,7 @@ class WaybillDetailsSeeder extends Seeder
                     ->where('is_active', 1)
                     ->first();
             }
-            return $row ? $row->id : null;
+            return $row;
         };
 
         // Build waybills only for (booking_id, container_size) that have both fixed_expense and rate_per_client (no fallbacks)
@@ -110,8 +106,8 @@ class WaybillDetailsSeeder extends Seeder
                     break;
                 }
                 $fixedExpenseId = $findFixedExpenseId($bookingId, $containerSize);
-                $ratePerClientId = $findRatePerClientId($bookingId, $containerSize);
-                if ($fixedExpenseId === null || $ratePerClientId === null) {
+                $ratePerClient = $findRatePerClient($bookingId, $containerSize);
+                if ($fixedExpenseId === null || $ratePerClient === null) {
                     continue;
                 }
                 $booking = $bookings[$bookingId];
@@ -120,7 +116,11 @@ class WaybillDetailsSeeder extends Seeder
                 $driver = $driversWithHelperId[$driverIds[$driverIdx]] ?? null;
                 $helperId = ($driver && $driver->helper_id) ? $driver->helper_id : null;
                 $fixedExpense = DB::table('fixed_expenses')->find($fixedExpenseId);
-                $ratePerClient = DB::table('rate_per_clients')->find($ratePerClientId);
+                $rate = (float) ($ratePerClient->rate ?? 0);
+                $taxPercent = $ratePerClient->tax_percent !== null ? (float) $ratePerClient->tax_percent : null;
+                $hasVat = (bool) ($ratePerClient->has_vat ?? true);
+                $totalRatePerClient = $rate; // store base rate; SOA/billing can apply VAT from has_vat/tax_percent
+                $noOfDays = (int) ($ratePerClient->no_of_days ?? 0);
                 $postExpense = ($created % 3 === 0) ? 0.00 : (($created % 3 === 1) ? 200.00 : 300.00);
                 $daysAgo = 2 + ($created % 5);
                 $waybill = [
@@ -137,9 +137,15 @@ class WaybillDetailsSeeder extends Seeder
                     'delivered_date' => now()->subDays($daysAgo - 1)->toDateString(),
                     'post_expense_amount' => $postExpense,
                     'fixed_expense_id' => $fixedExpenseId,
-                    'rate_per_client_id' => $ratePerClientId,
+                    'no_of_days' => $noOfDays,
+                    'requirements' => $ratePerClient->requirements ?? null,
+                    'remarks' => $ratePerClient->remarks ?? null,
+                    'stack_run' => (float) ($ratePerClient->stack_run ?? 0),
+                    'rate' => $rate,
+                    'tax_percent' => $taxPercent,
+                    'has_vat' => $hasVat,
+                    'total_rate_per_client' => $totalRatePerClient,
                     'total_expense' => ($postExpense) + ($fixedExpense->total_expenses ?? 0),
-                    'total_rate_per_client' => $ratePerClient->rate ?? 0.00,
                 ];
                 WaybillDetail::updateOrCreate(
                     ['waybill_number' => $waybill['waybill_number']],
@@ -150,7 +156,7 @@ class WaybillDetailsSeeder extends Seeder
             }
         }
 
-        // Assign no-VAT rate to first 2 waybills so at least one SOA has has_vat = false (for testing)
+        // Assign no-VAT to first 2 waybills so at least one SOA has has_vat = false (for testing)
         $noVatRates = DB::table('rate_per_clients')
             ->where('has_vat', 0)
             ->where('is_active', 1)
@@ -162,14 +168,20 @@ class WaybillDetailsSeeder extends Seeder
                 $noVat = $noVatRates->get($wd->container_size);
                 if ($noVat) {
                     $wd->update([
-                        'rate_per_client_id' => $noVat->id,
-                        'total_rate_per_client' => $noVat->rate,
+                        'has_vat' => false,
+                        'rate' => (float) $noVat->rate,
+                        'total_rate_per_client' => (float) $noVat->rate,
+                        'tax_percent' => $noVat->tax_percent !== null ? (float) $noVat->tax_percent : null,
+                        'remarks' => $noVat->remarks ?? $wd->remarks,
+                        'requirements' => $noVat->requirements ?? $wd->requirements,
+                        'stack_run' => (float) ($noVat->stack_run ?? 0),
+                        'no_of_days' => (int) ($noVat->no_of_days ?? 0),
                     ]);
                 }
             }
         }
 
-        $this->command->info("Waybill details seeded: {$created} waybills (only where fixed_expense and rate_per_client match).");
+        $this->command->info("Waybill details seeded: {$created} waybills (rate per client data stored inline).");
     }
 }
 

@@ -27,7 +27,22 @@
         }
         
         .header-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
             flex: 1;
+            min-width: 0;
+        }
+        
+        .header-logo {
+            flex-shrink: 0;
+            width: 70px;
+            height: auto;
+        }
+        
+        .header-company-text {
+            flex: 1;
+            min-width: 0;
         }
         
         .header-right {
@@ -260,10 +275,15 @@
     <!-- Header: company left, title & statement no right -->
     <div class="header">
         <div class="header-left">
-            <div class="company-name">{{ $companyInfo['name'] }}</div>
-            <div class="company-address">{{ $companyInfo['address'] }}</div>
-            <div class="company-phone">{{ $companyInfo['phone'] }}</div>
-            <div class="company-tin">{{ $companyInfo['tin'] }}</div>
+            @if(!empty($logoPath) && file_exists($logoPath))
+                <img src="{{ $logoPath }}" alt="Logo" class="header-logo" />
+            @endif
+            <div class="header-company-text">
+                <div class="company-name">{{ $companyInfo['name'] }}</div>
+                <div class="company-address">{{ $companyInfo['address'] }}</div>
+                <div class="company-phone">{{ $companyInfo['phone'] }}</div>
+                <div class="company-tin">{{ $companyInfo['tin'] }}</div>
+            </div>
         </div>
         <div class="header-right">
             <div class="document-title">Billing Statement</div>

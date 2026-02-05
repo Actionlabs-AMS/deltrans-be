@@ -110,7 +110,6 @@ class SoaAndBillingService extends BaseService
                         'driver',
                         'fleetTruck',
                         'fixedExpense',
-                        'ratePerClient'
                     ]);
                 }
             ])->findOrFail($id);
@@ -143,7 +142,6 @@ class SoaAndBillingService extends BaseService
                         'driver',
                         'fleetTruck',
                         'fixedExpense',
-                        'ratePerClient',
                         'booking' => function ($q) {
                             $q->with(['cypaFrom', 'cypaTo', 'containers']);
                         }
@@ -201,23 +199,13 @@ class SoaAndBillingService extends BaseService
             }
 
             $totalAmount = 0;
-            $totalVat = 0; // Sum of 12% VAT only for waybills where rate_per_client.has_vat = true
+            $totalVat = 0; // Sum of 12% VAT only for waybills where has_vat = true (stored on waybill)
 
-            // VAT (12%) is added only when rate_per_client.has_vat is true; otherwise no VAT
             $vatPercent = 12.00;
 
             foreach ($waybills as $waybill) {
-                $amount = $waybill->total_rate_per_client ?? 0;
-                $waybillHasVat = false;
-                $rpc = null;
-
-                if ($waybill->ratePerClient) {
-                    $rpc = $waybill->ratePerClient;
-                    if ($amount == 0) {
-                        $amount = $rpc->rate ?? 0;
-                    }
-                    $waybillHasVat = $rpc->has_vat ?? false;
-                }
+                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $waybillHasVat = (bool) ($waybill->has_vat ?? false);
                 if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
@@ -228,10 +216,8 @@ class SoaAndBillingService extends BaseService
                         ->where('is_active', 1)
                         ->first();
                     if ($matchingRate) {
-                        if ($amount == 0) {
-                            $amount = $matchingRate->rate ?? 0;
-                        }
-                        $waybillHasVat = $matchingRate->has_vat ?? false;
+                        $amount = (float) ($matchingRate->rate ?? 0);
+                        $waybillHasVat = (bool) ($matchingRate->has_vat ?? false);
                     }
                 }
                 $totalAmount += $amount;
@@ -249,6 +235,8 @@ class SoaAndBillingService extends BaseService
                 'phone' => 'Tel# 02-8291-4477',
             ];
 
+            $logoPath = public_path('images/deltrans-logo.png');
+
             $data = [
                 'soa' => $soa,
                 'companyInfo' => $companyInfo,
@@ -261,6 +249,7 @@ class SoaAndBillingService extends BaseService
                 'totalVat' => $totalVat,
                 'grandTotal' => $grandTotal,
                 'issueDate' => now()->format('F d, Y'),
+                'logoPath' => $logoPath,
             ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('soa.pdf', $data);
@@ -329,7 +318,7 @@ class SoaAndBillingService extends BaseService
             case 'to':
                 return $waybill->booking->cypaTo ? $waybill->booking->cypaTo->name : '-';
             case 'remarks':
-                return $waybill->ratePerClient ? ($waybill->ratePerClient->remarks ?? '-') : '-';
+                return $waybill->remarks ?? '-';
             case 'size':
                 $size = $waybill->container_size ?? '';
                 if ($size) {
@@ -338,17 +327,14 @@ class SoaAndBillingService extends BaseService
                 }
                 return '-';
             case 'amount':
-                $amount = $waybill->total_rate_per_client ?? 0;
-                if ($amount == 0 && $waybill->ratePerClient) {
-                    $amount = $waybill->ratePerClient->rate ?? 0;
-                }
+                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
                 if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
                         ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
                         ->where('is_active', 1)->first();
                     if ($matchingRate) {
-                        $amount = $matchingRate->rate ?? 0;
+                        $amount = (float) ($matchingRate->rate ?? 0);
                     }
                 }
                 return number_format($amount, 2, '.', ',');
@@ -357,61 +343,35 @@ class SoaAndBillingService extends BaseService
             case 'vat':
             case '12% vat':
             case '12%vat':
-                // Get amount (base rate)
-                $amount = $waybill->total_rate_per_client ?? 0;
-                $hasVat = false; // Default: no VAT
-
-                // Check has_vat from rate_per_client
-                if ($waybill->ratePerClient) {
-                    $hasVat = $waybill->ratePerClient->has_vat ?? false;
-                    if ($amount == 0) {
-                        $amount = $waybill->ratePerClient->rate ?? 0;
-                    }
-                } elseif ($waybill->booking) {
-                    // Try to find matching rate_per_client to get has_vat
+                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $hasVat = (bool) ($waybill->has_vat ?? false);
+                if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
                         ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
                         ->where('is_active', 1)
                         ->first();
                     if ($matchingRate) {
-                        $hasVat = $matchingRate->has_vat ?? false;
-                        if ($amount == 0) {
-                            $amount = $matchingRate->rate ?? 0;
-                        }
+                        $amount = (float) ($matchingRate->rate ?? 0);
+                        $hasVat = (bool) ($matchingRate->has_vat ?? false);
                     }
                 }
-
-                // Calculate VAT: 12% if has_vat is true, 0% if false
                 $vatPercent = $hasVat ? 12.00 : 0.00;
                 return number_format($amount * ($vatPercent / 100), 2, '.', ',');
             case 'total amount':
-                // Get amount (base rate)
-                $amount = $waybill->total_rate_per_client ?? 0;
-                $hasVat = false; // Default: no VAT
-
-                // Check has_vat from rate_per_client
-                if ($waybill->ratePerClient) {
-                    $hasVat = $waybill->ratePerClient->has_vat ?? false;
-                    if ($amount == 0) {
-                        $amount = $waybill->ratePerClient->rate ?? 0;
-                    }
-                } elseif ($waybill->booking) {
-                    // Try to find matching rate_per_client to get has_vat
+                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $hasVat = (bool) ($waybill->has_vat ?? false);
+                if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
                         ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
                         ->where('is_active', 1)
                         ->first();
                     if ($matchingRate) {
-                        $hasVat = $matchingRate->has_vat ?? false;
-                        if ($amount == 0) {
-                            $amount = $matchingRate->rate ?? 0;
-                        }
+                        $amount = (float) ($matchingRate->rate ?? 0);
+                        $hasVat = (bool) ($matchingRate->has_vat ?? false);
                     }
                 }
-
-                // Calculate total amount: add 12% VAT if has_vat is true, otherwise just the amount
                 $vatPercent = $hasVat ? 12.00 : 0.00;
                 return number_format($amount + ($amount * ($vatPercent / 100)), 2, '.', ',');
             case 'booking number':
@@ -420,16 +380,14 @@ class SoaAndBillingService extends BaseService
             case 'work order':
                 return $soa->work_order ?? '-';
             case 'stack run':
-                $stackRun = 0;
-                if ($waybill->ratePerClient) {
-                    $stackRun = $waybill->ratePerClient->stack_run ?? 0;
-                } elseif ($waybill->booking) {
+                $stackRun = (float) ($waybill->stack_run ?? 0);
+                if ($stackRun == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
                         ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
                         ->where('is_active', 1)->first();
                     if ($matchingRate) {
-                        $stackRun = $matchingRate->stack_run ?? 0;
+                        $stackRun = (float) ($matchingRate->stack_run ?? 0);
                     }
                 }
                 return $stackRun > 0 ? number_format($stackRun, 2, '.', ',') : '-';
@@ -548,7 +506,6 @@ class SoaAndBillingService extends BaseService
             ])->findOrFail($id);
 
             $waybills = \App\Models\WaybillDetail::where('booking_id', $billingStatement->booking_id)
-                ->with(['ratePerClient'])
                 ->get();
 
             $detailsData = [];
@@ -595,22 +552,15 @@ class SoaAndBillingService extends BaseService
                     $grouped[$key]['waybills'][] = $waybill;
                 }
 
-                // Process each group: rate from rate_per_client (with tax), total = rate_with_tax * quantity
+                // Process each group: rate from waybill (stored rate per client data), total = rate_with_tax * quantity
                 foreach ($grouped as $group) {
                     $rateWithTax = 0;
                     if (!empty($group['waybills'])) {
                         $firstWaybill = $group['waybills'][0];
-                        if ($firstWaybill->ratePerClient) {
-                            $rpc = $firstWaybill->ratePerClient;
-                            $baseRate = (float) ($rpc->rate ?? 0);
-                            $hasVat = $rpc->has_vat ?? false;
-                            // Add 12% VAT if has_vat is true, otherwise use base rate
-                            $rateWithTax = $hasVat
-                                ? $baseRate * 1.12
-                                : $baseRate;
-                        } elseif ($firstWaybill->total_rate_per_client > 0) {
-                            $rateWithTax = (float) $firstWaybill->total_rate_per_client;
-                        }
+                        // RATE OF TRIP = waybill_details.rate; apply 12% VAT when waybill_details.has_vat = true
+                        $baseRate = (float) ($firstWaybill->rate ?? 0);
+                        $hasVat = (bool) ($firstWaybill->has_vat ?? false);
+                        $rateWithTax = $hasVat ? $baseRate * 1.12 : $baseRate;
                     }
 
                     $quantity = $group['quantity'];
@@ -633,24 +583,17 @@ class SoaAndBillingService extends BaseService
             // Fallback: single summary row only when there are no waybills or no grouped details (e.g. no container data)
             if (empty($detailsData) && $waybills->isNotEmpty()) {
                 foreach ($waybills as $waybill) {
-                    $baseAmount = $waybill->total_rate_per_client ?? 0;
-                    $hasVat = false;
-                    if ($waybill->ratePerClient) {
-                        if ($baseAmount == 0) {
-                            $baseAmount = $waybill->ratePerClient->rate ?? 0;
-                        }
-                        $hasVat = $waybill->ratePerClient->has_vat ?? false;
-                    } elseif ($waybill->booking) {
+                    $baseAmount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                    $hasVat = (bool) ($waybill->has_vat ?? false);
+                    if ($baseAmount == 0 && $waybill->booking) {
                         $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                             ->where('container_size', $waybill->container_size)
                             ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
                             ->where('is_active', 1)
                             ->first();
                         if ($matchingRate) {
-                            if ($baseAmount == 0) {
-                                $baseAmount = $matchingRate->rate ?? 0;
-                            }
-                            $hasVat = $matchingRate->has_vat ?? false;
+                            $baseAmount = (float) ($matchingRate->rate ?? 0);
+                            $hasVat = (bool) ($matchingRate->has_vat ?? false);
                         }
                     }
                     $amount = $hasVat ? $baseAmount * 1.12 : $baseAmount;
@@ -674,12 +617,15 @@ class SoaAndBillingService extends BaseService
                 'tin' => 'VAT Reg. TIN.: 010-392-323-00000',
             ];
 
+            $logoPath = public_path('images/deltrans-logo.png');
+
             $data = [
                 'billingStatement' => $billingStatement,
                 'companyInfo' => $companyInfo,
                 'detailsData' => $detailsData,
                 'grandTotal' => $grandTotal,
                 'issueDate' => $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y'),
+                'logoPath' => $logoPath,
             ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing-statement.pdf', $data);

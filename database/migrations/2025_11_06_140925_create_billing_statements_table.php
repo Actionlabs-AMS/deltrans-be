@@ -27,7 +27,6 @@ return new class extends Migration {
             $table->string('bus_style')->nullable(); // input from user
             $table->boolean('has_details')->default(false); //this will identify if the billing statement has details or not
             $table->boolean('is_paid')->default(false); //this will identify if the billing statement is paid or not
-            //! note: rate of trips will be calculated from the waybill details base on rate per client, what if its null and they input total_rate_per_client manually?
             $table->timestamps();
             $table->softDeletes();
 

@@ -25,12 +25,18 @@ class WaybillDetail extends Model
         'container_size',
         'container_type',
         'truck_plate_number',
-        'fixed_expense_id',
-        'rate_per_client_id',
         'pickup_date',
         'delivered_date',
-        'post_expense_amount',
+        'no_of_days',
+        'requirements',
+        'remarks',
+        'stack_run',
+        'rate',
+        'tax_percent',
+        'has_vat',
         'total_rate_per_client',
+        'fixed_expense_id',
+        'post_expense_amount',
         'total_expense',
     ];
 
@@ -44,6 +50,11 @@ class WaybillDetail extends Model
         'pickup_date' => 'date',
         'delivered_date' => 'date',
         'helper_id' => 'integer',
+        'no_of_days' => 'integer',
+        'stack_run' => 'decimal:2',
+        'rate' => 'decimal:2',
+        'tax_percent' => 'decimal:2',
+        'has_vat' => 'boolean',
         'post_expense_amount' => 'decimal:2',
         'total_rate_per_client' => 'decimal:2',
         'total_expense' => 'decimal:2',
@@ -65,12 +76,11 @@ class WaybillDetail extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'has_vat' => true,
         'post_expense_amount' => 0.00,
         'total_rate_per_client' => 0.00,
         'total_expense' => 0.00,
     ];
-
-    // Removed auto-calculation logic - total_rate_per_client and total_expense are now manual inputs
 
     /**
      * Get the shipping line that owns the waybill detail.
@@ -118,14 +128,6 @@ class WaybillDetail extends Model
     public function fixedExpense()
     {
         return $this->belongsTo(FixedExpense::class, 'fixed_expense_id');
-    }
-
-    /**
-     * Get the rate per client that owns the waybill detail.
-     */
-    public function ratePerClient()
-    {
-        return $this->belongsTo(RatePerClient::class, 'rate_per_client_id');
     }
 
     /**

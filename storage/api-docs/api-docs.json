@@ -21378,13 +21378,43 @@
                         "example": "2025-12-23",
                         "nullable": true
                     },
-                    "fixed_expense_id": {
+                    "no_of_days": {
                         "type": "integer",
-                        "example": 1,
+                        "example": 1
+                    },
+                    "requirements": {
+                        "type": "string",
                         "nullable": true
                     },
-                    "rate_per_client_id": {
-                        "description": "Nullable - no rate per client if null",
+                    "remarks": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "stack_run": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 100
+                    },
+                    "rate": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2500
+                    },
+                    "tax_percent": {
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true
+                    },
+                    "has_vat": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "total_rate_per_client": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2500
+                    },
+                    "fixed_expense_id": {
                         "type": "integer",
                         "example": 1,
                         "nullable": true
@@ -21396,16 +21426,9 @@
                         "example": 200
                     },
                     "total_expense": {
-                        "description": "Manual input field",
                         "type": "number",
                         "format": "float",
                         "example": 4700
-                    },
-                    "total_rate_per_client": {
-                        "description": "Manual input field",
-                        "type": "number",
-                        "format": "float",
-                        "example": 2500
                     },
                     "created_at": {
                         "type": "string",
@@ -21433,7 +21456,10 @@
                     "truck_plate_number",
                     "fixed_expense_id",
                     "pickup_date",
-                    "delivered_date"
+                    "delivered_date",
+                    "no_of_days",
+                    "stack_run",
+                    "rate"
                 ],
                 "properties": {
                     "waybill_number": {
@@ -21486,14 +21512,47 @@
                         "format": "date",
                         "example": "2025-12-23"
                     },
-                    "fixed_expense_id": {
+                    "no_of_days": {
                         "type": "integer",
                         "example": 1
                     },
-                    "rate_per_client_id": {
-                        "type": "integer",
-                        "example": 1,
+                    "requirements": {
+                        "type": "string",
                         "nullable": true
+                    },
+                    "remarks": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "stack_run": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 100
+                    },
+                    "rate": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2500
+                    },
+                    "tax_percent": {
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true
+                    },
+                    "has_vat": {
+                        "type": "boolean",
+                        "example": true,
+                        "nullable": true
+                    },
+                    "total_rate_per_client": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2500,
+                        "nullable": true
+                    },
+                    "fixed_expense_id": {
+                        "type": "integer",
+                        "example": 1
                     },
                     "post_expense_amount": {
                         "type": "number",
@@ -21504,12 +21563,6 @@
                         "type": "number",
                         "format": "float",
                         "example": 4700,
-                        "nullable": true
-                    },
-                    "total_rate_per_client": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 2500,
                         "nullable": true
                     }
                 },

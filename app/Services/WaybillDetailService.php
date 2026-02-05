@@ -28,7 +28,6 @@ class WaybillDetailService extends BaseService
                 'driver',
                 'fleetTruck',
                 'fixedExpense',
-                'ratePerClient'
             ]);
 
             // Apply onlyTrashed() first if we're in trash view
@@ -132,7 +131,6 @@ class WaybillDetailService extends BaseService
             'driver',
             'fleetTruck',
             'fixedExpense',
-            'ratePerClient'
         ]));
     }
 
@@ -141,8 +139,6 @@ class WaybillDetailService extends BaseService
      */
     public function update(array $data, int $id)
     {
-        // total_rate_per_client and total_expense are now manual inputs, no need to unset them
-
         $model = $this->model::findOrFail($id);
         $model->update($data);
 
@@ -152,7 +148,6 @@ class WaybillDetailService extends BaseService
             'driver',
             'fleetTruck',
             'fixedExpense',
-            'ratePerClient'
         ]));
     }
 
@@ -167,7 +162,6 @@ class WaybillDetailService extends BaseService
             'driver',
             'fleetTruck',
             'fixedExpense',
-            'ratePerClient'
         ])->findOrFail($id);
         return $this->resource::make($model);
     }
