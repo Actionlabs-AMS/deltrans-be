@@ -26,12 +26,14 @@ return new class extends Migration {
             $table->string('container_type')->nullable();
             $table->string('truck_plate_number');
             $table->bigInteger('fixed_expense_id')->unsigned();
-            $table->bigInteger('rate_per_client_id')->unsigned()->nullable(); // nullable means no rate per client
+            $table->bigInteger('rate_per_client_id')->unsigned();
             $table->date('pickup_date');
             $table->date('delivered_date');
-            $table->decimal('post_expense_amount', 15, 2)->default(0);
-            $table->decimal('total_rate_per_client', 15, 2)->default(0); //fields
-            $table->decimal('total_expense', 15, 2)->default(0); //fields
+            $table->decimal('post_expense_amount', 15, 2)->default(0); // price 20: 2500
+            //rate_per_container: 
+            $table->decimal('total_rate_per_client', 15, 2)->default(0); //fields 5k -> 6k
+            //rate per container = total_rate_per_client / container quantity
+            $table->decimal('total_expense', 15, 2)->default(0);
             $table->timestamps();
             $table->softDeletes();
 

@@ -320,9 +320,10 @@
                         <span class="total-label">SUBTOTAL:</span>
                         <span class="total-value">PHP {{ number_format($totalAmount, 2, '.', ',') }}</span>
                     </div>
-                    @if($totalVat > 0)
+                    {{-- VAT (12%): only show when at least one waybill has rate_per_client.has_vat = true --}}
+                    @if(isset($totalVat) && $totalVat > 0)
                         <div class="total-row">
-                            <span class="total-label">VAT ({{ number_format($taxPercent, 0) }}%):</span>
+                            <span class="total-label">VAT (12%):</span>
                             <span class="total-value">PHP {{ number_format($totalVat, 2, '.', ',') }}</span>
                         </div>
                     @endif

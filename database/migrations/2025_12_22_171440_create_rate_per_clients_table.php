@@ -25,6 +25,7 @@ return new class extends Migration {
             $table->string('container_size');
             $table->decimal('rate', 10, 2);
             $table->decimal('tax_percent', 10, 2)->nullable();
+            $table->boolean('has_vat')->default(true); // 12%
             $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
             $table->softDeletes();

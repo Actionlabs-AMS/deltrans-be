@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\StatementOfAccount;
+use App\Models\BillingStatement;
 use App\Models\SoaDataOption;
 use App\Http\Resources\SoaAndBillingResource;
+use App\Http\Resources\BillingStatementResource;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Storage;
 
@@ -199,26 +201,22 @@ class SoaAndBillingService extends BaseService
             }
 
             $totalAmount = 0;
-            $totalVat = 0;
+            $totalVat = 0; // Sum of 12% VAT only for waybills where rate_per_client.has_vat = true
 
-            // Get tax_percent from rate_per_clients for this shipping line
-            $shippingLineRate = \App\Models\RatePerClient::where('shipping_line_id', $soa->shipping_line_id)
-                ->where('is_active', 1)
-                ->whereNotNull('tax_percent')
-                ->first();
-            // Default fallback to 12% if no tax_percent found
-            $taxPercent = $shippingLineRate ? $shippingLineRate->tax_percent : 12.00;
+            // VAT (12%) is added only when rate_per_client.has_vat is true; otherwise no VAT
+            $vatPercent = 12.00;
 
             foreach ($waybills as $waybill) {
                 $amount = $waybill->total_rate_per_client ?? 0;
-                $waybillTaxPercent = $taxPercent;
+                $waybillHasVat = false;
+                $rpc = null;
 
-                if ($amount == 0 && $waybill->ratePerClient) {
-                    $amount = $waybill->ratePerClient->rate ?? 0;
-                    // Use tax_percent from this specific rate if available
-                    if ($waybill->ratePerClient->tax_percent !== null) {
-                        $waybillTaxPercent = $waybill->ratePerClient->tax_percent;
+                if ($waybill->ratePerClient) {
+                    $rpc = $waybill->ratePerClient;
+                    if ($amount == 0) {
+                        $amount = $rpc->rate ?? 0;
                     }
+                    $waybillHasVat = $rpc->has_vat ?? false;
                 }
                 if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
@@ -230,18 +228,19 @@ class SoaAndBillingService extends BaseService
                         ->where('is_active', 1)
                         ->first();
                     if ($matchingRate) {
-                        $amount = $matchingRate->rate ?? 0;
-                        // Use tax_percent from this specific rate if available
-                        if ($matchingRate->tax_percent !== null) {
-                            $waybillTaxPercent = $matchingRate->tax_percent;
+                        if ($amount == 0) {
+                            $amount = $matchingRate->rate ?? 0;
                         }
+                        $waybillHasVat = $matchingRate->has_vat ?? false;
                     }
                 }
                 $totalAmount += $amount;
-                $totalVat += $amount * ($waybillTaxPercent / 100);
+                if ($waybillHasVat) {
+                    $totalVat += $amount * ($vatPercent / 100);
+                }
             }
 
-            $vatRate = $taxPercent / 100;
+            $vatRate = $vatPercent / 100;
             $grandTotal = $totalAmount + $totalVat;
 
             $companyInfo = [
@@ -258,7 +257,7 @@ class SoaAndBillingService extends BaseService
                 'transactionData' => $transactionData,
                 'totalAmount' => $totalAmount,
                 'vatRate' => $vatRate,
-                'taxPercent' => $taxPercent,
+                'taxPercent' => $vatPercent,
                 'totalVat' => $totalVat,
                 'grandTotal' => $grandTotal,
                 'issueDate' => now()->format('F d, Y'),
@@ -360,63 +359,61 @@ class SoaAndBillingService extends BaseService
             case '12%vat':
                 // Get amount (base rate)
                 $amount = $waybill->total_rate_per_client ?? 0;
-                $taxPercent = 12.00; // Default fallback
+                $hasVat = false; // Default: no VAT
 
-                // Always try to get tax_percent from rate_per_client
-                if ($waybill->ratePerClient && $waybill->ratePerClient->tax_percent !== null) {
-                    $taxPercent = $waybill->ratePerClient->tax_percent;
+                // Check has_vat from rate_per_client
+                if ($waybill->ratePerClient) {
+                    $hasVat = $waybill->ratePerClient->has_vat ?? false;
                     if ($amount == 0) {
                         $amount = $waybill->ratePerClient->rate ?? 0;
                     }
                 } elseif ($waybill->booking) {
-                    // Try to find matching rate_per_client to get tax_percent
+                    // Try to find matching rate_per_client to get has_vat
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
                         ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
                         ->where('is_active', 1)
                         ->first();
                     if ($matchingRate) {
-                        if ($matchingRate->tax_percent !== null) {
-                            $taxPercent = $matchingRate->tax_percent;
-                        }
+                        $hasVat = $matchingRate->has_vat ?? false;
                         if ($amount == 0) {
                             $amount = $matchingRate->rate ?? 0;
                         }
                     }
                 }
 
-                // Calculate VAT using tax_percent from rate_per_clients
-                return number_format($amount * ($taxPercent / 100), 2, '.', ',');
+                // Calculate VAT: 12% if has_vat is true, 0% if false
+                $vatPercent = $hasVat ? 12.00 : 0.00;
+                return number_format($amount * ($vatPercent / 100), 2, '.', ',');
             case 'total amount':
                 // Get amount (base rate)
                 $amount = $waybill->total_rate_per_client ?? 0;
-                $taxPercent = 12.00; // Default fallback
+                $hasVat = false; // Default: no VAT
 
-                // Always try to get tax_percent from rate_per_client
-                if ($waybill->ratePerClient && $waybill->ratePerClient->tax_percent !== null) {
-                    $taxPercent = $waybill->ratePerClient->tax_percent;
+                // Check has_vat from rate_per_client
+                if ($waybill->ratePerClient) {
+                    $hasVat = $waybill->ratePerClient->has_vat ?? false;
                     if ($amount == 0) {
                         $amount = $waybill->ratePerClient->rate ?? 0;
                     }
                 } elseif ($waybill->booking) {
-                    // Try to find matching rate_per_client to get tax_percent
+                    // Try to find matching rate_per_client to get has_vat
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
                         ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
                         ->where('is_active', 1)
                         ->first();
                     if ($matchingRate) {
-                        if ($matchingRate->tax_percent !== null) {
-                            $taxPercent = $matchingRate->tax_percent;
-                        }
+                        $hasVat = $matchingRate->has_vat ?? false;
                         if ($amount == 0) {
                             $amount = $matchingRate->rate ?? 0;
                         }
                     }
                 }
 
-                // Calculate total amount (amount + VAT using tax_percent from rate_per_clients)
-                return number_format($amount + ($amount * ($taxPercent / 100)), 2, '.', ',');
+                // Calculate total amount: add 12% VAT if has_vat is true, otherwise just the amount
+                $vatPercent = $hasVat ? 12.00 : 0.00;
+                return number_format($amount + ($amount * ($vatPercent / 100)), 2, '.', ',');
             case 'booking number':
             case 'booking no':
                 return $waybill->booking->reference_number ?? '-';
@@ -440,4 +437,276 @@ class SoaAndBillingService extends BaseService
                 return '-';
         }
     }
+
+    /**
+     * Retrieve all billing statements with paginate.
+     */
+    public function listBillingStatements($perPage = 10, $trash = false)
+    {
+        try {
+            $allBillingStatements = BillingStatement::count();
+            $trashedBillingStatements = BillingStatement::onlyTrashed()->count();
+
+            $query = BillingStatement::query();
+
+            if ($trash) {
+                $query->onlyTrashed();
+            }
+
+            if (request('search')) {
+                $query->where(function ($q) {
+                    $q->where('billing_statement_no', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('payment_term', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('bus_style', 'LIKE', '%' . request('search') . '%')
+                        ->orWhereHas('shippingLine', function ($query) {
+                            $query->where('name', 'LIKE', '%' . request('search') . '%');
+                        });
+                });
+            }
+
+            if (request('shipping_line_id')) {
+                $query->where('shipping_line_id', request('shipping_line_id'));
+            }
+
+            if (request('booking_id')) {
+                $query->where('booking_id', request('booking_id'));
+            }
+
+            if (request()->has('is_paid')) {
+                $query->where('is_paid', request('is_paid'));
+            }
+
+            if (request('order')) {
+                $query->orderBy(request('order'), request('sort') ?? 'asc');
+            } else {
+                $query->orderBy('id', 'desc');
+            }
+
+            return BillingStatementResource::collection(
+                $query->with(['shippingLine', 'booking', 'preparedByUser'])->paginate($perPage)->withQueryString()
+            )->additional([
+                        'meta' => [
+                            'all' => $allBillingStatements,
+                            'trashed' => $trashedBillingStatements
+                        ]
+                    ]);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch billing statements: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generate a new billing statement.
+     *
+     * @param array $data
+     * @return BillingStatementResource
+     */
+    public function generateBillingStatement(array $data)
+    {
+        try {
+            $shippingLine = \App\Models\ShippingLine::findOrFail($data['shipping_line_id']);
+            $booking = \App\Models\Booking::findOrFail($data['booking_id']);
+            $waybillCount = \App\Models\WaybillDetail::where('booking_id', $booking->id)->count();
+
+            if ($waybillCount === 0) {
+                throw new \Exception('The selected booking must have at least one waybill.');
+            }
+
+            if ($booking->shipping_line_id != $data['shipping_line_id']) {
+                throw new \Exception('The booking does not belong to the selected shipping line.');
+            }
+
+            // Set prepared_by to current authenticated user if not provided
+            if (!isset($data['prepared_by']) && auth()->check()) {
+                $data['prepared_by'] = auth()->id();
+            }
+
+            $billingStatement = BillingStatement::create($data);
+            $billingStatement->load(['shippingLine', 'booking', 'preparedByUser']);
+
+            return BillingStatementResource::make($billingStatement);
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Shipping line, booking, or user not found.');
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
+    }
+
+    /**
+     * Generate PDF for Billing Statement.
+     *
+     * @param int $id Billing Statement ID
+     * @return string Path to the generated PDF file
+     */
+    public function generateBillingStatementPdf($id)
+    {
+        try {
+            $billingStatement = BillingStatement::with([
+                'shippingLine',
+                'booking',
+                'preparedByUser'
+            ])->findOrFail($id);
+
+            $waybills = \App\Models\WaybillDetail::where('booking_id', $billingStatement->booking_id)
+                ->with(['ratePerClient'])
+                ->get();
+
+            $detailsData = [];
+            $grandTotal = 0;
+
+            // Always build detailed breakdown from waybills when available (PDF shows full table regardless of has_details)
+            if ($waybills->isNotEmpty()) {
+                // Group waybills by normalized container size + container type
+                // Normalize: remove "offhire" and "ft" from size; Offhire -> type AC
+                $grouped = [];
+                foreach ($waybills as $waybill) {
+                    $rawSize = $waybill->container_size ?? '';
+                    $rawType = $waybill->container_type ?? '';
+
+                    // Normalize size: remove "offhire" and "ft", then take numeric part (e.g. "40ft Offhire" -> "40")
+                    $sizeNormalized = trim(str_ireplace(['offhire', 'ft'], '', $rawSize));
+                    $sizeNumeric = preg_replace('/[^0-9]/', '', $sizeNormalized) ?: preg_replace('/[^0-9]/', '', $rawSize);
+
+                    // Type code: if size string contained "offhire" -> AC; else DRY/empty -> HC, REEFER -> R
+                    $typeCode = 'HC';
+                    if (stripos($rawSize, 'offhire') !== false) {
+                        $typeCode = 'AC';
+                    } elseif ($rawType) {
+                        $typeUpper = strtoupper(trim($rawType));
+                        if ($typeUpper === 'REEFER') {
+                            $typeCode = 'R';
+                        } elseif ($typeUpper === 'DRY' || $typeUpper === '') {
+                            $typeCode = 'HC';
+                        } else {
+                            $typeCode = $typeUpper;
+                        }
+                    }
+
+                    $key = $sizeNumeric . '|' . $typeCode;
+                    if (!isset($grouped[$key])) {
+                        $grouped[$key] = [
+                            'size_numeric' => $sizeNumeric,
+                            'type_code' => $typeCode,
+                            'quantity' => 0,
+                            'waybills' => [],
+                        ];
+                    }
+                    $grouped[$key]['quantity']++;
+                    $grouped[$key]['waybills'][] = $waybill;
+                }
+
+                // Process each group: rate from rate_per_client (with tax), total = rate_with_tax * quantity
+                foreach ($grouped as $group) {
+                    $rateWithTax = 0;
+                    if (!empty($group['waybills'])) {
+                        $firstWaybill = $group['waybills'][0];
+                        if ($firstWaybill->ratePerClient) {
+                            $rpc = $firstWaybill->ratePerClient;
+                            $baseRate = (float) ($rpc->rate ?? 0);
+                            $hasVat = $rpc->has_vat ?? false;
+                            // Add 12% VAT if has_vat is true, otherwise use base rate
+                            $rateWithTax = $hasVat
+                                ? $baseRate * 1.12
+                                : $baseRate;
+                        } elseif ($firstWaybill->total_rate_per_client > 0) {
+                            $rateWithTax = (float) $firstWaybill->total_rate_per_client;
+                        }
+                    }
+
+                    $quantity = $group['quantity'];
+                    $totalAmount = $rateWithTax * $quantity;
+                    $grandTotal += $totalAmount;
+
+                    // Description: quantity X container size + container type "UNIT" (e.g. "56X20HC UNIT", "6X40AC UNIT")
+                    $description = $quantity . 'X' . $group['size_numeric'] . $group['type_code'] . ' UNIT';
+
+                    $detailsData[] = [
+                        'date' => null,
+                        'description' => $description,
+                        'size' => $group['size_numeric'],
+                        'rate_per_trip' => $rateWithTax,
+                        'total_amount' => $totalAmount,
+                    ];
+                }
+            }
+
+            // Fallback: single summary row only when there are no waybills or no grouped details (e.g. no container data)
+            if (empty($detailsData) && $waybills->isNotEmpty()) {
+                foreach ($waybills as $waybill) {
+                    $amount = $waybill->total_rate_per_client ?? 0;
+                    if ($amount == 0 && $waybill->ratePerClient) {
+                        $amount = $waybill->ratePerClient->rate ?? 0;
+                    }
+                    $grandTotal += $amount;
+                }
+                if ($grandTotal > 0) {
+                    $detailsData[] = [
+                        'date' => '',
+                        'description' => 'Charges',
+                        'size' => '-',
+                        'rate_per_trip' => null,
+                        'total_amount' => $grandTotal,
+                    ];
+                }
+            }
+
+            $companyInfo = [
+                'name' => 'DELTRANS LOGISTICS INC.',
+                'address' => 'Blk 8 Lot 11 North Harbor Center Vitas St Barangay 101 Zone 08, 1013 Tondo I/II NCR, City of Manila, First District Philippines',
+                'phone' => 'Tel. No. (02) 8291-4477',
+                'tin' => 'VAT Reg. TIN.: 010-392-323-00000',
+            ];
+
+            $data = [
+                'billingStatement' => $billingStatement,
+                'companyInfo' => $companyInfo,
+                'detailsData' => $detailsData,
+                'grandTotal' => $grandTotal,
+                'issueDate' => $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y'),
+            ];
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing-statement.pdf', $data);
+            $pdf->setPaper('a4', 'portrait');
+
+            $directory = 'billing-statement-pdfs/' . date('Y/m');
+            Storage::disk('public')->makeDirectory($directory);
+            $filename = $billingStatement->billing_statement_no . '_' . time() . '.pdf';
+            $filePath = $directory . '/' . $filename;
+            Storage::disk('public')->put($filePath, $pdf->output());
+
+            return $filePath;
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Billing statement not found.');
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to generate PDF: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Retrieve a single billing statement by ID with relationships.
+     *
+     * @param int $id
+     * @return BillingStatementResource
+     */
+    public function showBillingStatement($id)
+    {
+        try {
+            $billingStatement = BillingStatement::with([
+                'shippingLine',
+                'booking',
+                'preparedByUser'
+            ])->findOrFail($id);
+
+            return BillingStatementResource::make($billingStatement);
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Billing statement not found.');
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch billing statement: ' . $e->getMessage());
+        }
+    }
 }
+
+
+//todo: soa and billing - no tax, only vat (12%)
+//! invoice - add tax base on rate per client
+//! 

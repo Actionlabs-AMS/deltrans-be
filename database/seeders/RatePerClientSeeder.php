@@ -39,6 +39,8 @@ class RatePerClientSeeder extends Seeder
                     'stack_run' => 1500.00 + ($variation * 100),
                     'container_size' => '20ft',
                     'rate' => 5000.00 + ($variation * 200),
+                    'tax_percent' => 12.00,
+                    'has_vat' => true,
                     'is_active' => 1,
                 ];
                 $ratePerClients[] = [
@@ -50,13 +52,45 @@ class RatePerClientSeeder extends Seeder
                     'stack_run' => 2000.00 + ($variation * 150),
                     'container_size' => '40ft',
                     'rate' => 8000.00 + ($variation * 300),
+                    'tax_percent' => 12.00,
+                    'has_vat' => true,
                     'is_active' => 1,
                 ];
             }
         }
 
+        // Sample rate per clients with has_vat = false (for testing SOA/billing without VAT)
+        $firstShippingLineId = $shippingLineIds[0];
+        $ratePerClients[] = [
+            'shipping_line_id' => $firstShippingLineId,
+            'no_of_days' => $noOfDays,
+            'requirements' => 'Standard documentation',
+            'remarks' => 'No VAT (sample)',
+            'cypa_id' => 0,
+            'stack_run' => 1000.00,
+            'container_size' => '20ft',
+            'rate' => 4000.00,
+            'tax_percent' => null,
+            'has_vat' => false,
+            'is_active' => 1,
+        ];
+        $ratePerClients[] = [
+            'shipping_line_id' => $firstShippingLineId,
+            'no_of_days' => $noOfDays,
+            'requirements' => 'Standard documentation',
+            'remarks' => 'No VAT (sample)',
+            'cypa_id' => 0,
+            'stack_run' => 1500.00,
+            'container_size' => '40ft',
+            'rate' => 7000.00,
+            'tax_percent' => null,
+            'has_vat' => false,
+            'is_active' => 1,
+        ];
+
         foreach ($ratePerClients as $ratePerClient) {
             $ratePerClient['tax_percent'] = $ratePerClient['tax_percent'] ?? null;
+            $ratePerClient['has_vat'] = $ratePerClient['has_vat'] ?? true;
             DB::table('rate_per_clients')->updateOrInsert(
                 [
                     'shipping_line_id' => $ratePerClient['shipping_line_id'],

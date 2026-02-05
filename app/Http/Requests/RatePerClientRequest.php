@@ -37,6 +37,7 @@ class RatePerClientRequest extends FormRequest
             ],
             'rate' => 'required|numeric|min:0',
             'tax_percent' => 'nullable|numeric|min:0|max:100',
+            'has_vat' => 'nullable|boolean',
             'is_active' => 'nullable|integer|in:0,1',
         ];
 
@@ -54,6 +55,7 @@ class RatePerClientRequest extends FormRequest
             ];
             $rules['rate'] = 'sometimes|required|numeric|min:0';
             $rules['tax_percent'] = 'sometimes|nullable|numeric|min:0|max:100';
+            $rules['has_vat'] = 'sometimes|nullable|boolean';
         }
 
         return $rules;
@@ -100,6 +102,7 @@ class RatePerClientRequest extends FormRequest
             'tax_percent.numeric' => 'The tax percent must be a valid number.',
             'tax_percent.min' => 'The tax percent must be at least 0.',
             'tax_percent.max' => 'The tax percent must not exceed 100.',
+            'has_vat.boolean' => 'The has VAT field must be true or false.',
             'is_active.in' => 'The is_active field must be either 0 or 1.',
         ];
     }

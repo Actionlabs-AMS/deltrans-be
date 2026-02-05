@@ -14,19 +14,14 @@ class SoaAndBillingResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // Calculate total amount from waybills (for SOA)
+        // Total amount from waybills (waybills live under booking only, no duplicate at SOA root)
         $totalAmount = 0;
-        $waybills = collect();
-
         if ($this->relationLoaded('booking') && $this->booking && $this->booking->relationLoaded('waybills')) {
-            $waybills = $this->booking->waybills;
-            $totalAmount = $waybills->sum('total_rate_per_client');
+            $totalAmount = $this->booking->waybills->sum('total_rate_per_client');
         } elseif ($this->relationLoaded('waybills')) {
-            $waybills = $this->waybills;
-            $totalAmount = $waybills->sum('total_rate_per_client');
+            $totalAmount = $this->waybills->sum('total_rate_per_client');
         } elseif ($this->booking_id) {
-            $waybills = \App\Models\WaybillDetail::where('booking_id', $this->booking_id)->get();
-            $totalAmount = $waybills->sum('total_rate_per_client');
+            $totalAmount = (float) \App\Models\WaybillDetail::where('booking_id', $this->booking_id)->sum('total_rate_per_client');
         }
 
         // Get vessel from booking
@@ -51,9 +46,6 @@ class SoaAndBillingResource extends JsonResource
             'booking' => $this->whenLoaded('booking', function () {
                 return new BookingResource($this->booking);
             }),
-            'waybills' => $waybills->isNotEmpty()
-                ? WaybillDetailResource::collection($waybills)
-                : [],
             'total_amount' => (float) number_format($totalAmount, 2, '.', ''),
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,

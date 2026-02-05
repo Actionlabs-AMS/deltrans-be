@@ -13,15 +13,36 @@ class ShippingLineSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get shipping lines template data (parent_id = 1) - just IDs
+        // Get full shipping line template (parent_id = 1) - all option IDs
         $shippingLinesTemplate = SoaDataOption::where('parent_id', 1)
+            ->orderBy('id')
             ->pluck('id')
             ->toArray();
 
-        // Get transaction information template data (parent_id = 2) - just IDs
+        // Get full transaction information template (parent_id = 2)
         $transactionInformationTemplate = SoaDataOption::where('parent_id', 2)
+            ->orderBy('id')
             ->pluck('id')
             ->toArray();
+
+        // Custom SOA template for first shipping line (Maersk) – subset of options.
+        // Reflects in SOAs whose booking has shipping_line_id = 1 (e.g. SOA 1 and 2 after full seed).
+        $shippingLineParentId = SoaDataOption::whereNull('parent_id')->where('name', 'Shipping Line')->value('id');
+        $transactionParentId = SoaDataOption::whereNull('parent_id')->where('name', 'Transaction Information')->value('id');
+        $customShippingLinesTemplate = $shippingLineParentId
+            ? SoaDataOption::where('parent_id', $shippingLineParentId)
+                ->whereIn('name', ['Name', 'Email Address', 'Address', 'Contact Name', 'TIN'])
+                ->orderBy('id')
+                ->pluck('id')
+                ->toArray()
+            : $shippingLinesTemplate;
+        $customTransactionTemplate = $transactionParentId
+            ? SoaDataOption::where('parent_id', $transactionParentId)
+                ->whereIn('name', ['Date', 'Booking Number', 'Waybill', 'Amount', 'VAT', 'Total Amount'])
+                ->orderBy('id')
+                ->pluck('id')
+                ->toArray()
+            : $transactionInformationTemplate;
 
         $shippingLines = [
             [
@@ -31,8 +52,8 @@ class ShippingLineSeeder extends Seeder
                 'contact_name' => 'John Anderson',
                 'contact_mobile' => '+45 33 63 33 63',
                 'landlines' => ['+45 33 63 33 64', '+45 33 63 33 65'],
-                'shipping_lines_template' => $shippingLinesTemplate,
-                'transaction_information_template' => $transactionInformationTemplate,
+                'shipping_lines_template' => $customShippingLinesTemplate,
+                'transaction_information_template' => $customTransactionTemplate,
                 'fax_no' => '+45 33 63 33 66',
                 'tin' => 'DK-12345678',
             ],

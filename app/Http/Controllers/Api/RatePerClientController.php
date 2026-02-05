@@ -26,6 +26,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="rate", type="number", format="float", example=5000.00, description="Rate amount"),
  *     @OA\Property(property="tax_percent", type="number", format="float", example=12.00, nullable=true, description="Tax percentage (for SOA)"),
+ *     @OA\Property(property="has_vat", type="boolean", example=true, description="Whether VAT applies to this rate"),
  *     @OA\Property(property="is_active", type="integer", example=1, description="1=Active, 0=Inactive"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
@@ -44,6 +45,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="rate", type="number", format="float", example=5000.00, description="Rate amount"),
  *     @OA\Property(property="tax_percent", type="number", format="float", example=12.00, nullable=true, description="Tax percentage (for SOA)"),
+ *     @OA\Property(property="has_vat", type="boolean", example=true, description="Whether VAT applies to this rate"),
  *     @OA\Property(property="is_active", type="integer", example=1)
  * )
  */

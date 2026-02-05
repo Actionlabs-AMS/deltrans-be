@@ -150,6 +150,25 @@ class WaybillDetailsSeeder extends Seeder
             }
         }
 
+        // Assign no-VAT rate to first 2 waybills so at least one SOA has has_vat = false (for testing)
+        $noVatRates = DB::table('rate_per_clients')
+            ->where('has_vat', 0)
+            ->where('is_active', 1)
+            ->get()
+            ->keyBy('container_size');
+        if ($noVatRates->isNotEmpty()) {
+            $waybillsToSwitch = WaybillDetail::orderBy('id')->limit(2)->get();
+            foreach ($waybillsToSwitch as $wd) {
+                $noVat = $noVatRates->get($wd->container_size);
+                if ($noVat) {
+                    $wd->update([
+                        'rate_per_client_id' => $noVat->id,
+                        'total_rate_per_client' => $noVat->rate,
+                    ]);
+                }
+            }
+        }
+
         $this->command->info("Waybill details seeded: {$created} waybills (only where fixed_expense and rate_per_client match).");
     }
 }

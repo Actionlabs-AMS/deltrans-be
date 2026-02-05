@@ -17,16 +17,17 @@ return new class extends Migration {
         Schema::create('billing_statements', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('shipping_line_id')->unsigned();
-            $table->bigInteger('booking_id')->unsigned();
-            $table->bigInteger('prepared_by')->unsigned()->comment('User ID of the logged-in user');
-            $table->string('billing_statement_no');
-            $table->string('payment_term')->nullable();
-            $table->date('ci_date')->nullable();
-            $table->date('due_date')->nullable();
-            $table->string('bus_style')->nullable();
+            $table->bigInteger('shipping_line_id')->unsigned(); // input from shipping line
+            $table->bigInteger('booking_id')->unsigned(); // input from booking
+            $table->bigInteger('prepared_by')->unsigned(); //User ID of the logged-in user
+            $table->string('billing_statement_no'); // input from user
+            $table->string('payment_term')->nullable(); // input from user
+            $table->date('ci_date')->nullable(); // input from user
+            $table->date('due_date')->nullable(); // input from user
+            $table->string('bus_style')->nullable(); // input from user
             $table->boolean('has_details')->default(false); //this will identify if the billing statement has details or not
             $table->boolean('is_paid')->default(false); //this will identify if the billing statement is paid or not
+            //! note: rate of trips will be calculated from the waybill details base on rate per client, what if its null and they input total_rate_per_client manually?
             $table->timestamps();
             $table->softDeletes();
 

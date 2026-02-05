@@ -25,6 +25,7 @@ class RatePerClient extends Model
         'container_size',
         'rate',
         'tax_percent',
+        'has_vat',
         'is_active',
     ];
 
@@ -39,6 +40,7 @@ class RatePerClient extends Model
         'stack_run' => 'decimal:2',
         'rate' => 'decimal:2',
         'tax_percent' => 'decimal:2',
+        'has_vat' => 'boolean',
         'is_active' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -58,6 +60,7 @@ class RatePerClient extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'has_vat' => true,
         'is_active' => 1,
     ];
 

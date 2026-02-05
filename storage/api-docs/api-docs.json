@@ -13326,13 +13326,13 @@
                 ]
             }
         },
-        "/api/soa_and_billing": {
+        "/api/soa": {
             "get": {
                 "tags": [
-                    "soa_and_billing"
+                    "SOA and Billing Management"
                 ],
                 "summary": "Get list of statement of accounts",
-                "operationId": "732baa2d661c86dcb620fa6796650470",
+                "operationId": "accbe0a0a76da18951cec51655fddff3",
                 "parameters": [
                     {
                         "name": "page",
@@ -13396,13 +13396,13 @@
                 ]
             }
         },
-        "/api/soa_and_billing/generate": {
+        "/api/soa/generate": {
             "post": {
                 "tags": [
-                    "soa_and_billing"
+                    "SOA and Billing Management"
                 ],
                 "summary": "Generate a new statement of account",
-                "operationId": "fb6d6a71cf800597f6cd97d89a3574ee",
+                "operationId": "6b83cd544e242ba105361182489af25f",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -13441,13 +13441,13 @@
                 ]
             }
         },
-        "/api/soa_and_billing/{id}": {
+        "/api/soa/{id}": {
             "get": {
                 "tags": [
-                    "soa_and_billing"
+                    "SOA and Billing Management"
                 ],
                 "summary": "Get a specific statement of account",
-                "operationId": "a30dd60fe5ccc2b87ae190a6dd507b51",
+                "operationId": "4fdfff0f9ae5f78168beced2e2e6941b",
                 "parameters": [
                     {
                         "name": "id",
@@ -13488,17 +13488,262 @@
                 ]
             }
         },
-        "/api/soa_and_billing/{id}/download": {
+        "/api/soa/{id}/download": {
             "get": {
                 "tags": [
-                    "soa_and_billing"
+                    "SOA and Billing Management"
                 ],
                 "summary": "Download Statement of Account PDF",
-                "operationId": "645def9ef69b609b12851cb0454e09e7",
+                "operationId": "dda95611020b83c3c2101138c674c82c",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file download",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/billing-statements": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Get list of billing statements",
+                "operationId": "ed1a905366c5bfb81a5f3ce114631d27",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by billing statement number, payment term, bus style, or shipping line name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "booking_id",
+                        "in": "query",
+                        "description": "Filter by booking ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "is_paid",
+                        "in": "query",
+                        "description": "Filter by payment status (0=unpaid, 1=paid)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of billing statements",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BillingStatement"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "all": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "trashed": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/billing-statements/generate": {
+            "post": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Generate a new billing statement",
+                "operationId": "74e41cc9a8a827772952c6bfc9167108",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BillingStatementGenerateInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Billing statement generated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BillingStatement"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/billing-statements/{id}": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Get a specific billing statement",
+                "operationId": "cecb2a7211d3e45d32e5cf588a3b40f7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Billing statement retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BillingStatement"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/billing-statements/{id}/download": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Download Billing Statement PDF",
+                "operationId": "b33e78f028c989a0fd05045ce16c4ab3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Billing Statement ID",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -20572,6 +20817,11 @@
                         "example": 12,
                         "nullable": true
                     },
+                    "has_vat": {
+                        "description": "Whether VAT applies to this rate",
+                        "type": "boolean",
+                        "example": true
+                    },
                     "is_active": {
                         "description": "1=Active, 0=Inactive",
                         "type": "integer",
@@ -20645,6 +20895,11 @@
                         "format": "float",
                         "example": 12,
                         "nullable": true
+                    },
+                    "has_vat": {
+                        "description": "Whether VAT applies to this rate",
+                        "type": "boolean",
+                        "example": true
                     },
                     "is_active": {
                         "type": "integer",
@@ -20805,6 +21060,133 @@
                     "work_order": {
                         "type": "string",
                         "example": "WO-001",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "BillingStatement": {
+                "title": "Billing Statement Model",
+                "description": "A billing statement resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "booking_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "prepared_by": {
+                        "description": "User ID who prepared the billing statement",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "billing_statement_no": {
+                        "type": "string",
+                        "example": "BS-2024-001"
+                    },
+                    "payment_term": {
+                        "type": "string",
+                        "example": "Net 30",
+                        "nullable": true
+                    },
+                    "ci_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-15",
+                        "nullable": true
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-02-15",
+                        "nullable": true
+                    },
+                    "bus_style": {
+                        "type": "string",
+                        "example": "Business Style",
+                        "nullable": true
+                    },
+                    "has_details": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "is_paid": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "BillingStatementGenerateInput": {
+                "title": "Generate Billing Statement Input",
+                "required": [
+                    "shipping_line_id",
+                    "booking_id",
+                    "billing_statement_no"
+                ],
+                "properties": {
+                    "shipping_line_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "booking_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "billing_statement_no": {
+                        "type": "string",
+                        "example": "BS-2024-001"
+                    },
+                    "prepared_by": {
+                        "description": "User ID (defaults to authenticated user if not provided)",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "payment_term": {
+                        "type": "string",
+                        "example": "Net 30",
+                        "nullable": true
+                    },
+                    "ci_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-15",
+                        "nullable": true
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-02-15",
+                        "nullable": true
+                    },
+                    "bus_style": {
+                        "type": "string",
+                        "example": "Business Style",
+                        "nullable": true
+                    },
+                    "has_details": {
+                        "type": "boolean",
+                        "example": false,
+                        "nullable": true
+                    },
+                    "is_paid": {
+                        "type": "boolean",
+                        "example": false,
                         "nullable": true
                     }
                 },
@@ -21287,7 +21669,7 @@
             "description": "API endpoints for shipping line management"
         },
         {
-            "name": "soa_and_billing",
+            "name": "SOA and Billing Management",
             "description": "API endpoints for SOA and billing management"
         },
         {

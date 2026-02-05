@@ -269,7 +269,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	| Statement of Accounts CRUD Operations
 	|
 	*/
-	Route::prefix('soa_and_billing')->group(function () {
+	Route::prefix('soa')->group(function () {
 		// Generate SOA
 		Route::post('/generate', [SoaAndBillingController::class, 'generate']);  // Generate a new statement of account
 
@@ -279,6 +279,26 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Standard CRUD operations
 		Route::get('/', [SoaAndBillingController::class, 'index']);  // Retrieve all statement of accounts
 		Route::get('/{id}', [SoaAndBillingController::class, 'show']);  // Retrieve a single statement of account
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Billing Statement Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Billing Statement CRUD Operations
+	|
+	*/
+	Route::prefix('billing-statements')->group(function () {
+		// Generate Billing Statement
+		Route::post('/generate', [SoaAndBillingController::class, 'billingStatementsGenerate']);  // Generate a new billing statement
+
+		// Download PDF (must be before /{id} route)
+		Route::get('/{id}/download', [SoaAndBillingController::class, 'billingStatementsDownload']);  // Download Billing Statement PDF
+
+		// Standard CRUD operations
+		Route::get('/', [SoaAndBillingController::class, 'billingStatementsIndex']);  // Retrieve all billing statements
+		Route::get('/{id}', [SoaAndBillingController::class, 'billingStatementsShow']);  // Retrieve a single billing statement
 	});
 
 	/*

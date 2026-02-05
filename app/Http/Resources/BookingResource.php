@@ -28,7 +28,9 @@ class BookingResource extends JsonResource
             'cypa_from' => $this->whenLoaded('cypaFrom'),
             'cypa_to' => $this->whenLoaded('cypaTo'),
             'containers' => $this->whenLoaded('containers'),
-            'waybills' => $this->whenLoaded('waybills'),
+            'waybills' => $this->whenLoaded('waybills', function () {
+                return WaybillDetailResource::collection($this->waybills);
+            }),
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null,
