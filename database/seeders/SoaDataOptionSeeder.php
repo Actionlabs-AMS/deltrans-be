@@ -134,8 +134,8 @@ class SoaDataOptionSeeder extends Seeder
             ],
             [
                 'parent_id' => $transactionInfoParent->id,
-                'name' => 'VAT',
-                'description' => 'Value Added Tax',
+                'name' => '12% VAT',
+                'description' => 'Value Added Tax (12%)',
             ],
             [
                 'parent_id' => $transactionInfoParent->id,

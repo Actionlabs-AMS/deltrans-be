@@ -633,10 +633,27 @@ class SoaAndBillingService extends BaseService
             // Fallback: single summary row only when there are no waybills or no grouped details (e.g. no container data)
             if (empty($detailsData) && $waybills->isNotEmpty()) {
                 foreach ($waybills as $waybill) {
-                    $amount = $waybill->total_rate_per_client ?? 0;
-                    if ($amount == 0 && $waybill->ratePerClient) {
-                        $amount = $waybill->ratePerClient->rate ?? 0;
+                    $baseAmount = $waybill->total_rate_per_client ?? 0;
+                    $hasVat = false;
+                    if ($waybill->ratePerClient) {
+                        if ($baseAmount == 0) {
+                            $baseAmount = $waybill->ratePerClient->rate ?? 0;
+                        }
+                        $hasVat = $waybill->ratePerClient->has_vat ?? false;
+                    } elseif ($waybill->booking) {
+                        $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
+                            ->where('container_size', $waybill->container_size)
+                            ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
+                            ->where('is_active', 1)
+                            ->first();
+                        if ($matchingRate) {
+                            if ($baseAmount == 0) {
+                                $baseAmount = $matchingRate->rate ?? 0;
+                            }
+                            $hasVat = $matchingRate->has_vat ?? false;
+                        }
                     }
+                    $amount = $hasVat ? $baseAmount * 1.12 : $baseAmount;
                     $grandTotal += $amount;
                 }
                 if ($grandTotal > 0) {

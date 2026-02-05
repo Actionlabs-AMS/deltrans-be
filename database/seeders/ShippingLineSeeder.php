@@ -38,7 +38,7 @@ class ShippingLineSeeder extends Seeder
             : $shippingLinesTemplate;
         $customTransactionTemplate = $transactionParentId
             ? SoaDataOption::where('parent_id', $transactionParentId)
-                ->whereIn('name', ['Date', 'Booking Number', 'Waybill', 'Amount', 'VAT', 'Total Amount'])
+                ->whereIn('name', ['Date', 'Booking Number', 'Waybill', 'Amount', '12% VAT', 'Total Amount'])
                 ->orderBy('id')
                 ->pluck('id')
                 ->toArray()
