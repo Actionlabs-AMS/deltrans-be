@@ -104,6 +104,7 @@
             margin-bottom: 20px;
             border: none;
             font-size: 9px;
+            table-layout: fixed;
         }
         
         .client-info-wrap td {
@@ -121,22 +122,40 @@
             padding: 6px 0 6px 12px;
         }
         
-        .field-label {
+        .field-row-left,
+        .field-row-right {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+            width: 100%;
+            font-size: 9px;
+        }
+        
+        .field-row-left .field-label {
+            flex-shrink: 0;
+            width: 72px;
             font-weight: bold;
-            margin-right: 6px;
+        }
+        
+        .field-row-right .field-label {
+            flex-shrink: 0;
+            width: 68px;
+            font-weight: bold;
+        }
+        
+        .field-value-wrap {
+            flex: 1;
+            min-width: 0;
+            border-bottom: 1px solid #333;
+            min-height: 18px;
+            display: flex;
+            align-items: flex-end;
+            padding-bottom: 2px;
         }
         
         .field-value {
-            border-bottom: 1px solid #333;
-            min-height: 16px;
-            padding-bottom: 2px;
-            display: inline-block;
-            min-width: 120px;
-        }
-        
-        .field-row-left,
-        .field-row-right {
-            font-size: 9px;
+            display: block;
+            width: 100%;
         }
         
         table {
@@ -304,24 +323,33 @@
         $addressLine1 = $addrLines[0] ?? '';
         $addressLine2 = $addrLines[1] ?? '';
     @endphp
-    <!-- Billed To: 4 rows, left column = Billed To / Address (2 lines) / TIN, right column = CI Date / Pay Term / Due Date / Bus. Style -->
+    @php $hasAddressLine2 = !empty(trim($addressLine2)); @endphp
+    <!-- Billed To: Second address line row only when address is long. Right column: CI Date / Pay Term / Due Date / Bus. Style -->
     <table class="client-info-wrap" cellpadding="0" cellspacing="0">
         <tr>
-            <td class="field-row-left"><span class="field-label">Billed To :</span><span class="field-value">{{ $billingStatement->shippingLine->name }}</span></td>
-            <td class="field-row-right"><span class="field-label">CI Date:</span><span class="field-value">{{ $issueDate }}</span></td>
+            <td><div class="field-row-left"><span class="field-label">Billed To :</span><span class="field-value-wrap"><span class="field-value">{{ $billingStatement->shippingLine->name }}</span></span></div></td>
+            <td><div class="field-row-right"><span class="field-label">CI Date:</span><span class="field-value-wrap"><span class="field-value">{{ $issueDate }}</span></span></div></td>
         </tr>
         <tr>
-            <td class="field-row-left"><span class="field-label">Address:</span><span class="field-value">{{ $addressLine1 }}</span></td>
-            <td class="field-row-right"><span class="field-label">Pay Term:</span><span class="field-value">{{ $billingStatement->payment_term ?? '' }}</span></td>
+            <td><div class="field-row-left"><span class="field-label">Address:</span><span class="field-value-wrap"><span class="field-value">{{ $addressLine1 }}</span></span></div></td>
+            <td><div class="field-row-right"><span class="field-label">Pay Term:</span><span class="field-value-wrap"><span class="field-value">{{ $billingStatement->payment_term ?? '' }}</span></span></div></td>
         </tr>
+        @if($hasAddressLine2)
         <tr>
-            <td class="field-row-left"><span class="field-value" style="min-width: 100%;">{{ $addressLine2 }}</span></td>
-            <td class="field-row-right"><span class="field-label">Due Date:</span><span class="field-value">{{ $billingStatement->due_date ? $billingStatement->due_date->format('F d, Y') : '' }}</span></td>
+            <td><div class="field-row-left"><span class="field-label"></span><span class="field-value-wrap"><span class="field-value">{{ $addressLine2 }}</span></span></div></td>
+            <td><div class="field-row-right"><span class="field-label">Due Date:</span><span class="field-value-wrap"><span class="field-value">{{ $billingStatement->due_date ? $billingStatement->due_date->format('F d, Y') : '' }}</span></span></div></td>
         </tr>
+        @endif
         <tr>
-            <td class="field-row-left"><span class="field-label">TIN:</span><span class="field-value">{{ $billingStatement->shippingLine->tin ?? '' }}</span></td>
-            <td class="field-row-right"><span class="field-label">Bus. Style:</span><span class="field-value">{{ $billingStatement->bus_style ?? '' }}</span></td>
+            <td><div class="field-row-left"><span class="field-label">TIN:</span><span class="field-value-wrap"><span class="field-value">{{ $billingStatement->shippingLine->tin ?? '' }}</span></span></div></td>
+            <td><div class="field-row-right"><span class="field-label">{{ $hasAddressLine2 ? 'Bus. Style:' : 'Due Date:' }}</span><span class="field-value-wrap"><span class="field-value">{{ $hasAddressLine2 ? ($billingStatement->bus_style ?? '') : ($billingStatement->due_date ? $billingStatement->due_date->format('F d, Y') : '') }}</span></span></div></td>
         </tr>
+        @if(!$hasAddressLine2)
+        <tr>
+            <td><div class="field-row-left"><span class="field-label"></span><span class="field-value-wrap"><span class="field-value"></span></span></div></td>
+            <td><div class="field-row-right"><span class="field-label">Bus. Style:</span><span class="field-value-wrap"><span class="field-value">{{ $billingStatement->bus_style ?? '' }}</span></span></div></td>
+        </tr>
+        @endif
     </table>
     
     @if(!empty($detailsData))

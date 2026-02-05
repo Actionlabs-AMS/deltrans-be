@@ -552,20 +552,19 @@ class SoaAndBillingService extends BaseService
                     $grouped[$key]['waybills'][] = $waybill;
                 }
 
-                // Process each group: rate from waybill (stored rate per client data), total = rate_with_tax * quantity
+                // Process each group: sum each waybill's (base * 1.12 if has_vat else base) so grand total matches SOA for same booking
                 foreach ($grouped as $group) {
-                    $rateWithTax = 0;
-                    if (!empty($group['waybills'])) {
-                        $firstWaybill = $group['waybills'][0];
-                        // RATE OF TRIP = waybill_details.rate; apply 12% VAT when waybill_details.has_vat = true
-                        $baseRate = (float) ($firstWaybill->rate ?? 0);
-                        $hasVat = (bool) ($firstWaybill->has_vat ?? false);
-                        $rateWithTax = $hasVat ? $baseRate * 1.12 : $baseRate;
+                    $totalAmount = 0;
+                    $waybillsInGroup = $group['waybills'] ?? [];
+                    foreach ($waybillsInGroup as $waybill) {
+                        $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                        $hasVat = (bool) ($waybill->has_vat ?? false);
+                        $totalAmount += $hasVat ? $base * 1.12 : $base;
                     }
-
                     $quantity = $group['quantity'];
-                    $totalAmount = $rateWithTax * $quantity;
                     $grandTotal += $totalAmount;
+                    // Display: rate_per_trip = average per trip so that rate_per_trip * quantity = total_amount
+                    $rateWithTax = $quantity > 0 ? $totalAmount / $quantity : 0;
 
                     // Description: quantity X container size + container type "UNIT" (e.g. "56X20HC UNIT", "6X40AC UNIT")
                     $description = $quantity . 'X' . $group['size_numeric'] . $group['type_code'] . ' UNIT';

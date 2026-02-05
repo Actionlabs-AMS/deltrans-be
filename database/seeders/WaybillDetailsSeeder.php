@@ -10,6 +10,9 @@ class WaybillDetailsSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Uses only proper relationships: fixed_expense by (booking.shipping_line_id, booking.cypa_id_from, booking.cypa_id_to, container_size),
+     * rate_per_client by (booking.shipping_line_id, booking.cypa_id_from, container_size) then cypa_id=0.
+     * No fallback: waybills are created only when both fixed_expense and rate_per_client exist; otherwise the (booking_id, container_size) is skipped.
      */
     public function run(): void
     {

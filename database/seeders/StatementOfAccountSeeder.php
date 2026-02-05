@@ -10,6 +10,8 @@ class StatementOfAccountSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Creates SOAs only for bookings that have at least one waybill (relationship: booking -> waybill_details).
+     * No fallback: no SOA is created for a booking without waybills.
      */
     public function run(): void
     {

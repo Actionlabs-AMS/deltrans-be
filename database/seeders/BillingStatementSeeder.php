@@ -9,42 +9,48 @@ class BillingStatementSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Creates billing statements only for bookings that have waybills (same relationship as SOA).
+     * No fallback: a billing statement is never created for a booking with zero waybills.
+     * For the same shipping_line_id + booking_id, SOA and Billing PDF totals will match (same waybills, same formula).
      */
     public function run(): void
     {
-        $bookingIds = DB::table('bookings')->pluck('id')->toArray();
-        $shippingLines = DB::table('bookings')
-            ->select('id', 'shipping_line_id')
-            ->get()
-            ->keyBy('id');
         $userId = DB::table('users')->value('id');
+        if (!$userId) {
+            $this->command->warn('Required related records not found. Please seed users first.');
+            return;
+        }
 
-        if (empty($bookingIds) || !$userId) {
-            $this->command->warn('Required related records not found. Please seed bookings and users first.');
+        // Only bookings that have at least one waybill (same as StatementOfAccountSeeder)
+        $bookingsWithWaybills = DB::table('bookings')
+            ->join('waybill_details', 'bookings.id', '=', 'waybill_details.booking_id')
+            ->whereNull('waybill_details.deleted_at')
+            ->select('bookings.id', 'bookings.shipping_line_id')
+            ->distinct()
+            ->orderBy('bookings.id')
+            ->get();
+
+        if ($bookingsWithWaybills->isEmpty()) {
+            $this->command->warn('No bookings with waybills found. Please seed waybill_details first.');
             return;
         }
 
         $statements = [];
         $bsCounter = 1;
-        $maxStatements = min(6, count($bookingIds));
+        $maxStatements = min(8, $bookingsWithWaybills->count());
+        $take = $bookingsWithWaybills->take($maxStatements);
 
-        for ($i = 0; $i < $maxStatements; $i++) {
-            $bookingId = $bookingIds[$i];
-            $booking = $shippingLines[$bookingId] ?? null;
-            if (!$booking) {
-                continue;
-            }
-
+        foreach ($take as $i => $booking) {
             $statements[] = [
                 'shipping_line_id' => $booking->shipping_line_id,
-                'booking_id' => $bookingId,
+                'booking_id' => $booking->id,
                 'prepared_by' => $userId,
                 'billing_statement_no' => 'BS-' . now()->format('Y') . '-' . str_pad((string) $bsCounter, 4, '0', STR_PAD_LEFT),
                 'payment_term' => $i % 2 === 0 ? 'Net 30' : 'Net 15',
                 'ci_date' => now()->subDays($i + 5)->toDateString(),
                 'due_date' => now()->addDays($i * 10 + 15)->toDateString(),
                 'bus_style' => $i % 2 === 0 ? 'FCL' : 'LCL',
-                'has_details' => $i < 3,
+                'has_details' => 1,
                 'is_paid' => $i < 2,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -59,6 +65,6 @@ class BillingStatementSeeder extends Seeder
             );
         }
 
-        $this->command->info('Billing statements seeded successfully. Created ' . count($statements) . ' records.');
+        $this->command->info('Billing statements seeded successfully. Created ' . count($statements) . ' records (bookings with waybills only).');
     }
 }
