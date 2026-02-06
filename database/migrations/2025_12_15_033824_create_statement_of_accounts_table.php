@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->bigInteger('shipping_line_id')->unsigned();
             $table->string('dli_sa_number');
             $table->bigInteger('booking_id')->unsigned();
-            $table->string('work_order')->nullable(); // NEW
+            $table->string(column: 'work_order')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

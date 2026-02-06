@@ -16,13 +16,25 @@ class BillingStatementResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'shipping_line_id' => $this->shipping_line_id,
-            'shipping_line' => $this->whenLoaded('shippingLine', function () {
-                return new ShippingLineResource($this->shippingLine);
+            'statement_of_account_id' => $this->statement_of_account_id,
+            'statement_of_account' => $this->whenLoaded('statementOfAccount', function () {
+                $soa = $this->statementOfAccount;
+                return $soa ? [
+                    'id' => $soa->id,
+                    'dli_sa_number' => $soa->dli_sa_number,
+                    'work_order' => $soa->work_order,
+                    'booking_id' => $soa->booking_id,
+                    'shipping_line_id' => $soa->shipping_line_id,
+                ] : null;
             }),
-            'booking_id' => $this->booking_id,
+            // shipping_line_id and booking_id are from statement_of_accounts (via SOA relation)
+            'shipping_line_id' => $this->statement_of_account_id ? $this->shipping_line_id : null,
+            'shipping_line' => $this->whenLoaded('shippingLine', function () {
+                return $this->shippingLine ? new ShippingLineResource($this->shippingLine) : null;
+            }),
+            'booking_id' => $this->statement_of_account_id ? $this->booking_id : null,
             'booking' => $this->whenLoaded('booking', function () {
-                return new BookingResource($this->booking);
+                return $this->booking ? new BookingResource($this->booking) : null;
             }),
             'prepared_by' => $this->prepared_by,
             'prepared_by_user' => $this->whenLoaded('preparedByUser', function () {

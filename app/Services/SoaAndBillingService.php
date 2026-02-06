@@ -423,11 +423,11 @@ class SoaAndBillingService extends BaseService
             }
 
             if (request('shipping_line_id')) {
-                $query->where('shipping_line_id', request('shipping_line_id'));
+                $query->whereHas('statementOfAccount', fn ($q) => $q->where('shipping_line_id', request('shipping_line_id')));
             }
 
             if (request('booking_id')) {
-                $query->where('booking_id', request('booking_id'));
+                $query->whereHas('statementOfAccount', fn ($q) => $q->where('booking_id', request('booking_id')));
             }
 
             if (request()->has('is_paid')) {
@@ -440,8 +440,12 @@ class SoaAndBillingService extends BaseService
                 $query->orderBy('id', 'desc');
             }
 
+            if (request('statement_of_account_id')) {
+                $query->where('statement_of_account_id', request('statement_of_account_id'));
+            }
+
             return BillingStatementResource::collection(
-                $query->with(['shippingLine', 'booking', 'preparedByUser'])->paginate($perPage)->withQueryString()
+                $query->with(['statementOfAccount', 'shippingLine', 'booking', 'preparedByUser'])->paginate($perPage)->withQueryString()
             )->additional([
                         'meta' => [
                             'all' => $allBillingStatements,
@@ -462,16 +466,14 @@ class SoaAndBillingService extends BaseService
     public function generateBillingStatement(array $data)
     {
         try {
-            $shippingLine = \App\Models\ShippingLine::findOrFail($data['shipping_line_id']);
-            $booking = \App\Models\Booking::findOrFail($data['booking_id']);
-            $waybillCount = \App\Models\WaybillDetail::where('booking_id', $booking->id)->count();
-
-            if ($waybillCount === 0) {
-                throw new \Exception('The selected booking must have at least one waybill.');
+            $soa = \App\Models\StatementOfAccount::with(['booking'])->find($data['statement_of_account_id'] ?? null);
+            if (!$soa) {
+                throw new \Exception('The selected statement of account does not exist.');
             }
 
-            if ($booking->shipping_line_id != $data['shipping_line_id']) {
-                throw new \Exception('The booking does not belong to the selected shipping line.');
+            $waybillCount = \App\Models\WaybillDetail::where('booking_id', $soa->booking_id)->count();
+            if ($waybillCount === 0) {
+                throw new \Exception('The selected booking must have at least one waybill.');
             }
 
             // Set prepared_by to current authenticated user if not provided
@@ -480,7 +482,7 @@ class SoaAndBillingService extends BaseService
             }
 
             $billingStatement = BillingStatement::create($data);
-            $billingStatement->load(['shippingLine', 'booking', 'preparedByUser']);
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'booking', 'preparedByUser']);
 
             return BillingStatementResource::make($billingStatement);
         } catch (ModelNotFoundException $e) {
@@ -500,6 +502,7 @@ class SoaAndBillingService extends BaseService
     {
         try {
             $billingStatement = BillingStatement::with([
+                'statementOfAccount',
                 'shippingLine',
                 'booking',
                 'preparedByUser'
@@ -510,21 +513,25 @@ class SoaAndBillingService extends BaseService
 
             $detailsData = [];
             $grandTotal = 0;
+            $hasDetails = (bool) $billingStatement->has_details;
 
-            // Always build detailed breakdown from waybills when available (PDF shows full table regardless of has_details)
-            if ($waybills->isNotEmpty()) {
-                // Group waybills by normalized container size + container type
-                // Normalize: remove "offhire" and "ft" from size; Offhire -> type AC
+            // Same computation for grand total: sum over waybills of (base * 1.12 if has_vat else base)
+            foreach ($waybills as $waybill) {
+                $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $hasVat = (bool) ($waybill->has_vat ?? false);
+                $grandTotal += $hasVat ? $base * 1.12 : $base;
+            }
+
+            if ($hasDetails && $waybills->isNotEmpty()) {
+                // Template with itemized rows: group waybills by size + type, one row per group
                 $grouped = [];
                 foreach ($waybills as $waybill) {
                     $rawSize = $waybill->container_size ?? '';
                     $rawType = $waybill->container_type ?? '';
 
-                    // Normalize size: remove "offhire" and "ft", then take numeric part (e.g. "40ft Offhire" -> "40")
                     $sizeNormalized = trim(str_ireplace(['offhire', 'ft'], '', $rawSize));
                     $sizeNumeric = preg_replace('/[^0-9]/', '', $sizeNormalized) ?: preg_replace('/[^0-9]/', '', $rawSize);
 
-                    // Type code: if size string contained "offhire" -> AC; else DRY/empty -> HC, REEFER -> R
                     $typeCode = 'HC';
                     if (stripos($rawSize, 'offhire') !== false) {
                         $typeCode = 'AC';
@@ -552,7 +559,6 @@ class SoaAndBillingService extends BaseService
                     $grouped[$key]['waybills'][] = $waybill;
                 }
 
-                // Process each group: sum each waybill's (base * 1.12 if has_vat else base) so grand total matches SOA for same booking
                 foreach ($grouped as $group) {
                     $totalAmount = 0;
                     $waybillsInGroup = $group['waybills'] ?? [];
@@ -562,11 +568,7 @@ class SoaAndBillingService extends BaseService
                         $totalAmount += $hasVat ? $base * 1.12 : $base;
                     }
                     $quantity = $group['quantity'];
-                    $grandTotal += $totalAmount;
-                    // Display: rate_per_trip = average per trip so that rate_per_trip * quantity = total_amount
                     $rateWithTax = $quantity > 0 ? $totalAmount / $quantity : 0;
-
-                    // Description: quantity X container size + container type "UNIT" (e.g. "56X20HC UNIT", "6X40AC UNIT")
                     $description = $quantity . 'X' . $group['size_numeric'] . $group['type_code'] . ' UNIT';
 
                     $detailsData[] = [
@@ -577,36 +579,26 @@ class SoaAndBillingService extends BaseService
                         'total_amount' => $totalAmount,
                     ];
                 }
-            }
-
-            // Fallback: single summary row only when there are no waybills or no grouped details (e.g. no container data)
-            if (empty($detailsData) && $waybills->isNotEmpty()) {
-                foreach ($waybills as $waybill) {
-                    $baseAmount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
-                    $hasVat = (bool) ($waybill->has_vat ?? false);
-                    if ($baseAmount == 0 && $waybill->booking) {
-                        $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                            ->where('container_size', $waybill->container_size)
-                            ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
-                            ->where('is_active', 1)
-                            ->first();
-                        if ($matchingRate) {
-                            $baseAmount = (float) ($matchingRate->rate ?? 0);
-                            $hasVat = (bool) ($matchingRate->has_vat ?? false);
-                        }
-                    }
-                    $amount = $hasVat ? $baseAmount * 1.12 : $baseAmount;
-                    $grandTotal += $amount;
+            } else {
+                // Template has_details = false: single row — Reference, Billing #, Booking (from SOA work_order when present); Size and Rate of Trip blank; total = grandTotal
+                $reference = $billingStatement->booking ? $billingStatement->booking->reference_number : '';
+                $billingNo = $billingStatement->billing_statement_no ?? '';
+                $descriptionLines = [
+                    'Reference ' . ($reference ?: '-'),
+                    'Billing # ' . ($billingNo ?: '-'),
+                ];
+                $workOrder = $billingStatement->statementOfAccount?->work_order;
+                if ($workOrder !== null && $workOrder !== '') {
+                    $descriptionLines[] = 'Booking ' . $workOrder;
                 }
-                if ($grandTotal > 0) {
-                    $detailsData[] = [
-                        'date' => '',
-                        'description' => 'Charges',
-                        'size' => '-',
-                        'rate_per_trip' => null,
-                        'total_amount' => $grandTotal,
-                    ];
-                }
+                $detailsData[] = [
+                    'date' => '',
+                    'description' => implode("\n", $descriptionLines),
+                    'description_lines' => $descriptionLines,
+                    'size' => '',
+                    'rate_per_trip' => null,
+                    'total_amount' => $grandTotal,
+                ];
             }
 
             $companyInfo = [
@@ -623,6 +615,7 @@ class SoaAndBillingService extends BaseService
                 'companyInfo' => $companyInfo,
                 'detailsData' => $detailsData,
                 'grandTotal' => $grandTotal,
+                'hasDetails' => $hasDetails,
                 'issueDate' => $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y'),
                 'logoPath' => $logoPath,
             ];
@@ -654,6 +647,7 @@ class SoaAndBillingService extends BaseService
     {
         try {
             $billingStatement = BillingStatement::with([
+                'statementOfAccount',
                 'shippingLine',
                 'booking',
                 'preparedByUser'

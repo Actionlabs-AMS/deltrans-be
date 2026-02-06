@@ -22,15 +22,10 @@ class BillingStatementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'shipping_line_id' => [
+            'statement_of_account_id' => [
                 'required',
                 'integer',
-                'exists:shipping_lines,id',
-            ],
-            'booking_id' => [
-                'required',
-                'integer',
-                'exists:bookings,id',
+                'exists:statement_of_accounts,id',
             ],
             'billing_statement_no' => [
                 'required',
@@ -79,10 +74,8 @@ class BillingStatementRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'shipping_line_id.required' => 'The shipping line is required.',
-            'shipping_line_id.exists' => 'The selected shipping line does not exist.',
-            'booking_id.required' => 'The booking is required.',
-            'booking_id.exists' => 'The selected booking does not exist.',
+            'statement_of_account_id.required' => 'The statement of account is required.',
+            'statement_of_account_id.exists' => 'The selected statement of account does not exist.',
             'billing_statement_no.required' => 'The billing statement number is required.',
             'billing_statement_no.max' => 'The billing statement number must not exceed 255 characters.',
             'prepared_by.exists' => 'The selected user does not exist.',
@@ -95,22 +88,4 @@ class BillingStatementRequest extends FormRequest
         ];
     }
 
-    /**
-     * Configure the validator instance.
-     *
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return void
-     */
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-            if ($this->has('booking_id') && $this->has('shipping_line_id')) {
-                $booking = \App\Models\Booking::find($this->input('booking_id'));
-                
-                if ($booking && $booking->shipping_line_id != $this->input('shipping_line_id')) {
-                    $validator->errors()->add('booking_id', 'The selected booking does not belong to the selected shipping line.');
-                }
-            }
-        });
-    }
 }

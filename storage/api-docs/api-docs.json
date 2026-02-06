@@ -13562,6 +13562,14 @@
                         }
                     },
                     {
+                        "name": "statement_of_account_id",
+                        "in": "query",
+                        "description": "Filter by statement of account ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
                         "name": "shipping_line_id",
                         "in": "query",
                         "description": "Filter by shipping line ID",
@@ -21073,13 +21081,37 @@
                         "type": "integer",
                         "example": 1
                     },
-                    "shipping_line_id": {
+                    "statement_of_account_id": {
+                        "description": "Related statement of account ID",
                         "type": "integer",
                         "example": 1
                     },
-                    "booking_id": {
+                    "statement_of_account": {
+                        "description": "Linked SOA (id, dli_sa_number, work_order, booking_id, shipping_line_id)",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "shipping_line_id": {
+                        "description": "From statement_of_accounts.shipping_line_id",
                         "type": "integer",
-                        "example": 1
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "booking_id": {
+                        "description": "From statement_of_accounts.booking_id",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "shipping_line": {
+                        "description": "Shipping line from SOA when loaded",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "booking": {
+                        "description": "Booking from SOA when loaded",
+                        "type": "object",
+                        "nullable": true
                     },
                     "prepared_by": {
                         "description": "User ID who prepared the billing statement",
@@ -21134,16 +21166,12 @@
             "BillingStatementGenerateInput": {
                 "title": "Generate Billing Statement Input",
                 "required": [
-                    "shipping_line_id",
-                    "booking_id",
+                    "statement_of_account_id",
                     "billing_statement_no"
                 ],
                 "properties": {
-                    "shipping_line_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "booking_id": {
+                    "statement_of_account_id": {
+                        "description": "Statement of account ID",
                         "type": "integer",
                         "example": 1
                     },

@@ -17,8 +17,7 @@ return new class extends Migration {
         Schema::create('billing_statements', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('shipping_line_id')->unsigned(); // input from shipping line
-            $table->bigInteger('booking_id')->unsigned(); // input from booking
+            $table->bigInteger('statement_of_account_id')->unsigned(); // input from statement of account
             $table->bigInteger('prepared_by')->unsigned(); //User ID of the logged-in user
             $table->string('billing_statement_no'); // input from user
             $table->string('payment_term')->nullable(); // input from user
@@ -30,14 +29,11 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
 
-            // Foreign key constraints
-            $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
-            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
+            // Foreign key constraints (statement_of_account_id FK added in later migration - SOA table created after this)
             $table->foreign('prepared_by')->references('id')->on('users')->onDelete('cascade');
 
             // Indexes
-            $table->index('shipping_line_id');
-            $table->index('booking_id');
+            $table->index('statement_of_account_id');
             $table->index('prepared_by');
             $table->index('billing_statement_no');
             $table->index('ci_date');
