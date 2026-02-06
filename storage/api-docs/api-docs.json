@@ -13486,6 +13486,83 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "put": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Update a statement of account",
+                "operationId": "798eb8ad9176db80b6e3a745c8b14535",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "shipping_line_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "dli_sa_number": {
+                                        "type": "string",
+                                        "example": "SA-2024-001"
+                                    },
+                                    "booking_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "work_order": {
+                                        "type": "string",
+                                        "example": "WO-001",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Statement of account updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/soa_and_billing"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/soa/{id}/download": {
@@ -13725,6 +13802,104 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Update a billing statement",
+                "operationId": "5d78a99c4d414f4fa038dab74379426c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "statement_of_account_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "billing_statement_no": {
+                                        "type": "string",
+                                        "example": "BS-2024-001"
+                                    },
+                                    "prepared_by": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "payment_term": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "ci_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    },
+                                    "due_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    },
+                                    "bus_style": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "has_details": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    },
+                                    "is_paid": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Billing statement updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BillingStatement"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"

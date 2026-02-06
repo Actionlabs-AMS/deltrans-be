@@ -123,6 +123,27 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
+     * Update a statement of account by ID.
+     *
+     * @param int $id
+     * @param array $data Only provided keys are updated.
+     * @return SoaAndBillingResource
+     */
+    public function updateSoa($id, array $data)
+    {
+        try {
+            $soa = StatementOfAccount::findOrFail($id);
+            $soa->update(array_intersect_key($data, array_flip($soa->getFillable())));
+            $soa->load(['shippingLine', 'booking']);
+            return SoaAndBillingResource::make($soa);
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Statement of account not found.');
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
+    }
+
+    /**
      * Generate PDF for Statement of Account.
      *
      * @param int $id SOA ID
@@ -658,6 +679,27 @@ class SoaAndBillingService extends BaseService
             throw new \Exception('Billing statement not found.');
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch billing statement: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update a billing statement by ID.
+     *
+     * @param int $id
+     * @param array $data Only provided keys are updated.
+     * @return BillingStatementResource
+     */
+    public function updateBillingStatement($id, array $data)
+    {
+        try {
+            $billingStatement = BillingStatement::findOrFail($id);
+            $billingStatement->update(array_intersect_key($data, array_flip($billingStatement->getFillable())));
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'booking', 'preparedByUser']);
+            return BillingStatementResource::make($billingStatement);
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Billing statement not found.');
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
         }
     }
 }

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\SoaAndBillingRequest;
+use App\Http\Requests\UpdateSoaRequest;
 use App\Http\Requests\BillingStatementRequest;
+use App\Http\Requests\UpdateBillingStatementRequest;
 use App\Services\SoaAndBillingService;
 use App\Services\MessageService;
 use App\Models\StatementOfAccount;
@@ -141,28 +143,63 @@ class SoaAndBillingController extends BaseController
      *     summary="Get a specific statement of account",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Statement of account retrieved", @OA\JsonContent(
-     *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
-     *     )),
-     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
-     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
-     * )
-     */
-    public function show($id)
-    {
-        try {
-            return $this->service->show($id);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], $e->getMessage() === 'Statement of account not found.' ? 404 : 500);
-        }
-    }
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Response(response=200, description="Statement of account retrieved", @OA\JsonContent(
+	 *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
+	 *     )),
+	 *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+	 *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+	 * )
+	 */
+	public function show($id)
+	{
+		try {
+			return $this->service->show($id);
+		} catch (\Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage(),
+			], $e->getMessage() === 'Statement of account not found.' ? 404 : 500);
+		}
+	}
 
-    /**
-     * @OA\Get(
+	/**
+	 * @OA\Put(
+	 *     path="/api/soa/{id}",
+	 *     summary="Update a statement of account",
+	 *     tags={"SOA and Billing Management"},
+	 *     security={{"sanctum": {}}},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\RequestBody(required=false, @OA\JsonContent(
+	 *         @OA\Property(property="shipping_line_id", type="integer", example=1),
+	 *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
+	 *         @OA\Property(property="booking_id", type="integer", example=1),
+	 *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
+	 *     )),
+	 *     @OA\Response(response=200, description="Statement of account updated", @OA\JsonContent(
+	 *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
+	 *     )),
+	 *     @OA\Response(response=400, ref="#/components/responses/BadRequest"),
+	 *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+	 *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+	 * )
+	 */
+	public function update(UpdateSoaRequest $request, $id)
+	{
+		try {
+			$data = $request->validated();
+			$soa = $this->service->updateSoa($id, $data);
+			return response($soa, 200);
+		} catch (\Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage(),
+			], $e->getMessage() === 'Statement of account not found.' ? 404 : 400);
+		}
+	}
+
+	/**
+	 * @OA\Get(
      *     path="/api/soa/{id}/download",
      *     summary="Download Statement of Account PDF",
      *     tags={"SOA and Billing Management"},
@@ -291,6 +328,46 @@ class SoaAndBillingController extends BaseController
                 'success' => false,
                 'message' => $e->getMessage(),
             ], $e->getMessage() === 'Billing statement not found.' ? 404 : 500);
+        }
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/api/billing-statements/{id}",
+     *     summary="Update a billing statement",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(required=false, @OA\JsonContent(
+     *         @OA\Property(property="statement_of_account_id", type="integer", example=1),
+     *         @OA\Property(property="billing_statement_no", type="string", example="BS-2024-001"),
+     *         @OA\Property(property="prepared_by", type="integer", nullable=true),
+     *         @OA\Property(property="payment_term", type="string", nullable=true),
+     *         @OA\Property(property="ci_date", type="string", format="date", nullable=true),
+     *         @OA\Property(property="due_date", type="string", format="date", nullable=true),
+     *         @OA\Property(property="bus_style", type="string", nullable=true),
+     *         @OA\Property(property="has_details", type="boolean", nullable=true),
+     *         @OA\Property(property="is_paid", type="boolean", nullable=true)
+     *     )),
+     *     @OA\Response(response=200, description="Billing statement updated", @OA\JsonContent(
+     *         @OA\Property(property="data", type="object", ref="#/components/schemas/BillingStatement")
+     *     )),
+     *     @OA\Response(response=400, ref="#/components/responses/BadRequest"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function billingStatementsUpdate(UpdateBillingStatementRequest $request, $id)
+    {
+        try {
+            $data = $request->validated();
+            $billingStatement = $this->service->updateBillingStatement($id, $data);
+            return response($billingStatement, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getMessage() === 'Billing statement not found.' ? 404 : 400);
         }
     }
 
