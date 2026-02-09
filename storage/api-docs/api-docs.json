@@ -13580,6 +13580,16 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages (upload via POST /soa-and-billing/attachments); folder is deleted after download",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
                     }
                 ],
                 "responses": {
@@ -13931,6 +13941,16 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages; folder is deleted after download",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
                     }
                 ],
                 "responses": {
@@ -14080,7 +14100,7 @@
                     "SOA and Billing Management"
                 ],
                 "summary": "Download Billing Statement + SOA (2-page PDF)",
-                "description": "Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. {id} = billing_statement_id.",
+                "description": "Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. {id} = billing_statement_id. Use include_attachments=true to append the user's uploaded images as extra pages.",
                 "operationId": "17590dd2e60ee49dfe2841990332c5c0",
                 "parameters": [
                     {
@@ -14090,6 +14110,16 @@
                         "required": true,
                         "schema": {
                             "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages; folder is deleted after download",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
                         }
                     }
                 ],
@@ -14110,6 +14140,72 @@
                     },
                     "500": {
                         "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa-and-billing/attachments": {
+            "post": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Upload temp attachment images",
+                "description": "Upload one or more images to be optionally included as extra pages in SOA/Billing PDF downloads. One folder per user; each new upload replaces the previous. Use include_attachments=true on download to include them; folder is deleted after that download.",
+                "operationId": "cbf3cfbf154b833879ed7799f8728e8b",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "images[]"
+                                ],
+                                "properties": {
+                                    "images[]": {
+                                        "description": "Image files (jpeg, png, jpg, gif, webp; max 5MB each; max 10 files). Use field name 'images[]' so multiple files are received as an array.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Upload result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "expires_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "count": {
+                                            "type": "integer",
+                                            "example": 2
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
                 },
                 "security": [

@@ -7,6 +7,7 @@ use App\Http\Requests\GenerateSoaAndBillingRequest;
 use App\Http\Requests\UpdateSoaRequest;
 use App\Http\Requests\BillingStatementRequest;
 use App\Http\Requests\UpdateBillingStatementRequest;
+use App\Http\Requests\StoreTempAttachmentsRequest;
 use App\Services\SoaAndBillingService;
 use App\Services\MessageService;
 use App\Models\StatementOfAccount;
@@ -144,68 +145,69 @@ class SoaAndBillingController extends BaseController
      *     summary="Get a specific statement of account",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-	 *     @OA\Response(response=200, description="Statement of account retrieved", @OA\JsonContent(
-	 *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
-	 *     )),
-	 *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
-	 *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
-	 * )
-	 */
-	public function show($id)
-	{
-		try {
-			return $this->service->show($id);
-		} catch (\Exception $e) {
-			return response()->json([
-				'success' => false,
-				'message' => $e->getMessage(),
-			], $e->getMessage() === 'Statement of account not found.' ? 404 : 500);
-		}
-	}
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Statement of account retrieved", @OA\JsonContent(
+     *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
+     *     )),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function show($id)
+    {
+        try {
+            return $this->service->show($id);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getMessage() === 'Statement of account not found.' ? 404 : 500);
+        }
+    }
 
-	/**
-	 * @OA\Put(
-	 *     path="/api/soa/{id}",
-	 *     summary="Update a statement of account",
-	 *     tags={"SOA and Billing Management"},
-	 *     security={{"sanctum": {}}},
-	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
-	 *     @OA\RequestBody(required=false, @OA\JsonContent(
-	 *         @OA\Property(property="shipping_line_id", type="integer", example=1),
-	 *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
-	 *         @OA\Property(property="booking_id", type="integer", example=1),
-	 *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
-	 *     )),
-	 *     @OA\Response(response=200, description="Statement of account updated", @OA\JsonContent(
-	 *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
-	 *     )),
-	 *     @OA\Response(response=400, ref="#/components/responses/BadRequest"),
-	 *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
-	 *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
-	 * )
-	 */
-	public function update(UpdateSoaRequest $request, $id)
-	{
-		try {
-			$data = $request->validated();
-			$soa = $this->service->updateSoa($id, $data);
-			return response($soa, 200);
-		} catch (\Exception $e) {
-			return response()->json([
-				'success' => false,
-				'message' => $e->getMessage(),
-			], $e->getMessage() === 'Statement of account not found.' ? 404 : 400);
-		}
-	}
+    /**
+     * @OA\Put(
+     *     path="/api/soa/{id}",
+     *     summary="Update a statement of account",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(required=false, @OA\JsonContent(
+     *         @OA\Property(property="shipping_line_id", type="integer", example=1),
+     *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
+     *         @OA\Property(property="booking_id", type="integer", example=1),
+     *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
+     *     )),
+     *     @OA\Response(response=200, description="Statement of account updated", @OA\JsonContent(
+     *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
+     *     )),
+     *     @OA\Response(response=400, ref="#/components/responses/BadRequest"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function update(UpdateSoaRequest $request, $id)
+    {
+        try {
+            $data = $request->validated();
+            $soa = $this->service->updateSoa($id, $data);
+            return response($soa, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getMessage() === 'Statement of account not found.' ? 404 : 400);
+        }
+    }
 
-	/**
-	 * @OA\Get(
+    /**
+     * @OA\Get(
      *     path="/api/soa/{id}/download",
      *     summary="Download Statement of Account PDF",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages (upload via POST /soa-and-billing/attachments); folder is deleted after download", @OA\Schema(type="boolean", default=false)),
      *     @OA\Response(response=200, description="PDF file download", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
      *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
      *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
@@ -214,20 +216,17 @@ class SoaAndBillingController extends BaseController
     public function download($id)
     {
         try {
-            $filePath = $this->service->generatePdf($id);
+            $includeAttachments = filter_var(request()->query('include_attachments'), FILTER_VALIDATE_BOOLEAN);
+            $attachmentUserId = $includeAttachments ? auth()->id() : null;
 
-            if (!Storage::disk('public')->exists($filePath)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to generate PDF file.',
-                ], 500);
-            }
+            $pdfOutput = $this->service->generatePdf($id, $attachmentUserId, $includeAttachments);
 
             $soa = StatementOfAccount::findOrFail($id);
             $downloadName = $soa->dli_sa_number . '.pdf';
 
-            return Storage::disk('public')->download($filePath, $downloadName, [
+            return response($pdfOutput, 200, [
                 'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -379,6 +378,7 @@ class SoaAndBillingController extends BaseController
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages; folder is deleted after download", @OA\Schema(type="boolean", default=false)),
      *     @OA\Response(response=200, description="PDF file download", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
      *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
      *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
@@ -387,20 +387,17 @@ class SoaAndBillingController extends BaseController
     public function billingStatementsDownload($id)
     {
         try {
-            $filePath = $this->service->generateBillingStatementPdf($id);
+            $includeAttachments = filter_var(request()->query('include_attachments'), FILTER_VALIDATE_BOOLEAN);
+            $attachmentUserId = $includeAttachments ? auth()->id() : null;
 
-            if (!Storage::disk('public')->exists($filePath)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to generate PDF file.',
-                ], 500);
-            }
+            $pdfOutput = $this->service->generateBillingStatementPdf($id, $attachmentUserId, $includeAttachments);
 
             $billingStatement = \App\Models\BillingStatement::findOrFail($id);
             $downloadName = $billingStatement->billing_statement_no . '.pdf';
 
-            return Storage::disk('public')->download($filePath, $downloadName, [
+            return response($pdfOutput, 200, [
                 'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -470,10 +467,11 @@ class SoaAndBillingController extends BaseController
      * @OA\Get(
      *     path="/api/soa-and-billing/{id}/download",
      *     summary="Download Billing Statement + SOA (2-page PDF)",
-     *     description="Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. {id} = billing_statement_id.",
+     *     description="Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. {id} = billing_statement_id. Use include_attachments=true to append the user's uploaded images as extra pages.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages; folder is deleted after download", @OA\Schema(type="boolean", default=false)),
      *     @OA\Response(response=200, description="PDF file download (2 pages: Billing then SOA)", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
      *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
      *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
@@ -482,27 +480,67 @@ class SoaAndBillingController extends BaseController
     public function downloadBillingAndSoa($id)
     {
         try {
-            $filePath = $this->service->generateBillingAndSoaCombinedPdf($id);
+            $includeAttachments = filter_var(request()->query('include_attachments'), FILTER_VALIDATE_BOOLEAN);
+            $attachmentUserId = $includeAttachments ? auth()->id() : null;
 
-            if (!Storage::disk('public')->exists($filePath)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to generate PDF file.',
-                ], 500);
-            }
+            $pdfOutput = $this->service->generateBillingAndSoaCombinedPdf($id, $attachmentUserId, $includeAttachments);
 
             $billingStatement = \App\Models\BillingStatement::with('statementOfAccount')->findOrFail($id);
             $soa = $billingStatement->statementOfAccount;
             $downloadName = ($billingStatement->billing_statement_no ?? 'billing') . '_' . ($soa->dli_sa_number ?? 'soa') . '.pdf';
 
-            return Storage::disk('public')->download($filePath, $downloadName, [
+            return response($pdfOutput, 200, [
                 'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Billing statement not found.',
             ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload temp images for SOA/Billing PDF attachments. Use include_attachments=true on download to include them.
+     *
+     * @OA\Post(
+     *     path="/api/soa-and-billing/attachments",
+     *     summary="Upload temp attachment images",
+     *     description="Upload one or more images to be optionally included as extra pages in SOA/Billing PDF downloads. One folder per user; each new upload replaces the previous. Use include_attachments=true on download to include them; folder is deleted after that download.",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\RequestBody(required=true, @OA\MediaType(mediaType="multipart/form-data", @OA\Schema(
+     *         required={"images[]"},
+     *         @OA\Property(property="images[]", type="array", @OA\Items(type="string", format="binary"), description="Image files (jpeg, png, jpg, gif, webp; max 5MB each; max 10 files). Use field name 'images[]' so multiple files are received as an array.")
+     *     ))),
+     *     @OA\Response(response=200, description="Upload result", @OA\JsonContent(
+     *         @OA\Property(property="expires_at", type="string", format="date-time"),
+     *         @OA\Property(property="count", type="integer", example=2)
+     *     )),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function storeAttachments(StoreTempAttachmentsRequest $request)
+    {
+        try {
+            $userId = auth()->id();
+            $files = $request->file('images');
+            $files = is_array($files) ? $files : ($files ? [$files] : []);
+            $count = $this->service->storeTempAttachmentsForUser($userId, $files);
+
+            $expiresAt = now()->addHours(2)->toIso8601String();
+
+            return response()->json([
+                'expires_at' => $expiresAt,
+                'count' => $count,
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

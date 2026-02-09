@@ -194,12 +194,82 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
-     * Generate PDF for Statement of Account.
+     * Temp attachments path (relative to local disk root). Used for upload-before-download.
+     */
+    protected function getTempAttachmentsBasePath(): string
+    {
+        return config('filesystems.temp_attachments', 'temp-attachments');
+    }
+
+    /**
+     * Get full filesystem paths for images in the given user's temp attachment folder.
+     *
+     * @param int $userId
+     * @return array<int, string> Full paths to image files (empty if dir missing)
+     */
+    public function getTempAttachmentPathsByUser(int $userId): array
+    {
+        $base = $this->getTempAttachmentsBasePath();
+        $dir = $base . '/' . (string) $userId;
+        if (!Storage::disk('local')->exists($dir)) {
+            return [];
+        }
+        $paths = [];
+        foreach (Storage::disk('local')->files($dir) as $relativePath) {
+            $paths[] = Storage::disk('local')->path($relativePath);
+        }
+        return $paths;
+    }
+
+    /**
+     * Delete the temp attachment directory for the given user (one folder per user).
+     *
+     * @param int $userId
+     * @return void
+     */
+    public function deleteTempAttachmentsByUser(int $userId): void
+    {
+        $base = $this->getTempAttachmentsBasePath();
+        $dir = $base . '/' . (string) $userId;
+        Storage::disk('local')->deleteDirectory($dir);
+    }
+
+    /**
+     * Store uploaded files under temp-attachments/{userId}. Replaces any existing
+     * attachments for that user (one folder per user). Returns count stored.
+     *
+     * @param int $userId
+     * @param array<\Illuminate\Http\UploadedFile> $files
+     * @return int
+     */
+    public function storeTempAttachmentsForUser(int $userId, array $files): int
+    {
+        $base = $this->getTempAttachmentsBasePath();
+        $dir = $base . '/' . (string) $userId;
+        Storage::disk('local')->deleteDirectory($dir);
+        Storage::disk('local')->makeDirectory($dir);
+        $count = 0;
+        foreach ($files as $index => $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            $ext = $file->getClientOriginalExtension() ?: 'jpg';
+            $safeName = 'image_' . $index . '_' . time() . '.' . $ext;
+            Storage::disk('local')->putFileAs($dir, $file, $safeName);
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
+     * Generate PDF for Statement of Account. Returns PDF binary (not saved to disk).
      *
      * @param int $id SOA ID
-     * @return string Path to the generated PDF file
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use (one folder per user)
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @return string PDF binary content
      */
-    public function generatePdf($id)
+    public function generatePdf($id, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
             $soa = StatementOfAccount::with([
@@ -308,6 +378,11 @@ class SoaAndBillingService extends BaseService
 
             $logoPath = public_path('images/deltrans-logo.png');
 
+            $attachmentPaths = [];
+            if ($includeAttachments && $attachmentUserId !== null) {
+                $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
+            }
+
             $data = [
                 'soa' => $soa,
                 'companyInfo' => $companyInfo,
@@ -321,18 +396,17 @@ class SoaAndBillingService extends BaseService
                 'grandTotal' => $grandTotal,
                 'issueDate' => now()->format('F d, Y'),
                 'logoPath' => $logoPath,
+                'attachment_paths' => $attachmentPaths,
             ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('soa.pdf', $data);
             $pdf->setPaper('a4', 'portrait');
 
-            $directory = 'soa-pdfs/' . date('Y/m');
-            Storage::disk('public')->makeDirectory($directory);
-            $filename = $soa->dli_sa_number . '_' . time() . '.pdf';
-            $filePath = $directory . '/' . $filename;
-            Storage::disk('public')->put($filePath, $pdf->output());
-
-            return $filePath;
+            $output = $pdf->output();
+            if ($attachmentUserId !== null) {
+                $this->deleteTempAttachmentsByUser($attachmentUserId);
+            }
+            return $output;
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Statement of account not found.');
         } catch (\Exception $e) {
@@ -494,11 +568,11 @@ class SoaAndBillingService extends BaseService
             }
 
             if (request('shipping_line_id')) {
-                $query->whereHas('statementOfAccount', fn ($q) => $q->where('shipping_line_id', request('shipping_line_id')));
+                $query->whereHas('statementOfAccount', fn($q) => $q->where('shipping_line_id', request('shipping_line_id')));
             }
 
             if (request('booking_id')) {
-                $query->whereHas('statementOfAccount', fn ($q) => $q->where('booking_id', request('booking_id')));
+                $query->whereHas('statementOfAccount', fn($q) => $q->where('booking_id', request('booking_id')));
             }
 
             if (request()->has('is_paid')) {
@@ -564,12 +638,14 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
-     * Generate PDF for Billing Statement.
+     * Generate PDF for Billing Statement. Returns PDF binary (not saved to disk).
      *
      * @param int $id Billing Statement ID
-     * @return string Path to the generated PDF file
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @return string PDF binary content
      */
-    public function generateBillingStatementPdf($id)
+    public function generateBillingStatementPdf($id, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
             $billingStatement = BillingStatement::with([
@@ -681,6 +757,11 @@ class SoaAndBillingService extends BaseService
 
             $logoPath = public_path('images/deltrans-logo.png');
 
+            $attachmentPaths = [];
+            if ($includeAttachments && $attachmentUserId !== null) {
+                $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
+            }
+
             $data = [
                 'billingStatement' => $billingStatement,
                 'companyInfo' => $companyInfo,
@@ -689,18 +770,17 @@ class SoaAndBillingService extends BaseService
                 'hasDetails' => $hasDetails,
                 'issueDate' => $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y'),
                 'logoPath' => $logoPath,
+                'attachment_paths' => $attachmentPaths,
             ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing-statement.pdf', $data);
             $pdf->setPaper('a4', 'portrait');
 
-            $directory = 'billing-statement-pdfs/' . date('Y/m');
-            Storage::disk('public')->makeDirectory($directory);
-            $filename = $billingStatement->billing_statement_no . '_' . time() . '.pdf';
-            $filePath = $directory . '/' . $filename;
-            Storage::disk('public')->put($filePath, $pdf->output());
-
-            return $filePath;
+            $output = $pdf->output();
+            if ($attachmentUserId !== null) {
+                $this->deleteTempAttachmentsByUser($attachmentUserId);
+            }
+            return $output;
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Billing statement not found.');
         } catch (\Exception $e) {
@@ -710,12 +790,14 @@ class SoaAndBillingService extends BaseService
 
     /**
      * Generate a single 2-page PDF: Page 1 = Billing Statement, Page 2 = SOA.
-     * One view, one PDF output (no separate generation or merge).
+     * One view, one PDF output (no separate generation or merge). Returns PDF binary (not saved to disk).
      *
      * @param int $billingStatementId
-     * @return string Path to the generated PDF file
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @return string PDF binary content
      */
-    public function generateBillingAndSoaCombinedPdf($billingStatementId)
+    public function generateBillingAndSoaCombinedPdf($billingStatementId, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
             $billingStatement = BillingStatement::with([
@@ -888,6 +970,11 @@ class SoaAndBillingService extends BaseService
             $soaGrandTotal = $soaTotalAmount + $soaTotalVat;
             $soaIssueDate = now()->format('F d, Y');
 
+            $attachmentPaths = [];
+            if ($includeAttachments && $attachmentUserId !== null) {
+                $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
+            }
+
             $data = [
                 'billingStatement' => $billingStatement,
                 'companyInfo' => $companyInfo,
@@ -904,18 +991,17 @@ class SoaAndBillingService extends BaseService
                 'soaTotalAmount' => $soaTotalAmount,
                 'soaTotalVat' => $soaTotalVat,
                 'soaGrandTotal' => $soaGrandTotal,
+                'attachment_paths' => $attachmentPaths,
             ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing-and-soa.pdf', $data);
             $pdf->setPaper('a4', 'portrait');
 
-            $directory = 'billing-and-soa-pdfs/' . date('Y/m');
-            Storage::disk('public')->makeDirectory($directory);
-            $filename = $billingStatement->billing_statement_no . '_' . $soa->dli_sa_number . '_' . time() . '.pdf';
-            $filePath = $directory . '/' . $filename;
-            Storage::disk('public')->put($filePath, $pdf->output());
-
-            return $filePath;
+            $output = $pdf->output();
+            if ($attachmentUserId !== null) {
+                $this->deleteTempAttachmentsByUser($attachmentUserId);
+            }
+            return $output;
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Billing statement not found.');
         } catch (\Exception $e) {

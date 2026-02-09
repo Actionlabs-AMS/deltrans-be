@@ -310,6 +310,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	*/
 	Route::prefix('soa-and-billing')->group(function () {
 		Route::post('/generate', [SoaAndBillingController::class, 'generateSoaAndBilling']);  // Generate SOA + Billing in one request
+		Route::post('/attachments', [SoaAndBillingController::class, 'storeAttachments']);  // Upload temp images for PDF attachments (returns token)
 		Route::get('/{id}/download', [SoaAndBillingController::class, 'downloadBillingAndSoa']);  // Download 2-page PDF (Billing then SOA), {id} = billing_statement_id
 	});
 
@@ -341,7 +342,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/bulk/force-delete', [HelperController::class, 'bulkForceDelete']);  // Bulk permanently delete helpers
 
 		//For waybill
-		Route::get('/get-waybill/{id}', [HelperController::class, 'getWaybillByHelperId']); 
+		Route::get('/get-waybill/{id}', [HelperController::class, 'getWaybillByHelperId']);
 
 		//For Drive CA History
 		Route::get('/get-cash-advance/{id}', [HelperCAHistoryController::class, 'getHelperCashAdvances']);
@@ -657,7 +658,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::put('/update-truck/{id}', [TruckController::class, 'update']);  // Update an existing truck details
 		Route::patch('/deactivate-truck/{id}', [TruckController::class, 'deactivate']);  // Deactivate a truck
 		Route::patch('/activate-truck/{id}', [TruckController::class, 'restore']);  // Activate a truck
-		Route::delete('/truck-list/{id}', [TruckController::class, 'destroy']); 
+		Route::delete('/truck-list/{id}', [TruckController::class, 'destroy']);
 		Route::get('/active-list', [TruckController::class, 'getActiveTruckList']);
 
 		// Bulk operations
