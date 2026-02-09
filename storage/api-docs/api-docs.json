@@ -13959,6 +13959,166 @@
                 ]
             }
         },
+        "/api/soa-and-billing/generate": {
+            "post": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Generate SOA and Billing Statement in one request",
+                "description": "Combined endpoint: creates Statement of Account first, then Billing Statement linked to it. One request body with SOA + Billing fields.",
+                "operationId": "24fbbd13fc5b35edad977ec717e7995a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "shipping_line_id",
+                                    "dli_sa_number",
+                                    "booking_id",
+                                    "billing_statement_no"
+                                ],
+                                "properties": {
+                                    "shipping_line_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "dli_sa_number": {
+                                        "type": "string",
+                                        "example": "SA-2024-001"
+                                    },
+                                    "booking_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "work_order": {
+                                        "type": "string",
+                                        "example": "WO-001",
+                                        "nullable": true
+                                    },
+                                    "billing_statement_no": {
+                                        "type": "string",
+                                        "example": "BS-2024-001"
+                                    },
+                                    "prepared_by": {
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "payment_term": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "ci_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    },
+                                    "due_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    },
+                                    "bus_style": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "has_details": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    },
+                                    "is_paid": {
+                                        "type": "boolean",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "SOA and Billing created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "soa": {
+                                                    "$ref": "#/components/schemas/soa_and_billing"
+                                                },
+                                                "billing": {
+                                                    "$ref": "#/components/schemas/BillingStatement"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa-and-billing/{id}/download": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Download Billing Statement + SOA (2-page PDF)",
+                "description": "Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. {id} = billing_statement_id.",
+                "operationId": "17590dd2e60ee49dfe2841990332c5c0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Billing Statement ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file download (2 pages: Billing then SOA)",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/soa-data-options": {
             "get": {
                 "tags": [

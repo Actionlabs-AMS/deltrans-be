@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\SoaAndBillingRequest;
+use App\Http\Requests\GenerateSoaAndBillingRequest;
 use App\Http\Requests\UpdateSoaRequest;
 use App\Http\Requests\BillingStatementRequest;
 use App\Http\Requests\UpdateBillingStatementRequest;
@@ -397,6 +398,102 @@ class SoaAndBillingController extends BaseController
 
             $billingStatement = \App\Models\BillingStatement::findOrFail($id);
             $downloadName = $billingStatement->billing_statement_no . '.pdf';
+
+            return Storage::disk('public')->download($filePath, $downloadName, [
+                'Content-Type' => 'application/pdf',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Billing statement not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/soa-and-billing/generate",
+     *     summary="Generate SOA and Billing Statement in one request",
+     *     description="Combined endpoint: creates Statement of Account first, then Billing Statement linked to it. One request body with SOA + Billing fields.",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"shipping_line_id", "dli_sa_number", "booking_id", "billing_statement_no"},
+     *         @OA\Property(property="shipping_line_id", type="integer", example=1),
+     *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
+     *         @OA\Property(property="booking_id", type="integer", example=1),
+     *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
+     *         @OA\Property(property="billing_statement_no", type="string", example="BS-2024-001"),
+     *         @OA\Property(property="prepared_by", type="integer", nullable=true),
+     *         @OA\Property(property="payment_term", type="string", nullable=true),
+     *         @OA\Property(property="ci_date", type="string", format="date", nullable=true),
+     *         @OA\Property(property="due_date", type="string", format="date", nullable=true),
+     *         @OA\Property(property="bus_style", type="string", nullable=true),
+     *         @OA\Property(property="has_details", type="boolean", nullable=true),
+     *         @OA\Property(property="is_paid", type="boolean", nullable=true)
+     *     )),
+     *     @OA\Response(response=201, description="SOA and Billing created", @OA\JsonContent(
+     *         @OA\Property(property="data", type="object",
+     *             @OA\Property(property="soa", ref="#/components/schemas/soa_and_billing"),
+     *             @OA\Property(property="billing", ref="#/components/schemas/BillingStatement")
+     *         )
+     *     )),
+     *     @OA\Response(response=400, ref="#/components/responses/BadRequest"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function generateSoaAndBilling(GenerateSoaAndBillingRequest $request)
+    {
+        try {
+            $data = $request->validated();
+            $result = $this->service->generateSoaAndBilling($data);
+            return response()->json([
+                'data' => [
+                    'soa' => $result['soa'],
+                    'billing' => $result['billing'],
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/soa-and-billing/{id}/download",
+     *     summary="Download Billing Statement + SOA (2-page PDF)",
+     *     description="Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. {id} = billing_statement_id.",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="PDF file download (2 pages: Billing then SOA)", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function downloadBillingAndSoa($id)
+    {
+        try {
+            $filePath = $this->service->generateBillingAndSoaCombinedPdf($id);
+
+            if (!Storage::disk('public')->exists($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to generate PDF file.',
+                ], 500);
+            }
+
+            $billingStatement = \App\Models\BillingStatement::with('statementOfAccount')->findOrFail($id);
+            $soa = $billingStatement->statementOfAccount;
+            $downloadName = ($billingStatement->billing_statement_no ?? 'billing') . '_' . ($soa->dli_sa_number ?? 'soa') . '.pdf';
 
             return Storage::disk('public')->download($filePath, $downloadName, [
                 'Content-Type' => 'application/pdf',

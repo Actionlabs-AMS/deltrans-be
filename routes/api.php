@@ -305,6 +305,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	/*
 	|--------------------------------------------------------------------------
+	| Combined SOA + Billing (generate both in one request; download 2-page PDF)
+	|--------------------------------------------------------------------------
+	*/
+	Route::prefix('soa-and-billing')->group(function () {
+		Route::post('/generate', [SoaAndBillingController::class, 'generateSoaAndBilling']);  // Generate SOA + Billing in one request
+		Route::get('/{id}/download', [SoaAndBillingController::class, 'downloadBillingAndSoa']);  // Download 2-page PDF (Billing then SOA), {id} = billing_statement_id
+	});
+
+	/*
+	|--------------------------------------------------------------------------
 	| Helper Management Routes
 	|--------------------------------------------------------------------------
 	|
