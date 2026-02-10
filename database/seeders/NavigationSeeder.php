@@ -41,6 +41,18 @@ class NavigationSeeder extends Seeder
                 'children' => [],
             ],
 
+            // Container Yard Section
+            [
+                'name' => 'Container Yards',
+                'slug' => 'container-yards',
+                'icon' => 'map-pinned',
+                'description' => 'List of container yards and their details',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => true,
+                'children' => [],
+            ],
+
             // Booking Management Section
             [
                 'name' => 'Booking Management',
@@ -137,18 +149,6 @@ class NavigationSeeder extends Seeder
                         'show_in_menu' => false,
                     ],
                 ],
-            ],
-
-            // Container Yard Section
-            [
-                'name' => 'Container Yards',
-                'slug' => 'container-yards',
-                'icon' => 'map-pinned',
-                'description' => 'List of container yards and their details',
-                'parent_id' => null,
-                'active' => true,
-                'show_in_menu' => true,
-                'children' => [],
             ],
 
             // Rates and Expenses Section

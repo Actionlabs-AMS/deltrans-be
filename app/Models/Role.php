@@ -132,7 +132,7 @@ class Role extends Model
 			// Construct the full path by prefixing with parent path
 			$fullPath = $parentPath . '/' . $navigation->slug;
 
-			if(!empty($permissions) && !empty($permissions['can_view']) && $permissions['can_view'] === true) {
+			if(!empty($permissions) && !empty($permissions['can_view'])) {
 				$routes = [
 					'id' => $navigation->id,
 					'path' => $fullPath,
@@ -145,7 +145,7 @@ class Role extends Model
 				$childRoutes[] = $routes;
 			}
 
-			if(!empty($permissions) && !empty($permissions['can_edit']) && $permissions['can_edit'] === true) {
+			if(!empty($permissions) && !empty($permissions['can_edit'])) {
 				$routes = [
 					'path' => $fullPath . '/:id',
 					'name' => 'Edit ' . $navigation->name,
@@ -156,7 +156,7 @@ class Role extends Model
 				$childRoutes[] = $routes;
 			}
 
-			if(!empty($permissions) && !empty($permissions['can_create']) && $permissions['can_create'] === true) {
+			if(!empty($permissions) && !empty($permissions['can_create'])) {
 				$routes = [
 					'path' => $fullPath . '/create',
 					'name' => 'Create ' . $navigation->name,
@@ -206,7 +206,7 @@ class Role extends Model
 			// This means: do NOT generate parent create/edit if parent has any visible children
 			if (!empty($permissions) && !$hasVisibleChildren) {
 				// Generate create route if can_create permission is allowed (true)
-				if (!empty($permissions['can_create']) && $permissions['can_create'] === true) {
+				if (!empty($permissions['can_create'])) {
 					$childrenRoutes[] = [
 						'path' => $parentPath . '/create',
 						'name' => 'Create ' . $navigation->name,
@@ -216,7 +216,7 @@ class Role extends Model
 				}
 
 				// Generate edit route if can_edit permission is allowed (true)
-				if (!empty($permissions['can_edit']) && $permissions['can_edit'] === true) {
+				if (!empty($permissions['can_edit'])) {
 					$childrenRoutes[] = [
 						'path' => $parentPath . '/:id',
 						'name' => 'Edit ' . $navigation->name,
@@ -232,12 +232,12 @@ class Role extends Model
 			$shouldInclude = false;
 			if ($hasChildren) {
 				// Parent navigation: show if it has direct permissions (can_view is true) OR has children with permissions
-				$hasViewPermission = !empty($permissions) && !empty($permissions['can_view']) && $permissions['can_view'] === true;
+				$hasViewPermission = !empty($permissions) && !empty($permissions['can_view']);
 				$shouldInclude = $hasViewPermission || !empty($childrenRoutes);
 				// $shouldInclude = !empty($permissions) || !empty($childrenRoutes);
 			} else {
 				// Standalone route: show if it has direct permissions (can_view is true)
-				$shouldInclude = !empty($permissions) && !empty($permissions['can_view']) && $permissions['can_view'] === true;
+				$shouldInclude = !empty($permissions) && !empty($permissions['can_view']);
 				// $shouldInclude = !empty($permissions);
 			}
 
