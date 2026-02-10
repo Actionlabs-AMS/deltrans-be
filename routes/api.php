@@ -276,6 +276,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Download PDF (must be before /{id} route)
 		Route::get('/{id}/download', [SoaAndBillingController::class, 'download']);  // Download SOA PDF
 
+		// Send email with PDF attachment
+		Route::post('/{id}/send-email', [SoaAndBillingController::class, 'sendSoaEmail']);  // Send SOA PDF via email
+
 		// Standard CRUD operations
 		Route::get('/', [SoaAndBillingController::class, 'index']);  // Retrieve all statement of accounts
 		Route::get('/{id}', [SoaAndBillingController::class, 'show']);  // Retrieve a single statement of account
@@ -297,6 +300,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Download PDF (must be before /{id} route)
 		Route::get('/{id}/download', [SoaAndBillingController::class, 'billingStatementsDownload']);  // Download Billing Statement PDF
 
+		// Send email with PDF attachment
+		Route::post('/{id}/send-email', [SoaAndBillingController::class, 'sendBillingStatementEmail']);  // Send Billing Statement PDF via email
+
 		// Standard CRUD operations
 		Route::get('/', [SoaAndBillingController::class, 'billingStatementsIndex']);  // Retrieve all billing statements
 		Route::get('/{id}', [SoaAndBillingController::class, 'billingStatementsShow']);  // Retrieve a single billing statement
@@ -312,6 +318,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/generate', [SoaAndBillingController::class, 'generateSoaAndBilling']);  // Generate SOA + Billing in one request
 		Route::post('/attachments', [SoaAndBillingController::class, 'storeAttachments']);  // Upload temp images for PDF attachments (returns token)
 		Route::get('/{id}/download', [SoaAndBillingController::class, 'downloadBillingAndSoa']);  // Download 2-page PDF (Billing then SOA), {id} = billing_statement_id
+		Route::post('/{id}/send-email', [SoaAndBillingController::class, 'sendBillingAndSoaEmail']);  // Send Combined Billing Statement + SOA PDF via email, {id} = billing_statement_id
 	});
 
 	/*

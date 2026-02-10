@@ -548,4 +548,145 @@ class SoaAndBillingController extends BaseController
             ], 500);
         }
     }
+
+    /**
+     * @OA\Post(
+     *     path="/api/soa/{id}/send-email",
+     *     summary="Send SOA PDF via email",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages", @OA\Schema(type="boolean", default=false)),
+     *     @OA\RequestBody(required=false, @OA\JsonContent(
+     *         @OA\Property(property="email", type="string", format="email", nullable=true, description="Custom recipient email (overrides shipping line email)"),
+     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients")
+     *     )),
+     *     @OA\Response(response=200, description="Email sent successfully", @OA\JsonContent(
+     *         @OA\Property(property="success", type="boolean", example=true),
+     *         @OA\Property(property="message", type="string", example="SOA email sent successfully")
+     *     )),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function sendSoaEmail($id)
+    {
+        try {
+            $includeAttachments = filter_var(request()->query('include_attachments'), FILTER_VALIDATE_BOOLEAN);
+            $attachmentUserId = $includeAttachments ? auth()->id() : null;
+            $customEmail = request()->input('email');
+            $cc = request()->input('cc', []);
+
+            $this->service->sendSoaEmail($id, $attachmentUserId, $includeAttachments, $customEmail, $cc);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SOA email sent successfully',
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Statement of account not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/billing-statements/{id}/send-email",
+     *     summary="Send Billing Statement PDF via email",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages", @OA\Schema(type="boolean", default=false)),
+     *     @OA\RequestBody(required=false, @OA\JsonContent(
+     *         @OA\Property(property="email", type="string", format="email", nullable=true, description="Custom recipient email (overrides shipping line email)"),
+     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients")
+     *     )),
+     *     @OA\Response(response=200, description="Email sent successfully", @OA\JsonContent(
+     *         @OA\Property(property="success", type="boolean", example=true),
+     *         @OA\Property(property="message", type="string", example="Billing Statement email sent successfully")
+     *     )),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function sendBillingStatementEmail($id)
+    {
+        try {
+            $includeAttachments = filter_var(request()->query('include_attachments'), FILTER_VALIDATE_BOOLEAN);
+            $attachmentUserId = $includeAttachments ? auth()->id() : null;
+            $customEmail = request()->input('email');
+            $cc = request()->input('cc', []);
+
+            $this->service->sendBillingStatementEmail($id, $attachmentUserId, $includeAttachments, $customEmail, $cc);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Billing Statement email sent successfully',
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Billing statement not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/soa-and-billing/{id}/send-email",
+     *     summary="Send Combined Billing Statement + SOA PDF via email",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages", @OA\Schema(type="boolean", default=false)),
+     *     @OA\RequestBody(required=false, @OA\JsonContent(
+     *         @OA\Property(property="email", type="string", format="email", nullable=true, description="Custom recipient email (overrides shipping line email)"),
+     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients")
+     *     )),
+     *     @OA\Response(response=200, description="Email sent successfully", @OA\JsonContent(
+     *         @OA\Property(property="success", type="boolean", example=true),
+     *         @OA\Property(property="message", type="string", example="Combined Billing Statement & SOA email sent successfully")
+     *     )),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function sendBillingAndSoaEmail($id)
+    {
+        try {
+            $includeAttachments = filter_var(request()->query('include_attachments'), FILTER_VALIDATE_BOOLEAN);
+            $attachmentUserId = $includeAttachments ? auth()->id() : null;
+            $customEmail = request()->input('email');
+            $cc = request()->input('cc', []);
+
+            $this->service->sendBillingAndSoaEmail($id, $attachmentUserId, $includeAttachments, $customEmail, $cc);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Combined Billing Statement & SOA email sent successfully',
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Billing statement not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

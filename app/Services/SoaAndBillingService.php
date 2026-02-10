@@ -9,6 +9,7 @@ use App\Http\Resources\SoaAndBillingResource;
 use App\Http\Resources\BillingStatementResource;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class SoaAndBillingService extends BaseService
 {
@@ -1051,6 +1052,169 @@ class SoaAndBillingService extends BaseService
             throw new \Exception('Billing statement not found.');
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
+        }
+    }
+
+    /**
+     * Send SOA PDF via email to shipping line
+     *
+     * @param int $id SOA ID
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @param string|null $customEmail Custom email address (overrides shipping line email)
+     * @param array $cc CC recipients (optional)
+     * @return bool Success status
+     */
+    public function sendSoaEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    {
+        try {
+            $soa = StatementOfAccount::with('shippingLine')->findOrFail($id);
+            $emailService = app(EmailService::class);
+            
+            // Use custom email if provided, otherwise use shipping line email
+            $recipientEmail = $customEmail ?? $soa->shippingLine->email_address;
+            
+            if (empty($recipientEmail)) {
+                throw new \Exception('No email address found for shipping line.');
+            }
+            
+            // Generate PDF
+            $pdfContent = $this->generatePdf($id, $attachmentUserId, $includeAttachments);
+            $pdfFilename = $soa->dli_sa_number . '.pdf';
+            
+            // Prepare email
+            $subject = 'Statement of Account - ' . $soa->dli_sa_number;
+            $body = '<h2>Statement of Account</h2>'
+                . '<p>Dear ' . ($soa->shippingLine->name ?? 'Valued Customer') . ',</p>'
+                . '<p>Please find attached the Statement of Account for ' . $soa->dli_sa_number . '.</p>'
+                . '<p>If you have any questions, please do not hesitate to contact us.</p>'
+                . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
+            
+            // Send email
+            $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
+            
+            Log::info('[SoaAndBillingService] SOA email sent', [
+                'soa_id' => $id,
+                'to' => $recipientEmail,
+                'soa_number' => $soa->dli_sa_number
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('[SoaAndBillingService] Failed to send SOA email', [
+                'soa_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send Billing Statement PDF via email to shipping line
+     *
+     * @param int $id Billing Statement ID
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @param string|null $customEmail Custom email address (overrides shipping line email)
+     * @param array $cc CC recipients (optional)
+     * @return bool Success status
+     */
+    public function sendBillingStatementEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    {
+        try {
+            $billingStatement = BillingStatement::with(['statementOfAccount.shippingLine'])->findOrFail($id);
+            $emailService = app(EmailService::class);
+            
+            // Use custom email if provided, otherwise use shipping line email
+            $recipientEmail = $customEmail ?? $billingStatement->statementOfAccount->shippingLine->email_address;
+            
+            if (empty($recipientEmail)) {
+                throw new \Exception('No email address found for shipping line.');
+            }
+            
+            // Generate PDF
+            $pdfContent = $this->generateBillingStatementPdf($id, $attachmentUserId, $includeAttachments);
+            $pdfFilename = $billingStatement->billing_statement_no . '.pdf';
+            
+            // Prepare email
+            $subject = 'Billing Statement - ' . $billingStatement->billing_statement_no;
+            $body = '<h2>Billing Statement</h2>'
+                . '<p>Dear ' . ($billingStatement->statementOfAccount->shippingLine->name ?? 'Valued Customer') . ',</p>'
+                . '<p>Please find attached the Billing Statement for ' . $billingStatement->billing_statement_no . '.</p>'
+                . '<p>If you have any questions, please do not hesitate to contact us.</p>'
+                . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
+            
+            // Send email
+            $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
+            
+            Log::info('[SoaAndBillingService] Billing Statement email sent', [
+                'billing_statement_id' => $id,
+                'to' => $recipientEmail,
+                'billing_statement_no' => $billingStatement->billing_statement_no
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('[SoaAndBillingService] Failed to send Billing Statement email', [
+                'billing_statement_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send Combined Billing Statement + SOA PDF via email to shipping line
+     *
+     * @param int $billingStatementId Billing Statement ID
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @param string|null $customEmail Custom email address (overrides shipping line email)
+     * @param array $cc CC recipients (optional)
+     * @return bool Success status
+     */
+    public function sendBillingAndSoaEmail($billingStatementId, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    {
+        try {
+            $billingStatement = BillingStatement::with(['statementOfAccount.shippingLine'])->findOrFail($billingStatementId);
+            $emailService = app(EmailService::class);
+            
+            // Use custom email if provided, otherwise use shipping line email
+            $recipientEmail = $customEmail ?? $billingStatement->statementOfAccount->shippingLine->email_address;
+            
+            if (empty($recipientEmail)) {
+                throw new \Exception('No email address found for shipping line.');
+            }
+            
+            // Generate PDF
+            $pdfContent = $this->generateBillingAndSoaCombinedPdf($billingStatementId, $attachmentUserId, $includeAttachments);
+            $soa = $billingStatement->statementOfAccount;
+            $pdfFilename = ($billingStatement->billing_statement_no ?? 'billing') . '_' . ($soa->dli_sa_number ?? 'soa') . '.pdf';
+            
+            // Prepare email
+            $subject = 'Billing Statement & Statement of Account - ' . $billingStatement->billing_statement_no;
+            $body = '<h2>Billing Statement & Statement of Account</h2>'
+                . '<p>Dear ' . ($billingStatement->statementOfAccount->shippingLine->name ?? 'Valued Customer') . ',</p>'
+                . '<p>Please find attached the Billing Statement (' . $billingStatement->billing_statement_no . ') and Statement of Account (' . ($soa->dli_sa_number ?? 'N/A') . ').</p>'
+                . '<p>If you have any questions, please do not hesitate to contact us.</p>'
+                . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
+            
+            // Send email
+            $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
+            
+            Log::info('[SoaAndBillingService] Combined Billing & SOA email sent', [
+                'billing_statement_id' => $billingStatementId,
+                'to' => $recipientEmail,
+                'billing_statement_no' => $billingStatement->billing_statement_no
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('[SoaAndBillingService] Failed to send Combined Billing & SOA email', [
+                'billing_statement_id' => $billingStatementId,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 }

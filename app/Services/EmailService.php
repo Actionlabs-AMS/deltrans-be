@@ -163,5 +163,122 @@ class EmailService
     {
         return $this->emailHelper->getMailer();
     }
+
+    /**
+     * Send an email with PDF attachment using the configured mailer
+     * 
+     * @param string $to Recipient email address
+     * @param string $subject Email subject
+     * @param string $body Email body (HTML)
+     * @param string $pdfContent PDF binary content
+     * @param string $pdfFilename PDF filename for attachment
+     * @param array $cc CC recipients (optional)
+     * @return bool Success status
+     */
+    public function sendEmailWithAttachment($to, $subject, $body, $pdfContent, $pdfFilename, $cc = [])
+    {
+        try {
+            $mailer = $this->emailHelper->getMailer();
+            
+            // If Microsoft Graph is configured, use it
+            if ($mailer === 'microsoft') {
+                return $this->sendViaMicrosoftGraphWithAttachment($to, $subject, $body, $pdfContent, $pdfFilename, $cc);
+            }
+            
+            // Otherwise, use Laravel Mail with configured settings
+            return $this->sendViaLaravelMailWithAttachment($to, $subject, $body, $pdfContent, $pdfFilename, $cc);
+            
+        } catch (\Exception $e) {
+            Log::error('[EmailService] Failed to send email with attachment', [
+                'to' => $to,
+                'subject' => $subject,
+                'mailer' => $this->emailHelper->getMailer(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send email with attachment via Microsoft Graph API
+     */
+    protected function sendViaMicrosoftGraphWithAttachment($to, $subject, $body, $pdfContent, $pdfFilename, $cc = [])
+    {
+        try {
+            // Convert PDF to base64 for Microsoft Graph
+            $base64Content = base64_encode($pdfContent);
+            $attachments = [[
+                '@odata.type' => '#microsoft.graph.fileAttachment',
+                'name' => $pdfFilename,
+                'contentType' => 'application/pdf',
+                'contentBytes' => $base64Content
+            ]];
+            
+            MicrosoftGraphService::sendEmailWithAttachments($to, $subject, $body, $attachments, $cc);
+            
+            Log::info('[EmailService] Email with attachment sent via Microsoft Graph', [
+                'to' => $to,
+                'subject' => $subject,
+                'filename' => $pdfFilename
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('[EmailService] Microsoft Graph email with attachment failed', [
+                'to' => $to,
+                'subject' => $subject,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send email with attachment via Laravel Mail
+     */
+    protected function sendViaLaravelMailWithAttachment($to, $subject, $body, $pdfContent, $pdfFilename, $cc = [])
+    {
+        try {
+            $mailConfig = $this->emailHelper->getLaravelMailConfig();
+            Config::set('mail', $mailConfig);
+            
+            $fromAddress = $this->emailHelper->getFromAddress();
+            $fromName = $this->emailHelper->getFromName();
+            
+            Mail::html($body, function ($message) use ($to, $subject, $fromAddress, $fromName, $cc, $pdfContent, $pdfFilename) {
+                $message->to($to)
+                    ->subject($subject)
+                    ->from($fromAddress, $fromName);
+                
+                if (!empty($cc)) {
+                    foreach ($cc as $ccEmail) {
+                        $message->cc($ccEmail);
+                    }
+                }
+                
+                // Attach PDF
+                $message->attachData($pdfContent, $pdfFilename, [
+                    'mime' => 'application/pdf',
+                ]);
+            });
+            
+            Log::info('[EmailService] Email with attachment sent via Laravel Mail', [
+                'to' => $to,
+                'subject' => $subject,
+                'filename' => $pdfFilename,
+                'mailer' => $mailConfig['default']
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('[EmailService] Laravel Mail email with attachment failed', [
+                'to' => $to,
+                'subject' => $subject,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
 }
 

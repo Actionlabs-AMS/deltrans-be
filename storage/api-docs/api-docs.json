@@ -2981,6 +2981,17 @@
                                     "container_number"
                                 ],
                                 "properties": {
+                                    "booking_id": {
+                                        "description": "Booking ID (client input; may also be provided via path)",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "waybill_id": {
+                                        "description": "Waybill ID (optional client input)",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "container_number": {
                                         "description": "Container number",
                                         "type": "string",
@@ -3103,6 +3114,12 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
+                                    "waybill_id": {
+                                        "description": "Waybill ID (optional client input)",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "container_number": {
                                         "description": "Container number",
                                         "type": "string",
@@ -14215,6 +14232,276 @@
                 ]
             }
         },
+        "/api/soa/{id}/send-email": {
+            "post": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Send SOA PDF via email",
+                "operationId": "e20dc2fb3bb2b9a19514bbe84c76dadf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "SOA ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "description": "Custom recipient email (overrides shipping line email)",
+                                        "type": "string",
+                                        "format": "email",
+                                        "nullable": true
+                                    },
+                                    "cc": {
+                                        "description": "CC recipients",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "email"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "SOA email sent successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/billing-statements/{id}/send-email": {
+            "post": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Send Billing Statement PDF via email",
+                "operationId": "428b6747b6f5926744d6a635ef4815b6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Billing Statement ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "description": "Custom recipient email (overrides shipping line email)",
+                                        "type": "string",
+                                        "format": "email",
+                                        "nullable": true
+                                    },
+                                    "cc": {
+                                        "description": "CC recipients",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "email"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Billing Statement email sent successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa-and-billing/{id}/send-email": {
+            "post": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Send Combined Billing Statement + SOA PDF via email",
+                "operationId": "00d45449af7484d38f3ef64f5bcc9f7d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Billing Statement ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "description": "Custom recipient email (overrides shipping line email)",
+                                        "type": "string",
+                                        "format": "email",
+                                        "nullable": true
+                                    },
+                                    "cc": {
+                                        "description": "CC recipients",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "email"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Combined Billing Statement & SOA email sent successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/soa-data-options": {
             "get": {
                 "tags": [
@@ -20860,18 +21147,20 @@
                         "type": "integer",
                         "example": 1
                     },
-                    "container_number": {
-                        "type": "string",
-                        "example": "CONT-001"
-                    },
                     "booking_id": {
+                        "description": "Booking ID (client input)",
                         "type": "integer",
                         "example": 1
                     },
                     "waybill_id": {
+                        "description": "Waybill ID (client input, optional)",
                         "type": "integer",
                         "example": 1,
                         "nullable": true
+                    },
+                    "container_number": {
+                        "type": "string",
+                        "example": "CONT-001"
                     },
                     "created_at": {
                         "type": "string",
@@ -20882,6 +21171,50 @@
                         "type": "string",
                         "format": "date-time",
                         "example": "2023-10-27T10:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "ContainerCreateInput": {
+                "title": "Container Create Input",
+                "description": "Client input for adding a container",
+                "required": [
+                    "container_number"
+                ],
+                "properties": {
+                    "booking_id": {
+                        "description": "Booking ID (required; provided via path parameter for POST /bookings/{bookingId}/containers)",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "waybill_id": {
+                        "description": "Waybill ID (optional client input)",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "container_number": {
+                        "description": "Container number",
+                        "type": "string",
+                        "example": "CONT-001"
+                    }
+                },
+                "type": "object"
+            },
+            "ContainerUpdateInput": {
+                "title": "Container Update Input",
+                "description": "Client input for updating a container",
+                "properties": {
+                    "waybill_id": {
+                        "description": "Waybill ID (optional client input)",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "container_number": {
+                        "description": "Container number",
+                        "type": "string",
+                        "example": "CONT-001"
                     }
                 },
                 "type": "object"

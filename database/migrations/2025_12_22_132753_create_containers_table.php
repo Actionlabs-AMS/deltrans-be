@@ -17,8 +17,8 @@ return new class extends Migration {
         Schema::create('containers', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('booking_id')->unsigned();
-            $table->bigInteger('waybill_id')->unsigned()->nullable();
+            $table->bigInteger('booking_id')->unsigned(); // add this to swagger
+            $table->bigInteger('waybill_id')->unsigned()->nullable(); // add this to swagger
             $table->string('container_number');
             $table->timestamps();
 
