@@ -179,6 +179,34 @@ class NavigationSeeder extends Seeder
                     ],
                 ],
             ],
+            // // Budget and Expenses Reports
+            // [
+            //     'name' => 'Budget And Expenses Reports',
+            //     'slug' => 'budget-and-expenses-reports',
+            //     'icon' => 'folders',
+            //     'description' => 'Manage budget and expense reports.',
+            //     'parent_id' => null,
+            //     'active' => true,
+            //     'show_in_menu' => true,
+            //     'children' => [
+            //         [
+            //             'name' => 'Truck Expenses',
+            //             'slug' => 'truck-expenses',
+            //             'icon' => 'calculator',
+            //             'description' => 'View expenses per truck.',
+            //             'active' => true,
+            //             'show_in_menu' => true,
+            //         ],
+            //         [
+            //             'name' => 'Petty Cash Budget',
+            //             'slug' => 'peety-cash-budget',
+            //             'icon' => 'circle-dollar-sign',
+            //             'description' => 'Manage rate per client',
+            //             'active' => true,
+            //             'show_in_menu' => true,
+            //         ],
+            //     ],
+            // ],
 
             // User Management Section
             [

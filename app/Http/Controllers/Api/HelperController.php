@@ -898,7 +898,62 @@ class HelperController extends BaseController
           ], 500);
       }
   }
- 
+
+  /**
+     * @OA\Get(
+     * path="/api/helpers/helpers-paginated",
+     * operationId="getHelpersPaginated",
+     * summary="Get list of helpers",
+     * tags={"Helper Management"},
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="page", in="query", @OA\Schema(type="integer", example=1)),
+     * @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer", example=10)),
+     * @OA\Parameter(name="search", in="query", @OA\Schema(type="string")),
+     * @OA\Parameter(name="is_active", in="query", @OA\Schema(type="integer", enum={0, 1})),
+     * @OA\Parameter(name="trash", in="query", @OA\Schema(type="boolean", example=false)),
+     * @OA\Parameter(name="order", in="query", @OA\Schema(type="string", example="id")),
+     * @OA\Parameter(name="sort", in="query", @OA\Schema(type="string", enum={"asc", "desc"}, default="desc")),
+     * @OA\Response(
+     * response=200,
+     * description="List of helpers retrieved successfully",
+     * @OA\JsonContent(
+     * @OA\Property(property="status", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Helpers retrieved successfully."),
+     * @OA\Property(property="data", type="array", @OA\Items(type="object")),
+     * @OA\Property(property="meta", type="object"),
+     * @OA\Property(property="links", type="object")
+     * )
+     * ),
+     * @OA\Response(response=401, description="Unauthenticated"),
+     * @OA\Response(response=400, ref="#/components/responses/BadRequest"),
+     * @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function getHelperListPaginated(Request $request)
+    {
+        try {
+            $perPage = $request->query('per_page', 10);
+            $trash = $request->boolean('trash', false);
+            $helpers = $this->service->list($perPage, $trash);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Helpers retrieved successfully.',
+                'data' => $helpers->response()->getData()->data,
+                'meta' => $helpers->response()->getData()->meta,
+                'links' => $helpers->response()->getData()->links,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve helpers list.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
 }
 
 

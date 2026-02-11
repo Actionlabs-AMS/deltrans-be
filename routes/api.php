@@ -331,6 +331,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	*/
 	Route::prefix('helpers')->group(function () {
 		// Standard CRUD operations
+		Route::get('/helpers-paginated', [HelperController::class, 'getHelperListPaginated']);
 		Route::get('/active-list', [HelperController::class, 'getActiveHelperList']);
 		Route::get('/', [HelperController::class, 'index']);  // Retrieve all helpers
 		Route::get('/{id}', [HelperController::class, 'show']);  // Retrieve a single helper
@@ -340,7 +341,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::patch('/deactivate/{id}', [HelperController::class, 'deactivate']);  // Deactivate a helper
 		Route::patch('/activate/{id}', [HelperController::class, 'activate']);  // Activate a helper
 		Route::get('/details/{id}', [HelperController::class, 'getHelperDetails']);  // Retrieve a single helper
-
+		
 
 
 		// Bulk operations

@@ -27,7 +27,6 @@ class HelperResource extends JsonResource
         : [];
     }
 
-
     return [
       'id' => $this->id,
       'first_name' => $this->first_name,
