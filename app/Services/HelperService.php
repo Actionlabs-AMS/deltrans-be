@@ -20,6 +20,46 @@ class HelperService extends BaseService
     /**
      * Retrieve all resources with paginate.
      */
+    // public function list($perPage = 10, $trash = false)
+    // {
+    //     try {
+    //         $allHelpers = $this->getTotalCount();
+    //         $trashedHelpers = $this->getTrashedCount();
+
+    //         $query = Helper::query();
+
+    //         // Apply onlyTrashed() first if we're in trash view
+    //         if ($trash) {
+    //             $query->onlyTrashed();
+    //         }
+
+    //         // Then apply search conditions
+    //         if (request('search')) {
+    //             $query->where(function ($q) {
+    //                 $q->where('first_name', 'LIKE', '%' . request('search') . '%')
+    //                     ->orWhere('last_name', 'LIKE', '%' . request('search') . '%')
+    //                     ->orWhere('contact_number', 'LIKE', '%' . request('search') . '%');
+    //             });
+    //         }
+
+    //         if (request()->has('is_active')) {
+    //             $query->where('helpers.is_active', request('is_active'));
+    //         }
+
+    //         // Apply ordering
+    //         if (request('order')) {
+    //             $query->orderBy(request('order'), request('sort') ?? 'asc');
+    //         } else {
+    //             $query->orderBy('id', 'desc');
+    //         }
+
+    //         return HelperResource::collection(
+    //             $query->paginate($perPage)->withQueryString()
+    //         )->additional(['meta' => ['all' => $allHelpers, 'trashed' => $trashedHelpers]]);
+    //     } catch (\Exception $e) {
+    //         throw new \Exception('Failed to fetch helpers: ' . $e->getMessage());
+    //     }
+    // }
     public function list($perPage = 10, $trash = false)
     {
         try {
@@ -28,34 +68,41 @@ class HelperService extends BaseService
 
             $query = Helper::query();
 
-            // Apply onlyTrashed() first if we're in trash view
+            $query->addSelect([
+                'helpers.*',
+                'assigned_truck_plate_numbers' => Driver::select(
+                        DB::raw('GROUP_CONCAT(JSON_UNQUOTE(JSON_EXTRACT(assigned_truck_plate_numbers, "$[*]")))'))
+                    ->whereColumn('drivers.helper_id', 'helpers.id')
+            ]);
+
+            // 2. Apply onlyTrashed() if needed
             if ($trash) {
                 $query->onlyTrashed();
             }
 
-            // Then apply search conditions
-            if (request('search')) {
-                $query->where(function ($q) {
-                    $q->where('first_name', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('last_name', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('contact_number', 'LIKE', '%' . request('search') . '%');
+            // 3. Search conditions (Notice we use 'helpers.column' to avoid ambiguity)
+            if ($search = request('search')) {
+                $query->where(function ($q) use ($search) {
+                    $term = '%' . $search . '%';
+                    $q->where('helpers.first_name', 'LIKE', $term)
+                    ->orWhere('helpers.last_name', 'LIKE', $term)
+                    ->orWhere('helpers.contact_number', 'LIKE', $term);
                 });
             }
 
-            if (request()->has('is_active')) {
+            if (request('is_active') !== null) {
                 $query->where('helpers.is_active', request('is_active'));
             }
 
-            // Apply ordering
-            if (request('order')) {
-                $query->orderBy(request('order'), request('sort') ?? 'asc');
-            } else {
-                $query->orderBy('id', 'desc');
-            }
+            // 4. Ordering (Prefix with table name to be safe)
+            $order = request('order', 'helpers.id');
+            $sort = request('sort', 'desc');
+            $query->orderBy($order, $sort);
 
             return HelperResource::collection(
                 $query->paginate($perPage)->withQueryString()
             )->additional(['meta' => ['all' => $allHelpers, 'trashed' => $trashedHelpers]]);
+
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch helpers: ' . $e->getMessage());
         }
