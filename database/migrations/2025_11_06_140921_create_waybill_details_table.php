@@ -42,7 +42,7 @@ return new class extends Migration {
             //fixed expenses details
             $table->bigInteger('fixed_expense_id')->unsigned(); //auto
             $table->decimal('post_expense_amount', 15, 2)->default(0); // field
-            $table->decimal('total_expense', 15, 2)->default(0); // field
+            $table->decimal('total_expense', 15, places: 2)->default(0); // field
 
             $table->timestamps();
             $table->softDeletes();

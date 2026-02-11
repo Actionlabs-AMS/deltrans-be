@@ -39,7 +39,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -72,5 +72,14 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Temp attachments path (for SOA/Billing upload-before-download)
+    |--------------------------------------------------------------------------
+    | Relative to the local disk root (storage/app). Uploaded files are deleted
+    | after download (with or without including attachments).
+    */
+    'temp_attachments' => 'temp-attachments',
 
 ];

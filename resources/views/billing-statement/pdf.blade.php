@@ -471,6 +471,11 @@
             <p style="font-weight: bold; margin-top: 5px;">THIS DOCUMENT IS NOT VALID FOR CLAIMING INPUT TAXES</p>
         </div>
     </div>
+    @if(!empty($attachment_paths))
+        @foreach($attachment_paths as $path)
+            <div style="page-break-before: always;"><img src="{{ $path }}" style="max-width: 100%; height: auto;" /></div>
+        @endforeach
+    @endif
 </body>
 
 </html>

@@ -20,17 +20,17 @@ class ContainerService
         // Validate request data
         $validator = Validator::make($data, [
             'container_number' => 'required|string|max:255',
+            'waybill_id' => 'nullable|integer|exists:waybill_details,id',
         ]);
 
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }
 
-        // Create container - waybill_id will be null initially, can be updated later
         $container = Container::create([
             'container_number' => $data['container_number'],
             'booking_id' => $bookingId,
-            'waybill_id' => null,
+            'waybill_id' => $data['waybill_id'] ?? null,
         ]);
 
         return $container;
@@ -49,19 +49,17 @@ class ContainerService
             ->where('booking_id', $bookingId)
             ->firstOrFail();
 
-        // Validate request data - only allow container_number (waybill_id will be updated by other APIs)
+        // Validate request data
         $validator = Validator::make($data, [
             'container_number' => 'sometimes|required|string|max:255',
+            'waybill_id' => 'nullable|integer|exists:waybill_details,id',
         ]);
 
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }
 
-        // Remove waybill_id if provided (not allowed in this API)
-        $updateData = array_intersect_key($data, array_flip(['container_number']));
-
-        // Update container - only allow container_number
+        $updateData = array_intersect_key($data, array_flip(['container_number', 'waybill_id']));
         $container->update($updateData);
 
         return $container->fresh();

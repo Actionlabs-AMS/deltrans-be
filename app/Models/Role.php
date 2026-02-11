@@ -122,21 +122,24 @@ class Role extends Model
 		return $navigationById;
 	}
 
-	private function childRoutes($navigations = null, $parentId = null) 
+	private function childRoutes($navigations = null, $parentId = null, $parentPath = '') 
 	{
 		$childRoutes = [];
 		foreach ($navigations as $navigation) {
 
 			$permissions = $this->permissions[$parentId][$navigation->id] ?? [];
 
+			// Construct the full path by prefixing with parent path
+			$fullPath = $parentPath . '/' . $navigation->slug;
+
 			if(!empty($permissions) && !empty($permissions['can_view'])) {
 				$routes = [
 					'id' => $navigation->id,
-					'path' => '/' . $navigation->slug,
+					'path' => $fullPath,
 					'name' => $navigation->name,
 					'side_nav' => $navigation->show_in_menu ? 'true' : 'false',
 					'icon' => $navigation->icon ?? '',
-					'children' => ($navigation['children']) ? $this->childRoutes($navigation['children'], $navigation->id) : []
+					'children' => ($navigation['children']) ? $this->childRoutes($navigation['children'], $navigation->id, $fullPath) : []
 				];
 
 				$childRoutes[] = $routes;
@@ -144,7 +147,7 @@ class Role extends Model
 
 			if(!empty($permissions) && !empty($permissions['can_edit'])) {
 				$routes = [
-					'path' => '/' . $navigation->slug . '/:id',
+					'path' => $fullPath . '/:id',
 					'name' => 'Edit ' . $navigation->name,
 					'side_nav' => 'false',
 					'icon' => $navigation->icon ?? '',
@@ -155,7 +158,7 @@ class Role extends Model
 
 			if(!empty($permissions) && !empty($permissions['can_create'])) {
 				$routes = [
-					'path' => '/' . $navigation->slug . '/create',
+					'path' => $fullPath . '/create',
 					'name' => 'Create ' . $navigation->name,
 					'side_nav' => 'false',
 					'icon' => $navigation->icon ?? '',
@@ -180,24 +183,42 @@ class Role extends Model
 
 			// Generate children routes first to check if any children have permissions
 			$hasChildren = !empty($navigation['children']);
-			$childrenRoutes = $hasChildren ? $this->childRoutes($navigation['children'], $navigation->id) : [];
+			$parentPath = '/' . $navigation->slug;
+			$childrenRoutes = $hasChildren ? $this->childRoutes($navigation['children'], $navigation->id, $parentPath) : [];
 
-			// For standalone routes (no children), also generate create/edit routes if permissions exist
-			if (!$hasChildren && !empty($permissions)) {
-				// Generate create route if can_create permission exists
+			// Check if parent has any visible children based on navigation's show_in_menu property
+			// A child is visible if it has show_in_menu === true
+			$hasVisibleChildren = false;
+			if ($hasChildren && !empty($navigation['children'])) {
+				foreach ($navigation['children'] as $childNavigation) {
+					// Check if this child navigation has show_in_menu === true
+					if ($childNavigation->show_in_menu === true) {
+						$hasVisibleChildren = true;
+						break;
+					}
+				}
+			}
+
+			// Generate create/edit routes for parent if permissions exist
+			// Only generate parent create/edit routes when:
+			// 1. Parent has no children (standalone route), OR
+			// 2. Parent has children but ALL children are not visible (all have show_in_menu === false)
+			// This means: do NOT generate parent create/edit if parent has any visible children
+			if (!empty($permissions) && !$hasVisibleChildren) {
+				// Generate create route if can_create permission is allowed (true)
 				if (!empty($permissions['can_create'])) {
 					$childrenRoutes[] = [
-						'path' => '/' . $navigation->slug . '/create',
+						'path' => $parentPath . '/create',
 						'name' => 'Create ' . $navigation->name,
 						'side_nav' => 'false',
 						'icon' => $navigation->icon ?? '',
 					];
 				}
 
-				// Generate edit route if can_edit permission exists
+				// Generate edit route if can_edit permission is allowed (true)
 				if (!empty($permissions['can_edit'])) {
 					$childrenRoutes[] = [
-						'path' => '/' . $navigation->slug . '/:id',
+						'path' => $parentPath . '/:id',
 						'name' => 'Edit ' . $navigation->name,
 						'side_nav' => 'false',
 						'icon' => $navigation->icon ?? '',
@@ -206,21 +227,24 @@ class Role extends Model
 			}
 
 			// Include parent navigation based on these rules:
-			// 1. If it has children: only include if childrenRoutes is not empty (has children with permissions)
-			// 2. If it has no children (standalone route): include if it has direct permissions
+			// 1. If it has children: include if it has direct permissions (can_view is true) OR childrenRoutes is not empty (has children with permissions)
+			// 2. If it has no children (standalone route): include if it has direct permissions (can_view is true)
 			$shouldInclude = false;
 			if ($hasChildren) {
-				// Parent navigation: only show if it has children with permissions
-				$shouldInclude = !empty($childrenRoutes);
+				// Parent navigation: show if it has direct permissions (can_view is true) OR has children with permissions
+				$hasViewPermission = !empty($permissions) && !empty($permissions['can_view']);
+				$shouldInclude = $hasViewPermission || !empty($childrenRoutes);
+				// $shouldInclude = !empty($permissions) || !empty($childrenRoutes);
 			} else {
-				// Standalone route: show if it has direct permissions
-				$shouldInclude = !empty($permissions);
+				// Standalone route: show if it has direct permissions (can_view is true)
+				$shouldInclude = !empty($permissions) && !empty($permissions['can_view']);
+				// $shouldInclude = !empty($permissions);
 			}
 
 			if($shouldInclude) {
 				$route = [
 					'id' => $navigation->id,
-					'path' => '/' . $navigation->slug,
+					'path' => $parentPath,
 					'name' => $navigation->name,
 					'side_nav' => $navigation->show_in_menu ? 'true' : 'false',
 					'icon' => $navigation->icon ?? '',

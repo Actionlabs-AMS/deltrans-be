@@ -18,11 +18,27 @@ use Illuminate\Validation\ValidationException;
  *     title="Container Model",
  *     description="A container resource",
  *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="booking_id", type="integer", example=1, description="Booking ID (client input)"),
+ *     @OA\Property(property="waybill_id", type="integer", example=1, nullable=true, description="Waybill ID (client input, optional)"),
  *     @OA\Property(property="container_number", type="string", example="CONT-001"),
- *     @OA\Property(property="booking_id", type="integer", example=1),
- *     @OA\Property(property="waybill_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
+ * )
+ * @OA\Schema(
+ *     schema="ContainerCreateInput",
+ *     title="Container Create Input",
+ *     description="Client input for adding a container",
+ *     required={"container_number"},
+ *     @OA\Property(property="booking_id", type="integer", example=1, description="Booking ID (required; provided via path parameter for POST /bookings/{bookingId}/containers)"),
+ *     @OA\Property(property="waybill_id", type="integer", example=1, nullable=true, description="Waybill ID (optional client input)"),
+ *     @OA\Property(property="container_number", type="string", example="CONT-001", description="Container number")
+ * )
+ * @OA\Schema(
+ *     schema="ContainerUpdateInput",
+ *     title="Container Update Input",
+ *     description="Client input for updating a container",
+ *     @OA\Property(property="waybill_id", type="integer", example=1, nullable=true, description="Waybill ID (optional client input)"),
+ *     @OA\Property(property="container_number", type="string", example="CONT-001", description="Container number")
  * )
  */
 class ContainerController extends Controller
@@ -55,6 +71,8 @@ class ContainerController extends Controller
      *         required=true,
      *         @OA\JsonContent(
      *             required={"container_number"},
+     *             @OA\Property(property="booking_id", type="integer", example=1, description="Booking ID (client input; may also be provided via path)"),
+     *             @OA\Property(property="waybill_id", type="integer", example=1, nullable=true, description="Waybill ID (optional client input)"),
      *             @OA\Property(property="container_number", type="string", example="CONT-001", description="Container number")
      *         )
      *     ),
@@ -137,6 +155,7 @@ class ContainerController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
+     *             @OA\Property(property="waybill_id", type="integer", example=1, nullable=true, description="Waybill ID (optional client input)"),
      *             @OA\Property(property="container_number", type="string", example="CONT-001", description="Container number")
      *         )
      *     ),

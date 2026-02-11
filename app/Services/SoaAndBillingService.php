@@ -9,6 +9,7 @@ use App\Http\Resources\SoaAndBillingResource;
 use App\Http\Resources\BillingStatementResource;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class SoaAndBillingService extends BaseService
 {
@@ -94,6 +95,56 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
+     * Generate SOA and Billing Statement in one request (combined payload).
+     * Creates SOA first, then Billing Statement linked to it.
+     *
+     * @param array $data Combined SOA + Billing fields
+     * @return array{soa: SoaAndBillingResource, billing: BillingStatementResource}
+     */
+    public function generateSoaAndBilling(array $data)
+    {
+        try {
+            $shippingLine = \App\Models\ShippingLine::findOrFail($data['shipping_line_id']);
+            $booking = \App\Models\Booking::findOrFail($data['booking_id']);
+            $waybillCount = \App\Models\WaybillDetail::where('booking_id', $booking->id)->count();
+
+            if ($waybillCount === 0) {
+                throw new \Exception('The selected booking must have at least one waybill.');
+            }
+            if ($booking->shipping_line_id != $data['shipping_line_id']) {
+                throw new \Exception('The booking does not belong to the selected shipping line.');
+            }
+
+            $soaData = array_intersect_key($data, array_flip((new StatementOfAccount())->getFillable()));
+            $soa = StatementOfAccount::create($soaData);
+            $soa->load(['shippingLine', 'booking']);
+
+            $billingData = [
+                'statement_of_account_id' => $soa->id,
+                'billing_statement_no' => $data['billing_statement_no'],
+                'prepared_by' => $data['prepared_by'] ?? (auth()->check() ? auth()->id() : null),
+                'payment_term' => $data['payment_term'] ?? null,
+                'ci_date' => $data['ci_date'] ?? null,
+                'due_date' => $data['due_date'] ?? null,
+                'bus_style' => $data['bus_style'] ?? null,
+                'has_details' => $data['has_details'] ?? false,
+                'is_paid' => $data['is_paid'] ?? false,
+            ];
+            $billingStatement = BillingStatement::create($billingData);
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'booking', 'preparedByUser']);
+
+            return [
+                'soa' => SoaAndBillingResource::make($soa),
+                'billing' => BillingStatementResource::make($billingStatement),
+            ];
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Shipping line or booking not found.');
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
+    }
+
+    /**
      * Retrieve a single resource by ID with relationships.
      *
      * @param int $id
@@ -144,12 +195,82 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
-     * Generate PDF for Statement of Account.
+     * Temp attachments path (relative to local disk root). Used for upload-before-download.
+     */
+    protected function getTempAttachmentsBasePath(): string
+    {
+        return config('filesystems.temp_attachments', 'temp-attachments');
+    }
+
+    /**
+     * Get full filesystem paths for images in the given user's temp attachment folder.
+     *
+     * @param int $userId
+     * @return array<int, string> Full paths to image files (empty if dir missing)
+     */
+    public function getTempAttachmentPathsByUser(int $userId): array
+    {
+        $base = $this->getTempAttachmentsBasePath();
+        $dir = $base . '/' . (string) $userId;
+        if (!Storage::disk('local')->exists($dir)) {
+            return [];
+        }
+        $paths = [];
+        foreach (Storage::disk('local')->files($dir) as $relativePath) {
+            $paths[] = Storage::disk('local')->path($relativePath);
+        }
+        return $paths;
+    }
+
+    /**
+     * Delete the temp attachment directory for the given user (one folder per user).
+     *
+     * @param int $userId
+     * @return void
+     */
+    public function deleteTempAttachmentsByUser(int $userId): void
+    {
+        $base = $this->getTempAttachmentsBasePath();
+        $dir = $base . '/' . (string) $userId;
+        Storage::disk('local')->deleteDirectory($dir);
+    }
+
+    /**
+     * Store uploaded files under temp-attachments/{userId}. Replaces any existing
+     * attachments for that user (one folder per user). Returns count stored.
+     *
+     * @param int $userId
+     * @param array<\Illuminate\Http\UploadedFile> $files
+     * @return int
+     */
+    public function storeTempAttachmentsForUser(int $userId, array $files): int
+    {
+        $base = $this->getTempAttachmentsBasePath();
+        $dir = $base . '/' . (string) $userId;
+        Storage::disk('local')->deleteDirectory($dir);
+        Storage::disk('local')->makeDirectory($dir);
+        $count = 0;
+        foreach ($files as $index => $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            $ext = $file->getClientOriginalExtension() ?: 'jpg';
+            $safeName = 'image_' . $index . '_' . time() . '.' . $ext;
+            Storage::disk('local')->putFileAs($dir, $file, $safeName);
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
+     * Generate PDF for Statement of Account. Returns PDF binary (not saved to disk).
      *
      * @param int $id SOA ID
-     * @return string Path to the generated PDF file
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use (one folder per user)
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @return string PDF binary content
      */
-    public function generatePdf($id)
+    public function generatePdf($id, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
             $soa = StatementOfAccount::with([
@@ -258,6 +379,11 @@ class SoaAndBillingService extends BaseService
 
             $logoPath = public_path('images/deltrans-logo.png');
 
+            $attachmentPaths = [];
+            if ($includeAttachments && $attachmentUserId !== null) {
+                $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
+            }
+
             $data = [
                 'soa' => $soa,
                 'companyInfo' => $companyInfo,
@@ -271,18 +397,17 @@ class SoaAndBillingService extends BaseService
                 'grandTotal' => $grandTotal,
                 'issueDate' => now()->format('F d, Y'),
                 'logoPath' => $logoPath,
+                'attachment_paths' => $attachmentPaths,
             ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('soa.pdf', $data);
             $pdf->setPaper('a4', 'portrait');
 
-            $directory = 'soa-pdfs/' . date('Y/m');
-            Storage::disk('public')->makeDirectory($directory);
-            $filename = $soa->dli_sa_number . '_' . time() . '.pdf';
-            $filePath = $directory . '/' . $filename;
-            Storage::disk('public')->put($filePath, $pdf->output());
-
-            return $filePath;
+            $output = $pdf->output();
+            if ($attachmentUserId !== null) {
+                $this->deleteTempAttachmentsByUser($attachmentUserId);
+            }
+            return $output;
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Statement of account not found.');
         } catch (\Exception $e) {
@@ -444,11 +569,11 @@ class SoaAndBillingService extends BaseService
             }
 
             if (request('shipping_line_id')) {
-                $query->whereHas('statementOfAccount', fn ($q) => $q->where('shipping_line_id', request('shipping_line_id')));
+                $query->whereHas('statementOfAccount', fn($q) => $q->where('shipping_line_id', request('shipping_line_id')));
             }
 
             if (request('booking_id')) {
-                $query->whereHas('statementOfAccount', fn ($q) => $q->where('booking_id', request('booking_id')));
+                $query->whereHas('statementOfAccount', fn($q) => $q->where('booking_id', request('booking_id')));
             }
 
             if (request()->has('is_paid')) {
@@ -514,12 +639,14 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
-     * Generate PDF for Billing Statement.
+     * Generate PDF for Billing Statement. Returns PDF binary (not saved to disk).
      *
      * @param int $id Billing Statement ID
-     * @return string Path to the generated PDF file
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @return string PDF binary content
      */
-    public function generateBillingStatementPdf($id)
+    public function generateBillingStatementPdf($id, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
             $billingStatement = BillingStatement::with([
@@ -631,6 +758,11 @@ class SoaAndBillingService extends BaseService
 
             $logoPath = public_path('images/deltrans-logo.png');
 
+            $attachmentPaths = [];
+            if ($includeAttachments && $attachmentUserId !== null) {
+                $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
+            }
+
             $data = [
                 'billingStatement' => $billingStatement,
                 'companyInfo' => $companyInfo,
@@ -639,22 +771,242 @@ class SoaAndBillingService extends BaseService
                 'hasDetails' => $hasDetails,
                 'issueDate' => $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y'),
                 'logoPath' => $logoPath,
+                'attachment_paths' => $attachmentPaths,
             ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing-statement.pdf', $data);
             $pdf->setPaper('a4', 'portrait');
 
-            $directory = 'billing-statement-pdfs/' . date('Y/m');
-            Storage::disk('public')->makeDirectory($directory);
-            $filename = $billingStatement->billing_statement_no . '_' . time() . '.pdf';
-            $filePath = $directory . '/' . $filename;
-            Storage::disk('public')->put($filePath, $pdf->output());
-
-            return $filePath;
+            $output = $pdf->output();
+            if ($attachmentUserId !== null) {
+                $this->deleteTempAttachmentsByUser($attachmentUserId);
+            }
+            return $output;
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Billing statement not found.');
         } catch (\Exception $e) {
             throw new \Exception('Failed to generate PDF: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generate a single 2-page PDF: Page 1 = Billing Statement, Page 2 = SOA.
+     * One view, one PDF output (no separate generation or merge). Returns PDF binary (not saved to disk).
+     *
+     * @param int $billingStatementId
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @return string PDF binary content
+     */
+    public function generateBillingAndSoaCombinedPdf($billingStatementId, ?int $attachmentUserId = null, bool $includeAttachments = false)
+    {
+        try {
+            $billingStatement = BillingStatement::with([
+                'statementOfAccount',
+                'shippingLine',
+                'booking',
+                'preparedByUser'
+            ])->findOrFail($billingStatementId);
+
+            $soa = $billingStatement->statementOfAccount;
+            if (!$soa) {
+                throw new \Exception('Billing statement has no linked statement of account.');
+            }
+
+            // Build billing page data (same logic as generateBillingStatementPdf)
+            $waybills = \App\Models\WaybillDetail::where('booking_id', $billingStatement->booking_id)->get();
+            $detailsData = [];
+            $billingGrandTotal = 0;
+            $hasDetails = (bool) $billingStatement->has_details;
+
+            foreach ($waybills as $waybill) {
+                $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $hasVat = (bool) ($waybill->has_vat ?? false);
+                $billingGrandTotal += $hasVat ? $base * 1.12 : $base;
+            }
+
+            if ($hasDetails && $waybills->isNotEmpty()) {
+                $grouped = [];
+                foreach ($waybills as $waybill) {
+                    $rawSize = $waybill->container_size ?? '';
+                    $rawType = $waybill->container_type ?? '';
+                    $sizeNormalized = trim(str_ireplace(['offhire', 'ft'], '', $rawSize));
+                    $sizeNumeric = preg_replace('/[^0-9]/', '', $sizeNormalized) ?: preg_replace('/[^0-9]/', '', $rawSize);
+                    $typeCode = 'HC';
+                    if (stripos($rawSize, 'offhire') !== false) {
+                        $typeCode = 'AC';
+                    } elseif ($rawType) {
+                        $typeUpper = strtoupper(trim($rawType));
+                        $typeCode = ($typeUpper === 'REEFER') ? 'R' : (($typeUpper === 'DRY' || $typeUpper === '') ? 'HC' : $typeUpper);
+                    }
+                    $key = $sizeNumeric . '|' . $typeCode;
+                    if (!isset($grouped[$key])) {
+                        $grouped[$key] = ['size_numeric' => $sizeNumeric, 'type_code' => $typeCode, 'quantity' => 0, 'waybills' => []];
+                    }
+                    $grouped[$key]['quantity']++;
+                    $grouped[$key]['waybills'][] = $waybill;
+                }
+                foreach ($grouped as $group) {
+                    $totalAmount = 0;
+                    foreach ($group['waybills'] ?? [] as $waybill) {
+                        $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                        $totalAmount += (bool) ($waybill->has_vat ?? false) ? $base * 1.12 : $base;
+                    }
+                    $quantity = $group['quantity'];
+                    $detailsData[] = [
+                        'date' => null,
+                        'description' => $quantity . 'X' . $group['size_numeric'] . $group['type_code'] . ' UNIT',
+                        'size' => $group['size_numeric'],
+                        'rate_per_trip' => $quantity > 0 ? $totalAmount / $quantity : 0,
+                        'total_amount' => $totalAmount,
+                    ];
+                }
+            } else {
+                $reference = $billingStatement->booking ? $billingStatement->booking->reference_number : '';
+                $billingNo = $billingStatement->billing_statement_no ?? '';
+                $descriptionLines = ['Reference ' . ($reference ?: '-'), 'Billing # ' . ($billingNo ?: '-')];
+                $workOrder = $soa->work_order;
+                if ($workOrder !== null && $workOrder !== '') {
+                    $descriptionLines[] = 'Booking ' . $workOrder;
+                }
+                $detailsData[] = [
+                    'date' => '',
+                    'description' => implode("\n", $descriptionLines),
+                    'description_lines' => $descriptionLines,
+                    'size' => '',
+                    'rate_per_trip' => null,
+                    'total_amount' => $billingGrandTotal,
+                ];
+            }
+
+            $companyInfo = [
+                'name' => 'DELTRANS LOGISTICS INC.',
+                'address' => 'Blk 8 Lot 11 North Harbor Center Vitas St Barangay 101 Zone 08, 1013 Tondo I/II NCR, City of Manila, First District Philippines',
+                'phone' => 'Tel. No. (02) 8291-4477',
+                'tin' => 'VAT Reg. TIN.: 010-392-323-00000',
+            ];
+            $soaCompanyInfo = [
+                'name' => 'DELTRANS LOGISTICS INC.',
+                'address' => 'BLK 18 LOT 11, MANILA HARBOUR CENTRE, VITAS TONDO MANILA',
+                'phone' => 'Tel# 02-8291-4477',
+            ];
+            $logoPath = public_path('images/deltrans-logo.png');
+            $billingIssueDate = $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y');
+
+            // Load SOA with full relations and build SOA page data (same logic as generatePdf)
+            $soaFull = StatementOfAccount::with([
+                'shippingLine',
+                'booking' => function ($q) {
+                    $q->with(['cypaFrom', 'cypaTo', 'containers']);
+                },
+                'booking.waybills' => function ($q) {
+                    $q->with([
+                        'shippingLine',
+                        'driver',
+                        'fleetTruck',
+                        'fixedExpense',
+                        'booking' => function ($qb) {
+                            $qb->with(['cypaFrom', 'cypaTo', 'containers']);
+                        }
+                    ]);
+                }
+            ])->findOrFail($soa->id);
+
+            $transactionTemplateIds = $soaFull->shippingLine->transaction_information_template ?? [];
+            $transactionColumns = collect();
+            if (!empty($transactionTemplateIds)) {
+                $transactionColumns = SoaDataOption::whereIn('id', $transactionTemplateIds)
+                    ->orderByRaw('FIELD(id, ' . implode(',', $transactionTemplateIds) . ')')
+                    ->get(['id', 'name', 'description']);
+                $columnNames = $transactionColumns->pluck('name')->map('strtolower')->toArray();
+                $amountIndex = array_search('amount', $columnNames);
+                $vatIndex = array_search('vat', $columnNames);
+                if ($vatIndex === false) {
+                    $vatIndex = array_search('12% vat', $columnNames);
+                }
+                if ($vatIndex === false) {
+                    $vatIndex = array_search('12%vat', $columnNames);
+                }
+                if ($amountIndex !== false && $vatIndex !== false && $amountIndex > $vatIndex) {
+                    $arr = $transactionColumns->all();
+                    [$arr[$vatIndex], $arr[$amountIndex]] = [$arr[$amountIndex], $arr[$vatIndex]];
+                    $transactionColumns = collect($arr);
+                }
+            }
+
+            $waybillsSoa = $soaFull->booking->waybills ?? collect();
+            $transactionData = [];
+            foreach ($waybillsSoa as $waybill) {
+                $row = [];
+                foreach ($transactionColumns as $column) {
+                    $row[$column->name] = $this->mapTransactionField($column->name, $waybill, $soaFull);
+                }
+                $transactionData[] = $row;
+            }
+
+            $soaTotalAmount = 0;
+            $soaTotalVat = 0;
+            $vatPercent = 12.00;
+            foreach ($waybillsSoa as $waybill) {
+                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $waybillHasVat = (bool) ($waybill->has_vat ?? false);
+                if ($amount == 0 && $waybill->booking) {
+                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
+                        ->where('container_size', $waybill->container_size)
+                        ->where(function ($query) use ($waybill) {
+                            $query->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0);
+                        })
+                        ->where('is_active', 1)
+                        ->first();
+                    if ($matchingRate) {
+                        $amount = (float) ($matchingRate->rate ?? 0);
+                        $waybillHasVat = (bool) ($matchingRate->has_vat ?? false);
+                    }
+                }
+                $soaTotalAmount += $amount;
+                if ($waybillHasVat) {
+                    $soaTotalVat += $amount * ($vatPercent / 100);
+                }
+            }
+            $soaGrandTotal = $soaTotalAmount + $soaTotalVat;
+            $soaIssueDate = now()->format('F d, Y');
+
+            $attachmentPaths = [];
+            if ($includeAttachments && $attachmentUserId !== null) {
+                $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
+            }
+
+            $data = [
+                'billingStatement' => $billingStatement,
+                'companyInfo' => $companyInfo,
+                'logoPath' => $logoPath,
+                'billingIssueDate' => $billingIssueDate,
+                'detailsData' => $detailsData,
+                'billingGrandTotal' => $billingGrandTotal,
+                'hasDetails' => $hasDetails,
+                'soa' => $soaFull,
+                'soaCompanyInfo' => $soaCompanyInfo,
+                'soaIssueDate' => $soaIssueDate,
+                'transactionColumns' => $transactionColumns,
+                'transactionData' => $transactionData,
+                'soaTotalAmount' => $soaTotalAmount,
+                'soaTotalVat' => $soaTotalVat,
+                'soaGrandTotal' => $soaGrandTotal,
+                'attachment_paths' => $attachmentPaths,
+            ];
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing-and-soa.pdf', $data);
+            $pdf->setPaper('a4', 'portrait');
+
+            $output = $pdf->output();
+            if ($attachmentUserId !== null) {
+                $this->deleteTempAttachmentsByUser($attachmentUserId);
+            }
+            return $output;
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Billing statement not found.');
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to generate combined PDF: ' . $e->getMessage());
         }
     }
 
@@ -700,6 +1052,169 @@ class SoaAndBillingService extends BaseService
             throw new \Exception('Billing statement not found.');
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
+        }
+    }
+
+    /**
+     * Send SOA PDF via email to shipping line
+     *
+     * @param int $id SOA ID
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @param string|null $customEmail Custom email address (overrides shipping line email)
+     * @param array $cc CC recipients (optional)
+     * @return bool Success status
+     */
+    public function sendSoaEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    {
+        try {
+            $soa = StatementOfAccount::with('shippingLine')->findOrFail($id);
+            $emailService = app(EmailService::class);
+            
+            // Use custom email if provided, otherwise use shipping line email
+            $recipientEmail = $customEmail ?? $soa->shippingLine->email_address;
+            
+            if (empty($recipientEmail)) {
+                throw new \Exception('No email address found for shipping line.');
+            }
+            
+            // Generate PDF
+            $pdfContent = $this->generatePdf($id, $attachmentUserId, $includeAttachments);
+            $pdfFilename = $soa->dli_sa_number . '.pdf';
+            
+            // Prepare email
+            $subject = 'Statement of Account - ' . $soa->dli_sa_number;
+            $body = '<h2>Statement of Account</h2>'
+                . '<p>Dear ' . ($soa->shippingLine->name ?? 'Valued Customer') . ',</p>'
+                . '<p>Please find attached the Statement of Account for ' . $soa->dli_sa_number . '.</p>'
+                . '<p>If you have any questions, please do not hesitate to contact us.</p>'
+                . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
+            
+            // Send email
+            $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
+            
+            Log::info('[SoaAndBillingService] SOA email sent', [
+                'soa_id' => $id,
+                'to' => $recipientEmail,
+                'soa_number' => $soa->dli_sa_number
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('[SoaAndBillingService] Failed to send SOA email', [
+                'soa_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send Billing Statement PDF via email to shipping line
+     *
+     * @param int $id Billing Statement ID
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @param string|null $customEmail Custom email address (overrides shipping line email)
+     * @param array $cc CC recipients (optional)
+     * @return bool Success status
+     */
+    public function sendBillingStatementEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    {
+        try {
+            $billingStatement = BillingStatement::with(['statementOfAccount.shippingLine'])->findOrFail($id);
+            $emailService = app(EmailService::class);
+            
+            // Use custom email if provided, otherwise use shipping line email
+            $recipientEmail = $customEmail ?? $billingStatement->statementOfAccount->shippingLine->email_address;
+            
+            if (empty($recipientEmail)) {
+                throw new \Exception('No email address found for shipping line.');
+            }
+            
+            // Generate PDF
+            $pdfContent = $this->generateBillingStatementPdf($id, $attachmentUserId, $includeAttachments);
+            $pdfFilename = $billingStatement->billing_statement_no . '.pdf';
+            
+            // Prepare email
+            $subject = 'Billing Statement - ' . $billingStatement->billing_statement_no;
+            $body = '<h2>Billing Statement</h2>'
+                . '<p>Dear ' . ($billingStatement->statementOfAccount->shippingLine->name ?? 'Valued Customer') . ',</p>'
+                . '<p>Please find attached the Billing Statement for ' . $billingStatement->billing_statement_no . '.</p>'
+                . '<p>If you have any questions, please do not hesitate to contact us.</p>'
+                . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
+            
+            // Send email
+            $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
+            
+            Log::info('[SoaAndBillingService] Billing Statement email sent', [
+                'billing_statement_id' => $id,
+                'to' => $recipientEmail,
+                'billing_statement_no' => $billingStatement->billing_statement_no
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('[SoaAndBillingService] Failed to send Billing Statement email', [
+                'billing_statement_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send Combined Billing Statement + SOA PDF via email to shipping line
+     *
+     * @param int $billingStatementId Billing Statement ID
+     * @param int|null $attachmentUserId User ID whose temp attachments folder to use
+     * @param bool $includeAttachments Whether to append attachment pages to the PDF
+     * @param string|null $customEmail Custom email address (overrides shipping line email)
+     * @param array $cc CC recipients (optional)
+     * @return bool Success status
+     */
+    public function sendBillingAndSoaEmail($billingStatementId, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    {
+        try {
+            $billingStatement = BillingStatement::with(['statementOfAccount.shippingLine'])->findOrFail($billingStatementId);
+            $emailService = app(EmailService::class);
+            
+            // Use custom email if provided, otherwise use shipping line email
+            $recipientEmail = $customEmail ?? $billingStatement->statementOfAccount->shippingLine->email_address;
+            
+            if (empty($recipientEmail)) {
+                throw new \Exception('No email address found for shipping line.');
+            }
+            
+            // Generate PDF
+            $pdfContent = $this->generateBillingAndSoaCombinedPdf($billingStatementId, $attachmentUserId, $includeAttachments);
+            $soa = $billingStatement->statementOfAccount;
+            $pdfFilename = ($billingStatement->billing_statement_no ?? 'billing') . '_' . ($soa->dli_sa_number ?? 'soa') . '.pdf';
+            
+            // Prepare email
+            $subject = 'Billing Statement & Statement of Account - ' . $billingStatement->billing_statement_no;
+            $body = '<h2>Billing Statement & Statement of Account</h2>'
+                . '<p>Dear ' . ($billingStatement->statementOfAccount->shippingLine->name ?? 'Valued Customer') . ',</p>'
+                . '<p>Please find attached the Billing Statement (' . $billingStatement->billing_statement_no . ') and Statement of Account (' . ($soa->dli_sa_number ?? 'N/A') . ').</p>'
+                . '<p>If you have any questions, please do not hesitate to contact us.</p>'
+                . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
+            
+            // Send email
+            $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
+            
+            Log::info('[SoaAndBillingService] Combined Billing & SOA email sent', [
+                'billing_statement_id' => $billingStatementId,
+                'to' => $recipientEmail,
+                'billing_statement_no' => $billingStatement->billing_statement_no
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('[SoaAndBillingService] Failed to send Combined Billing & SOA email', [
+                'billing_statement_id' => $billingStatementId,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
     }
 }
