@@ -17,7 +17,7 @@ class ListSoaWithNoVat extends Command
         $this->newLine();
 
         $soaIds = DB::table('statement_of_accounts')
-            ->join('waybill_details', 'waybill_details.booking_id', '=', 'statement_of_accounts.booking_id')
+            ->join('waybill_details', DB::raw('JSON_CONTAINS(statement_of_accounts.booking_ids, CAST(waybill_details.booking_id AS JSON), \'$\')'), '=', DB::raw('1'))
             ->where('waybill_details.has_vat', 0)
             ->whereNull('statement_of_accounts.deleted_at')
             ->whereNull('waybill_details.deleted_at')

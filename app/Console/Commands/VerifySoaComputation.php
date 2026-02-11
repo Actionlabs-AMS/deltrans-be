@@ -16,19 +16,16 @@ class VerifySoaComputation extends Command
     {
         $id = (int) $this->argument('id');
 
-        $this->info("Loading SOA id={$id} with booking.waybills...");
+        $this->info("Loading SOA id={$id} with waybills (from booking_ids)...");
 
-        $soa = StatementOfAccount::with([
-            'shippingLine',
-            'booking.waybills',
-        ])->find($id);
+        $soa = StatementOfAccount::with('shippingLine')->find($id);
 
         if (!$soa) {
             $this->error("SOA #{$id} not found.");
             return 1;
         }
 
-        $waybills = $soa->booking->waybills ?? collect();
+        $waybills = $soa->waybills()->with('booking')->get();
         if ($waybills->isEmpty()) {
             $this->warn("SOA #{$id} has no waybills.");
             return 0;

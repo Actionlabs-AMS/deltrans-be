@@ -63,28 +63,49 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
+     * Normalize booking_id or booking_ids to array of integers.
+     */
+    private function normalizeBookingIds(array $data): array
+    {
+        if (isset($data['booking_ids']) && is_array($data['booking_ids'])) {
+            return array_map('intval', array_values($data['booking_ids']));
+        }
+        if (isset($data['booking_id'])) {
+            return [(int) $data['booking_id']];
+        }
+        return [];
+    }
+
+    /**
      * Generate a new statement of account.
      *
-     * @param array $data
+     * @param array $data Must contain booking_ids (array) or booking_id (single)
      * @return SoaAndBillingResource
      */
     public function generate(array $data)
     {
         try {
+            $bookingIds = $this->normalizeBookingIds($data);
+            if (empty($bookingIds)) {
+                throw new \Exception('At least one booking is required.');
+            }
+            $data['booking_ids'] = $bookingIds;
+
             $shippingLine = \App\Models\ShippingLine::findOrFail($data['shipping_line_id']);
-            $booking = \App\Models\Booking::findOrFail($data['booking_id']);
-            $waybillCount = \App\Models\WaybillDetail::where('booking_id', $booking->id)->count();
-
-            if ($waybillCount === 0) {
-                throw new \Exception('The selected booking must have at least one waybill.');
+            foreach ($bookingIds as $bid) {
+                $booking = \App\Models\Booking::findOrFail($bid);
+                $waybillCount = \App\Models\WaybillDetail::where('booking_id', $booking->id)->count();
+                if ($waybillCount === 0) {
+                    throw new \Exception('The selected booking (ID: ' . $bid . ') must have at least one waybill.');
+                }
+                if ($booking->shipping_line_id != $data['shipping_line_id']) {
+                    throw new \Exception('The booking (ID: ' . $bid . ') does not belong to the selected shipping line.');
+                }
             }
 
-            if ($booking->shipping_line_id != $data['shipping_line_id']) {
-                throw new \Exception('The booking does not belong to the selected shipping line.');
-            }
-
-            $soa = StatementOfAccount::create($data);
-            $soa->load(['shippingLine', 'booking']);
+            $soa = StatementOfAccount::create(array_intersect_key($data, array_flip((new StatementOfAccount())->getFillable())));
+            $soa->setRelation('bookings', \App\Models\Booking::whereIn('id', $soa->booking_ids)->get());
+            $soa->load('shippingLine');
 
             return SoaAndBillingResource::make($soa);
         } catch (ModelNotFoundException $e) {
@@ -98,26 +119,34 @@ class SoaAndBillingService extends BaseService
      * Generate SOA and Billing Statement in one request (combined payload).
      * Creates SOA first, then Billing Statement linked to it.
      *
-     * @param array $data Combined SOA + Billing fields
+     * @param array $data Combined SOA + Billing fields (booking_ids array or booking_id single)
      * @return array{soa: SoaAndBillingResource, billing: BillingStatementResource}
      */
     public function generateSoaAndBilling(array $data)
     {
         try {
-            $shippingLine = \App\Models\ShippingLine::findOrFail($data['shipping_line_id']);
-            $booking = \App\Models\Booking::findOrFail($data['booking_id']);
-            $waybillCount = \App\Models\WaybillDetail::where('booking_id', $booking->id)->count();
-
-            if ($waybillCount === 0) {
-                throw new \Exception('The selected booking must have at least one waybill.');
+            $bookingIds = $this->normalizeBookingIds($data);
+            if (empty($bookingIds)) {
+                throw new \Exception('At least one booking is required.');
             }
-            if ($booking->shipping_line_id != $data['shipping_line_id']) {
-                throw new \Exception('The booking does not belong to the selected shipping line.');
+            $data['booking_ids'] = $bookingIds;
+
+            $shippingLine = \App\Models\ShippingLine::findOrFail($data['shipping_line_id']);
+            foreach ($bookingIds as $bid) {
+                $booking = \App\Models\Booking::findOrFail($bid);
+                $waybillCount = \App\Models\WaybillDetail::where('booking_id', $booking->id)->count();
+                if ($waybillCount === 0) {
+                    throw new \Exception('The selected booking (ID: ' . $bid . ') must have at least one waybill.');
+                }
+                if ($booking->shipping_line_id != $data['shipping_line_id']) {
+                    throw new \Exception('The booking (ID: ' . $bid . ') does not belong to the selected shipping line.');
+                }
             }
 
             $soaData = array_intersect_key($data, array_flip((new StatementOfAccount())->getFillable()));
             $soa = StatementOfAccount::create($soaData);
-            $soa->load(['shippingLine', 'booking']);
+            $soa->setRelation('bookings', \App\Models\Booking::whereIn('id', $soa->booking_ids)->get());
+            $soa->load('shippingLine');
 
             $billingData = [
                 'statement_of_account_id' => $soa->id,
@@ -131,7 +160,7 @@ class SoaAndBillingService extends BaseService
                 'is_paid' => $data['is_paid'] ?? false,
             ];
             $billingStatement = BillingStatement::create($billingData);
-            $billingStatement->load(['statementOfAccount', 'shippingLine', 'booking', 'preparedByUser']);
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser']);
 
             return [
                 'soa' => SoaAndBillingResource::make($soa),
@@ -153,17 +182,23 @@ class SoaAndBillingService extends BaseService
     public function show($id)
     {
         try {
-            $soa = StatementOfAccount::with([
-                'shippingLine',
-                'booking.waybills' => function ($query) {
-                    $query->with([
-                        'shippingLine',
-                        'driver',
-                        'fleetTruck',
-                        'fixedExpense',
-                    ]);
-                }
-            ])->findOrFail($id);
+            $soa = StatementOfAccount::with('shippingLine')->findOrFail($id);
+            $bookingIds = $soa->booking_ids ?? [];
+            $soa->setRelation('bookings', \App\Models\Booking::whereIn('id', $bookingIds)->get());
+            $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
+                ->with([
+                    'shippingLine',
+                    'driver',
+                    'fleetTruck',
+                    'fixedExpense',
+                    'booking' => function ($q) {
+                        $q->with(['cypaFrom', 'cypaTo', 'containers']);
+                    }
+                ])
+                ->orderBy('booking_id')
+                ->orderBy('id')
+                ->get();
+            $soa->setRelation('waybills', $waybills);
 
             return SoaAndBillingResource::make($soa);
         } catch (ModelNotFoundException $e) {
@@ -177,15 +212,20 @@ class SoaAndBillingService extends BaseService
      * Update a statement of account by ID.
      *
      * @param int $id
-     * @param array $data Only provided keys are updated.
+     * @param array $data Only provided keys are updated (booking_ids normalized if booking_id present).
      * @return SoaAndBillingResource
      */
     public function updateSoa($id, array $data)
     {
         try {
+            if (array_key_exists('booking_id', $data) || array_key_exists('booking_ids', $data)) {
+                $data['booking_ids'] = $this->normalizeBookingIds($data);
+                unset($data['booking_id']);
+            }
             $soa = StatementOfAccount::findOrFail($id);
             $soa->update(array_intersect_key($data, array_flip($soa->getFillable())));
-            $soa->load(['shippingLine', 'booking']);
+            $soa->setRelation('bookings', \App\Models\Booking::whereIn('id', $soa->booking_ids ?? [])->get());
+            $soa->load('shippingLine');
             return SoaAndBillingResource::make($soa);
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Statement of account not found.');
@@ -273,23 +313,21 @@ class SoaAndBillingService extends BaseService
     public function generatePdf($id, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
-            $soa = StatementOfAccount::with([
-                'shippingLine',
-                'booking' => function ($query) {
-                    $query->with(['cypaFrom', 'cypaTo', 'containers']);
-                },
-                'booking.waybills' => function ($query) {
-                    $query->with([
-                        'shippingLine',
-                        'driver',
-                        'fleetTruck',
-                        'fixedExpense',
-                        'booking' => function ($q) {
-                            $q->with(['cypaFrom', 'cypaTo', 'containers']);
-                        }
-                    ]);
-                }
-            ])->findOrFail($id);
+            $soa = StatementOfAccount::with('shippingLine')->findOrFail($id);
+            $bookingIds = $soa->booking_ids ?? [];
+            $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
+                ->with([
+                    'shippingLine',
+                    'driver',
+                    'fleetTruck',
+                    'fixedExpense',
+                    'booking' => function ($q) {
+                        $q->with(['cypaFrom', 'cypaTo', 'containers']);
+                    }
+                ])
+                ->orderBy('booking_id')
+                ->orderBy('id')
+                ->get();
 
             $shippingLineTemplateIds = $soa->shippingLine->shipping_lines_template ?? [];
             $shippingLineColumns = collect();
@@ -330,7 +368,6 @@ class SoaAndBillingService extends BaseService
                 }
             }
 
-            $waybills = $soa->booking->waybills ?? collect();
             $transactionData = [];
             foreach ($waybills as $waybill) {
                 $row = [];
@@ -450,12 +487,10 @@ class SoaAndBillingService extends BaseService
             case 'container number':
             case 'container no':
             case 'container#':
-                $containers = $waybill->booking->containers ?? collect();
+                $containers = $waybill->booking && $waybill->relationLoaded('booking')
+                    ? ($waybill->booking->containers ?? collect())
+                    : collect();
                 $container = $containers->where('waybill_id', $waybill->id)->first();
-                if (!$container && $soa->booking) {
-                    $containers = $soa->booking->containers ?? collect();
-                    $container = $containers->where('waybill_id', $waybill->id)->first();
-                }
                 return $container ? $container->container_number : '-';
             case 'origin':
             case 'from':
@@ -573,7 +608,9 @@ class SoaAndBillingService extends BaseService
             }
 
             if (request('booking_id')) {
-                $query->whereHas('statementOfAccount', fn($q) => $q->where('booking_id', request('booking_id')));
+                $query->whereHas('statementOfAccount', function ($q) {
+                    $q->whereJsonContains('booking_ids', (int) request('booking_id'));
+                });
             }
 
             if (request()->has('is_paid')) {
@@ -591,7 +628,7 @@ class SoaAndBillingService extends BaseService
             }
 
             return BillingStatementResource::collection(
-                $query->with(['statementOfAccount', 'shippingLine', 'booking', 'preparedByUser'])->paginate($perPage)->withQueryString()
+                $query->with(['statementOfAccount', 'shippingLine', 'preparedByUser'])->paginate($perPage)->withQueryString()
             )->additional([
                         'meta' => [
                             'all' => $allBillingStatements,
@@ -612,14 +649,15 @@ class SoaAndBillingService extends BaseService
     public function generateBillingStatement(array $data)
     {
         try {
-            $soa = \App\Models\StatementOfAccount::with(['booking'])->find($data['statement_of_account_id'] ?? null);
+            $soa = \App\Models\StatementOfAccount::find($data['statement_of_account_id'] ?? null);
             if (!$soa) {
                 throw new \Exception('The selected statement of account does not exist.');
             }
 
-            $waybillCount = \App\Models\WaybillDetail::where('booking_id', $soa->booking_id)->count();
+            $bookingIds = $soa->booking_ids ?? [];
+            $waybillCount = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)->count();
             if ($waybillCount === 0) {
-                throw new \Exception('The selected booking must have at least one waybill.');
+                throw new \Exception('The selected statement of account must have at least one waybill (across its bookings).');
             }
 
             // Set prepared_by to current authenticated user if not provided
@@ -628,7 +666,7 @@ class SoaAndBillingService extends BaseService
             }
 
             $billingStatement = BillingStatement::create($data);
-            $billingStatement->load(['statementOfAccount', 'shippingLine', 'booking', 'preparedByUser']);
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser']);
 
             return BillingStatementResource::make($billingStatement);
         } catch (ModelNotFoundException $e) {
@@ -652,11 +690,13 @@ class SoaAndBillingService extends BaseService
             $billingStatement = BillingStatement::with([
                 'statementOfAccount',
                 'shippingLine',
-                'booking',
                 'preparedByUser'
             ])->findOrFail($id);
 
-            $waybills = \App\Models\WaybillDetail::where('booking_id', $billingStatement->booking_id)
+            $bookingIds = $billingStatement->statementOfAccount->booking_ids ?? [];
+            $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
+                ->orderBy('booking_id')
+                ->orderBy('id')
                 ->get();
 
             $detailsData = [];
@@ -729,7 +769,10 @@ class SoaAndBillingService extends BaseService
                 }
             } else {
                 // Template has_details = false: single row — Reference, Billing #, Booking (from SOA work_order when present); Size and Rate of Trip blank; total = grandTotal
-                $reference = $billingStatement->booking ? $billingStatement->booking->reference_number : '';
+                $firstBooking = $billingStatement->statementOfAccount && !empty($billingStatement->statementOfAccount->booking_ids)
+                    ? \App\Models\Booking::find($billingStatement->statementOfAccount->booking_ids[0])
+                    : null;
+                $reference = $firstBooking ? $firstBooking->reference_number : '';
                 $billingNo = $billingStatement->billing_statement_no ?? '';
                 $descriptionLines = [
                     'Reference ' . ($reference ?: '-'),
@@ -804,7 +847,6 @@ class SoaAndBillingService extends BaseService
             $billingStatement = BillingStatement::with([
                 'statementOfAccount',
                 'shippingLine',
-                'booking',
                 'preparedByUser'
             ])->findOrFail($billingStatementId);
 
@@ -814,7 +856,11 @@ class SoaAndBillingService extends BaseService
             }
 
             // Build billing page data (same logic as generateBillingStatementPdf)
-            $waybills = \App\Models\WaybillDetail::where('booking_id', $billingStatement->booking_id)->get();
+            $bookingIds = $soa->booking_ids ?? [];
+            $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
+                ->orderBy('booking_id')
+                ->orderBy('id')
+                ->get();
             $detailsData = [];
             $billingGrandTotal = 0;
             $hasDetails = (bool) $billingStatement->has_details;
@@ -862,7 +908,8 @@ class SoaAndBillingService extends BaseService
                     ];
                 }
             } else {
-                $reference = $billingStatement->booking ? $billingStatement->booking->reference_number : '';
+                $firstBooking = !empty($bookingIds) ? \App\Models\Booking::find($bookingIds[0]) : null;
+                $reference = $firstBooking ? $firstBooking->reference_number : '';
                 $billingNo = $billingStatement->billing_statement_no ?? '';
                 $descriptionLines = ['Reference ' . ($reference ?: '-'), 'Billing # ' . ($billingNo ?: '-')];
                 $workOrder = $soa->work_order;
@@ -894,23 +941,21 @@ class SoaAndBillingService extends BaseService
             $billingIssueDate = $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y');
 
             // Load SOA with full relations and build SOA page data (same logic as generatePdf)
-            $soaFull = StatementOfAccount::with([
-                'shippingLine',
-                'booking' => function ($q) {
-                    $q->with(['cypaFrom', 'cypaTo', 'containers']);
-                },
-                'booking.waybills' => function ($q) {
-                    $q->with([
-                        'shippingLine',
-                        'driver',
-                        'fleetTruck',
-                        'fixedExpense',
-                        'booking' => function ($qb) {
-                            $qb->with(['cypaFrom', 'cypaTo', 'containers']);
-                        }
-                    ]);
-                }
-            ])->findOrFail($soa->id);
+            $soaFull = StatementOfAccount::with('shippingLine')->findOrFail($soa->id);
+            $soaBookingIds = $soaFull->booking_ids ?? [];
+            $waybillsSoa = \App\Models\WaybillDetail::whereIn('booking_id', $soaBookingIds)
+                ->with([
+                    'shippingLine',
+                    'driver',
+                    'fleetTruck',
+                    'fixedExpense',
+                    'booking' => function ($qb) {
+                        $qb->with(['cypaFrom', 'cypaTo', 'containers']);
+                    }
+                ])
+                ->orderBy('booking_id')
+                ->orderBy('id')
+                ->get();
 
             $transactionTemplateIds = $soaFull->shippingLine->transaction_information_template ?? [];
             $transactionColumns = collect();
@@ -934,7 +979,6 @@ class SoaAndBillingService extends BaseService
                 }
             }
 
-            $waybillsSoa = $soaFull->booking->waybills ?? collect();
             $transactionData = [];
             foreach ($waybillsSoa as $waybill) {
                 $row = [];
@@ -1022,7 +1066,6 @@ class SoaAndBillingService extends BaseService
             $billingStatement = BillingStatement::with([
                 'statementOfAccount',
                 'shippingLine',
-                'booking',
                 'preparedByUser'
             ])->findOrFail($id);
 
@@ -1046,7 +1089,7 @@ class SoaAndBillingService extends BaseService
         try {
             $billingStatement = BillingStatement::findOrFail($id);
             $billingStatement->update(array_intersect_key($data, array_flip($billingStatement->getFillable())));
-            $billingStatement->load(['statementOfAccount', 'shippingLine', 'booking', 'preparedByUser']);
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser']);
             return BillingStatementResource::make($billingStatement);
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Billing statement not found.');

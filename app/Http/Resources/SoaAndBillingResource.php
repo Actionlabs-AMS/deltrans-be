@@ -14,23 +14,24 @@ class SoaAndBillingResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // Total amount from waybills (waybills live under booking only, no duplicate at SOA root)
+        // Total amount from waybills (across all booking_ids)
         $totalAmount = 0;
-        if ($this->relationLoaded('booking') && $this->booking && $this->booking->relationLoaded('waybills')) {
-            $totalAmount = $this->booking->waybills->sum('total_rate_per_client');
-        } elseif ($this->relationLoaded('waybills')) {
+        if ($this->relationLoaded('waybills')) {
             $totalAmount = $this->waybills->sum('total_rate_per_client');
-        } elseif ($this->booking_id) {
-            $totalAmount = (float) \App\Models\WaybillDetail::where('booking_id', $this->booking_id)->sum('total_rate_per_client');
+        } else {
+            $ids = $this->booking_ids ?? [];
+            if (!empty($ids)) {
+                $totalAmount = (float) \App\Models\WaybillDetail::whereIn('booking_id', $ids)->sum('total_rate_per_client');
+            }
         }
 
-        // Get vessel from booking
+        // Get vessel from first booking (backward compatibility)
         $vessel = null;
-        if ($this->relationLoaded('booking') && $this->booking) {
-            $vessel = $this->booking->vessel;
-        } elseif ($this->booking_id) {
-            $booking = \App\Models\Booking::find($this->booking_id);
-            $vessel = $booking ? $booking->vessel : null;
+        if ($this->relationLoaded('bookings') && $this->bookings->isNotEmpty()) {
+            $vessel = $this->bookings->first()->vessel;
+        } elseif (!empty($this->booking_ids)) {
+            $first = \App\Models\Booking::find($this->booking_ids[0] ?? null);
+            $vessel = $first ? $first->vessel : null;
         }
 
         return [
@@ -40,11 +41,15 @@ class SoaAndBillingResource extends JsonResource
                 return new ShippingLineResource($this->shippingLine);
             }),
             'dli_sa_number' => $this->dli_sa_number,
+            'booking_ids' => $this->booking_ids ?? [],
             'booking_id' => $this->booking_id,
             'work_order' => $this->work_order ?? null,
             'vessel' => $vessel,
-            'booking' => $this->whenLoaded('booking', function () {
-                return new BookingResource($this->booking);
+            'bookings' => $this->whenLoaded('bookings', function () {
+                return BookingResource::collection($this->bookings);
+            }),
+            'booking' => $this->whenLoaded('bookings', function () {
+                return $this->bookings->isNotEmpty() ? new BookingResource($this->bookings->first()) : null;
             }),
             'total_amount' => (float) number_format($totalAmount, 2, '.', ''),
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,

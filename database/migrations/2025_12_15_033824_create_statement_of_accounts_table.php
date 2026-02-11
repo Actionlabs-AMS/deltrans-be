@@ -19,26 +19,20 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->bigInteger('shipping_line_id')->unsigned();
             $table->string('dli_sa_number');
-            $table->bigInteger('booking_id')->unsigned();
+            $table->json('booking_ids')->nullable()->comment('Array of booking IDs');
             $table->string(column: 'work_order')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            // Foreign key constraints
+            // Foreign key constraints (booking_ids is JSON so no FK to bookings)
             $table->foreign('shipping_line_id')
                 ->references('id')
                 ->on('shipping_lines')
                 ->onDelete('cascade');
 
-            $table->foreign('booking_id')
-                ->references('id')
-                ->on('bookings')
-                ->onDelete('restrict');
-
             // Indexes
             $table->index('shipping_line_id');
             $table->index('dli_sa_number');
-            $table->index('booking_id');
         });
 
         // Re-enable foreign key checks

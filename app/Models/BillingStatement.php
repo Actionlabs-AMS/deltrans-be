@@ -76,18 +76,17 @@ class BillingStatement extends Model
     }
 
     /**
-     * Get the booking via the statement of account.
+     * Get the first booking via the statement of account (backward compatibility).
+     * SOA stores booking_ids (JSON array); this returns the first booking.
      */
-    public function booking()
+    public function getBookingAttribute(): ?Booking
     {
-        return $this->hasOneThrough(
-            Booking::class,
-            StatementOfAccount::class,
-            'id',
-            'id',
-            'statement_of_account_id',
-            'booking_id'
-        );
+        $soa = $this->relationLoaded('statementOfAccount') ? $this->statementOfAccount : $this->statementOfAccount;
+        if (!$soa || empty($soa->booking_ids)) {
+            return null;
+        }
+        $firstId = (int) $soa->booking_ids[0];
+        return $firstId ? Booking::find($firstId) : null;
     }
 
     /**
@@ -99,11 +98,15 @@ class BillingStatement extends Model
     }
 
     /**
-     * Booking ID from the related statement of account.
+     * First booking ID from the related statement of account (booking_ids[0]).
      */
     public function getBookingIdAttribute(): ?int
     {
-        return $this->statementOfAccount?->booking_id;
+        $soa = $this->statementOfAccount;
+        if (!$soa || empty($soa->booking_ids)) {
+            return null;
+        }
+        return (int) $soa->booking_ids[0];
     }
 
     /**

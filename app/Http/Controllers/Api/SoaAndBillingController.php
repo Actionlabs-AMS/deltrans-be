@@ -25,7 +25,8 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
  *     @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
- *     @OA\Property(property="booking_id", type="integer", example=1),
+ *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Array of booking IDs"),
+ *     @OA\Property(property="booking_id", type="integer", example=1, description="First booking ID (backward compatibility)"),
  *     @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
  *     @OA\Property(property="total_amount", type="number", format="float", example=15000.00),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
@@ -34,10 +35,11 @@ use Illuminate\Support\Facades\Storage;
  * @OA\Schema(
  *     schema="SoaAndBillingGenerateInput",
  *     title="Generate SOA Input",
- *     required={"shipping_line_id", "dli_sa_number", "booking_id"},
+ *     required={"shipping_line_id", "dli_sa_number"},
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
  *     @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
- *     @OA\Property(property="booking_id", type="integer", example=1),
+ *     @OA\Property(property="booking_id", type="integer", example=1, description="Single booking (use when only one; mutually exclusive with booking_ids)"),
+ *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Multiple bookings (use booking_id for single)"),
  *     @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
  * )
  * @OA\Schema(
@@ -46,9 +48,10 @@ use Illuminate\Support\Facades\Storage;
  *     description="A billing statement resource",
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="statement_of_account_id", type="integer", example=1, description="Related statement of account ID"),
- *     @OA\Property(property="statement_of_account", type="object", nullable=true, description="Linked SOA (id, dli_sa_number, work_order, booking_id, shipping_line_id)"),
+ *     @OA\Property(property="statement_of_account", type="object", nullable=true, description="Linked SOA (id, dli_sa_number, work_order, booking_ids, shipping_line_id)"),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1, nullable=true, description="From statement_of_accounts.shipping_line_id"),
- *     @OA\Property(property="booking_id", type="integer", example=1, nullable=true, description="From statement_of_accounts.booking_id"),
+ *     @OA\Property(property="booking_id", type="integer", example=1, nullable=true, description="First booking ID from SOA booking_ids"),
+ *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), nullable=true, description="From statement_of_accounts.booking_ids"),
  *     @OA\Property(property="shipping_line", type="object", nullable=true, description="Shipping line from SOA when loaded"),
  *     @OA\Property(property="booking", type="object", nullable=true, description="Booking from SOA when loaded"),
  *     @OA\Property(property="prepared_by", type="integer", example=1, description="User ID who prepared the billing statement"),
@@ -145,7 +148,7 @@ class SoaAndBillingController extends BaseController
      *     summary="Get a specific statement of account",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Statement of account retrieved", @OA\JsonContent(
      *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
      *     )),
@@ -171,13 +174,14 @@ class SoaAndBillingController extends BaseController
      *     summary="Update a statement of account",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
      *     @OA\RequestBody(required=false, @OA\JsonContent(
-     *         @OA\Property(property="shipping_line_id", type="integer", example=1),
-     *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
-     *         @OA\Property(property="booking_id", type="integer", example=1),
-     *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
-     *     )),
+ *         @OA\Property(property="shipping_line_id", type="integer", example=1),
+ *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
+ *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking"),
+ *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}),
+ *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
+ *     )),
      *     @OA\Response(response=200, description="Statement of account updated", @OA\JsonContent(
      *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
      *     )),
@@ -206,7 +210,7 @@ class SoaAndBillingController extends BaseController
      *     summary="Download Statement of Account PDF",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages (upload via POST /soa-and-billing/attachments); folder is deleted after download", @OA\Schema(type="boolean", default=false)),
      *     @OA\Response(response=200, description="PDF file download", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
      *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
@@ -419,12 +423,13 @@ class SoaAndBillingController extends BaseController
      *     description="Combined endpoint: creates Statement of Account first, then Billing Statement linked to it. One request body with SOA + Billing fields.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\RequestBody(required=true, @OA\JsonContent(
-     *         required={"shipping_line_id", "dli_sa_number", "booking_id", "billing_statement_no"},
-     *         @OA\Property(property="shipping_line_id", type="integer", example=1),
-     *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
-     *         @OA\Property(property="booking_id", type="integer", example=1),
-     *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
+ *     @OA\RequestBody(required=true, @OA\JsonContent(
+ *         required={"shipping_line_id", "dli_sa_number", "billing_statement_no"},
+ *         @OA\Property(property="shipping_line_id", type="integer", example=1),
+ *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
+ *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking (use when only one)"),
+ *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Multiple bookings"),
+ *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
      *         @OA\Property(property="billing_statement_no", type="string", example="BS-2024-001"),
      *         @OA\Property(property="prepared_by", type="integer", nullable=true),
      *         @OA\Property(property="payment_term", type="string", nullable=true),
@@ -465,12 +470,12 @@ class SoaAndBillingController extends BaseController
 
     /**
      * @OA\Get(
-     *     path="/api/soa-and-billing/{id}/download",
-     *     summary="Download Billing Statement + SOA (2-page PDF)",
-     *     description="Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. {id} = billing_statement_id. Use include_attachments=true to append the user's uploaded images as extra pages.",
+     *     path="/api/soa/{id}/download-billing-and-soa",
+     *     summary="Download Billing + SOA combined (2-page PDF)",
+     *     description="Hierarchy: SOA is top-level; this endpoint uses SOA ID. Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. Uses the billing statement linked to this SOA (first by id if multiple). Use include_attachments=true to append the user's uploaded images as extra pages.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages; folder is deleted after download", @OA\Schema(type="boolean", default=false)),
      *     @OA\Response(response=200, description="PDF file download (2 pages: Billing then SOA)", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
      *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
@@ -480,13 +485,20 @@ class SoaAndBillingController extends BaseController
     public function downloadBillingAndSoa($id)
     {
         try {
+            $soa = StatementOfAccount::findOrFail($id);
+            $billingStatement = \App\Models\BillingStatement::where('statement_of_account_id', $soa->id)->orderBy('id')->first();
+            if (!$billingStatement) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No billing statement found for this statement of account.',
+                ], 404);
+            }
+
             $includeAttachments = filter_var(request()->query('include_attachments'), FILTER_VALIDATE_BOOLEAN);
             $attachmentUserId = $includeAttachments ? auth()->id() : null;
 
-            $pdfOutput = $this->service->generateBillingAndSoaCombinedPdf($id, $attachmentUserId, $includeAttachments);
+            $pdfOutput = $this->service->generateBillingAndSoaCombinedPdf($billingStatement->id, $attachmentUserId, $includeAttachments);
 
-            $billingStatement = \App\Models\BillingStatement::with('statementOfAccount')->findOrFail($id);
-            $soa = $billingStatement->statementOfAccount;
             $downloadName = ($billingStatement->billing_statement_no ?? 'billing') . '_' . ($soa->dli_sa_number ?? 'soa') . '.pdf';
 
             return response($pdfOutput, 200, [
@@ -496,7 +508,7 @@ class SoaAndBillingController extends BaseController
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Billing statement not found.',
+                'message' => 'Statement of account not found.',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
@@ -555,7 +567,7 @@ class SoaAndBillingController extends BaseController
      *     summary="Send SOA PDF via email",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages", @OA\Schema(type="boolean", default=false)),
      *     @OA\RequestBody(required=false, @OA\JsonContent(
      *         @OA\Property(property="email", type="string", format="email", nullable=true, description="Custom recipient email (overrides shipping line email)"),
@@ -645,11 +657,12 @@ class SoaAndBillingController extends BaseController
 
     /**
      * @OA\Post(
-     *     path="/api/soa-and-billing/{id}/send-email",
+     *     path="/api/soa/{id}/send-billing-and-soa-email",
      *     summary="Send Combined Billing Statement + SOA PDF via email",
+     *     description="Hierarchy: SOA is top-level; this endpoint uses SOA ID. Sends the combined PDF (Billing then SOA) for the billing statement linked to this SOA.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages", @OA\Schema(type="boolean", default=false)),
      *     @OA\RequestBody(required=false, @OA\JsonContent(
      *         @OA\Property(property="email", type="string", format="email", nullable=true, description="Custom recipient email (overrides shipping line email)"),
@@ -666,12 +679,21 @@ class SoaAndBillingController extends BaseController
     public function sendBillingAndSoaEmail($id)
     {
         try {
+            $soa = StatementOfAccount::findOrFail($id);
+            $billingStatement = \App\Models\BillingStatement::where('statement_of_account_id', $soa->id)->orderBy('id')->first();
+            if (!$billingStatement) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No billing statement found for this statement of account.',
+                ], 404);
+            }
+
             $includeAttachments = filter_var(request()->query('include_attachments'), FILTER_VALIDATE_BOOLEAN);
             $attachmentUserId = $includeAttachments ? auth()->id() : null;
             $customEmail = request()->input('email');
             $cc = request()->input('cc', []);
 
-            $this->service->sendBillingAndSoaEmail($id, $attachmentUserId, $includeAttachments, $customEmail, $cc);
+            $this->service->sendBillingAndSoaEmail($billingStatement->id, $attachmentUserId, $includeAttachments, $customEmail, $cc);
 
             return response()->json([
                 'success' => true,
@@ -680,7 +702,7 @@ class SoaAndBillingController extends BaseController
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Billing statement not found.',
+                'message' => 'Statement of account not found.',
             ], 404);
         } catch (\Exception $e) {
             return response()->json([

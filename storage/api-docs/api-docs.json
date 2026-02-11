@@ -13469,6 +13469,7 @@
                     {
                         "name": "id",
                         "in": "path",
+                        "description": "SOA ID (Statement of Account ID)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -13514,6 +13515,7 @@
                     {
                         "name": "id",
                         "in": "path",
+                        "description": "SOA ID (Statement of Account ID)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -13535,8 +13537,19 @@
                                         "example": "SA-2024-001"
                                     },
                                     "booking_id": {
+                                        "description": "Single booking",
                                         "type": "integer",
                                         "example": 1
+                                    },
+                                    "booking_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2
+                                        ]
                                     },
                                     "work_order": {
                                         "type": "string",
@@ -13593,6 +13606,7 @@
                     {
                         "name": "id",
                         "in": "path",
+                        "description": "SOA ID (Statement of Account ID)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -14012,7 +14026,6 @@
                                 "required": [
                                     "shipping_line_id",
                                     "dli_sa_number",
-                                    "booking_id",
                                     "billing_statement_no"
                                 ],
                                 "properties": {
@@ -14025,8 +14038,20 @@
                                         "example": "SA-2024-001"
                                     },
                                     "booking_id": {
+                                        "description": "Single booking (use when only one)",
                                         "type": "integer",
                                         "example": 1
+                                    },
+                                    "booking_ids": {
+                                        "description": "Multiple bookings",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2
+                                        ]
                                     },
                                     "work_order": {
                                         "type": "string",
@@ -14111,19 +14136,19 @@
                 ]
             }
         },
-        "/api/soa-and-billing/{id}/download": {
+        "/api/soa/{id}/download-billing-and-soa": {
             "get": {
                 "tags": [
                     "SOA and Billing Management"
                 ],
-                "summary": "Download Billing Statement + SOA (2-page PDF)",
-                "description": "Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. {id} = billing_statement_id. Use include_attachments=true to append the user's uploaded images as extra pages.",
-                "operationId": "17590dd2e60ee49dfe2841990332c5c0",
+                "summary": "Download Billing + SOA combined (2-page PDF)",
+                "description": "Hierarchy: SOA is top-level; this endpoint uses SOA ID. Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. Uses the billing statement linked to this SOA (first by id if multiple). Use include_attachments=true to append the user's uploaded images as extra pages.",
+                "operationId": "774679560c2f64ca21ce3eb8875044ae",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Billing Statement ID",
+                        "description": "SOA ID (Statement of Account ID)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -14243,7 +14268,7 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "SOA ID",
+                        "description": "SOA ID (Statement of Account ID)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -14412,18 +14437,19 @@
                 ]
             }
         },
-        "/api/soa-and-billing/{id}/send-email": {
+        "/api/soa/{id}/send-billing-and-soa-email": {
             "post": {
                 "tags": [
                     "SOA and Billing Management"
                 ],
                 "summary": "Send Combined Billing Statement + SOA PDF via email",
-                "operationId": "00d45449af7484d38f3ef64f5bcc9f7d",
+                "description": "Hierarchy: SOA is top-level; this endpoint uses SOA ID. Sends the combined PDF (Billing then SOA) for the billing statement linked to this SOA.",
+                "operationId": "561bdbcdf3cf265e903a1801cbcf0be6",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "Billing Statement ID",
+                        "description": "SOA ID (Statement of Account ID)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -21784,7 +21810,19 @@
                         "type": "string",
                         "example": "SA-2024-001"
                     },
+                    "booking_ids": {
+                        "description": "Array of booking IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2
+                        ]
+                    },
                     "booking_id": {
+                        "description": "First booking ID (backward compatibility)",
                         "type": "integer",
                         "example": 1
                     },
@@ -21813,8 +21851,7 @@
                 "title": "Generate SOA Input",
                 "required": [
                     "shipping_line_id",
-                    "dli_sa_number",
-                    "booking_id"
+                    "dli_sa_number"
                 ],
                 "properties": {
                     "shipping_line_id": {
@@ -21826,8 +21863,20 @@
                         "example": "SA-2024-001"
                     },
                     "booking_id": {
+                        "description": "Single booking (use when only one; mutually exclusive with booking_ids)",
                         "type": "integer",
                         "example": 1
+                    },
+                    "booking_ids": {
+                        "description": "Multiple bookings (use booking_id for single)",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2
+                        ]
                     },
                     "work_order": {
                         "type": "string",
@@ -21851,7 +21900,7 @@
                         "example": 1
                     },
                     "statement_of_account": {
-                        "description": "Linked SOA (id, dli_sa_number, work_order, booking_id, shipping_line_id)",
+                        "description": "Linked SOA (id, dli_sa_number, work_order, booking_ids, shipping_line_id)",
                         "type": "object",
                         "nullable": true
                     },
@@ -21862,9 +21911,17 @@
                         "nullable": true
                     },
                     "booking_id": {
-                        "description": "From statement_of_accounts.booking_id",
+                        "description": "First booking ID from SOA booking_ids",
                         "type": "integer",
                         "example": 1,
+                        "nullable": true
+                    },
+                    "booking_ids": {
+                        "description": "From statement_of_accounts.booking_ids",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
                         "nullable": true
                     },
                     "shipping_line": {

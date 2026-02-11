@@ -10,21 +10,20 @@ class StatementOfAccountSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Creates SOAs only for bookings that have at least one waybill (relationship: booking -> waybill_details).
-     * No fallback: no SOA is created for a booking without waybills.
+     * Creates SOAs for bookings that have at least one waybill.
+     * Includes both single-booking and multi-booking SOAs so PDFs can be verified with multiple bookings/waybills.
      */
     public function run(): void
     {
-        // Get available IDs from shipping lines
-        $shippingLineIds = DB::table('shipping_lines')
-            ->pluck('id')
-            ->toArray();
+        $shippingLineIds = DB::table('shipping_lines')->pluck('id')->toArray();
 
-        // Get bookings that have waybills (required)
         $bookingsWithWaybills = DB::table('bookings')
             ->join('waybill_details', 'bookings.id', '=', 'waybill_details.booking_id')
+            ->whereNull('waybill_details.deleted_at')
             ->select('bookings.id', 'bookings.shipping_line_id')
             ->distinct()
+            ->orderBy('bookings.shipping_line_id')
+            ->orderBy('bookings.id')
             ->get();
 
         if (empty($shippingLineIds)) {
@@ -37,48 +36,54 @@ class StatementOfAccountSeeder extends Seeder
             return;
         }
 
+        // Group bookings by shipping_line_id so we can create multi-booking SOAs per line
+        $byShippingLine = $bookingsWithWaybills->groupBy('shipping_line_id');
+
         $statementOfAccounts = [];
         $saCounter = 1;
-        $bookingIndex = 0;
+        $usedBookingIds = [];
 
-        // Create SOAs for bookings that have waybills
-        foreach ($bookingsWithWaybills as $booking) {
-            if ($bookingIndex >= 8) {
-                break; // Limit to 8 SOAs
+        foreach ($byShippingLine as $shippingLineId => $bookings) {
+            $bookings = $bookings->values();
+            $remaining = $bookings->reject(fn ($b) => in_array($b->id, $usedBookingIds))->values();
+
+            if ($remaining->isEmpty()) {
+                continue;
             }
 
-            $statementOfAccounts[] = [
-                'shipping_line_id' => $booking->shipping_line_id,
-                'dli_sa_number' => 'SA-' . now()->format('Y') . '-' . str_pad((string) $saCounter, 4, '0', STR_PAD_LEFT),
-                'booking_id' => $booking->id,
-                'work_order' => 'WO-' . now()->format('ym') . '-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
-            ];
-
-            $saCounter++;
-            $bookingIndex++;
-        }
-
-        // If we have less than 8 bookings with waybills, create additional SOAs using available bookings
-        if (count($statementOfAccounts) < 8) {
-            $remainingNeeded = 8 - count($statementOfAccounts);
-            $usedBookingIds = collect($statementOfAccounts)->pluck('booking_id')->toArray();
-
-            $additionalBookings = DB::table('bookings')
-                ->join('waybill_details', 'bookings.id', '=', 'waybill_details.booking_id')
-                ->select('bookings.id', 'bookings.shipping_line_id')
-                ->whereNotIn('bookings.id', $usedBookingIds)
-                ->distinct()
-                ->limit($remainingNeeded)
-                ->get();
-
-            foreach ($additionalBookings as $booking) {
+            // First SOA for this shipping line: use 2+ bookings if available (multi-booking SOA for PDF testing)
+            $chunk = $remaining->take(2)->pluck('id')->toArray();
+            if (!empty($chunk)) {
                 $statementOfAccounts[] = [
-                    'shipping_line_id' => $booking->shipping_line_id,
+                    'shipping_line_id' => (int) $shippingLineId,
                     'dli_sa_number' => 'SA-' . now()->format('Y') . '-' . str_pad((string) $saCounter, 4, '0', STR_PAD_LEFT),
-                    'booking_id' => $booking->id,
+                    'booking_ids' => $chunk,
                     'work_order' => 'WO-' . now()->format('ym') . '-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
                 ];
+                $usedBookingIds = array_merge($usedBookingIds, $chunk);
                 $saCounter++;
+            }
+
+            // Additional SOAs for same line: single or multiple bookings
+            $remaining = $bookings->reject(fn ($b) => in_array($b->id, $usedBookingIds))->values();
+            while ($remaining->isNotEmpty() && count($statementOfAccounts) < 10) {
+                $chunk = $remaining->take(2)->pluck('id')->toArray();
+                $remaining = $remaining->slice(count($chunk));
+                if (empty($chunk)) {
+                    break;
+                }
+                $statementOfAccounts[] = [
+                    'shipping_line_id' => (int) $shippingLineId,
+                    'dli_sa_number' => 'SA-' . now()->format('Y') . '-' . str_pad((string) $saCounter, 4, '0', STR_PAD_LEFT),
+                    'booking_ids' => $chunk,
+                    'work_order' => 'WO-' . now()->format('ym') . '-' . str_pad((string) $saCounter, 3, '0', STR_PAD_LEFT),
+                ];
+                $usedBookingIds = array_merge($usedBookingIds, $chunk);
+                $saCounter++;
+            }
+
+            if (count($statementOfAccounts) >= 10) {
+                break;
             }
         }
 
@@ -89,6 +94,7 @@ class StatementOfAccountSeeder extends Seeder
             );
         }
 
-        $this->command->info('Statement of accounts seeded successfully. Created ' . count($statementOfAccounts) . ' SOAs.');
+        $multiCount = collect($statementOfAccounts)->filter(fn ($s) => count($s['booking_ids']) > 1)->count();
+        $this->command->info('Statement of accounts seeded successfully. Created ' . count($statementOfAccounts) . ' SOAs (' . $multiCount . ' with multiple bookings).');
     }
 }

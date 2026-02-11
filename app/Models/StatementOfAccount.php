@@ -25,7 +25,7 @@ class StatementOfAccount extends Model
     protected $fillable = [
         'shipping_line_id',
         'dli_sa_number',
-        'booking_id',
+        'booking_ids',
         'work_order',
     ];
 
@@ -36,7 +36,7 @@ class StatementOfAccount extends Model
      */
     protected $casts = [
         'shipping_line_id' => 'integer',
-        'booking_id' => 'integer',
+        'booking_ids' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -51,25 +51,33 @@ class StatementOfAccount extends Model
     }
 
     /**
-     * Get the booking associated with the statement of account.
+     * Get the first booking ID (backward compatibility).
      */
-    public function booking()
+    public function getBookingIdAttribute(): ?int
     {
-        return $this->belongsTo(Booking::class, 'booking_id');
+        $ids = $this->booking_ids ?? [];
+        return is_array($ids) && count($ids) > 0 ? (int) $ids[0] : null;
     }
 
     /**
-     * Get the waybills through the booking.
+     * Get the bookings associated with the statement of account (by booking_ids).
+     * Returns a query; use get() to execute. For eager loading, setRelation('bookings', ...) in the service.
+     */
+    public function bookings()
+    {
+        $ids = $this->booking_ids ?? [];
+        return empty($ids) ? Booking::whereRaw('1 = 0') : Booking::whereIn('id', $ids);
+    }
+
+    /**
+     * Get all waybills for the SOA (across all booking_ids).
      */
     public function waybills()
     {
-        return $this->hasManyThrough(
-            WaybillDetail::class,
-            Booking::class,
-            'id', // Foreign key on bookings table
-            'booking_id', // Foreign key on waybill_details table
-            'booking_id', // Local key on statement_of_accounts table
-            'id' // Local key on bookings table
-        );
+        $ids = $this->booking_ids ?? [];
+        if (empty($ids)) {
+            return WaybillDetail::whereRaw('1 = 0');
+        }
+        return WaybillDetail::whereIn('booking_id', $ids);
     }
 }
