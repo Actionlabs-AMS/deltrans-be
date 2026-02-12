@@ -35,23 +35,34 @@ class SoaAndBillingResource extends JsonResource
         }
 
         return [
+            // Identity
             'id' => $this->id,
+
+            // Reference IDs
             'shipping_line_id' => $this->shipping_line_id,
-            'shipping_line' => $this->whenLoaded('shippingLine', function () {
-                return new ShippingLineResource($this->shippingLine);
-            }),
+
+            // SOA fields
             'dli_sa_number' => $this->dli_sa_number,
             'booking_ids' => $this->booking_ids ?? [],
             'booking_id' => $this->booking_id,
             'work_order' => $this->work_order ?? null,
+
+            // Computed (from waybills / first booking)
             'vessel' => $vessel,
+            'total_amount' => (float) number_format($totalAmount, 2, '.', ''),
+
+            // Loaded relations
+            'shipping_line' => $this->whenLoaded('shippingLine', function () {
+                return new ShippingLineResource($this->shippingLine);
+            }),
             'bookings' => $this->whenLoaded('bookings', function () {
                 return BookingResource::collection($this->bookings);
             }),
             'booking' => $this->whenLoaded('bookings', function () {
                 return $this->bookings->isNotEmpty() ? new BookingResource($this->bookings->first()) : null;
             }),
-            'total_amount' => (float) number_format($totalAmount, 2, '.', ''),
+
+            // Timestamps
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,

@@ -15,15 +15,22 @@ class BookingResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            // Identity
             'id' => $this->id,
             'reference_number' => $this->reference_number,
             'vessel' => $this->vessel,
+
+            // Reference IDs
             'shipping_line_id' => $this->shipping_line_id,
             'cypa_id_from' => $this->cypa_id_from,
             'cypa_id_to' => $this->cypa_id_to,
+
+            // Dates / status
             'expected_date' => $this->expected_date ? $this->expected_date->format('Y-m-d') : null,
             'is_complete' => (bool) $this->is_complete,
             'actual_no_of_waybill' => isset($this->actual_no_of_waybill) ? (int) $this->actual_no_of_waybill : 0,
+
+            // Loaded relations
             'shipping_line' => $this->whenLoaded('shippingLine'),
             'cypa_from' => $this->whenLoaded('cypaFrom'),
             'cypa_to' => $this->whenLoaded('cypaTo'),
@@ -31,6 +38,8 @@ class BookingResource extends JsonResource
             'waybills' => $this->whenLoaded('waybills', function () {
                 return WaybillDetailResource::collection($this->waybills);
             }),
+
+            // Timestamps
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => ($this->deleted_at) ? $this->deleted_at->format('Y-m-d H:i:s') : null,

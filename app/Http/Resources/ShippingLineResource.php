@@ -55,18 +55,27 @@ class ShippingLineResource extends JsonResource
         }
 
         return [
+            // Identity
             'id' => $this->id,
             'name' => $this->name,
+
+            // Contact / address
             'email_address' => $this->email_address,
             'address' => $this->address,
             'contact_name' => $this->contact_name,
             'contact_mobile' => $this->contact_mobile,
             'landlines' => $this->landlines ?? [],
+
+            // Templates
             'shipping_lines_template' => $shippingLinesTemplate,
             'transaction_information_template' => $transactionInformationTemplate,
+
+            // Tax / other
             'fax_no' => $this->fax_no,
             'tin' => $this->tin,
             'tax_percent' => $taxPercent,
+
+            // Timestamps
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
             'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,

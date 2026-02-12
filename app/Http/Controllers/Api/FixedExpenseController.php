@@ -124,7 +124,7 @@ class FixedExpenseController extends BaseController
     {
         $request = request();
         $perPage = $request->get('per_page', 10);
-        
+
         return $this->service->list($perPage);
     }
 

@@ -176,12 +176,12 @@ class SoaAndBillingController extends BaseController
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
      *     @OA\RequestBody(required=false, @OA\JsonContent(
- *         @OA\Property(property="shipping_line_id", type="integer", example=1),
- *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
- *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking"),
- *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}),
- *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
- *     )),
+     *         @OA\Property(property="shipping_line_id", type="integer", example=1),
+     *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
+     *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking"),
+     *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}),
+     *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
+     *     )),
      *     @OA\Response(response=200, description="Statement of account updated", @OA\JsonContent(
      *         @OA\Property(property="data", type="object", ref="#/components/schemas/soa_and_billing")
      *     )),
@@ -423,13 +423,13 @@ class SoaAndBillingController extends BaseController
      *     description="Combined endpoint: creates Statement of Account first, then Billing Statement linked to it. One request body with SOA + Billing fields.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
- *     @OA\RequestBody(required=true, @OA\JsonContent(
- *         required={"shipping_line_id", "dli_sa_number", "billing_statement_no"},
- *         @OA\Property(property="shipping_line_id", type="integer", example=1),
- *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
- *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking (use when only one)"),
- *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Multiple bookings"),
- *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"shipping_line_id", "dli_sa_number", "billing_statement_no"},
+     *         @OA\Property(property="shipping_line_id", type="integer", example=1),
+     *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
+     *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking (use when only one)"),
+     *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Multiple bookings"),
+     *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
      *         @OA\Property(property="billing_statement_no", type="string", example="BS-2024-001"),
      *         @OA\Property(property="prepared_by", type="integer", nullable=true),
      *         @OA\Property(property="payment_term", type="string", nullable=true),

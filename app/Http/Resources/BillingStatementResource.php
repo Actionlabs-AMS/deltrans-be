@@ -15,7 +15,10 @@ class BillingStatementResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            // Identity
             'id' => $this->id,
+
+            // SOA reference
             'statement_of_account_id' => $this->statement_of_account_id,
             'statement_of_account' => $this->whenLoaded('statementOfAccount', function () {
                 $soa = $this->statementOfAccount;
@@ -27,16 +30,19 @@ class BillingStatementResource extends JsonResource
                     'shipping_line_id' => $soa->shipping_line_id,
                 ] : null;
             }),
-            // shipping_line_id and booking_id(s) are from statement_of_accounts (via SOA relation)
             'shipping_line_id' => $this->statement_of_account_id ? $this->shipping_line_id : null,
+            'booking_id' => $this->statement_of_account_id ? $this->booking_id : null,
+            'booking_ids' => $this->statementOfAccount?->booking_ids ?? [],
+
+            // Loaded relations
             'shipping_line' => $this->whenLoaded('shippingLine', function () {
                 return $this->shippingLine ? new ShippingLineResource($this->shippingLine) : null;
             }),
-            'booking_id' => $this->statement_of_account_id ? $this->booking_id : null,
-            'booking_ids' => $this->statementOfAccount?->booking_ids ?? [],
             'booking' => $this->statement_of_account_id && $this->booking
                 ? new BookingResource($this->booking)
                 : null,
+
+            // Prepared by
             'prepared_by' => $this->prepared_by,
             'prepared_by_user' => $this->whenLoaded('preparedByUser', function () {
                 $user = $this->preparedByUser;
@@ -49,6 +55,8 @@ class BillingStatementResource extends JsonResource
                     'name' => $name ?? '',
                 ];
             }),
+
+            // Billing details
             'billing_statement_no' => $this->billing_statement_no,
             'payment_term' => $this->payment_term,
             'ci_date' => $this->ci_date ? $this->ci_date->format('Y-m-d') : null,
@@ -56,6 +64,8 @@ class BillingStatementResource extends JsonResource
             'bus_style' => $this->bus_style,
             'has_details' => (bool) $this->has_details,
             'is_paid' => (bool) $this->is_paid,
+
+            // Timestamps
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
             'updated_at' => $this->updated_at ? $this->updated_at->format('Y-m-d H:i:s') : null,
             'deleted_at' => $this->deleted_at ? $this->deleted_at->format('Y-m-d H:i:s') : null,

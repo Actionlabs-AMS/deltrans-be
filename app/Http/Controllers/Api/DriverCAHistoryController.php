@@ -130,7 +130,7 @@ class DriverCAHistoryController extends BaseController
      * required=false,
      * @OA\Schema(type="integer", example=10)
      * ),
-      * @OA\Response(
+     * @OA\Response(
      * response=200,
      * description="Successful operation",
      * @OA\JsonContent(
@@ -168,10 +168,10 @@ class DriverCAHistoryController extends BaseController
 
         // Pass parameters to the service
         $data = $this->service->getDriverHistory(
-            $driverId, 
-            $perPage, 
-            $search, 
-            $dateFrom, 
+            $driverId,
+            $perPage,
+            $search,
+            $dateFrom,
             $dateTo
         );
 

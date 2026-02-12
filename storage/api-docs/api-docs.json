@@ -21705,6 +21705,11 @@
                         "type": "integer",
                         "example": 1
                     },
+                    "cypa_id": {
+                        "description": "0 = all CYPA",
+                        "type": "integer",
+                        "example": 0
+                    },
                     "no_of_days": {
                         "type": "integer",
                         "example": 7
@@ -21718,11 +21723,6 @@
                         "type": "string",
                         "example": "Standard rate for 7 days",
                         "nullable": true
-                    },
-                    "cypa_id": {
-                        "description": "0 = all CYPA",
-                        "type": "integer",
-                        "example": 0
                     },
                     "stack_run": {
                         "description": "Stack run amount",
@@ -21786,6 +21786,11 @@
                         "type": "integer",
                         "example": 1
                     },
+                    "cypa_id": {
+                        "description": "0 = all CYPA",
+                        "type": "integer",
+                        "example": 0
+                    },
                     "no_of_days": {
                         "type": "integer",
                         "example": 7
@@ -21797,11 +21802,6 @@
                     "remarks": {
                         "type": "string",
                         "example": "Standard rate for 7 days"
-                    },
-                    "cypa_id": {
-                        "description": "0 = all CYPA",
-                        "type": "integer",
-                        "example": 0
                     },
                     "stack_run": {
                         "description": "Stack run amount",
@@ -22276,6 +22276,11 @@
                         "description": "The plate number of the truck.",
                         "type": "string"
                     },
+                    "truck_id": {
+                        "description": "Unique truck ID of fleet_plate_number.",
+                        "type": "integer",
+                        "format": "int64"
+                    },
                     "created_at": {
                         "description": "Timestamp when the record was created.",
                         "type": "string",
@@ -22285,11 +22290,6 @@
                         "description": "Timestamp when the record was last updated.",
                         "type": "string",
                         "format": "date-time"
-                    },
-                    "truck_id": {
-                        "description": "Unique truck ID of fleet_plate_number.",
-                        "type": "integer",
-                        "format": "int64"
                     }
                 },
                 "type": "object"

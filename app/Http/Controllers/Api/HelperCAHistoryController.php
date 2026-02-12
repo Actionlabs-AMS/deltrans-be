@@ -163,10 +163,10 @@ class HelperCAHistoryController extends BaseController
 
             // Passing standardized params to the service
             $data = $this->service->getHelperHistory(
-                $helperId, 
-                $perPage, 
-                $searchTerm, 
-                $dateFrom, 
+                $helperId,
+                $perPage,
+                $searchTerm,
+                $dateFrom,
                 $dateTo
             );
 
@@ -177,11 +177,11 @@ class HelperCAHistoryController extends BaseController
                 ]);
 
         } catch (\Exception $e) {
-          return response()->json([
-              'status_code' => 500,
-              'message' => $e->getMessage(),
-          ], 500);
-      }
-        
+            return response()->json([
+                'status_code' => 500,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+
     }
 }

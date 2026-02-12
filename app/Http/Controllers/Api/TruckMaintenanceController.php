@@ -29,9 +29,9 @@ use App\Http\Resources\TruckMaintenanceResource;
  * @OA\Property(property="price", type="number", format="float", description="Unit price of the article."),
  * @OA\Property(property="maintenance_date", type="string", format="date", description="The date the maintenance was performed."),
  * @OA\Property(property="fleet_truck_plate_number", type="string", description="The plate number of the truck."),
+ * @OA\Property(property="truck_id", type="integer", format="int64", description="Unique truck ID of fleet_plate_number."),
  * @OA\Property(property="created_at", type="string", format="date-time", description="Timestamp when the record was created."),
- * @OA\Property(property="updated_at", type="string", format="date-time", description="Timestamp when the record was last updated."),
- * @OA\Property(property="truck_id", type="integer", format="int64", description="Unique truck ID of fleet_plate_number.")
+ * @OA\Property(property="updated_at", type="string", format="date-time", description="Timestamp when the record was last updated.")
  * )
  */
 
@@ -125,13 +125,13 @@ class TruckMaintenanceController extends BaseController
     //         // This condition is highly likely to be the source of your error.
     //         throw new \Exception("Truck with ID {$truckId} not found in the fleet.", 404);
     //     }
-        
+
     //     $plateNumber = $truck->plate_number;
 
     //     // 2. Extract pagination, search, and date filters
     //     $perPage = $request->get('per_page', 10);
     //     $search = $request->get('search');
-        
+
     //     // START: NEW FILTER EXTRACTION
     //     $dateFrom = $request->get('date_from');
     //     $dateTo = $request->get('date_to');
@@ -239,7 +239,7 @@ class TruckMaintenanceController extends BaseController
         // 2. Extract standard parameters
         $perPage = $request->get('per_page', 10);
         $search = $request->get('search');
-        
+
         // 3. 🌟 NEW: Extract Filter Type and Reference Date
         $filterType = $request->get('filter_type', 'weekly'); // default to weekly
         $referenceDate = $request->get('reference_date'); // e.g., "2026-01-26"
@@ -270,10 +270,10 @@ class TruckMaintenanceController extends BaseController
         // Note: Ensure listByTruckId is updated to filter by 'maintenance_date' 
         // instead of 'created_at' to match your table data.
         $maintenanceRecords = $this->service->listByTruckId(
-            $truckId, 
-            $perPage, 
+            $truckId,
+            $perPage,
             $search,
-            $dateFrom, 
+            $dateFrom,
             $dateTo
         );
 
@@ -382,7 +382,7 @@ class TruckMaintenanceController extends BaseController
     // {
     //     return parent::destroy($id);
     // }
-    
+
     // public function destroy($id)
     // {
     //     try {
@@ -391,7 +391,7 @@ class TruckMaintenanceController extends BaseController
 
     //         // 1. Find the truck to get its actual plate_number
     //         $truck = FleetTruck::find($truckId);
-            
+
     //         // 2. Find the maintenance record
     //         $maintenance = TruckMaintenance::find($maintenanceId);
 
@@ -457,7 +457,7 @@ class TruckMaintenanceController extends BaseController
         } catch (\Exception $e) {
             // If the Service threw a 403, we use that code, otherwise default to 500
             $code = $e->getCode() == 403 ? 403 : 500;
-            
+
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),
@@ -528,8 +528,8 @@ class TruckMaintenanceController extends BaseController
         try {
             // The service now handles finding and attaching the truck_id
             $updatedRecord = $this->service->updateMaintenance(
-                (int) $id, 
-                $request->validated() 
+                (int) $id,
+                $request->validated()
             );
 
             return response()->json([
@@ -540,7 +540,7 @@ class TruckMaintenanceController extends BaseController
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false, 
+                'status' => false,
                 'message' => $e->getMessage()
             ], 500);
         }
@@ -579,7 +579,7 @@ class TruckMaintenanceController extends BaseController
     {
         //TODO create catch for error messages
         //return parent::show($id);
-        
+
         try {
             //$data = $request->all();
             $truckmaintenance = $this->service->get_truck_maintenance_by_id($id);
