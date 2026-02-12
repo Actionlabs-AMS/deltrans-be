@@ -24,7 +24,7 @@ return new class extends Migration {
 
             $table->decimal('docs_fee', 10, 2)->default(0);
             $table->decimal('online_booking_fee', 10, 2)->default(0);
-            $table->decimal('stack_run', 10, 2)->default(0);
+            $table->decimal('stack_run', 10, 2)->default(0); // fixed
             $table->decimal('expenses', 10, 2)->default(0);
 
             $table->decimal('total_expenses', 10, 2)->default(0);

@@ -49,7 +49,7 @@ class VerifySoaComputation extends Command
         $vatPercent = 12.00;
 
         foreach ($waybills as $waybill) {
-            $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+            $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
             $waybillHasVat = (bool) ($waybill->has_vat ?? false);
             if ($amount == 0 && $waybill->booking) {
                 $matchingRate = RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)

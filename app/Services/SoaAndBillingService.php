@@ -368,45 +368,13 @@ class SoaAndBillingService extends BaseService
                 }
             }
 
-            $transactionData = [];
-            foreach ($waybills as $waybill) {
-                $row = [];
-                foreach ($transactionColumns as $column) {
-                    $row[$column->name] = $this->mapTransactionField($column->name, $waybill, $soa);
-                }
-                $transactionData[] = $row;
-            }
-
-            $totalAmount = 0;
-            $totalVat = 0; // Sum of 12% VAT only for waybills where has_vat = true (stored on waybill)
-
             $vatPercent = 12.00;
-
-            foreach ($waybills as $waybill) {
-                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
-                $waybillHasVat = (bool) ($waybill->has_vat ?? false);
-                if ($amount == 0 && $waybill->booking) {
-                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                        ->where('container_size', $waybill->container_size)
-                        ->where(function ($query) use ($waybill) {
-                            $query->where('cypa_id', $waybill->booking->cypa_id_from)
-                                ->orWhere('cypa_id', 0);
-                        })
-                        ->where('is_active', 1)
-                        ->first();
-                    if ($matchingRate) {
-                        $amount = (float) ($matchingRate->rate ?? 0);
-                        $waybillHasVat = (bool) ($matchingRate->has_vat ?? false);
-                    }
-                }
-                $totalAmount += $amount;
-                if ($waybillHasVat) {
-                    $totalVat += $amount * ($vatPercent / 100);
-                }
-            }
-
+            $built = $this->buildSoaTransactionData($waybills, $soa, $transactionColumns);
+            $transactionData = $built['transactionData'];
+            $totalAmount = $built['totalAmount'];
+            $totalVat = $built['totalVat'];
+            $grandTotal = $built['grandTotal'];
             $vatRate = $vatPercent / 100;
-            $grandTotal = $totalAmount + $totalVat;
 
             $companyInfo = [
                 'name' => 'DELTRANS LOGISTICS INC.',
@@ -452,7 +420,75 @@ class SoaAndBillingService extends BaseService
         }
     }
 
-    private function mapTransactionField($fieldName, $waybill, $soa)
+    /**
+     * Build SOA transaction table rows: one row per container (per waybill).
+     * If a waybill has 2+ containers, 2+ rows with same data except CONTAINER NUMBER.
+     * Totals are computed per waybill (not doubled for multiple containers).
+     * Uses waybill_details.rate for AMOUNT (not total_rate_per_client).
+     *
+     * @param \Illuminate\Support\Collection $waybills Waybills with booking.containers loaded
+     * @param \App\Models\StatementOfAccount $soa
+     * @param \Illuminate\Support\Collection $transactionColumns
+     * @return array{transactionData: array, totalAmount: float, totalVat: float, grandTotal: float}
+     */
+    private function buildSoaTransactionData($waybills, $soa, $transactionColumns)
+    {
+        $vatPercent = 12.00;
+        $transactionData = [];
+        $totalAmount = 0;
+        $totalVat = 0;
+
+        foreach ($waybills as $waybill) {
+            $containersForWaybill = collect();
+            if ($waybill->relationLoaded('booking') && $waybill->booking) {
+                $containersForWaybill = ($waybill->booking->containers ?? collect())
+                    ->where('waybill_id', $waybill->id)
+                    ->values();
+            }
+            $containerList = $containersForWaybill->isEmpty() ? [null] : $containersForWaybill->all();
+
+            foreach ($containerList as $container) {
+                $row = [];
+                foreach ($transactionColumns as $column) {
+                    $row[$column->name] = $this->mapTransactionField($column->name, $waybill, $soa, $container);
+                }
+                $transactionData[] = $row;
+            }
+
+            $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
+            $waybillHasVat = (bool) ($waybill->has_vat ?? false);
+            if ($amount == 0 && $waybill->booking) {
+                $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
+                    ->where('container_size', $waybill->container_size)
+                    ->where(function ($query) use ($waybill) {
+                        $query->where('cypa_id', $waybill->booking->cypa_id_from)
+                            ->orWhere('cypa_id', 0);
+                    })
+                    ->where('is_active', 1)
+                    ->first();
+                if ($matchingRate) {
+                    $amount = (float) ($matchingRate->rate ?? 0);
+                    $waybillHasVat = (bool) ($matchingRate->has_vat ?? false);
+                }
+            }
+            $totalAmount += $amount;
+            if ($waybillHasVat) {
+                $totalVat += $amount * ($vatPercent / 100);
+            }
+        }
+
+        return [
+            'transactionData' => $transactionData,
+            'totalAmount' => $totalAmount,
+            'totalVat' => $totalVat,
+            'grandTotal' => $totalAmount + $totalVat,
+        ];
+    }
+
+    /**
+     * @param object|null $container Optional container model for this row (when SOA has one row per container)
+     */
+    private function mapTransactionField($fieldName, $waybill, $soa, $container = null)
     {
         switch (strtolower($fieldName)) {
             case 'date':
@@ -487,11 +523,14 @@ class SoaAndBillingService extends BaseService
             case 'container number':
             case 'container no':
             case 'container#':
+                if ($container !== null) {
+                    return $container->container_number ?? '-';
+                }
                 $containers = $waybill->booking && $waybill->relationLoaded('booking')
                     ? ($waybill->booking->containers ?? collect())
                     : collect();
-                $container = $containers->where('waybill_id', $waybill->id)->first();
-                return $container ? $container->container_number : '-';
+                $firstContainer = $containers->where('waybill_id', $waybill->id)->first();
+                return $firstContainer ? $firstContainer->container_number : '-';
             case 'origin':
             case 'from':
                 return $waybill->booking->cypaFrom ? $waybill->booking->cypaFrom->name : '-';
@@ -501,14 +540,12 @@ class SoaAndBillingService extends BaseService
             case 'remarks':
                 return $waybill->remarks ?? '-';
             case 'size':
-                $size = $waybill->container_size ?? '';
-                if ($size) {
-                    $sizeValue = preg_replace('/[^0-9]/', '', $size);
-                    return $sizeValue == '40' ? '1X40HC' : ($sizeValue == '20' ? '1X20FR' : '1X' . $sizeValue);
-                }
-                return '-';
+                $size = trim(str_ireplace('ft', '', $waybill->container_size ?? ''));
+                $type = trim(str_ireplace('ft', '', $waybill->container_type ?? ''));
+                $combined = trim($size . ($type !== '' ? ' ' . $type : ''));
+                return $combined !== '' ? $combined : '-';
             case 'amount':
-                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
                 if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                         ->where('container_size', $waybill->container_size)
@@ -524,7 +561,7 @@ class SoaAndBillingService extends BaseService
             case 'vat':
             case '12% vat':
             case '12%vat':
-                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
                 $hasVat = (bool) ($waybill->has_vat ?? false);
                 if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
@@ -540,7 +577,7 @@ class SoaAndBillingService extends BaseService
                 $vatPercent = $hasVat ? 12.00 : 0.00;
                 return number_format($amount * ($vatPercent / 100), 2, '.', ',');
             case 'total amount':
-                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
                 $hasVat = (bool) ($waybill->has_vat ?? false);
                 if ($amount == 0 && $waybill->booking) {
                     $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
@@ -979,40 +1016,11 @@ class SoaAndBillingService extends BaseService
                 }
             }
 
-            $transactionData = [];
-            foreach ($waybillsSoa as $waybill) {
-                $row = [];
-                foreach ($transactionColumns as $column) {
-                    $row[$column->name] = $this->mapTransactionField($column->name, $waybill, $soaFull);
-                }
-                $transactionData[] = $row;
-            }
-
-            $soaTotalAmount = 0;
-            $soaTotalVat = 0;
-            $vatPercent = 12.00;
-            foreach ($waybillsSoa as $waybill) {
-                $amount = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
-                $waybillHasVat = (bool) ($waybill->has_vat ?? false);
-                if ($amount == 0 && $waybill->booking) {
-                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                        ->where('container_size', $waybill->container_size)
-                        ->where(function ($query) use ($waybill) {
-                            $query->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0);
-                        })
-                        ->where('is_active', 1)
-                        ->first();
-                    if ($matchingRate) {
-                        $amount = (float) ($matchingRate->rate ?? 0);
-                        $waybillHasVat = (bool) ($matchingRate->has_vat ?? false);
-                    }
-                }
-                $soaTotalAmount += $amount;
-                if ($waybillHasVat) {
-                    $soaTotalVat += $amount * ($vatPercent / 100);
-                }
-            }
-            $soaGrandTotal = $soaTotalAmount + $soaTotalVat;
+            $soaBuilt = $this->buildSoaTransactionData($waybillsSoa, $soaFull, $transactionColumns);
+            $transactionData = $soaBuilt['transactionData'];
+            $soaTotalAmount = $soaBuilt['totalAmount'];
+            $soaTotalVat = $soaBuilt['totalVat'];
+            $soaGrandTotal = $soaBuilt['grandTotal'];
             $soaIssueDate = now()->format('F d, Y');
 
             $attachmentPaths = [];

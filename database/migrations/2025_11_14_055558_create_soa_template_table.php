@@ -33,6 +33,7 @@ return new class extends Migration {
             $table->index('parent_id');
         });
 
+
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }

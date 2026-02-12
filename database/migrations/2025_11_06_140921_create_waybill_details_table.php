@@ -32,8 +32,8 @@ return new class extends Migration {
             $table->integer('no_of_days'); // field, not editable
             $table->string('requirements')->nullable(); // field, not editable
             $table->string('remarks')->nullable(); // field, not editable
-            $table->decimal('stack_run', 10, 2); // field
-            $table->decimal('rate', 10, 2); // field
+            $table->decimal('stack_run', 10, 2); // field 100.00
+            $table->decimal('rate', 10, 2); // field 5,400.00 
             $table->decimal('tax_percent', 10, 2)->nullable(); // field, not editable
             $table->boolean('has_vat')->default(true); // field, not editable
             $table->decimal('total_rate_per_client', 15, 2)->default(0); // field
