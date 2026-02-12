@@ -21,6 +21,7 @@ class FixedExpense extends Model
         'cypa_id_to',
         'container_size',
         'docs_fee',
+        'online_booking_fee',
         'stack_run',
         'expenses',
         'total_expenses',
@@ -33,6 +34,7 @@ class FixedExpense extends Model
      */
     protected $casts = [
         'docs_fee' => 'decimal:2',
+        'online_booking_fee' => 'decimal:2',
         'stack_run' => 'decimal:2',
         'expenses' => 'decimal:2',
         'total_expenses' => 'decimal:2',
@@ -55,6 +57,7 @@ class FixedExpense extends Model
      */
     protected $attributes = [
         'docs_fee' => 0.00,
+        'online_booking_fee' => 0.00,
         'stack_run' => 0.00,
         'expenses' => 0.00,
         'total_expenses' => 0.00,
@@ -80,7 +83,7 @@ class FixedExpense extends Model
 
         // Auto-calculate total_expenses before saving
         static::saving(function ($model) {
-            $model->total_expenses = $model->docs_fee + $model->stack_run + $model->expenses;
+            $model->total_expenses = (float) $model->docs_fee + (float) $model->online_booking_fee + (float) $model->stack_run + (float) $model->expenses;
         });
     }
 

@@ -23,7 +23,7 @@ return new class extends Migration {
             $table->string('container_size');
 
             $table->decimal('docs_fee', 10, 2)->default(0);
-            //add online_booking_fee: decimal(10, 2)->default(0); 
+            $table->decimal('online_booking_fee', 10, 2)->default(0);
             $table->decimal('stack_run', 10, 2)->default(0);
             $table->decimal('expenses', 10, 2)->default(0);
 

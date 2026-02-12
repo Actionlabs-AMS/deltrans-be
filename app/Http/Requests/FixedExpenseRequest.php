@@ -32,6 +32,7 @@ class FixedExpenseRequest extends FormRequest
                 Rule::in(['20ft', '40ft']),
             ],
             'docs_fee' => 'nullable|numeric|min:0',
+            'online_booking_fee' => 'nullable|numeric|min:0',
             'stack_run' => 'nullable|numeric|min:0',
             'expenses' => 'nullable|numeric|min:0',
         ];
@@ -74,6 +75,8 @@ class FixedExpenseRequest extends FormRequest
             'stack_run.min' => 'The stack run amount must be at least 0.',
             'expenses.numeric' => 'The expenses must be a valid number.',
             'expenses.min' => 'The expenses amount must be at least 0.',
+            'online_booking_fee.numeric' => 'The online booking fee must be a valid number.',
+            'online_booking_fee.min' => 'The online booking fee must be at least 0.',
         ];
     }
 }

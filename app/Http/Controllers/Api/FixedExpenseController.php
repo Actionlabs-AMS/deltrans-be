@@ -22,9 +22,10 @@ use App\Services\MessageService;
  *     @OA\Property(property="cypa_id_to", type="integer", example=2),
  *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="docs_fee", type="number", format="float", example=500.00, description="Documentation fee amount"),
+ *     @OA\Property(property="online_booking_fee", type="number", format="float", example=100.00, description="Online booking fee amount"),
  *     @OA\Property(property="stack_run", type="number", format="float", example=1500.00, description="Stack run amount"),
  *     @OA\Property(property="expenses", type="number", format="float", example=2000.00, description="Other expenses amount"),
- *     @OA\Property(property="total_expenses", type="number", format="float", example=4000.00, description="Total expenses (auto-calculated: docs_fee + stack_run + expenses)"),
+ *     @OA\Property(property="total_expenses", type="number", format="float", example=4100.00, description="Total expenses (auto-calculated: docs_fee + online_booking_fee + stack_run + expenses)"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
  * )
@@ -38,6 +39,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="cypa_id_to", type="integer", example=2),
  *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="docs_fee", type="number", format="float", example=500.00),
+ *     @OA\Property(property="online_booking_fee", type="number", format="float", example=100.00),
  *     @OA\Property(property="stack_run", type="number", format="float", example=1500.00),
  *     @OA\Property(property="expenses", type="number", format="float", example=2000.00)
  * )

@@ -21,6 +21,7 @@ class FixedExpenseResource extends JsonResource
             'cypa_id_to' => $this->cypa_id_to,
             'container_size' => $this->container_size,
             'docs_fee' => $this->docs_fee,
+            'online_booking_fee' => $this->online_booking_fee,
             'stack_run' => $this->stack_run,
             'expenses' => $this->expenses,
             'total_expenses' => $this->total_expenses,
