@@ -7807,6 +7807,527 @@
                 ]
             }
         },
+        "/api/invoices/generate": {
+            "post": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Generate a new invoice from SOA",
+                "description": "Creates an invoice based on a statement of account. Automatically calculates quantity, unit_price, item_description, and financial fields from SOA's waybills and containers.",
+                "operationId": "eaf2f23080d714e2792f705e8f756913",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InvoiceGenerateInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Invoice generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Invoice"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/invoices/{id}": {
+            "get": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Get a specific invoice",
+                "operationId": "5d25d392f44d2cf516114d871e72ecb7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoice retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Invoice"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Update an invoice",
+                "operationId": "e5aa8abff3efb646c72e59724ecb13e3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateInvoiceInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Invoice updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Invoice"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/invoices/{id}/download": {
+            "get": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Download Invoice PDF",
+                "operationId": "263bf02aa6f7a8ad85478782f55df916",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages (upload via POST /invoices/attachments); folder is deleted after download",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file download",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/invoices/{id}/send-email": {
+            "post": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Send Invoice PDF via email",
+                "operationId": "5a6e38a2bbdd900f43a98d61839ddb91",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "description": "Custom recipient email (overrides shipping line email)",
+                                        "type": "string",
+                                        "format": "email",
+                                        "nullable": true
+                                    },
+                                    "cc": {
+                                        "description": "CC recipients",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "email"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "subject": {
+                                        "description": "Custom email subject (optional; if empty, standard subject is used)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "body": {
+                                        "description": "Custom email body HTML (optional; if empty, standard body is used)",
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invoice sent successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/invoices": {
+            "get": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Get list of invoices",
+                "operationId": "2e947f49543378e8d1ac24fc3ebcdcc7",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by invoice number or shipping line name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "statement_of_account_id",
+                        "in": "query",
+                        "description": "Filter by statement of account ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter invoices from date",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter invoices to date",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of invoices",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Invoice"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 50
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/invoices/attachments": {
+            "post": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Upload temp images for Invoice PDF attachments",
+                "description": "Upload one or more images to be optionally included as extra pages in Invoice PDF downloads. One folder per user; each new upload replaces the previous. Use include_attachments=true on download to include them; folder is deleted after that download.",
+                "operationId": "9ae7bff1e8a2b9be0c7f984c9689ef74",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "attachments[]": {
+                                        "description": "Image files to upload",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Files uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "3 file(s) uploaded successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/system-settings/navigation": {
             "get": {
                 "tags": [
@@ -14426,6 +14947,16 @@
                                             "format": "email"
                                         },
                                         "nullable": true
+                                    },
+                                    "subject": {
+                                        "description": "Custom email subject (optional; if empty, standard subject is used)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "body": {
+                                        "description": "Custom email body HTML (optional; if empty, standard body is used)",
+                                        "type": "string",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -14515,6 +15046,16 @@
                                             "type": "string",
                                             "format": "email"
                                         },
+                                        "nullable": true
+                                    },
+                                    "subject": {
+                                        "description": "Custom email subject (optional; if empty, standard subject is used)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "body": {
+                                        "description": "Custom email body HTML (optional; if empty, standard body is used)",
+                                        "type": "string",
                                         "nullable": true
                                     }
                                 },
@@ -14606,6 +15147,16 @@
                                             "type": "string",
                                             "format": "email"
                                         },
+                                        "nullable": true
+                                    },
+                                    "subject": {
+                                        "description": "Custom email subject (optional; if empty, standard subject is used)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "body": {
+                                        "description": "Custom email body HTML (optional; if empty, standard body is used)",
+                                        "type": "string",
                                         "nullable": true
                                     }
                                 },
@@ -21693,6 +22244,259 @@
                 },
                 "type": "object"
             },
+            "Invoice": {
+                "title": "Invoice Model",
+                "description": "An invoice resource",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "statement_of_account_id": {
+                        "description": "Related statement of account ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "statement_of_account": {
+                        "description": "Linked SOA",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "shipping_line": {
+                        "description": "Shipping line from SOA when loaded",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "invoice_number": {
+                        "type": "string",
+                        "example": "INV-0001"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-15"
+                    },
+                    "quantity": {
+                        "description": "Total container count",
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "unit_price": {
+                        "description": "Sum of waybill.rate per booking",
+                        "type": "number",
+                        "format": "float",
+                        "example": 5600
+                    },
+                    "item_description": {
+                        "description": "Grouped container description",
+                        "type": "string",
+                        "example": "42 x 40HC"
+                    },
+                    "vatable_sales": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 210000
+                    },
+                    "zero_rated_sales": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 0
+                    },
+                    "vat_exempt_sales": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 0
+                    },
+                    "vat": {
+                        "description": "12% VAT",
+                        "type": "number",
+                        "format": "float",
+                        "example": 25200
+                    },
+                    "total_sales": {
+                        "description": "VAT inclusive",
+                        "type": "number",
+                        "format": "float",
+                        "example": 235200
+                    },
+                    "less_vat": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 25200
+                    },
+                    "net_of_vat": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 210000
+                    },
+                    "discount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 0
+                    },
+                    "discount_id": {
+                        "type": "integer",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "less_withdrawing_tax": {
+                        "description": "2% withholding tax",
+                        "type": "number",
+                        "format": "float",
+                        "example": 4200
+                    },
+                    "total_amount": {
+                        "description": "Total amount due",
+                        "type": "number",
+                        "format": "float",
+                        "example": 231000
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "InvoiceGenerateInput": {
+                "title": "Generate Invoice Input",
+                "required": [
+                    "statement_of_account_id"
+                ],
+                "properties": {
+                    "statement_of_account_id": {
+                        "description": "Statement of account ID",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "invoice_number": {
+                        "description": "Auto-generated if not provided",
+                        "type": "string",
+                        "example": "INV-0001",
+                        "nullable": true
+                    },
+                    "date": {
+                        "description": "Defaults to current date if not provided",
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-15",
+                        "nullable": true
+                    },
+                    "discount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 0,
+                        "nullable": true
+                    },
+                    "discount_id": {
+                        "description": "Reference to discounts table if exists",
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateInvoiceInput": {
+                "title": "Update Invoice Input",
+                "properties": {
+                    "invoice_number": {
+                        "type": "string",
+                        "example": "INV-0001",
+                        "nullable": true
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-15",
+                        "nullable": true
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "example": 42,
+                        "nullable": true
+                    },
+                    "unit_price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 5600,
+                        "nullable": true
+                    },
+                    "item_description": {
+                        "type": "string",
+                        "example": "42 x 40HC",
+                        "nullable": true
+                    },
+                    "vatable_sales": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 210000,
+                        "nullable": true
+                    },
+                    "zero_rated_sales": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 0,
+                        "nullable": true
+                    },
+                    "vat_exempt_sales": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 0,
+                        "nullable": true
+                    },
+                    "vat": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 25200,
+                        "nullable": true
+                    },
+                    "total_sales": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 235200,
+                        "nullable": true
+                    },
+                    "less_vat": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 25200,
+                        "nullable": true
+                    },
+                    "net_of_vat": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 210000,
+                        "nullable": true
+                    },
+                    "discount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 0,
+                        "nullable": true
+                    },
+                    "discount_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "less_withdrawing_tax": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 4200,
+                        "nullable": true
+                    },
+                    "total_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 231000,
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "RatePerClient": {
                 "title": "Rate Per Client Model",
                 "description": "A rate per client resource",
@@ -22394,11 +23198,18 @@
                         "format": "float",
                         "example": 2500
                     },
-                    "stack_run": {
-                        "description": "From linked fixed expense when loaded",
+                    "stack_run_rate": {
+                        "description": "From waybill_details.stack_run",
                         "type": "number",
                         "format": "float",
                         "example": 100
+                    },
+                    "stack_run_fixed": {
+                        "description": "From fixed_expenses.stack_run where fixed_expenses.id = waybill_details.fixed_expense_id",
+                        "type": "number",
+                        "format": "float",
+                        "example": 150,
+                        "nullable": true
                     },
                     "docs_fee": {
                         "description": "From linked fixed expense",
@@ -22696,6 +23507,10 @@
         {
             "name": "Helper Management",
             "description": "API endpoints for helper management"
+        },
+        {
+            "name": "Invoice Management",
+            "description": "API endpoints for invoice management"
         },
         {
             "name": "Navigation Management",

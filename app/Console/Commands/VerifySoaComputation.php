@@ -54,7 +54,7 @@ class VerifySoaComputation extends Command
             if ($amount == 0 && $waybill->booking) {
                 $matchingRate = RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
                     ->where('container_size', $waybill->container_size)
-                    ->where(fn ($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
+                    ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
                     ->where('is_active', 1)
                     ->first();
                 if ($matchingRate) {
@@ -63,9 +63,20 @@ class VerifySoaComputation extends Command
                 }
             }
 
-            $totalAmount += $amount;
+            // waybill.rate is per container, so multiply by container count
+            $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
+                ->where('waybill_id', $waybill->id)
+                ->count();
+            if ($containerCount == 0) {
+                $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
+                if ($containerCount == 0)
+                    $containerCount = 1;
+            }
+            $waybillTotalAmount = $amount * $containerCount;
+
+            $totalAmount += $waybillTotalAmount;
             if ($waybillHasVat) {
-                $totalVat += $amount * ($vatPercent / 100);
+                $totalVat += $waybillTotalAmount * ($vatPercent / 100);
             }
         }
 

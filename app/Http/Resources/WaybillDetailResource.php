@@ -47,8 +47,10 @@ class WaybillDetailResource extends JsonResource
             'has_vat' => $this->has_vat,
             'total_rate_per_client' => $this->total_rate_per_client,
 
+            // Stack run: rate from waybill_details, fixed from fixed_expenses
+            'stack_run_rate' => $this->stack_run,
+            'stack_run_fixed' => $this->whenLoaded('fixedExpense', fn () => $this->fixedExpense?->stack_run),
             // Fixed expense (from linked fixed expense when loaded)
-            'stack_run' => $this->relationLoaded('fixedExpense') ? ($this->fixedExpense?->stack_run ?? $this->stack_run) : $this->stack_run,
             'docs_fee' => $this->whenLoaded('fixedExpense', fn () => $this->fixedExpense?->docs_fee),
             'online_booking_fee' => $this->whenLoaded('fixedExpense', fn () => $this->fixedExpense?->online_booking_fee),
             'expenses' => $this->whenLoaded('fixedExpense', fn () => $this->fixedExpense?->expenses),

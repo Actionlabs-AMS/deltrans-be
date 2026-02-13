@@ -571,7 +571,9 @@ class SoaAndBillingController extends BaseController
      *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages", @OA\Schema(type="boolean", default=false)),
      *     @OA\RequestBody(required=false, @OA\JsonContent(
      *         @OA\Property(property="email", type="string", format="email", nullable=true, description="Custom recipient email (overrides shipping line email)"),
-     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients")
+     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients"),
+     *         @OA\Property(property="subject", type="string", nullable=true, description="Custom email subject (optional; if empty, standard subject is used)"),
+     *         @OA\Property(property="body", type="string", nullable=true, description="Custom email body HTML (optional; if empty, standard body is used)")
      *     )),
      *     @OA\Response(response=200, description="Email sent successfully", @OA\JsonContent(
      *         @OA\Property(property="success", type="boolean", example=true),
@@ -588,8 +590,10 @@ class SoaAndBillingController extends BaseController
             $attachmentUserId = $includeAttachments ? auth()->id() : null;
             $customEmail = request()->input('email');
             $cc = request()->input('cc', []);
+            $subject = request()->input('subject');
+            $body = request()->input('body');
 
-            $this->service->sendSoaEmail($id, $attachmentUserId, $includeAttachments, $customEmail, $cc);
+            $this->service->sendSoaEmail($id, $attachmentUserId, $includeAttachments, $customEmail, $cc, $subject, $body);
 
             return response()->json([
                 'success' => true,
@@ -618,7 +622,9 @@ class SoaAndBillingController extends BaseController
      *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages", @OA\Schema(type="boolean", default=false)),
      *     @OA\RequestBody(required=false, @OA\JsonContent(
      *         @OA\Property(property="email", type="string", format="email", nullable=true, description="Custom recipient email (overrides shipping line email)"),
-     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients")
+     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients"),
+     *         @OA\Property(property="subject", type="string", nullable=true, description="Custom email subject (optional; if empty, standard subject is used)"),
+     *         @OA\Property(property="body", type="string", nullable=true, description="Custom email body HTML (optional; if empty, standard body is used)")
      *     )),
      *     @OA\Response(response=200, description="Email sent successfully", @OA\JsonContent(
      *         @OA\Property(property="success", type="boolean", example=true),
@@ -635,8 +641,10 @@ class SoaAndBillingController extends BaseController
             $attachmentUserId = $includeAttachments ? auth()->id() : null;
             $customEmail = request()->input('email');
             $cc = request()->input('cc', []);
+            $subject = request()->input('subject');
+            $body = request()->input('body');
 
-            $this->service->sendBillingStatementEmail($id, $attachmentUserId, $includeAttachments, $customEmail, $cc);
+            $this->service->sendBillingStatementEmail($id, $attachmentUserId, $includeAttachments, $customEmail, $cc, $subject, $body);
 
             return response()->json([
                 'success' => true,
@@ -666,7 +674,9 @@ class SoaAndBillingController extends BaseController
      *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages", @OA\Schema(type="boolean", default=false)),
      *     @OA\RequestBody(required=false, @OA\JsonContent(
      *         @OA\Property(property="email", type="string", format="email", nullable=true, description="Custom recipient email (overrides shipping line email)"),
-     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients")
+     *         @OA\Property(property="cc", type="array", @OA\Items(type="string", format="email"), nullable=true, description="CC recipients"),
+     *         @OA\Property(property="subject", type="string", nullable=true, description="Custom email subject (optional; if empty, standard subject is used)"),
+     *         @OA\Property(property="body", type="string", nullable=true, description="Custom email body HTML (optional; if empty, standard body is used)")
      *     )),
      *     @OA\Response(response=200, description="Email sent successfully", @OA\JsonContent(
      *         @OA\Property(property="success", type="boolean", example=true),
@@ -692,8 +702,10 @@ class SoaAndBillingController extends BaseController
             $attachmentUserId = $includeAttachments ? auth()->id() : null;
             $customEmail = request()->input('email');
             $cc = request()->input('cc', []);
+            $subject = request()->input('subject');
+            $body = request()->input('body');
 
-            $this->service->sendBillingAndSoaEmail($billingStatement->id, $attachmentUserId, $includeAttachments, $customEmail, $cc);
+            $this->service->sendBillingAndSoaEmail($billingStatement->id, $attachmentUserId, $includeAttachments, $customEmail, $cc, $subject, $body);
 
             return response()->json([
                 'success' => true,

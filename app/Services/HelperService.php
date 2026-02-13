@@ -202,8 +202,8 @@ class HelperService extends BaseService
     public function get_waybills_by_helper_id($id, $perPage = 10, $searchTerm = null, $dateFrom = null, $dateTo = null)
     {
         try {
-            // 1. Strict filter by helper_id first
-            $query = WaybillDetail::where('helper_id', $id);
+            // 1. Strict filter by helper_id first, load fixedExpense for stack_run_fixed
+            $query = WaybillDetail::with('fixedExpense')->where('helper_id', $id);
 
             // 2. --- Date Range Filter (Patterned after Driver History) ---
             if ($dateFrom && $dateTo) {

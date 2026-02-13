@@ -126,8 +126,8 @@ class DriverService extends BaseService
   public function get_waybills_by_driver_id($id, $perPage = 10, $searchTerm = null, $dateFrom = null, $dateTo = null)
   {
       try {
-          // 1. Strict filter by driver_id first
-          $query = WaybillDetail::where('driver_id', $id);
+          // 1. Strict filter by driver_id first, load fixedExpense for stack_run_fixed
+          $query = WaybillDetail::with('fixedExpense')->where('driver_id', $id);
 
           // 2. --- Date Range Filter (Newly Implemented) ---
           if ($dateFrom && $dateTo) {

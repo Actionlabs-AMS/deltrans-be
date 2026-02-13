@@ -471,9 +471,12 @@ class SoaAndBillingService extends BaseService
                     $waybillHasVat = (bool) ($matchingRate->has_vat ?? false);
                 }
             }
-            $totalAmount += $amount;
+            // waybill.rate is per container, so multiply by container count for totals
+            $containerCount = count($containerList);
+            $waybillTotalAmount = $amount * $containerCount;
+            $totalAmount += $waybillTotalAmount;
             if ($waybillHasVat) {
-                $totalVat += $amount * ($vatPercent / 100);
+                $totalVat += $waybillTotalAmount * ($vatPercent / 100);
             }
         }
 
@@ -740,11 +743,22 @@ class SoaAndBillingService extends BaseService
             $grandTotal = 0;
             $hasDetails = (bool) $billingStatement->has_details;
 
-            // Same computation for grand total: sum over waybills of (base * 1.12 if has_vat else base)
+            // Same computation for grand total: sum over waybills of (base * container_count * 1.12 if has_vat else base * container_count)
+            // waybill.rate is per container, so multiply by container count
             foreach ($waybills as $waybill) {
                 $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
                 $hasVat = (bool) ($waybill->has_vat ?? false);
-                $grandTotal += $hasVat ? $base * 1.12 : $base;
+                // Count containers for this waybill
+                $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
+                    ->where('waybill_id', $waybill->id)
+                    ->count();
+                if ($containerCount == 0) {
+                    $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
+                    if ($containerCount == 0)
+                        $containerCount = 1;
+                }
+                $waybillTotal = $base * $containerCount;
+                $grandTotal += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
             }
 
             if ($hasDetails && $waybills->isNotEmpty()) {
@@ -790,7 +804,17 @@ class SoaAndBillingService extends BaseService
                     foreach ($waybillsInGroup as $waybill) {
                         $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
                         $hasVat = (bool) ($waybill->has_vat ?? false);
-                        $totalAmount += $hasVat ? $base * 1.12 : $base;
+                        // waybill.rate is per container, so multiply by container count
+                        $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
+                            ->where('waybill_id', $waybill->id)
+                            ->count();
+                        if ($containerCount == 0) {
+                            $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
+                            if ($containerCount == 0)
+                                $containerCount = 1;
+                        }
+                        $waybillTotal = $base * $containerCount;
+                        $totalAmount += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
                     }
                     $quantity = $group['quantity'];
                     $rateWithTax = $quantity > 0 ? $totalAmount / $quantity : 0;
@@ -902,10 +926,21 @@ class SoaAndBillingService extends BaseService
             $billingGrandTotal = 0;
             $hasDetails = (bool) $billingStatement->has_details;
 
+            // waybill.rate is per container, so multiply by container count
             foreach ($waybills as $waybill) {
                 $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
                 $hasVat = (bool) ($waybill->has_vat ?? false);
-                $billingGrandTotal += $hasVat ? $base * 1.12 : $base;
+                // Count containers for this waybill
+                $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
+                    ->where('waybill_id', $waybill->id)
+                    ->count();
+                if ($containerCount == 0) {
+                    $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
+                    if ($containerCount == 0)
+                        $containerCount = 1;
+                }
+                $waybillTotal = $base * $containerCount;
+                $billingGrandTotal += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
             }
 
             if ($hasDetails && $waybills->isNotEmpty()) {
@@ -933,7 +968,17 @@ class SoaAndBillingService extends BaseService
                     $totalAmount = 0;
                     foreach ($group['waybills'] ?? [] as $waybill) {
                         $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
-                        $totalAmount += (bool) ($waybill->has_vat ?? false) ? $base * 1.12 : $base;
+                        // waybill.rate is per container, so multiply by container count
+                        $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
+                            ->where('waybill_id', $waybill->id)
+                            ->count();
+                        if ($containerCount == 0) {
+                            $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
+                            if ($containerCount == 0)
+                                $containerCount = 1;
+                        }
+                        $waybillTotal = $base * $containerCount;
+                        $totalAmount += (bool) ($waybill->has_vat ?? false) ? $waybillTotal * 1.12 : $waybillTotal;
                     }
                     $quantity = $group['quantity'];
                     $detailsData[] = [
@@ -1114,42 +1159,45 @@ class SoaAndBillingService extends BaseService
      * @param bool $includeAttachments Whether to append attachment pages to the PDF
      * @param string|null $customEmail Custom email address (overrides shipping line email)
      * @param array $cc CC recipients (optional)
+     * @param string|null $subject Custom email subject (optional; if empty, standard subject is used)
+     * @param string|null $body Custom email body HTML (optional; if empty, standard body is used)
      * @return bool Success status
      */
-    public function sendSoaEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    public function sendSoaEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [], ?string $subject = null, ?string $body = null)
     {
         try {
             $soa = StatementOfAccount::with('shippingLine')->findOrFail($id);
             $emailService = app(EmailService::class);
-            
+
             // Use custom email if provided, otherwise use shipping line email
             $recipientEmail = $customEmail ?? $soa->shippingLine->email_address;
-            
+
             if (empty($recipientEmail)) {
                 throw new \Exception('No email address found for shipping line.');
             }
-            
+
             // Generate PDF
             $pdfContent = $this->generatePdf($id, $attachmentUserId, $includeAttachments);
             $pdfFilename = $soa->dli_sa_number . '.pdf';
-            
-            // Prepare email
-            $subject = 'Statement of Account - ' . $soa->dli_sa_number;
-            $body = '<h2>Statement of Account</h2>'
+
+            // Prepare email: use custom subject/body if provided and non-empty, otherwise standard
+            $subject = trim((string) $subject) !== '' ? trim($subject) : 'Statement of Account - ' . $soa->dli_sa_number;
+            $defaultBody = '<h2>Statement of Account</h2>'
                 . '<p>Dear ' . ($soa->shippingLine->name ?? 'Valued Customer') . ',</p>'
                 . '<p>Please find attached the Statement of Account for ' . $soa->dli_sa_number . '.</p>'
                 . '<p>If you have any questions, please do not hesitate to contact us.</p>'
                 . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
-            
+            $body = trim((string) $body) !== '' ? trim($body) : $defaultBody;
+
             // Send email
             $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
-            
+
             Log::info('[SoaAndBillingService] SOA email sent', [
                 'soa_id' => $id,
                 'to' => $recipientEmail,
                 'soa_number' => $soa->dli_sa_number
             ]);
-            
+
             return true;
         } catch (\Exception $e) {
             Log::error('[SoaAndBillingService] Failed to send SOA email', [
@@ -1168,42 +1216,45 @@ class SoaAndBillingService extends BaseService
      * @param bool $includeAttachments Whether to append attachment pages to the PDF
      * @param string|null $customEmail Custom email address (overrides shipping line email)
      * @param array $cc CC recipients (optional)
+     * @param string|null $subject Custom email subject (optional; if empty, standard subject is used)
+     * @param string|null $body Custom email body HTML (optional; if empty, standard body is used)
      * @return bool Success status
      */
-    public function sendBillingStatementEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    public function sendBillingStatementEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [], ?string $subject = null, ?string $body = null)
     {
         try {
             $billingStatement = BillingStatement::with(['statementOfAccount.shippingLine'])->findOrFail($id);
             $emailService = app(EmailService::class);
-            
+
             // Use custom email if provided, otherwise use shipping line email
             $recipientEmail = $customEmail ?? $billingStatement->statementOfAccount->shippingLine->email_address;
-            
+
             if (empty($recipientEmail)) {
                 throw new \Exception('No email address found for shipping line.');
             }
-            
+
             // Generate PDF
             $pdfContent = $this->generateBillingStatementPdf($id, $attachmentUserId, $includeAttachments);
             $pdfFilename = $billingStatement->billing_statement_no . '.pdf';
-            
-            // Prepare email
-            $subject = 'Billing Statement - ' . $billingStatement->billing_statement_no;
-            $body = '<h2>Billing Statement</h2>'
+
+            // Prepare email: use custom subject/body if provided and non-empty, otherwise standard
+            $subject = trim((string) $subject) !== '' ? trim($subject) : 'Billing Statement - ' . $billingStatement->billing_statement_no;
+            $defaultBody = '<h2>Billing Statement</h2>'
                 . '<p>Dear ' . ($billingStatement->statementOfAccount->shippingLine->name ?? 'Valued Customer') . ',</p>'
                 . '<p>Please find attached the Billing Statement for ' . $billingStatement->billing_statement_no . '.</p>'
                 . '<p>If you have any questions, please do not hesitate to contact us.</p>'
                 . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
-            
+            $body = trim((string) $body) !== '' ? trim($body) : $defaultBody;
+
             // Send email
             $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
-            
+
             Log::info('[SoaAndBillingService] Billing Statement email sent', [
                 'billing_statement_id' => $id,
                 'to' => $recipientEmail,
                 'billing_statement_no' => $billingStatement->billing_statement_no
             ]);
-            
+
             return true;
         } catch (\Exception $e) {
             Log::error('[SoaAndBillingService] Failed to send Billing Statement email', [
@@ -1222,43 +1273,46 @@ class SoaAndBillingService extends BaseService
      * @param bool $includeAttachments Whether to append attachment pages to the PDF
      * @param string|null $customEmail Custom email address (overrides shipping line email)
      * @param array $cc CC recipients (optional)
+     * @param string|null $subject Custom email subject (optional; if empty, standard subject is used)
+     * @param string|null $body Custom email body HTML (optional; if empty, standard body is used)
      * @return bool Success status
      */
-    public function sendBillingAndSoaEmail($billingStatementId, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [])
+    public function sendBillingAndSoaEmail($billingStatementId, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [], ?string $subject = null, ?string $body = null)
     {
         try {
             $billingStatement = BillingStatement::with(['statementOfAccount.shippingLine'])->findOrFail($billingStatementId);
             $emailService = app(EmailService::class);
-            
+
             // Use custom email if provided, otherwise use shipping line email
             $recipientEmail = $customEmail ?? $billingStatement->statementOfAccount->shippingLine->email_address;
-            
+
             if (empty($recipientEmail)) {
                 throw new \Exception('No email address found for shipping line.');
             }
-            
+
             // Generate PDF
             $pdfContent = $this->generateBillingAndSoaCombinedPdf($billingStatementId, $attachmentUserId, $includeAttachments);
             $soa = $billingStatement->statementOfAccount;
             $pdfFilename = ($billingStatement->billing_statement_no ?? 'billing') . '_' . ($soa->dli_sa_number ?? 'soa') . '.pdf';
-            
-            // Prepare email
-            $subject = 'Billing Statement & Statement of Account - ' . $billingStatement->billing_statement_no;
-            $body = '<h2>Billing Statement & Statement of Account</h2>'
+
+            // Prepare email: use custom subject/body if provided and non-empty, otherwise standard
+            $subject = trim((string) $subject) !== '' ? trim($subject) : 'Billing Statement & Statement of Account - ' . $billingStatement->billing_statement_no;
+            $defaultBody = '<h2>Billing Statement & Statement of Account</h2>'
                 . '<p>Dear ' . ($billingStatement->statementOfAccount->shippingLine->name ?? 'Valued Customer') . ',</p>'
                 . '<p>Please find attached the Billing Statement (' . $billingStatement->billing_statement_no . ') and Statement of Account (' . ($soa->dli_sa_number ?? 'N/A') . ').</p>'
                 . '<p>If you have any questions, please do not hesitate to contact us.</p>'
                 . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
-            
+            $body = trim((string) $body) !== '' ? trim($body) : $defaultBody;
+
             // Send email
             $emailService->sendEmailWithAttachment($recipientEmail, $subject, $body, $pdfContent, $pdfFilename, $cc);
-            
+
             Log::info('[SoaAndBillingService] Combined Billing & SOA email sent', [
                 'billing_statement_id' => $billingStatementId,
                 'to' => $recipientEmail,
                 'billing_statement_no' => $billingStatement->billing_statement_no
             ]);
-            
+
             return true;
         } catch (\Exception $e) {
             Log::error('[SoaAndBillingService] Failed to send Combined Billing & SOA email', [

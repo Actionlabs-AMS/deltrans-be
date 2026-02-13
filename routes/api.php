@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\SoaAndBillingController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\TruckMaintenanceController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ContainerController;
@@ -323,6 +324,33 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	/*
 	|--------------------------------------------------------------------------
+	| Invoice Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Invoice CRUD Operations
+	|
+	*/
+	Route::prefix('invoices')->group(function () {
+		// Generate Invoice
+		Route::post('/generate', [InvoiceController::class, 'generate']);  // Generate a new invoice
+
+		// Download PDF (must be before /{id} route)
+		Route::get('/{id}/download', [InvoiceController::class, 'download']);  // Download Invoice PDF
+
+		// Send email with PDF attachment
+		Route::post('/{id}/send-email', [InvoiceController::class, 'sendEmail']);  // Send Invoice PDF via email
+
+		// Upload temp attachments for PDF
+		Route::post('/attachments', [InvoiceController::class, 'storeAttachments']);  // Upload temp images for PDF attachments
+
+		// Standard CRUD operations
+		Route::get('/', [InvoiceController::class, 'index']);  // Retrieve all invoices
+		Route::get('/{id}', [InvoiceController::class, 'show']);  // Retrieve a single invoice
+		Route::put('/{id}', [InvoiceController::class, 'update']);  // Update an invoice
+	});
+
+	/*
+	|--------------------------------------------------------------------------
 	| Helper Management Routes
 	|--------------------------------------------------------------------------
 	|
@@ -341,7 +369,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::patch('/deactivate/{id}', [HelperController::class, 'deactivate']);  // Deactivate a helper
 		Route::patch('/activate/{id}', [HelperController::class, 'activate']);  // Activate a helper
 		Route::get('/details/{id}', [HelperController::class, 'getHelperDetails']);  // Retrieve a single helper
-		
+
 
 
 		// Bulk operations
