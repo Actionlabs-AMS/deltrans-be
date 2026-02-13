@@ -179,34 +179,6 @@ class NavigationSeeder extends Seeder
                     ],
                 ],
             ],
-            // // Budget and Expenses Reports
-            // [
-            //     'name' => 'Budget And Expenses Reports',
-            //     'slug' => 'budget-and-expenses-reports',
-            //     'icon' => 'folders',
-            //     'description' => 'Manage budget and expense reports.',
-            //     'parent_id' => null,
-            //     'active' => true,
-            //     'show_in_menu' => true,
-            //     'children' => [
-            //         [
-            //             'name' => 'Truck Expenses',
-            //             'slug' => 'truck-expenses',
-            //             'icon' => 'calculator',
-            //             'description' => 'View expenses per truck.',
-            //             'active' => true,
-            //             'show_in_menu' => true,
-            //         ],
-            //         [
-            //             'name' => 'Petty Cash Budget',
-            //             'slug' => 'peety-cash-budget',
-            //             'icon' => 'circle-dollar-sign',
-            //             'description' => 'Manage rate per client',
-            //             'active' => true,
-            //             'show_in_menu' => true,
-            //         ],
-            //     ],
-            // ],
 
             // User Management Section
             [
@@ -309,12 +281,35 @@ class NavigationSeeder extends Seeder
                         'show_in_menu' => true,
                     ],
                     [
+                        'name' => 'Daily Operation Expenses',
+                        'slug' => 'daily-operation-expenses',
+                        'icon' => 'circle-dollar-sign',
+                        'description' => 'Manage and view daily operation expenses',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],                    [
+                        'name' => 'Transport Summary Report',
+                        'slug' => 'transport-summary-report',
+                        'icon' => 'wallet',
+                        'description' => 'View transport summary expenses.',
+                        'active' => true,
+                        'show_in_menu' => true,
+                    ],
+                    [
+                        'name' => 'Transport Summary',
+                        'slug' => 'transport-summary/:id',
+                        'icon' => 'activity',
+                        'description' => 'Review the transport history of a specific fleet truck',
+                        'active' => true,
+                        'show_in_menu' => false,
+                    ],
+                    [
                         'name' => 'User Reports',
                         'slug' => 'user-reports',
                         'icon' => 'user-circle',
                         'description' => 'Detailed reports on user registration, engagement, and behavior patterns',
                         'active' => true,
-                        'show_in_menu' => true,
+                        'show_in_menu' => false,
                     ],
                     [
                         'name' => 'Content Reports',
@@ -322,7 +317,7 @@ class NavigationSeeder extends Seeder
                         'icon' => 'document-chart-bar',
                         'description' => 'Analyze content performance, views, and engagement statistics',
                         'active' => true,
-                        'show_in_menu' => true,
+                        'show_in_menu' => false,
                     ],
                     [
                         'name' => 'Activity Logs',
