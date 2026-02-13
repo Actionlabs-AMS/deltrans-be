@@ -206,22 +206,28 @@ class Role extends Model
 			// This means: do NOT generate parent create/edit if parent has any visible children
 			if (!empty($permissions) && !$hasVisibleChildren) {
 				// Generate create route if can_create permission is allowed (true)
+				// Include parent navigation ID so frontend can use it for permission lookup
 				if (!empty($permissions['can_create'])) {
 					$childrenRoutes[] = [
+						'id' => $navigation->id, // Include parent ID for permission lookup
 						'path' => $parentPath . '/create',
 						'name' => 'Create ' . $navigation->name,
 						'side_nav' => 'false',
 						'icon' => $navigation->icon ?? '',
+						'is_parent_route' => true, // Flag to indicate this is a parent route, not a child route
 					];
 				}
 
 				// Generate edit route if can_edit permission is allowed (true)
+				// Include parent navigation ID so frontend can use it for permission lookup
 				if (!empty($permissions['can_edit'])) {
 					$childrenRoutes[] = [
+						'id' => $navigation->id, // Include parent ID for permission lookup
 						'path' => $parentPath . '/:id',
 						'name' => 'Edit ' . $navigation->name,
 						'side_nav' => 'false',
 						'icon' => $navigation->icon ?? '',
+						'is_parent_route' => true, // Flag to indicate this is a parent route, not a child route
 					];
 				}
 			}
