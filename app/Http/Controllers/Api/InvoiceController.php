@@ -152,8 +152,35 @@ class InvoiceController extends BaseController
 
     /**
      * @OA\Get(
+     *     path="/api/soa/{soaId}/invoice/download",
+     *     summary="Download Invoice PDF by SOA ID",
+     *     description="Download the invoice PDF for the given statement of account. Uses SOA ID so you can download the invoice when you have the SOA context.",
+     *     tags={"Invoice Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="soaId", in="path", required=true, description="Statement of account (SOA) ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages (upload via POST /invoices/attachments); folder is deleted after download", @OA\Schema(type="boolean", default=false)),
+     *     @OA\Response(response=200, description="PDF file download", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function downloadBySoaId($soaId)
+    {
+        try {
+            $invoice = Invoice::where('statement_of_account_id', $soaId)->firstOrFail();
+            return $this->download($invoice->id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No invoice found for this statement of account.',
+            ], 404);
+        }
+    }
+
+    /**
+     * @OA\Get(
      *     path="/api/invoices/{id}/download",
-     *     summary="Download Invoice PDF",
+     *     summary="Download Invoice PDF by Invoice ID",
      *     tags={"Invoice Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="Invoice ID", @OA\Schema(type="integer")),

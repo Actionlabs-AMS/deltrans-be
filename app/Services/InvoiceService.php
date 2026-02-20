@@ -108,27 +108,25 @@ class InvoiceService
         }
         $itemDescription = implode(', ', $descriptionParts);
 
-        // 5. Calculate financial fields according to specified formulas
-        // vatable_sales = (sum of all waybill.rate) - (sum of all waybill.rate * 0.12)
-        $vatableSales = $sumRate - $sumRateVat;
+        // 5. Calculate financial fields (aligned with SOA and reference invoice)
+        // VATable Sales / Net of VAT = net base (sum of waybill.rate × count), excluding VAT
+        $vatableSales = $sumRate;
+        $netOfVat = $sumRate;
 
-        // VAT = (sum of all waybill.rate * 0.12)
+        // VAT = 12% of net (sum of waybill.rate × 0.12 where has_vat)
         $vat = $sumRateVat;
 
-        // total_sales = sum of all waybill.rate
+        // total_sales = net base (stored for backward compatibility; VAT-inclusive = total_sales + less_vat)
         $totalSales = $sumRate;
 
-        // less_vat = sum of all (waybill.rate * 0.12)
+        // less_vat = 12% VAT amount
         $lessVat = $sumRateVat;
 
-        // net_of_vat = sum of all waybill.rate - (sum of all waybill.rate * 0.12)
-        $netOfVat = $sumRate - $sumRateVat;
+        // Withholding Tax = 2% of Net of VAT (per BIR / reference invoice)
+        $lessWithdrawingTax = $netOfVat * 0.02;
 
-        // withholding_tax = (sum of all waybill.rate - (sum of all waybill.rate * 0.12)) * 0.2
-        $lessWithdrawingTax = $netOfVat * 0.2;
-
-        // total_amount = (sum of all waybill.rate) - (sum of all waybill.rate - (sum of all waybill.rate * 0.12)) * 0.2
-        $totalAmount = $sumRate - $lessWithdrawingTax;
+        // TOTAL AMOUNT DUE = Total Sales (VAT Inclusive) − Withholding = (net + VAT) − 2% of net
+        $totalAmount = ($sumRate + $sumRateVat) - $lessWithdrawingTax;
 
         return [
             'statement_of_account_id' => $soa->id,
@@ -151,7 +149,8 @@ class InvoiceService
 
     /**
      * Calculate invoice items from SOA/Booking/Waybill data
-     * Returns array of items grouped by container size/type
+     * Returns array of items grouped by container size/type.
+     * Unit price and amount are VAT-inclusive (same as Billing Statement) when waybill.has_vat is true.
      */
     private function calculateInvoiceItems($soaId)
     {
@@ -174,38 +173,43 @@ class InvoiceService
             $type = trim(str_ireplace('ft', '', $waybill->container_type ?? ''));
             $key = $size . ($type ? ' ' . $type : '');
 
-            // Count containers for this waybill
             $containerCount = Container::where('booking_id', $waybill->booking_id)
                 ->where('waybill_id', $waybill->id)
                 ->count();
 
             if ($containerCount == 0) {
-                // Fallback: count by booking_id only
                 $containerCount = Container::where('booking_id', $waybill->booking_id)->count();
                 if ($containerCount == 0)
-                    $containerCount = 1; // Default to 1
+                    $containerCount = 1;
             }
 
-            // waybill.rate is per container, so use it directly as unit_price
+            $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+            $hasVat = (bool) ($waybill->has_vat ?? false);
+            $waybillTotal = $base * $containerCount;
+            $lineTotal = $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
+
             if (!isset($grouped[$key])) {
                 $grouped[$key] = [
                     'size' => $size,
                     'type' => $type,
                     'quantity' => 0,
-                    'unit_price' => (float) $waybill->rate, // waybill.rate is per container
+                    'total_amount' => 0,
                 ];
             }
             $grouped[$key]['quantity'] += $containerCount;
+            $grouped[$key]['total_amount'] += $lineTotal;
         }
 
-        // Build invoice items array (separate row per container size/type)
         foreach ($grouped as $group) {
             $sizeType = trim($group['size'] . ($group['type'] ? ' ' . $group['type'] : ''));
+            $quantity = (int) $group['quantity'];
+            $totalAmount = (float) $group['total_amount'];
+            $unitPrice = $quantity > 0 ? $totalAmount / $quantity : 0;
             $invoiceItems[] = [
                 'description' => $sizeType,
-                'quantity' => $group['quantity'],
-                'unit_price' => (float) $group['unit_price'],
-                'amount' => $group['quantity'] * (float) $group['unit_price'], // quantity × unit_price
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice, // VAT-inclusive, matches Billing "RATE OF TRIP"
+                'amount' => $totalAmount,
             ];
         }
 

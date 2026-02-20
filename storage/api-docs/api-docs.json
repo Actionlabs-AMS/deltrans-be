@@ -7977,12 +7977,67 @@
                 ]
             }
         },
+        "/api/soa/{soaId}/invoice/download": {
+            "get": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Download Invoice PDF by SOA ID",
+                "description": "Download the invoice PDF for the given statement of account. Uses SOA ID so you can download the invoice when you have the SOA context.",
+                "operationId": "5f0b77e31e14ade418871d7546db80a5",
+                "parameters": [
+                    {
+                        "name": "soaId",
+                        "in": "path",
+                        "description": "Statement of account (SOA) ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "include_attachments",
+                        "in": "query",
+                        "description": "If true, append the authenticated user's uploaded attachment images as extra PDF pages (upload via POST /invoices/attachments); folder is deleted after download",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF file download",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/invoices/{id}/download": {
             "get": {
                 "tags": [
                     "Invoice Management"
                 ],
-                "summary": "Download Invoice PDF",
+                "summary": "Download Invoice PDF by Invoice ID",
                 "operationId": "263bf02aa6f7a8ad85478782f55df916",
                 "parameters": [
                     {

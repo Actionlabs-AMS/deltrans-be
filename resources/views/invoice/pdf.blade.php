@@ -454,7 +454,7 @@
             <div class="financial-right-col">
                 <div class="financial-row highlight">
                     <span class="financial-label">Total Sales (VAT Inclusive):</span>
-                    <span class="financial-value">{{ number_format($invoice->total_sales, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($invoice->total_sales + $invoice->less_vat, 2, '.', ',') }}</span>
                 </div>
                 <div class="financial-row">
                     <span class="financial-label">Less: VAT:</span>
@@ -475,7 +475,7 @@
                     <span class="financial-value">{{ number_format($invoice->vat, 2, '.', ',') }}</span>
                 </div>
                 <div class="financial-row">
-                    <span class="financial-label">Withholding Tax:</span>
+                    <span class="financial-label">Withholding Tax (2% of Net of VAT):</span>
                     <span
                         class="financial-value">{{ number_format($invoice->less_withdrawing_tax, 2, '.', ',') }}</span>
                 </div>

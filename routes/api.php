@@ -277,6 +277,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Download PDFs (must be before /{id} route)
 		Route::get('/{id}/download', [SoaAndBillingController::class, 'download']);  // Download SOA PDF only
 		Route::get('/{id}/download-billing-and-soa', [SoaAndBillingController::class, 'downloadBillingAndSoa']);  // Download 2-page PDF (Billing then SOA), {id} = SOA ID
+		Route::get('/{id}/invoice/download', [InvoiceController::class, 'downloadBySoaId']);  // Download Invoice PDF for this SOA, {id} = SOA ID
 
 		// Send email with PDF attachment
 		Route::post('/{id}/send-email', [SoaAndBillingController::class, 'sendSoaEmail']);  // Send SOA PDF via email
