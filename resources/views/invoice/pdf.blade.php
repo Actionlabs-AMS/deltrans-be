@@ -22,101 +22,68 @@
 
         .header {
             display: flex;
-            justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 20px;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            flex: 1;
+            gap: 16px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
         }
 
         .header-logo {
             flex-shrink: 0;
-            width: 70px;
+            width: 80px;
             height: auto;
         }
 
-        .header-company-text {
+        .header-company {
             flex: 1;
+            min-width: 0;
         }
 
         .company-name {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 4px;
-            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
         }
 
         .company-address,
         .company-phone,
         .company-tin {
-            font-size: 9px;
-            margin-bottom: 2px;
-            line-height: 1.3;
+            font-size: 10px;
+            margin-bottom: 4px;
+            line-height: 1.4;
         }
 
         .company-tin {
             margin-bottom: 0;
         }
 
-        .header-right {
-            text-align: right;
-            min-width: 200px;
-        }
-
         .document-title {
-            font-size: 14px;
+            font-size: 20px;
             font-weight: bold;
+            text-align: center;
+            margin: 25px 0;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            letter-spacing: 1px;
+            text-decoration: underline;
         }
 
-        .invoice-no-box {
-            border: 2px solid #000;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-            display: inline-block;
+        .invoice-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            padding: 0 5px;
         }
 
-        .invoice-no-label {
-            font-size: 10px;
-            margin-bottom: 2px;
-        }
-
-        .invoice-no-value {
-            font-size: 16px;
+        .invoice-date {
             font-weight: bold;
+            font-size: 12px;
         }
 
-        .date-box {
-            border: 1px solid #000;
-            padding: 6px 10px;
-            display: inline-block;
-            margin-top: 4px;
-        }
-
-        .date-label {
-            font-size: 9px;
-            margin-bottom: 2px;
-        }
-
-        .date-value {
-            font-size: 11px;
+        .invoice-number {
             font-weight: bold;
-        }
-
-        .payment-type {
-            margin-top: 8px;
-            font-size: 10px;
-        }
-
-        .payment-type label {
-            margin-right: 15px;
-            cursor: pointer;
+            font-size: 12px;
         }
 
         .client-info-box {
@@ -127,8 +94,8 @@
         }
 
         .field-row {
-            display: flex;
-            align-items: baseline;
+            display: table;
+            width: 100%;
             margin-bottom: 8px;
         }
 
@@ -137,23 +104,27 @@
         }
 
         .field-label {
-            flex-shrink: 0;
-            width: 110px;
+            display: table-cell;
+            width: 130px;
             font-weight: bold;
+            vertical-align: top;
+            padding-right: 8px;
         }
 
         .field-value {
-            flex: 1;
+            display: table-cell;
             border-bottom: 1px solid #333;
             min-height: 16px;
             padding-bottom: 2px;
+            vertical-align: bottom;
         }
 
         .field-value-inline {
-            display: inline-block;
+            display: table-cell;
             border-bottom: 1px solid #333;
             min-width: 150px;
             padding-bottom: 2px;
+            vertical-align: bottom;
         }
 
         .service-section {
@@ -171,6 +142,7 @@
             border-collapse: collapse;
             margin-bottom: 20px;
             font-size: 9px;
+            table-layout: fixed;
         }
 
         .service-table thead {
@@ -180,18 +152,42 @@
         .service-table th {
             border: 1px solid #000;
             padding: 8px 6px;
-            text-align: left;
             font-weight: bold;
             text-transform: uppercase;
             font-size: 8px;
         }
 
+        .service-table th.col-desc {
+            text-align: left;
+        }
+
+        .service-table th.col-qty {
+            text-align: center;
+        }
+
+        .service-table th.col-price,
+        .service-table th.col-amount {
+            text-align: right;
+        }
+
         .service-table td {
             border: 1px solid #000;
             padding: 8px 6px;
-            text-align: left;
             font-size: 9px;
             vertical-align: top;
+        }
+
+        .service-table td.col-desc {
+            text-align: left;
+        }
+
+        .service-table td.col-qty {
+            text-align: center;
+        }
+
+        .service-table td.col-price,
+        .service-table td.col-amount {
+            text-align: right;
         }
 
         .service-table tbody tr:nth-child(even) {
@@ -239,12 +235,14 @@
 
         .financial-label {
             font-weight: bold;
+            flex: 1;
         }
 
         .financial-value {
             font-weight: bold;
             text-align: right;
-            min-width: 100px;
+            width: 110px;
+            flex-shrink: 0;
         }
 
         .financial-row.highlight {
@@ -297,13 +295,15 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
+            gap: 12px;
         }
 
         .signature-box {
             border: 1px solid #000;
             padding: 8px;
             min-height: 50px;
-            width: 48%;
+            flex: 1;
+            min-width: 0;
         }
 
         .signature-label {
@@ -311,53 +311,30 @@
             margin-bottom: 4px;
         }
 
-        .footer {
-            margin-top: 30px;
-            page-break-inside: avoid;
-            font-size: 7px;
-            line-height: 1.4;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-        }
-
-        .footer-row {
-            margin-bottom: 3px;
-        }
-
-        .footer-label {
-            font-weight: bold;
-        }
     </style>
 </head>
 
 <body>
+    <!-- Header (same style as SOA) -->
     <div class="header">
-        <div class="header-left">
-            @if(!empty($logoPath) && file_exists($logoPath))
-                <img src="{{ $logoPath }}" alt="Logo" class="header-logo" />
-            @endif
-            <div class="header-company-text">
-                <div class="company-name">{{ $companyInfo['name'] }}</div>
-                <div class="company-tin">{{ $companyInfo['tin'] }}</div>
-                <div class="company-address">{{ $companyInfo['address'] }}</div>
-                <div class="company-phone">{{ $companyInfo['phone'] }}</div>
-            </div>
+        @if(!empty($logoPath) && file_exists($logoPath))
+            <img src="{{ $logoPath }}" alt="Logo" class="header-logo" />
+        @endif
+        <div class="header-company">
+            <div class="company-name">{{ $companyInfo['name'] }}</div>
+            <div class="company-tin">{{ $companyInfo['tin'] }}</div>
+            <div class="company-address">{{ $companyInfo['address'] }}</div>
+            <div class="company-phone">{{ $companyInfo['phone'] }}</div>
         </div>
-        <div class="header-right">
-            <div class="document-title">SERVICE INVOICE</div>
-            <div class="invoice-no-box">
-                <div class="invoice-no-label">№</div>
-                <div class="invoice-no-value">{{ $invoice->invoice_number }}</div>
-            </div>
-            <div class="date-box">
-                <div class="date-label">DATE</div>
-                <div class="date-value">{{ $issueDate }}</div>
-            </div>
-            <div class="payment-type">
-                <label>☐ CASH</label>
-                <label>☐ CHARGE</label>
-            </div>
-        </div>
+    </div>
+
+    <!-- Document Title (centered, underlined, like SOA) -->
+    <div class="document-title">Service Invoice</div>
+
+    <!-- Invoice Info (date left, invoice number right, like SOA) -->
+    <div class="invoice-info">
+        <div class="invoice-date">Date: {{ $issueDate }}</div>
+        <div class="invoice-number">Invoice No. {{ $invoice->invoice_number }}</div>
     </div>
 
     @php
@@ -405,10 +382,10 @@
         <table class="service-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Item Description / Nature of Service</th>
-                    <th style="width: 15%;" class="text-center">Quantity</th>
-                    <th style="width: 17.5%;" class="text-right">Unit Price</th>
-                    <th style="width: 17.5%;" class="text-right">Amount</th>
+                    <th class="col-desc" style="width: 50%;">Item Description / Nature of Service</th>
+                    <th class="col-qty" style="width: 15%;">Quantity</th>
+                    <th class="col-price" style="width: 17.5%;">Unit Price</th>
+                    <th class="col-amount" style="width: 17.5%;">Amount</th>
                 </tr>
             </thead>
             <tbody>
@@ -428,26 +405,26 @@
                 @if(!empty($invoiceItems))
                     @foreach($invoiceItems as $index => $item)
                         <tr>
-                            <td>
+                            <td class="col-desc">
                                 @if($index === 0)
                                     <strong>Trucking Charges</strong><br>
                                 @endif
                                 {{ $item['description'] ?? '' }}
                             </td>
-                            <td class="text-center">{{ $item['quantity'] ?? 0 }}</td>
-                            <td class="text-right">{{ number_format($item['unit_price'] ?? 0, 2, '.', ',') }}</td>
-                            <td class="text-right">{{ number_format($item['amount'] ?? 0, 2, '.', ',') }}</td>
+                            <td class="col-qty">{{ $item['quantity'] ?? 0 }}</td>
+                            <td class="col-price">{{ number_format($item['unit_price'] ?? 0, 2, '.', ',') }}</td>
+                            <td class="col-amount">{{ number_format($item['amount'] ?? 0, 2, '.', ',') }}</td>
                         </tr>
                     @endforeach
                 @else
                     <tr>
-                        <td>
+                        <td class="col-desc">
                             <strong>Trucking Charges</strong><br>
                             {{ $invoice->item_description ?? '' }}
                         </td>
-                        <td class="text-center">{{ $invoice->quantity ?? 0 }}</td>
-                        <td class="text-right">{{ number_format($invoice->unit_price ?? 0, 2, '.', ',') }}</td>
-                        <td class="text-right">{{ number_format($invoice->total_sales ?? 0, 2, '.', ',') }}</td>
+                        <td class="col-qty">{{ $invoice->quantity ?? 0 }}</td>
+                        <td class="col-price">{{ number_format($invoice->unit_price ?? 0, 2, '.', ',') }}</td>
+                        <td class="col-amount">{{ number_format($invoice->total_sales ?? 0, 2, '.', ',') }}</td>
                     </tr>
                 @endif
             </tbody>
@@ -531,23 +508,6 @@
                 <div class="signature-label">Cashier/Authorized Representative</div>
                 <div style="margin-top: 20px;"></div>
             </div>
-        </div>
-    </div>
-
-    <div class="footer">
-        <div class="footer-row">
-            <span class="footer-label">Printer's Accreditation No.:</span> [Accreditation Number]
-        </div>
-        <div class="footer-row">
-            <span class="footer-label">Accreditation Date:</span> [Date] • <span class="footer-label">Expiry
-                Date:</span> [Date]
-        </div>
-        <div class="footer-row">
-            <span class="footer-label">BIR AUTHORITY TO PRINT NO.:</span> [Authority Number]
-        </div>
-        <div class="footer-row">
-            <span class="footer-label">Date Issued:</span> [Date] <span class="footer-label">Approved Series:</span>
-            [Series]
         </div>
     </div>
 
