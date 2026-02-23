@@ -19,7 +19,7 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('shift')->nullable();
-            $table->date('date_issued');
+            $table->date('transaction_date');
             $table->decimal('amount', 15, 2)->default(0);
             $table->string('source')->nullable();
             $table->timestamps();
@@ -27,7 +27,7 @@ return new class extends Migration
 
             // Indexes
             $table->index('shift');
-            $table->index('date_issued', 'idx_date_issued');
+            $table->index('transaction_date', 'idx_transaction_date');
         });
 
         // Re-enable foreign key checks

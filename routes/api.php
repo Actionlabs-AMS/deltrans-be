@@ -30,6 +30,12 @@ use App\Http\Controllers\Api\FixedExpenseController;
 use App\Http\Controllers\Api\WaybillDetailController;
 use App\Http\Controllers\Api\DriverCAHistoryController;
 use App\Http\Controllers\Api\HelperCAHistoryController;
+use App\Http\Controllers\Api\IssuedBudgetController;
+use App\Http\Controllers\Api\TruckTripExpenseController;
+use App\Http\Controllers\Api\PartsExpenseController;
+use App\Http\Controllers\Api\FundsForStackRunController;
+use App\Http\Controllers\Api\CashAdvanceController;
+use App\Http\Controllers\Api\BudgetSummaryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -575,9 +581,49 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	/*
 	|--------------------------------------------------------------------------
-	| Cash Advance API (POST /api/cash-advances) – removed for now
+	| Budget Management Routes
 	|--------------------------------------------------------------------------
 	*/
+	Route::prefix('budget')->group(function () {
+		Route::get('/summary', [BudgetSummaryController::class, 'index']);
+		Route::get('/issued-budget', [IssuedBudgetController::class, 'index']);
+		Route::get('/issued-budget/{id}', [IssuedBudgetController::class, 'show']);
+		Route::post('/issued-budget', [IssuedBudgetController::class, 'store']);
+		Route::patch('/issued-budget/{id}', [IssuedBudgetController::class, 'update']);
+		Route::delete('/issued-budget/{id}', [IssuedBudgetController::class, 'destroy']);
+
+		Route::get('/truck-trip-expense', [TruckTripExpenseController::class, 'index']);
+		Route::get('/truck-trip-expense/{id}', [TruckTripExpenseController::class, 'show']);
+		Route::post('/truck-trip-expense', [TruckTripExpenseController::class, 'store']);
+		Route::patch('/truck-trip-expense/{id}', [TruckTripExpenseController::class, 'update']);
+		Route::delete('/truck-trip-expense/{id}', [TruckTripExpenseController::class, 'destroy']);
+
+		Route::get('/parts-expense', [PartsExpenseController::class, 'index']);
+		Route::get('/parts-expense/{id}', [PartsExpenseController::class, 'show']);
+		Route::post('/parts-expense', [PartsExpenseController::class, 'store']);
+		Route::patch('/parts-expense/{id}', [PartsExpenseController::class, 'update']);
+		Route::delete('/parts-expense/{id}', [PartsExpenseController::class, 'destroy']);
+
+		Route::get('/funds-for-stack-run', [FundsForStackRunController::class, 'index']);
+		Route::get('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'show']);
+		Route::post('/funds-for-stack-run', [FundsForStackRunController::class, 'store']);
+		Route::patch('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'update']);
+		Route::delete('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'destroy']);
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Cash Advance API (Unified: type 1=driver, 2=helper)
+	| GET: type 0 or null = both tables; POST/PATCH/DELETE: type required
+	|--------------------------------------------------------------------------
+	*/
+	Route::prefix('cash-advances')->group(function () {
+		Route::get('/', [CashAdvanceController::class, 'index']);
+		Route::get('/{id}', [CashAdvanceController::class, 'show']);
+		Route::post('/', [CashAdvanceController::class, 'store']);
+		Route::patch('/{id}', [CashAdvanceController::class, 'update']);
+		Route::delete('/{id}', [CashAdvanceController::class, 'destroy']);
+	});
 
 	/*
 	|--------------------------------------------------------------------------

@@ -1878,57 +1878,378 @@
                 ]
             }
         },
+        "/api/budget/summary": {
+            "get": {
+                "tags": [
+                    "Budget Summary"
+                ],
+                "summary": "Budget summary (consolidated list + totals)",
+                "operationId": "c46bc435b9a66dbf531cfc84db3c4392",
+                "parameters": [
+                    {
+                        "name": "shift",
+                        "in": "query",
+                        "description": "Day, Night, or All",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Day",
+                                "Night",
+                                "All"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "transaction_date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "created_at_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "created_at_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BudgetSummaryResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/cash-advances": {
+            "get": {
+                "tags": [
+                    "Cash Advance (Unified)"
+                ],
+                "summary": "List cash advances",
+                "operationId": "dbd5fb532b61b2a9cbc3d2b95160db80",
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "0 or null = both tables, 1 = driver only, 2 = helper only",
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1,
+                                2
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_from",
+                        "in": "query",
+                        "description": "Transaction date range start (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_to",
+                        "in": "query",
+                        "description": "Transaction date range end (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "created_at_from",
+                        "in": "query",
+                        "description": "Created at range start (YYYY-MM-DD or datetime)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "created_at_to",
+                        "in": "query",
+                        "description": "Created at range end (YYYY-MM-DD or datetime)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CashAdvanceRecord"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
             "post": {
                 "tags": [
-                    "Cash Advance"
+                    "Cash Advance (Unified)"
                 ],
-                "summary": "Add cash advance (driver or helper)",
+                "summary": "Create a cash advance (type required: 1=driver, 2=helper)",
                 "operationId": "37e45adc4dfd5658b0c3de2ef0f2d89c",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "type",
-                                    "amount",
-                                    "transaction_date"
-                                ],
+                                "$ref": "#/components/schemas/CashAdvanceStoreInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CashAdvanceRecord"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/cash-advances/{id}": {
+            "get": {
+                "tags": [
+                    "Cash Advance (Unified)"
+                ],
+                "summary": "Get a single cash advance by ID (type required in query)",
+                "operationId": "195dc424e3bf83a2a2fc3a16331c058b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "1=driver, 2=helper",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CashAdvanceRecord"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Cash Advance (Unified)"
+                ],
+                "summary": "Delete a cash advance (type required: 1=driver, 2=helper)",
+                "operationId": "8efe927bcdc3fa98ac417f229c2eea00",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Cash Advance (Unified)"
+                ],
+                "summary": "Update a cash advance (type required: 1=driver, 2=helper)",
+                "operationId": "90e8a8e23b71c1315996d7b001bb9128",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
                                 "properties": {
                                     "type": {
-                                        "description": "1=driver (driver_cash_advancement_history), 2=helper (helper_cash_advancement_history)",
                                         "type": "integer",
                                         "enum": [
                                             1,
                                             2
                                         ]
                                     },
-                                    "driver_id": {
-                                        "description": "Required when type=1",
-                                        "type": "integer"
-                                    },
-                                    "helper_id": {
-                                        "description": "Required when type=2",
-                                        "type": "integer"
-                                    },
                                     "amount": {
-                                        "type": "number",
-                                        "example": 500
+                                        "type": "number"
                                     },
                                     "transaction_date": {
                                         "type": "string",
-                                        "format": "date",
-                                        "example": "2026-02-20"
+                                        "format": "date"
                                     },
                                     "shift": {
-                                        "description": "Shift label: Day, Night, 1st, 2nd (optional, default Day)",
                                         "type": "string",
-                                        "example": "Day"
-                                    },
-                                    "description": {
-                                        "type": "string",
-                                        "nullable": true
+                                        "enum": [
+                                            "Day",
+                                            "Night",
+                                            "1st",
+                                            "2nd"
+                                        ]
                                     }
                                 },
                                 "type": "object"
@@ -1937,14 +2258,23 @@
                     }
                 },
                 "responses": {
-                    "201": {
-                        "description": "Cash advance created"
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CashAdvanceRecord"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
-                    "422": {
-                        "$ref": "#/components/responses/BadRequest"
-                    },
-                    "500": {
-                        "$ref": "#/components/responses/GeneralError"
+                    "404": {
+                        "description": "Not found"
                     }
                 },
                 "security": [
@@ -6322,6 +6652,256 @@
                 ]
             }
         },
+        "/api/budget/funds-for-stack-run": {
+            "get": {
+                "tags": [
+                    "Funds For Stack Run"
+                ],
+                "summary": "List funds for stack run",
+                "operationId": "c03a1ba1a9f2a3071432a0ef3eab5b58",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_from",
+                        "in": "query",
+                        "description": "Transaction date range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_to",
+                        "in": "query",
+                        "description": "Transaction date range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "created_at_from",
+                        "in": "query",
+                        "description": "Created at range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "created_at_to",
+                        "in": "query",
+                        "description": "Created at range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FundsForStackRun"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Funds For Stack Run"
+                ],
+                "summary": "Create funds for stack run",
+                "operationId": "0ca921395d86c9080c01d380a23691af",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FundsForStackRunInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FundsForStackRun"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/funds-for-stack-run/{id}": {
+            "get": {
+                "tags": [
+                    "Funds For Stack Run"
+                ],
+                "summary": "Get funds for stack run by ID",
+                "operationId": "421ebbcaa3038d793a3e29430bdc77a3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FundsForStackRun"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Funds For Stack Run"
+                ],
+                "summary": "Delete funds for stack run (soft)",
+                "operationId": "694aa2402a9d06589934880b174597aa",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Moved to trash"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Funds For Stack Run"
+                ],
+                "summary": "Update funds for stack run",
+                "operationId": "1021218bb9132189742b2ad48719ebc9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FundsForStackRunInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/FundsForStackRun"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/helpers/get-cash-advance/{id}": {
             "get": {
                 "tags": [
@@ -8450,6 +9030,256 @@
                     },
                     "500": {
                         "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/issued-budget": {
+            "get": {
+                "tags": [
+                    "Issued Budget"
+                ],
+                "summary": "List issued budgets",
+                "operationId": "c75868a29e12c6867a6c102b6f1435dd",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_from",
+                        "in": "query",
+                        "description": "Transaction date range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_to",
+                        "in": "query",
+                        "description": "Transaction date range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "created_at_from",
+                        "in": "query",
+                        "description": "Created at range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "created_at_to",
+                        "in": "query",
+                        "description": "Created at range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/IssuedBudget"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Issued Budget"
+                ],
+                "summary": "Create issued budget",
+                "operationId": "b576441277d8469458aa838cad8bbd73",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IssuedBudgetInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/IssuedBudget"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/issued-budget/{id}": {
+            "get": {
+                "tags": [
+                    "Issued Budget"
+                ],
+                "summary": "Get issued budget by ID",
+                "operationId": "db416c646abb3995630d72e98365f6cf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IssuedBudget"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Issued Budget"
+                ],
+                "summary": "Delete issued budget (soft)",
+                "operationId": "0b034da2c9cc6f63609271cef0053ed9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Moved to trash"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Issued Budget"
+                ],
+                "summary": "Update issued budget",
+                "operationId": "9d8aaa69449437df5d7d0745d188cb99",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IssuedBudgetInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/IssuedBudget"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
                     }
                 },
                 "security": [
@@ -10629,6 +11459,263 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/parts-expense": {
+            "get": {
+                "tags": [
+                    "Parts Expense"
+                ],
+                "summary": "List parts expenses",
+                "operationId": "310dd1cd1f5a21514626954d59b571d5",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "plate_number",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_from",
+                        "in": "query",
+                        "description": "Transaction date range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_to",
+                        "in": "query",
+                        "description": "Transaction date range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "created_at_from",
+                        "in": "query",
+                        "description": "Created at range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "created_at_to",
+                        "in": "query",
+                        "description": "Created at range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/PartsExpense"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Parts Expense"
+                ],
+                "summary": "Create parts expense",
+                "operationId": "7dd56cba572042bd4688fecfd86fbc4b",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PartsExpenseInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PartsExpense"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/parts-expense/{id}": {
+            "get": {
+                "tags": [
+                    "Parts Expense"
+                ],
+                "summary": "Get parts expense by ID",
+                "operationId": "93fdf8c4b3e0822fb5cd685c3fe7342f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PartsExpense"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Parts Expense"
+                ],
+                "summary": "Delete parts expense (soft)",
+                "operationId": "96ad5efcef1dd6f429104233f2e4dcd2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Moved to trash"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Parts Expense"
+                ],
+                "summary": "Update parts expense",
+                "operationId": "0e1383f46fbae07a7780b327e4322f1f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PartsExpenseInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/PartsExpense"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
                     }
                 },
                 "security": [
@@ -18558,6 +19645,263 @@
                 ]
             }
         },
+        "/api/budget/truck-trip-expense": {
+            "get": {
+                "tags": [
+                    "Truck Trip Expense"
+                ],
+                "summary": "List truck trip expenses",
+                "operationId": "44124dc2749c524dff9ecad68fcce69b",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "helper_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_from",
+                        "in": "query",
+                        "description": "Transaction date range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_to",
+                        "in": "query",
+                        "description": "Transaction date range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "created_at_from",
+                        "in": "query",
+                        "description": "Created at range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "created_at_to",
+                        "in": "query",
+                        "description": "Created at range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TruckTripExpense"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Truck Trip Expense"
+                ],
+                "summary": "Create truck trip expense",
+                "operationId": "7e7519251432165473562731953ed0da",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TruckTripExpenseInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TruckTripExpense"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/truck-trip-expense/{id}": {
+            "get": {
+                "tags": [
+                    "Truck Trip Expense"
+                ],
+                "summary": "Get truck trip expense by ID",
+                "operationId": "051be4cea06833731a4513e095dad2e2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckTripExpense"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Truck Trip Expense"
+                ],
+                "summary": "Delete truck trip expense (soft)",
+                "operationId": "372260c596fada278183aa26cd1632ee",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Moved to trash"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Truck Trip Expense"
+                ],
+                "summary": "Update truck trip expense",
+                "operationId": "0ab9f7f9bc8a8610a92a906d7a218dea",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TruckTripExpenseInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/TruckTripExpense"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/2fa/send-code": {
             "post": {
                 "tags": [
@@ -21968,6 +23312,170 @@
                 },
                 "type": "object"
             },
+            "BudgetSummaryRow": {
+                "description": "Unified row from any budget table",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "Budget",
+                            "Truck Expense",
+                            "Parts Expense",
+                            "Other Expense",
+                            "Driver Cash Advance",
+                            "Helper Cash Advance"
+                        ]
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "shift": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "amount": {
+                        "description": "Positive for income (Budget), negative for expenses",
+                        "type": "number"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "source_table": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "BudgetSummaryResponse": {
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BudgetSummaryRow"
+                        }
+                    },
+                    "total_budget": {
+                        "description": "Sum of income (Budget type) in filtered data",
+                        "type": "number"
+                    },
+                    "total_expense": {
+                        "description": "Sum of expenses in filtered data",
+                        "type": "number"
+                    },
+                    "cash_on_hand": {
+                        "description": "Total Budget minus Total Expense for filtered data",
+                        "type": "number"
+                    },
+                    "meta": {
+                        "type": "object"
+                    },
+                    "links": {
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "CashAdvanceRecord": {
+                "properties": {
+                    "type": {
+                        "description": "1=driver, 2=helper",
+                        "type": "integer"
+                    },
+                    "id": {
+                        "type": "integer"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "transaction_date_formatted": {
+                        "type": "string"
+                    },
+                    "shift": {
+                        "type": "string"
+                    },
+                    "driver_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "driver_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "helper_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "helper_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "CashAdvanceStoreInput": {
+                "required": [
+                    "type",
+                    "requestor_id",
+                    "amount",
+                    "transaction_date",
+                    "shift"
+                ],
+                "properties": {
+                    "type": {
+                        "description": "1=driver, 2=helper (required)",
+                        "type": "integer",
+                        "enum": [
+                            1,
+                            2
+                        ]
+                    },
+                    "requestor_id": {
+                        "description": "Driver ID when type=1, Helper ID when type=2 (required)",
+                        "type": "integer"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "shift": {
+                        "type": "string",
+                        "enum": [
+                            "Day",
+                            "Night",
+                            "1st",
+                            "2nd"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
             "Container": {
                 "title": "Container Model",
                 "description": "A container resource",
@@ -22318,6 +23826,68 @@
                 },
                 "type": "object"
             },
+            "FundsForStackRun": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "shift": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "remarks": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "FundsForStackRunInput": {
+                "required": [
+                    "amount",
+                    "transaction_date"
+                ],
+                "properties": {
+                    "shift": {
+                        "type": "string",
+                        "enum": [
+                            "Day",
+                            "Night",
+                            "1st",
+                            "2nd"
+                        ]
+                    },
+                    "remarks": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "type": "object"
+            },
             "HelperCashAdvanceRecord": {
                 "title": "Helper Cash Advance Record",
                 "description": "Details of a single cash advancement entry for a helper.",
@@ -22537,6 +24107,152 @@
                     "discount_id": {
                         "type": "integer",
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "IssuedBudget": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "shift": {
+                        "type": "string",
+                        "example": "Day",
+                        "nullable": true
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-01-27"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 5000
+                    },
+                    "source": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "IssuedBudgetInput": {
+                "required": [
+                    "transaction_date",
+                    "amount"
+                ],
+                "properties": {
+                    "shift": {
+                        "type": "string",
+                        "enum": [
+                            "Day",
+                            "Night",
+                            "1st",
+                            "2nd"
+                        ]
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "source": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "PartsExpense": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "shift": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "plate_number": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "receipt_no": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "quantity": {
+                        "type": "integer"
+                    },
+                    "article": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "amount_per_item": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "PartsExpenseInput": {
+                "required": [
+                    "transaction_date"
+                ],
+                "properties": {
+                    "shift": {
+                        "type": "string",
+                        "enum": [
+                            "Day",
+                            "Night",
+                            "1st",
+                            "2nd"
+                        ]
+                    },
+                    "plate_number": {
+                        "type": "string"
+                    },
+                    "receipt_no": {
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "type": "integer"
+                    },
+                    "article": {
+                        "type": "string"
+                    },
+                    "amount_per_item": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
                     }
                 },
                 "type": "object"
@@ -23142,6 +24858,79 @@
                 },
                 "type": "object"
             },
+            "TruckTripExpense": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "shift": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "helper_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "helper_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "cash_on_hand": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "issued_cash_amount": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "TruckTripExpenseInput": {
+                "required": [
+                    "transaction_date"
+                ],
+                "properties": {
+                    "shift": {
+                        "type": "string",
+                        "enum": [
+                            "Day",
+                            "Night",
+                            "1st",
+                            "2nd"
+                        ]
+                    },
+                    "helper_id": {
+                        "type": "integer"
+                    },
+                    "cash_on_hand": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "issued_cash_amount": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "type": "object"
+            },
             "WaybillDetail": {
                 "title": "Waybill Detail Model",
                 "description": "A waybill detail resource",
@@ -23513,8 +25302,12 @@
             "description": "API endpoints for booking management"
         },
         {
-            "name": "Cash Advance",
-            "description": "Add cash advance for driver (type=1) or helper (type=2)."
+            "name": "Budget Summary",
+            "description": "Consolidated budget summary from all budget tables with totals"
+        },
+        {
+            "name": "Cash Advance (Unified)",
+            "description": "Unified API for driver and helper cash advancement. type: 1 = driver_cash_advancement_history, 2 = helper_cash_advancement_history. GET: type 0 or null returns both; POST/PATCH/DELETE: type is required."
         },
         {
             "name": "Category Management",
@@ -23549,6 +25342,10 @@
             "description": "API endpoints for fixed expense management"
         },
         {
+            "name": "Funds For Stack Run",
+            "description": "API endpoints for funds for stack run management"
+        },
+        {
             "name": "Helper Cash Advance History",
             "description": "API Endpoints for managing helper cash advancement records"
         },
@@ -23561,12 +25358,20 @@
             "description": "API endpoints for invoice management"
         },
         {
+            "name": "Issued Budget",
+            "description": "API endpoints for issued budget management"
+        },
+        {
             "name": "Navigation Management",
             "description": "API endpoints for navigation management"
         },
         {
             "name": "Page Management",
             "description": "API endpoints for page management"
+        },
+        {
+            "name": "Parts Expense",
+            "description": "API endpoints for parts expense management"
         },
         {
             "name": "Rate Per Client Management",
@@ -23603,6 +25408,10 @@
         {
             "name": "Trucks Management",
             "description": "API Endpoints for managing trucks"
+        },
+        {
+            "name": "Truck Trip Expense",
+            "description": "API endpoints for truck trip expense management"
         },
         {
             "name": "Two-Factor Authentication",

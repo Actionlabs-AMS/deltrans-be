@@ -6,7 +6,7 @@ Budget-related data lives in **one table per category** (issued budget, truck tr
 
 **Note:** The `budget_history` migration exists but is **disabled** (table creation commented out); it is not in use.
 
-**Date columns:** `issued_budget` uses **`date_issued`**; all other budget tables use **`transaction_date`**.
+**Date columns:** All budget tables use **`transaction_date`** (including `issued_budget`; formerly `date_issued`).
 
 ---
 
@@ -27,7 +27,7 @@ Budget-related data lives in **one table per category** (issued budget, truck tr
 
 | Table | Date column | Other columns |
 |-------|-------------|----------------|
-| `issued_budget` | `date_issued` | shift, amount, source |
+| `issued_budget` | `transaction_date` | shift, amount, source |
 | `truck_trip_expense` | `transaction_date` | shift, helper_id, cash_on_hand, issued_cash_amount |
 | `parts_expense` | `transaction_date` | shift, plate_number, receipt_no, quantity, article, amount_per_item |
 | `funds_for_stack_run` | `transaction_date` | shift, remarks, amount |
@@ -83,8 +83,26 @@ All tables: `id` (bigint PK), `timestamps`, `softDeletes`. Amounts are `decimal(
 
 ---
 
+## Budget Summary API
+
+**GET** `/api/budget/summary` – Consolidated list from all six budget tables plus totals.
+
+**Query parameters:**
+- `shift` – `Day`, `Night`, or `All` (default)
+- `transaction_date_from`, `transaction_date_to` – Transaction date range
+- `created_at_from`, `created_at_to` – Created-at range
+- `per_page` – Pagination size (default 10)
+
+**Response:** Each row has a `type` and shared fields; missing data is `null`.
+- `type`: `"Budget"` (issued_budget), `"Truck Expense"` (truck_trip_expense), `"Parts Expense"` (parts_expense), `"Other Expense"` (funds_for_stack_run), `"Driver Cash Advance"`, `"Helper Cash Advance"`
+- `total_budget` – Sum of income (Budget) in filtered data
+- `total_expense` – Sum of expenses in filtered data
+- `cash_on_hand` – Total Budget − Total Expense for the filtered set
+
+---
+
 ## Reference
 
 - **Relationships:** Driver → driver_cash_advancement_history; Helper → helper_cash_advancement_history, truck_trip_expense; Fleet truck (plate_number) → parts_expense.
 - **Migrations:** Run with `php artisan migrate` (or `migrate:refresh`). Budget tables: `issued_budget`, `truck_trip_expense`, `parts_expense`, `funds_for_stack_run`, `driver_cash_advancement_history`, `helper_cash_advancement_history`. The `budget_history` migration is present but disabled (no table created).
-- **Conventions:** Amounts use `decimal(15,2)`; all budget tables use soft deletes and include `shift` where applicable. **Date columns:** only `issued_budget` uses `date_issued`; all other tables use `transaction_date`.
+- **Conventions:** Amounts use `decimal(15,2)`; all budget tables use soft deletes and include `shift` where applicable. **Date columns:** All tables use `transaction_date`.
