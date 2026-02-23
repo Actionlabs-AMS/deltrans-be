@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\SoaAndBillingController;
+use App\Http\Controllers\Api\SoaBillingCheckerController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\TruckMaintenanceController;
 use App\Http\Controllers\Api\BookingController;
@@ -327,6 +328,15 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::prefix('soa-and-billing')->group(function () {
 		Route::post('/generate', [SoaAndBillingController::class, 'generateSoaAndBilling']);  // Generate SOA + Billing in one request
 		Route::post('/attachments', [SoaAndBillingController::class, 'storeAttachments']);  // Upload temp images for PDF attachments (returns token)
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| SOA / Billing / Invoice Booking Validator (check valid vs invalid bookings by type)
+	|--------------------------------------------------------------------------
+	*/
+	Route::prefix('soa-billing-check')->group(function () {
+		Route::post('/validate', [SoaBillingCheckerController::class, 'validateBookings']);  // Validate bookings for type 1=SOA, 2=Billing, 3=Invoice
 	});
 
 	/*

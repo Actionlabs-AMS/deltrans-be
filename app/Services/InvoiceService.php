@@ -416,6 +416,12 @@ class InvoiceService
                 });
             }
 
+            if (request('shipping_line_id')) {
+                $query->whereHas('statementOfAccount', function ($q) {
+                    $q->where('shipping_line_id', request('shipping_line_id'));
+                });
+            }
+
             if (request('statement_of_account_id')) {
                 $query->where('statement_of_account_id', request('statement_of_account_id'));
             }
@@ -430,7 +436,7 @@ class InvoiceService
 
             $query->orderBy('id', 'desc');
 
-            return $query->paginate($perPage);
+            return $query->paginate($perPage)->withQueryString();
         } catch (\Exception $e) {
             throw new \Exception('Failed to list invoices: ' . $e->getMessage());
         }

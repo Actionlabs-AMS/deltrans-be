@@ -95,6 +95,9 @@ class SoaAndBillingController extends BaseController
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="shipping_line_id", in="query", description="Filter by shipping line ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="date_from", in="query", description="Filter SOA created from date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", description="Filter SOA created to date (Y-m-d)", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="search", in="query", description="Search by DLI SA number, work order, or shipping line name", @OA\Schema(type="string")),
      *     @OA\Response(response=200, description="List of statement of accounts", @OA\JsonContent(
      *         @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/soa_and_billing")),
@@ -256,6 +259,8 @@ class SoaAndBillingController extends BaseController
      *     @OA\Parameter(name="search", in="query", description="Search by billing statement number, payment term, bus style, or shipping line name", @OA\Schema(type="string")),
      *     @OA\Parameter(name="statement_of_account_id", in="query", description="Filter by statement of account ID", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="shipping_line_id", in="query", description="Filter by shipping line ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="date_from", in="query", description="Filter billing statements created from date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", description="Filter billing statements created to date (Y-m-d)", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="booking_id", in="query", description="Filter by booking ID", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="is_paid", in="query", description="Filter by payment status (0=unpaid, 1=paid)", @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="List of billing statements", @OA\JsonContent(

@@ -33,6 +33,18 @@ class SoaAndBillingService extends BaseService
                 $query->onlyTrashed();
             }
 
+            if (request('shipping_line_id')) {
+                $query->where('shipping_line_id', request('shipping_line_id'));
+            }
+
+            if (request('date_from')) {
+                $query->whereDate('created_at', '>=', request('date_from'));
+            }
+
+            if (request('date_to')) {
+                $query->whereDate('created_at', '<=', request('date_to'));
+            }
+
             if (request('search')) {
                 $query->where(function ($q) {
                     $q->where('dli_sa_number', 'LIKE', '%' . request('search') . '%')
@@ -665,6 +677,14 @@ class SoaAndBillingService extends BaseService
 
             if (request('statement_of_account_id')) {
                 $query->where('statement_of_account_id', request('statement_of_account_id'));
+            }
+
+            if (request('date_from')) {
+                $query->whereDate('billing_statements.created_at', '>=', request('date_from'));
+            }
+
+            if (request('date_to')) {
+                $query->whereDate('billing_statements.created_at', '<=', request('date_to'));
             }
 
             return BillingStatementResource::collection(

@@ -266,8 +266,9 @@ class InvoiceController extends BaseController
      *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="search", in="query", description="Search by invoice number or shipping line name", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="shipping_line_id", in="query", description="Filter by shipping line ID (via statement of account)", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="statement_of_account_id", in="query", description="Filter by statement of account ID", @OA\Schema(type="integer")),
-     *     @OA\Parameter(name="date_from", in="query", description="Filter invoices from date", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_from", in="query", description="Filter invoices by invoice date from (Y-m-d)", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="date_to", in="query", description="Filter invoices to date", @OA\Schema(type="string", format="date")),
      *     @OA\Response(response=200, description="List of invoices", @OA\JsonContent(
      *         @OA\Property(property="success", type="boolean", example=true),

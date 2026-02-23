@@ -8873,6 +8873,14 @@
                         }
                     },
                     {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID (via statement of account)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
                         "name": "statement_of_account_id",
                         "in": "query",
                         "description": "Filter by statement of account ID",
@@ -8883,7 +8891,7 @@
                     {
                         "name": "date_from",
                         "in": "query",
-                        "description": "Filter invoices from date",
+                        "description": "Filter invoices by invoice date from (Y-m-d)",
                         "schema": {
                             "type": "string",
                             "format": "date"
@@ -15226,6 +15234,32 @@
                         }
                     },
                     {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter SOA created from date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter SOA created to date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
                         "name": "search",
                         "in": "query",
                         "description": "Search by DLI SA number, work order, or shipping line name",
@@ -15553,6 +15587,24 @@
                         "description": "Filter by shipping line ID",
                         "schema": {
                             "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter billing statements created from date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter billing statements created to date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
                         }
                     },
                     {
@@ -16406,6 +16458,52 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa-billing-check/validate": {
+            "post": {
+                "tags": [
+                    "SOA, Billing & Invoice - Booking Validator"
+                ],
+                "summary": "Validate bookings for SOA, Billing, or Invoice",
+                "description": "Validate bookings for SOA (type 1), Billing (type 2), or Invoice (type 3).\nReturns valid_bookings and invalid_bookings (with reason per invalid).",
+                "operationId": "5f7f91d0687cbf7fceb05bf383dadb05",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BookingCheckerValidateInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Validation result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BookingCheckerValidateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error (invalid request body)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     },
                     "500": {
                         "$ref": "#/components/responses/GeneralError"
@@ -24737,6 +24835,63 @@
                 },
                 "type": "object"
             },
+            "BookingCheckerValidateInput": {
+                "title": "Validate Bookings for SOA/Billing/Invoice",
+                "required": [
+                    "booking_id",
+                    "type"
+                ],
+                "properties": {
+                    "booking_id": {
+                        "description": "Array of booking IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    },
+                    "type": {
+                        "description": "1 = SOA, 2 = Billing, 3 = Invoice",
+                        "type": "integer",
+                        "example": 2
+                    }
+                },
+                "type": "object"
+            },
+            "BookingCheckerValidateResponse": {
+                "title": "Validate Bookings Response",
+                "properties": {
+                    "valid_bookings": {
+                        "description": "Bookings that pass the condition for the given type",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "invalid_bookings": {
+                        "description": "Bookings that fail with reason",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "booking": {
+                                    "description": "Booking object",
+                                    "type": "object"
+                                },
+                                "reason": {
+                                    "description": "Why the booking is invalid",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
             "Truck": {
                 "title": "Truck Model",
                 "description": "A truck resource",
@@ -25392,6 +25547,10 @@
         {
             "name": "SOA and Billing Management",
             "description": "API endpoints for SOA and billing management"
+        },
+        {
+            "name": "SOA, Billing & Invoice - Booking Validator",
+            "description": "Validate bookings for SOA, Billing, or Invoice (type 1, 2, or 3). Returns valid and invalid bookings with reasons."
         },
         {
             "name": "SOA Data Option Management",
