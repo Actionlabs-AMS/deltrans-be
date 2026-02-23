@@ -2,17 +2,16 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\BudgetTransaction;
 use App\Models\DriverCAHistory;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class DriverCAHistorySeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Cash advancement history per driver. Each record requires a budget_transaction (type 4).
+     * Cash advancement history per driver. Shift is stored as string (e.g. Day, Night).
      */
     public function run(): void
     {
@@ -28,16 +27,8 @@ class DriverCAHistorySeeder extends Seeder
         foreach ($driverIds as $driverId) {
             for ($i = 0; $i < 5; $i++) {
                 $shiftLabel = $shifts[array_rand($shifts)];
-                $shiftValue = $shiftLabel === 'Night' ? BudgetTransaction::SHIFT_NIGHT : BudgetTransaction::SHIFT_MORNING;
-
-                $budgetTransaction = BudgetTransaction::create([
-                    'shift' => $shiftValue,
-                    'transaction_type' => BudgetTransaction::TYPE_ADVANCE_EXPENSE,
-                    'description' => 'Driver cash advance (seeded)',
-                ]);
 
                 DriverCAHistory::create([
-                    'budget_transaction_id' => $budgetTransaction->id,
                     'driver_id' => $driverId,
                     'amount' => $amounts[array_rand($amounts)],
                     'shift' => $shiftLabel,

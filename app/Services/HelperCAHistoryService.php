@@ -73,7 +73,7 @@ class HelperCAHistoryService extends BaseService
                 });
             }
 
-            return $query->with(['budgetTransaction', 'helper'])
+            return $query->with(['helper'])
                         ->orderBy('transaction_date', 'desc')
                         ->paginate($perPage)
                         ->withQueryString();

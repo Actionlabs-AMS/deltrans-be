@@ -16,7 +16,6 @@ class DriverCAHistoryResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'budget_transaction_id' => $this->budget_transaction_id,
             'amount' => (float) $this->amount,
             'transaction_date' => $this->transaction_date->format('Y-m-d'),
             'transaction_date_formatted' => $this->transaction_date->format('F d, Y'),
@@ -25,11 +24,6 @@ class DriverCAHistoryResource extends JsonResource
             'driver_name' => $this->whenLoaded('driver', function () {
                 return $this->driver->first_name . ' ' . $this->driver->last_name;
             }),
-            'budget_transaction' => $this->whenLoaded('budgetTransaction', fn () => [
-                'id' => $this->budgetTransaction->id,
-                'shift' => $this->budgetTransaction->shift,
-                'transaction_type' => $this->budgetTransaction->transaction_type,
-            ]),
 
             // Timestamps
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,

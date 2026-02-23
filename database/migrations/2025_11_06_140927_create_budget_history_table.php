@@ -9,35 +9,28 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * Note: budget_history disabled for now – table creation commented out.
      */
     public function up(): void
     {
-        // Disable foreign key checks temporarily
-        DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
-
-        Schema::create('budget_history', function (Blueprint $table) {
-            $table->engine = 'InnoDB';
-            $table->bigIncrements('id');
-            $table->decimal('total_amount', 15, 2)->default(0);
-            $table->bigInteger('budget_transaction_id')->unsigned();
-            $table->text('description')->nullable();
-            $table->date('tracked_date')->nullable();
-            $table->decimal('total_spent', 15, 2)->default(0);
-            $table->string('expense_type')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-
-            // Foreign key constraints
-            $table->foreign('budget_transaction_id')->references('id')->on('budget_transactions')->onDelete('cascade');
-
-            // Indexes
-            $table->index('budget_transaction_id');
-            $table->index('tracked_date');
-            $table->index('expense_type');
-        });
-
-        // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+        // Disabled for now – budget_history not needed
+        // DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
+        // Schema::create('budget_history', function (Blueprint $table) {
+        //     $table->engine = 'InnoDB';
+        //     $table->bigIncrements('id');
+        //     $table->string('shift')->nullable();
+        //     $table->decimal('total_amount', 15, 2)->default(0);
+        //     $table->text('description')->nullable();
+        //     $table->date('tracked_date')->nullable();
+        //     $table->decimal('total_spent', 15, 2)->default(0);
+        //     $table->string('expense_type')->nullable();
+        //     $table->timestamps();
+        //     $table->softDeletes();
+        //     $table->index('shift');
+        //     $table->index('tracked_date');
+        //     $table->index('expense_type');
+        // });
+        // DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 
     /**
@@ -45,12 +38,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Disable foreign key checks temporarily
-        DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
-        
-        Schema::dropIfExists('budget_history');
-        
-        // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+        // Disabled for now – budget_history not needed
+        // DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
+        // Schema::dropIfExists('budget_history');
+        // DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };

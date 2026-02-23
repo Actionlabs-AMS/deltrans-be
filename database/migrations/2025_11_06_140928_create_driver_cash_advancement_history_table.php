@@ -18,7 +18,6 @@ return new class extends Migration
         Schema::create('driver_cash_advancement_history', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('budget_transaction_id');
             $table->decimal('amount', 15, 2)->default(0);
             $table->date('transaction_date');
             $table->string('shift')->nullable();
@@ -26,10 +25,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('budget_transaction_id')->references('id')->on('budget_transactions')->onDelete('cascade');
             $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('cascade');
 
-            $table->index('budget_transaction_id');
             $table->index('transaction_date');
             $table->index('driver_id');
             $table->index('shift');

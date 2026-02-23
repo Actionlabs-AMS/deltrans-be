@@ -75,8 +75,8 @@ class DriverCAHistoryService extends BaseService
                 });
             }
 
-            // Always show newest first; load budgetTransaction (shift comes from there)
-            return $query->with(['budgetTransaction', 'driver'])
+            // Always show newest first
+            return $query->with(['driver'])
                         ->orderBy('transaction_date', 'desc')
                         ->orderBy('id', 'desc')
                         ->paginate($perPage)

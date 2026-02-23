@@ -18,21 +18,15 @@ return new class extends Migration
         Schema::create('issued_budget', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('budget_transaction_id')->unsigned();
+            $table->string('shift')->nullable();
             $table->date('date_issued');
             $table->decimal('amount', 15, 2)->default(0);
             $table->string('source')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            // Foreign key constraints
-            $table->foreign('budget_transaction_id')
-                ->references('id')
-                ->on('budget_transactions')
-                ->onDelete('cascade');
-
             // Indexes
-            $table->index('budget_transaction_id', 'idx_budget_transaction_id');
+            $table->index('shift');
             $table->index('date_issued', 'idx_date_issued');
         });
 

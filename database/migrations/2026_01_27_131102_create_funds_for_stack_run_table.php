@@ -18,22 +18,16 @@ return new class extends Migration
         Schema::create('funds_for_stack_run', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('budget_transaction_id')->unsigned();
+            $table->string('shift')->nullable();
             $table->text('remarks')->nullable();
             $table->decimal('amount', 15, 2)->default(0);
-            $table->date('date');
+            $table->date('transaction_date');
             $table->timestamps();
             $table->softDeletes();
 
-            // Foreign key constraints
-            $table->foreign('budget_transaction_id')
-                ->references('id')
-                ->on('budget_transactions')
-                ->onDelete('cascade');
-
             // Indexes
-            $table->index('budget_transaction_id', 'idx_budget_transaction_id');
-            $table->index('date', 'idx_date');
+            $table->index('shift');
+            $table->index('transaction_date', 'idx_transaction_date');
         });
 
         // Re-enable foreign key checks

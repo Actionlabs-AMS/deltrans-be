@@ -30,7 +30,6 @@ use App\Http\Controllers\Api\FixedExpenseController;
 use App\Http\Controllers\Api\WaybillDetailController;
 use App\Http\Controllers\Api\DriverCAHistoryController;
 use App\Http\Controllers\Api\HelperCAHistoryController;
-use App\Http\Controllers\Api\CashAdvanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -576,13 +575,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	/*
 	|--------------------------------------------------------------------------
-	| Cash Advance (Type 4: driver_cash_advancement_history / helper_cash_advancement_history)
+	| Cash Advance API (POST /api/cash-advances) – removed for now
 	|--------------------------------------------------------------------------
-	| type: 1 = driver, 2 = helper
 	*/
-	Route::prefix('cash-advances')->group(function () {
-		Route::post('/', [CashAdvanceController::class, 'store']); // Add cash advance (type 1=driver, 2=helper)
-	});
 
 	/*
 	|--------------------------------------------------------------------------

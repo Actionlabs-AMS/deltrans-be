@@ -1922,12 +1922,9 @@
                                         "example": "2026-02-20"
                                     },
                                     "shift": {
-                                        "description": "0=morning, 1=night (optional)",
-                                        "type": "integer",
-                                        "enum": [
-                                            0,
-                                            1
-                                        ]
+                                        "description": "Shift label: Day, Night, 1st, 2nd (optional, default Day)",
+                                        "type": "string",
+                                        "example": "Day"
                                     },
                                     "description": {
                                         "type": "string",
@@ -23517,7 +23514,7 @@
         },
         {
             "name": "Cash Advance",
-            "description": "Add cash advance for driver (type=1) or helper (type=2); links to budget_transactions type 4."
+            "description": "Add cash advance for driver (type=1) or helper (type=2)."
         },
         {
             "name": "Category Management",

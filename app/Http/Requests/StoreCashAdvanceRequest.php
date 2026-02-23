@@ -23,7 +23,7 @@ class StoreCashAdvanceRequest extends FormRequest
             'helper_id' => ['required_if:type,2', 'nullable', 'integer', 'exists:helpers,id'],
             'amount' => ['required', 'numeric', 'min:0'],
             'transaction_date' => ['required', 'date'],
-            'shift' => ['nullable', 'integer', Rule::in([0, 1])], // 0 = morning, 1 = night (budget_transactions.shift)
+            'shift' => ['nullable', 'string', Rule::in(['Day', 'Night', '1st', '2nd'])],
             'description' => ['nullable', 'string', 'max:500'],
         ];
     }

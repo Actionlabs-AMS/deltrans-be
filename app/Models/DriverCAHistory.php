@@ -13,7 +13,6 @@ class DriverCAHistory extends Model
     protected $table = 'driver_cash_advancement_history';
 
     protected $fillable = [
-        'budget_transaction_id',
         'amount',
         'transaction_date',
         'shift',
@@ -27,11 +26,6 @@ class DriverCAHistory extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
-
-    public function budgetTransaction(): BelongsTo
-    {
-        return $this->belongsTo(BudgetTransaction::class, 'budget_transaction_id');
-    }
 
     public function driver(): BelongsTo
     {

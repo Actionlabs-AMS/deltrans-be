@@ -18,29 +18,24 @@ return new class extends Migration
         Schema::create('truck_trip_expense', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
-            $table->bigInteger('budget_transaction_id')->unsigned();
+            $table->string('shift')->nullable();
             $table->bigInteger('helper_id')->unsigned()->nullable();
             $table->decimal('cash_on_hand', 15, 2)->default(0)->comment('Current money');
             $table->decimal('issued_cash_amount', 15, 2)->default(0);
-            $table->date('date_issued');
+            $table->date('transaction_date');
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
-            $table->foreign('budget_transaction_id')
-                ->references('id')
-                ->on('budget_transactions')
-                ->onDelete('cascade');
-            
             $table->foreign('helper_id')
                 ->references('id')
                 ->on('helpers')
                 ->onDelete('set null');
 
             // Indexes
-            $table->index('budget_transaction_id', 'idx_budget_transaction_id');
+            $table->index('shift');
             $table->index('helper_id', 'idx_helper_id');
-            $table->index('date_issued', 'idx_date_issued');
+            $table->index('transaction_date', 'idx_transaction_date');
         });
 
         // Re-enable foreign key checks
