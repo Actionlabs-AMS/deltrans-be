@@ -66,8 +66,8 @@ return new class extends Migration {
             [
                 'type' => 4,
                 'name' => 'Advance Expense',
-                'detail_table' => 'advance_expense',
-                'description' => 'Tracks cash advances given to drivers or helpers',
+                'detail_table' => 'driver_cash_advancement_history',
+                'description' => 'Cash advance: use driver_cash_advancement_history when type=1 (driver), helper_cash_advancement_history when type=2 (helper). Fetch by joining both tables.',
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
