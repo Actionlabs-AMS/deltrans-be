@@ -1878,6 +1878,85 @@
                 ]
             }
         },
+        "/api/cash-advances": {
+            "post": {
+                "tags": [
+                    "Cash Advance"
+                ],
+                "summary": "Add cash advance (driver or helper)",
+                "operationId": "37e45adc4dfd5658b0c3de2ef0f2d89c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "type",
+                                    "amount",
+                                    "transaction_date"
+                                ],
+                                "properties": {
+                                    "type": {
+                                        "description": "1=driver (driver_cash_advancement_history), 2=helper (helper_cash_advancement_history)",
+                                        "type": "integer",
+                                        "enum": [
+                                            1,
+                                            2
+                                        ]
+                                    },
+                                    "driver_id": {
+                                        "description": "Required when type=1",
+                                        "type": "integer"
+                                    },
+                                    "helper_id": {
+                                        "description": "Required when type=2",
+                                        "type": "integer"
+                                    },
+                                    "amount": {
+                                        "type": "number",
+                                        "example": 500
+                                    },
+                                    "transaction_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-02-20"
+                                    },
+                                    "shift": {
+                                        "description": "0=morning, 1=night (optional)",
+                                        "type": "integer",
+                                        "enum": [
+                                            0,
+                                            1
+                                        ]
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Cash advance created"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/content-management/categories": {
             "get": {
                 "tags": [
@@ -22331,59 +22410,6 @@
                         "format": "date",
                         "example": "2024-01-15"
                     },
-                    "quantity": {
-                        "description": "Total container count",
-                        "type": "integer",
-                        "example": 42
-                    },
-                    "unit_price": {
-                        "description": "Sum of waybill.rate per booking",
-                        "type": "number",
-                        "format": "float",
-                        "example": 5600
-                    },
-                    "item_description": {
-                        "description": "Grouped container description",
-                        "type": "string",
-                        "example": "42 x 40HC"
-                    },
-                    "vatable_sales": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 210000
-                    },
-                    "zero_rated_sales": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 0
-                    },
-                    "vat_exempt_sales": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 0
-                    },
-                    "vat": {
-                        "description": "12% VAT",
-                        "type": "number",
-                        "format": "float",
-                        "example": 25200
-                    },
-                    "total_sales": {
-                        "description": "VAT inclusive",
-                        "type": "number",
-                        "format": "float",
-                        "example": 235200
-                    },
-                    "less_vat": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 25200
-                    },
-                    "net_of_vat": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 210000
-                    },
                     "discount": {
                         "type": "number",
                         "format": "float",
@@ -22394,14 +22420,50 @@
                         "example": null,
                         "nullable": true
                     },
+                    "vatable_sales": {
+                        "description": "Computed: Total Sales − VAT",
+                        "type": "number",
+                        "format": "float",
+                        "example": 210000
+                    },
+                    "vat": {
+                        "description": "Computed: 12% VAT",
+                        "type": "number",
+                        "format": "float",
+                        "example": 25200
+                    },
+                    "total_sales": {
+                        "description": "Computed: net base",
+                        "type": "number",
+                        "format": "float",
+                        "example": 210000
+                    },
+                    "less_vat": {
+                        "description": "Computed",
+                        "type": "number",
+                        "format": "float",
+                        "example": 25200
+                    },
+                    "net_of_vat": {
+                        "description": "Computed: same as vatable_sales",
+                        "type": "number",
+                        "format": "float",
+                        "example": 210000
+                    },
+                    "total_sales_inclusive": {
+                        "description": "Computed: VAT inclusive",
+                        "type": "number",
+                        "format": "float",
+                        "example": 235200
+                    },
                     "less_withdrawing_tax": {
-                        "description": "2% withholding tax",
+                        "description": "Computed: 2% of net of VAT",
                         "type": "number",
                         "format": "float",
                         "example": 4200
                     },
                     "total_amount": {
-                        "description": "Total amount due",
+                        "description": "Computed: total due",
                         "type": "number",
                         "format": "float",
                         "example": 231000
@@ -22469,64 +22531,6 @@
                         "example": "2024-01-15",
                         "nullable": true
                     },
-                    "quantity": {
-                        "type": "integer",
-                        "example": 42,
-                        "nullable": true
-                    },
-                    "unit_price": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 5600,
-                        "nullable": true
-                    },
-                    "item_description": {
-                        "type": "string",
-                        "example": "42 x 40HC",
-                        "nullable": true
-                    },
-                    "vatable_sales": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 210000,
-                        "nullable": true
-                    },
-                    "zero_rated_sales": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 0,
-                        "nullable": true
-                    },
-                    "vat_exempt_sales": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 0,
-                        "nullable": true
-                    },
-                    "vat": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 25200,
-                        "nullable": true
-                    },
-                    "total_sales": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 235200,
-                        "nullable": true
-                    },
-                    "less_vat": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 25200,
-                        "nullable": true
-                    },
-                    "net_of_vat": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 210000,
-                        "nullable": true
-                    },
                     "discount": {
                         "type": "number",
                         "format": "float",
@@ -22535,18 +22539,6 @@
                     },
                     "discount_id": {
                         "type": "integer",
-                        "nullable": true
-                    },
-                    "less_withdrawing_tax": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 4200,
-                        "nullable": true
-                    },
-                    "total_amount": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 231000,
                         "nullable": true
                     }
                 },
@@ -23522,6 +23514,10 @@
         {
             "name": "Booking Management",
             "description": "API endpoints for booking management"
+        },
+        {
+            "name": "Cash Advance",
+            "description": "Add cash advance for driver (type=1) or helper (type=2); links to budget_transactions type 4."
         },
         {
             "name": "Category Management",

@@ -24,20 +24,16 @@ use Illuminate\Http\Request;
  *     @OA\Property(property="shipping_line", type="object", nullable=true, description="Shipping line from SOA when loaded"),
  *     @OA\Property(property="invoice_number", type="string", example="INV-0001"),
  *     @OA\Property(property="date", type="string", format="date", example="2024-01-15"),
- *     @OA\Property(property="quantity", type="integer", example=42, description="Total container count"),
- *     @OA\Property(property="unit_price", type="number", format="float", example=5600.00, description="Sum of waybill.rate per booking"),
- *     @OA\Property(property="item_description", type="string", example="42 x 40HC", description="Grouped container description"),
- *     @OA\Property(property="vatable_sales", type="number", format="float", example=210000.00),
- *     @OA\Property(property="zero_rated_sales", type="number", format="float", example=0.00),
- *     @OA\Property(property="vat_exempt_sales", type="number", format="float", example=0.00),
- *     @OA\Property(property="vat", type="number", format="float", example=25200.00, description="12% VAT"),
- *     @OA\Property(property="total_sales", type="number", format="float", example=235200.00, description="VAT inclusive"),
- *     @OA\Property(property="less_vat", type="number", format="float", example=25200.00),
- *     @OA\Property(property="net_of_vat", type="number", format="float", example=210000.00),
  *     @OA\Property(property="discount", type="number", format="float", example=0.00),
  *     @OA\Property(property="discount_id", type="integer", nullable=true, example=null),
- *     @OA\Property(property="less_withdrawing_tax", type="number", format="float", example=4200.00, description="2% withholding tax"),
- *     @OA\Property(property="total_amount", type="number", format="float", example=231000.00, description="Total amount due"),
+ *     @OA\Property(property="vatable_sales", type="number", format="float", example=210000.00, description="Computed: Total Sales − VAT"),
+ *     @OA\Property(property="vat", type="number", format="float", example=25200.00, description="Computed: 12% VAT"),
+ *     @OA\Property(property="total_sales", type="number", format="float", example=210000.00, description="Computed: net base"),
+ *     @OA\Property(property="less_vat", type="number", format="float", example=25200.00, description="Computed"),
+ *     @OA\Property(property="net_of_vat", type="number", format="float", example=210000.00, description="Computed: same as vatable_sales"),
+ *     @OA\Property(property="total_sales_inclusive", type="number", format="float", example=235200.00, description="Computed: VAT inclusive"),
+ *     @OA\Property(property="less_withdrawing_tax", type="number", format="float", example=4200.00, description="Computed: 2% of net of VAT"),
+ *     @OA\Property(property="total_amount", type="number", format="float", example=231000.00, description="Computed: total due"),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
  *     @OA\Property(property="updated_at", type="string", format="date-time")
  * )
@@ -56,20 +52,8 @@ use Illuminate\Http\Request;
  *     title="Update Invoice Input",
  *     @OA\Property(property="invoice_number", type="string", example="INV-0001", nullable=true),
  *     @OA\Property(property="date", type="string", format="date", example="2024-01-15", nullable=true),
- *     @OA\Property(property="quantity", type="integer", example=42, nullable=true),
- *     @OA\Property(property="unit_price", type="number", format="float", example=5600.00, nullable=true),
- *     @OA\Property(property="item_description", type="string", example="42 x 40HC", nullable=true),
- *     @OA\Property(property="vatable_sales", type="number", format="float", example=210000.00, nullable=true),
- *     @OA\Property(property="zero_rated_sales", type="number", format="float", example=0.00, nullable=true),
- *     @OA\Property(property="vat_exempt_sales", type="number", format="float", example=0.00, nullable=true),
- *     @OA\Property(property="vat", type="number", format="float", example=25200.00, nullable=true),
- *     @OA\Property(property="total_sales", type="number", format="float", example=235200.00, nullable=true),
- *     @OA\Property(property="less_vat", type="number", format="float", example=25200.00, nullable=true),
- *     @OA\Property(property="net_of_vat", type="number", format="float", example=210000.00, nullable=true),
  *     @OA\Property(property="discount", type="number", format="float", example=0.00, nullable=true),
- *     @OA\Property(property="discount_id", type="integer", nullable=true),
- *     @OA\Property(property="less_withdrawing_tax", type="number", format="float", example=4200.00, nullable=true),
- *     @OA\Property(property="total_amount", type="number", format="float", example=231000.00, nullable=true)
+ *     @OA\Property(property="discount_id", type="integer", nullable=true)
  * )
  */
 class InvoiceController extends BaseController
@@ -104,9 +88,14 @@ class InvoiceController extends BaseController
         try {
             $data = $request->validated();
             $invoice = $this->service->generateInvoice($data);
+            $payload = $invoice->toArray();
+            $totals = $this->service->getComputedTotals(
+                (int) $invoice->statement_of_account_id,
+                (float) ($invoice->discount ?? 0)
+            );
             return response()->json([
                 'success' => true,
-                'data' => $invoice,
+                'data' => array_merge($payload, $totals),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -138,9 +127,14 @@ class InvoiceController extends BaseController
         try {
             $data = $request->validated();
             $invoice = $this->service->updateInvoice($id, $data);
+            $payload = $invoice->toArray();
+            $totals = $this->service->getComputedTotals(
+                (int) $invoice->statement_of_account_id,
+                (float) ($invoice->discount ?? 0)
+            );
             return response()->json([
                 'success' => true,
-                'data' => $invoice,
+                'data' => array_merge($payload, $totals),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -295,9 +289,17 @@ class InvoiceController extends BaseController
         try {
             $perPage = request()->get('per_page', 10);
             $result = $this->service->listInvoices($perPage);
+            $items = collect($result->items())->map(function ($invoice) {
+                $arr = $invoice->toArray();
+                $totals = $this->service->getComputedTotals(
+                    (int) $invoice->statement_of_account_id,
+                    (float) ($invoice->discount ?? 0)
+                );
+                return array_merge($arr, $totals);
+            })->all();
             return response()->json([
                 'success' => true,
-                'data' => $result->items(),
+                'data' => $items,
                 'meta' => [
                     'current_page' => $result->currentPage(),
                     'per_page' => $result->perPage(),
@@ -335,9 +337,14 @@ class InvoiceController extends BaseController
     {
         try {
             $invoice = $this->service->showInvoice($id);
+            $data = $invoice->toArray();
+            $totals = $this->service->getComputedTotals(
+                (int) $invoice->statement_of_account_id,
+                (float) ($invoice->discount ?? 0)
+            );
             return response()->json([
                 'success' => true,
-                'data' => $invoice,
+                'data' => array_merge($data, $totals),
             ]);
         } catch (\Exception $e) {
             return response()->json([

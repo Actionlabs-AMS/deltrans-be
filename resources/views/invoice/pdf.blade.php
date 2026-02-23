@@ -436,35 +436,27 @@
             <div class="financial-left-col">
                 <div class="financial-row">
                     <span class="financial-label">VATable Sales:</span>
-                    <span class="financial-value">{{ number_format($invoice->vatable_sales, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($totals['vatable_sales'], 2, '.', ',') }}</span>
                 </div>
                 <div class="financial-row">
                     <span class="financial-label">VAT:</span>
-                    <span class="financial-value">{{ number_format($invoice->vat, 2, '.', ',') }}</span>
-                </div>
-                <div class="financial-row">
-                    <span class="financial-label">Zero-Rated Sales:</span>
-                    <span class="financial-value">{{ number_format($invoice->zero_rated_sales, 2, '.', ',') }}</span>
-                </div>
-                <div class="financial-row">
-                    <span class="financial-label">VAT-Exempt Sales:</span>
-                    <span class="financial-value">{{ number_format($invoice->vat_exempt_sales, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($totals['vat'], 2, '.', ',') }}</span>
                 </div>
             </div>
             <div class="financial-right-col">
                 <div class="financial-row highlight">
                     <span class="financial-label">Total Sales (VAT Inclusive):</span>
-                    <span class="financial-value">{{ number_format($invoice->total_sales + $invoice->less_vat, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($totals['total_sales_inclusive'], 2, '.', ',') }}</span>
                 </div>
                 <div class="financial-row">
                     <span class="financial-label">Less: VAT:</span>
-                    <span class="financial-value">{{ number_format($invoice->less_vat, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($totals['less_vat'], 2, '.', ',') }}</span>
                 </div>
                 <div class="financial-row">
                     <span class="financial-label">Amount: Net of VAT</span>
-                    <span class="financial-value">{{ number_format($invoice->net_of_vat, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($totals['net_of_vat'], 2, '.', ',') }}</span>
                 </div>
-                @if($invoice->discount > 0)
+                @if(($invoice->discount ?? 0) > 0)
                     <div class="financial-row">
                         <span class="financial-label">Less: Discount (SC/PWD/NAAC/MOV/SP):</span>
                         <span class="financial-value">{{ number_format($invoice->discount, 2, '.', ',') }}</span>
@@ -472,16 +464,15 @@
                 @endif
                 <div class="financial-row">
                     <span class="financial-label">Add: VAT:</span>
-                    <span class="financial-value">{{ number_format($invoice->vat, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($totals['vat'], 2, '.', ',') }}</span>
                 </div>
                 <div class="financial-row">
                     <span class="financial-label">Withholding Tax (2% of Net of VAT):</span>
-                    <span
-                        class="financial-value">{{ number_format($invoice->less_withdrawing_tax, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($totals['less_withdrawing_tax'], 2, '.', ',') }}</span>
                 </div>
                 <div class="financial-row total">
                     <span class="financial-label">TOTAL AMOUNT DUE:</span>
-                    <span class="financial-value">{{ number_format($invoice->total_amount, 2, '.', ',') }}</span>
+                    <span class="financial-value">{{ number_format($totals['total_amount'], 2, '.', ',') }}</span>
                 </div>
             </div>
         </div>
@@ -493,7 +484,7 @@
             <span>Received the amount of</span>
         </div>
         <div class="amount-in-words">
-            PHP {{ number_format($invoice->total_amount, 2, '.', ',') }} pesos only.
+            PHP {{ number_format($totals['total_amount'], 2, '.', ',') }} pesos only.
         </div>
     </div>
 

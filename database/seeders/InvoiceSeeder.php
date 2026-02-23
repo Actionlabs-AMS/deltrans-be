@@ -63,34 +63,16 @@ class InvoiceSeeder extends Seeder
             // Set invoice date (varied dates for realism)
             $invoiceDate = now()->subDays($i * 3 + 2)->toDateString();
 
-            // Add some variation: some invoices have discounts
+            // Add some variation: some invoices have discounts (5% of vatable_sales)
             $hasDiscount = $i % 3 === 0;
-            $discount = $hasDiscount ? round($invoiceData['vatable_sales'] * 0.05, 2) : 0; // 5% discount for some
-
-            // Adjust total_amount if discount applied
-            $totalAmount = $invoiceData['total_amount'];
-            if ($discount > 0) {
-                $totalAmount = max(0, $totalAmount - $discount);
-            }
+            $discount = $hasDiscount ? round($invoiceData['vatable_sales'] * 0.05, 2) : 0;
 
             $invoices[] = [
                 'statement_of_account_id' => $soa->id,
                 'invoice_number' => $invoiceNumber,
                 'date' => $invoiceDate,
-                'quantity' => $invoiceData['quantity'],
-                'unit_price' => $invoiceData['unit_price'],
-                'item_description' => $invoiceData['item_description'],
-                'vatable_sales' => $invoiceData['vatable_sales'],
-                'zero_rated_sales' => $invoiceData['zero_rated_sales'],
-                'vat_exempt_sales' => $invoiceData['vat_exempt_sales'],
-                'vat' => $invoiceData['vat'],
-                'total_sales' => $invoiceData['total_sales'],
-                'less_vat' => $invoiceData['less_vat'],
-                'net_of_vat' => $invoiceData['net_of_vat'],
                 'discount' => $discount,
-                'discount_id' => null, // Can be linked to discounts table if exists
-                'less_withdrawing_tax' => $invoiceData['less_withdrawing_tax'],
-                'total_amount' => $totalAmount,
+                'discount_id' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

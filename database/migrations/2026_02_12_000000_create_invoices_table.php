@@ -19,20 +19,8 @@ return new class extends Migration {
             $table->bigInteger('statement_of_account_id')->unsigned();
             $table->string('invoice_number');
             $table->date('date');
-            $table->integer('quantity')->default(0);
-            $table->decimal('unit_price', 15, 2)->default(0);
-            $table->text('item_description')->nullable();
-            $table->decimal('vatable_sales', 15, 2)->default(0);
-            $table->decimal('zero_rated_sales', 15, 2)->default(0);
-            $table->decimal('vat_exempt_sales', 15, 2)->default(0);
-            $table->decimal('vat', 15, 2)->default(0);
-            $table->decimal('total_sales', 15, 2)->default(0);
-            $table->decimal('less_vat', 15, 2)->default(0);
-            $table->decimal('net_of_vat', 15, 2)->default(0);
             $table->decimal('discount', 15, 2)->default(0);
             $table->bigInteger('discount_id')->unsigned()->nullable();
-            $table->decimal('less_withdrawing_tax', 15, 2)->default(0);
-            $table->decimal('total_amount', 15, 2)->default(0);
             $table->timestamps();
             $table->softDeletes();
 

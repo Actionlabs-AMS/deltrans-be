@@ -108,42 +108,59 @@ class InvoiceService
         }
         $itemDescription = implode(', ', $descriptionParts);
 
-        // 5. Calculate financial fields (aligned with SOA and reference invoice)
-        // VATable Sales / Net of VAT = net base (sum of waybill.rate × count), excluding VAT
+        // 5. Financial totals (formula: VATable Sales / Net of VAT = Total Sales (VAT Inclusive) − VAT)
         $vatableSales = $sumRate;
         $netOfVat = $sumRate;
-
-        // VAT = 12% of net (sum of waybill.rate × 0.12 where has_vat)
         $vat = $sumRateVat;
-
-        // total_sales = net base (stored for backward compatibility; VAT-inclusive = total_sales + less_vat)
-        $totalSales = $sumRate;
-
-        // less_vat = 12% VAT amount
         $lessVat = $sumRateVat;
-
-        // Withholding Tax = 2% of Net of VAT (per BIR / reference invoice)
+        $totalSalesInclusive = $sumRate + $sumRateVat;
         $lessWithdrawingTax = $netOfVat * 0.02;
-
-        // TOTAL AMOUNT DUE = Total Sales (VAT Inclusive) − Withholding = (net + VAT) − 2% of net
-        $totalAmount = ($sumRate + $sumRateVat) - $lessWithdrawingTax;
+        $totalAmount = $totalSalesInclusive - $lessWithdrawingTax;
 
         return [
             'statement_of_account_id' => $soa->id,
             'quantity' => $quantity,
-            'unit_price' => 0, // Not used when invoice_items is calculated dynamically
+            'unit_price' => 0,
             'item_description' => $itemDescription,
             'vatable_sales' => $vatableSales,
             'zero_rated_sales' => 0,
             'vat_exempt_sales' => 0,
             'vat' => $vat,
-            'total_sales' => $totalSales,
+            'total_sales' => $sumRate,
             'less_vat' => $lessVat,
             'net_of_vat' => $netOfVat,
             'discount' => 0,
             'discount_id' => null,
             'less_withdrawing_tax' => $lessWithdrawingTax,
             'total_amount' => $totalAmount,
+        ];
+    }
+
+    /**
+     * Get computed financial totals for an SOA (used for PDF and API).
+     * Formula: VATable Sales / Net of VAT = Total Sales (VAT Inclusive) − VAT.
+     * Withholding Tax = 2% of Net of VAT. TOTAL AMOUNT DUE = Total Sales (VAT Inclusive) − Withholding − Discount.
+     *
+     * @param int $soaId
+     * @param float $discount
+     * @return array{vatable_sales: float, vat: float, total_sales: float, less_vat: float, net_of_vat: float, total_sales_inclusive: float, less_withdrawing_tax: float, total_amount: float}
+     */
+    public function getComputedTotals(int $soaId, float $discount = 0): array
+    {
+        $data = $this->calculateInvoiceFromSoa($soaId);
+        $totalSalesInclusive = $data['total_sales'] + $data['less_vat'];
+        $totalAmount = $totalSalesInclusive - $data['less_withdrawing_tax'] - (float) $discount;
+        $totalAmount = max(0, $totalAmount);
+
+        return [
+            'vatable_sales' => (float) $data['vatable_sales'],
+            'vat' => (float) $data['vat'],
+            'total_sales' => (float) $data['total_sales'],
+            'less_vat' => (float) $data['less_vat'],
+            'net_of_vat' => (float) $data['net_of_vat'],
+            'total_sales_inclusive' => (float) $totalSalesInclusive,
+            'less_withdrawing_tax' => (float) $data['less_withdrawing_tax'],
+            'total_amount' => round($totalAmount, 2),
         ];
     }
 
@@ -223,26 +240,22 @@ class InvoiceService
     {
         $soa = StatementOfAccount::findOrFail($data['statement_of_account_id']);
 
-        // Calculate invoice data from SOA
-        $invoiceData = $this->calculateInvoiceFromSoa($soa->id);
-
-        // Merge with provided data (invoice_number, date can be overridden)
-        $invoiceData = array_merge($invoiceData, array_intersect_key($data, array_flip([
-            'invoice_number',
-            'date',
-            'discount',
-            'discount_id'
-        ])));
-
-        // Set defaults
-        if (empty($invoiceData['invoice_number'])) {
-            $invoiceData['invoice_number'] = $this->generateInvoiceNumber();
+        // Only store minimal fields; totals are computed on download/send email
+        $payload = [
+            'statement_of_account_id' => $soa->id,
+            'invoice_number' => $data['invoice_number'] ?? null,
+            'date' => $data['date'] ?? null,
+            'discount' => $data['discount'] ?? 0,
+            'discount_id' => $data['discount_id'] ?? null,
+        ];
+        if (empty($payload['invoice_number'])) {
+            $payload['invoice_number'] = $this->generateInvoiceNumber();
         }
-        if (empty($invoiceData['date'])) {
-            $invoiceData['date'] = now();
+        if (empty($payload['date'])) {
+            $payload['date'] = now();
         }
 
-        $invoice = Invoice::create($invoiceData);
+        $invoice = Invoice::create($payload);
         $invoice->load(['statementOfAccount.shippingLine']);
 
         return $invoice;
@@ -299,8 +312,14 @@ class InvoiceService
                 $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
             }
 
+            $totals = $this->getComputedTotals(
+                (int) $invoice->statement_of_account_id,
+                (float) ($invoice->discount ?? 0)
+            );
+
             $data = [
                 'invoice' => $invoice,
+                'totals' => $totals,
                 'invoiceItems' => $invoiceItems,
                 'companyInfo' => $companyInfo,
                 'logoPath' => $logoPath,

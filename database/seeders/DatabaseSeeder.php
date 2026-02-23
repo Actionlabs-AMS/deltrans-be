@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
             BillingStatementSeeder::class,
             InvoiceSeeder::class,
             TruckMaintenanceRecordsSeeder::class,
+            BudgetTransactionSeeder::class,
             DriverCAHistorySeeder::class,
             HelperCAHistorySeeder::class
         ]);

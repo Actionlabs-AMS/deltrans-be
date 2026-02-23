@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\FixedExpenseController;
 use App\Http\Controllers\Api\WaybillDetailController;
 use App\Http\Controllers\Api\DriverCAHistoryController;
 use App\Http\Controllers\Api\HelperCAHistoryController;
+use App\Http\Controllers\Api\CashAdvanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -571,6 +572,16 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [DriverController::class, 'getTrashed']); // Retrieve soft-deleted drivers
 		Route::patch('/restore/{id}', [DriverController::class, 'restore']); // Restore a soft-deleted driver
 		Route::delete('/{id}', [DriverController::class, 'forceDelete']); // Permanently delete a soft-deleted driver
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Cash Advance (Type 4: driver_cash_advancement_history / helper_cash_advancement_history)
+	|--------------------------------------------------------------------------
+	| type: 1 = driver, 2 = helper
+	*/
+	Route::prefix('cash-advances')->group(function () {
+		Route::post('/', [CashAdvanceController::class, 'store']); // Add cash advance (type 1=driver, 2=helper)
 	});
 
 	/*
