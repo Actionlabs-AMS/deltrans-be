@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Booking;
 use App\Models\Invoice;
 use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
@@ -256,6 +257,12 @@ class InvoiceService
         }
 
         $invoice = Invoice::create($payload);
+
+        $bookingIds = $soa->booking_ids ?? [];
+        if (!empty($bookingIds)) {
+            Booking::whereIn('id', $bookingIds)->update(['is_complete' => true]);
+        }
+
         $invoice->load(['statementOfAccount.shippingLine']);
 
         return $invoice;

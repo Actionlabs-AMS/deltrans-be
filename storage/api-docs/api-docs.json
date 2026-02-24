@@ -620,6 +620,15 @@
                         }
                     },
                     {
+                        "name": "is_ship_in",
+                        "in": "query",
+                        "description": "Filter by ship-in status (0=Ship Out, 1=Ship In)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
                         "name": "expected_date",
                         "in": "query",
                         "description": "Filter by expected date",
@@ -730,7 +739,8 @@
                                 "required": [
                                     "shipping_line_id",
                                     "cypa_id_from",
-                                    "cypa_id_to"
+                                    "cypa_id_to",
+                                    "expected_container"
                                 ],
                                 "properties": {
                                     "reference_number": {
@@ -764,10 +774,20 @@
                                         "format": "date",
                                         "example": "2025-02-10"
                                     },
+                                    "expected_container": {
+                                        "description": "Expected number of containers (required)",
+                                        "type": "integer",
+                                        "example": 10
+                                    },
                                     "is_complete": {
                                         "description": "Whether the booking is complete (optional)",
                                         "type": "boolean",
                                         "example": false
+                                    },
+                                    "is_ship_in": {
+                                        "description": "Whether the booking is ship-in (optional)",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
@@ -816,10 +836,27 @@
                                                     "example": "2025-02-10",
                                                     "nullable": true
                                                 },
+                                                "expected_container": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "containers_count": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                },
+                                                "remaining_container": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
                                                 "is_complete": {
                                                     "description": "Whether the booking is complete",
                                                     "type": "boolean",
                                                     "example": false
+                                                },
+                                                "is_ship_in": {
+                                                    "description": "Whether the booking is ship-in",
+                                                    "type": "boolean",
+                                                    "example": true
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -1157,10 +1194,20 @@
                                         "format": "date",
                                         "example": "2025-02-10"
                                     },
+                                    "expected_container": {
+                                        "description": "Expected number of containers (optional)",
+                                        "type": "integer",
+                                        "example": 10
+                                    },
                                     "is_complete": {
                                         "description": "Whether the booking is complete (optional)",
                                         "type": "boolean",
                                         "example": false
+                                    },
+                                    "is_ship_in": {
+                                        "description": "Whether the booking is ship-in (optional)",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
@@ -1209,10 +1256,27 @@
                                                     "example": "2025-02-10",
                                                     "nullable": true
                                                 },
+                                                "expected_container": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "containers_count": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                },
+                                                "remaining_container": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
                                                 "is_complete": {
                                                     "description": "Whether the booking is complete",
                                                     "type": "boolean",
                                                     "example": false
+                                                },
+                                                "is_ship_in": {
+                                                    "description": "Whether the booking is ship-in",
+                                                    "type": "boolean",
+                                                    "example": true
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -1318,6 +1382,101 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Resource has been moved to trash."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/{id}/remaining-container": {
+            "get": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Get remaining container breakdown for a booking",
+                "description": "Get remaining container breakdown for a booking.",
+                "operationId": "34d8a8fa08b4c78dc1728d083c724817",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Remaining container breakdown retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "booking_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "expected_container": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "containers_count": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                },
+                                                "remaining_container": {
+                                                    "description": "expected_container - containers_count (may be negative)",
+                                                    "type": "integer",
+                                                    "example": 3
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -23387,10 +23546,30 @@
                         "example": "2025-02-10",
                         "nullable": true
                     },
+                    "expected_container": {
+                        "description": "Expected number of containers for the booking",
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "containers_count": {
+                        "description": "Number of containers currently added to the booking",
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "remaining_container": {
+                        "description": "expected_container - actual containers count (may be negative)",
+                        "type": "integer",
+                        "example": 3
+                    },
                     "is_complete": {
                         "description": "Whether the booking is complete",
                         "type": "boolean",
                         "example": false
+                    },
+                    "is_ship_in": {
+                        "description": "Whether the booking is ship-in (true=Ship In, false=Ship Out)",
+                        "type": "boolean",
+                        "example": true
                     },
                     "actual_no_of_waybill": {
                         "description": "Actual number of waybills created for this booking",

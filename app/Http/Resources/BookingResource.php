@@ -14,6 +14,11 @@ class BookingResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $expectedContainer = (int) ($this->expected_container ?? 0);
+        $containersCount = isset($this->containers_count)
+            ? (int) $this->containers_count
+            : ($this->relationLoaded('containers') ? (int) $this->containers->count() : 0);
+
         return [
             // Identity
             'id' => $this->id,
@@ -27,7 +32,11 @@ class BookingResource extends JsonResource
 
             // Dates / status
             'expected_date' => $this->expected_date ? $this->expected_date->format('Y-m-d') : null,
+            'expected_container' => $expectedContainer,
+            'containers_count' => $containersCount,
+            'remaining_container' => $expectedContainer - $containersCount,
             'is_complete' => (bool) $this->is_complete,
+            'is_ship_in' => (bool) $this->is_ship_in,
             'actual_no_of_waybill' => isset($this->actual_no_of_waybill) ? (int) $this->actual_no_of_waybill : 0,
 
             // Loaded relations

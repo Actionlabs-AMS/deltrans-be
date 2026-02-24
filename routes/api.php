@@ -421,6 +421,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [BookingController::class, 'index']);  // Retrieve all bookings
 		Route::get('/by-shipping-line/{shipping_line_id}', [BookingController::class, 'byShippingLine']);  // Bookings by shipping line + optional expected_date range
 		Route::post('/', [BookingController::class, 'store']);  // Create a new booking
+		Route::get('/{id}/remaining-container', [BookingController::class, 'remainingContainer']);  // Remaining container breakdown for a booking
 		Route::get('/{id}', [BookingController::class, 'show']);  // Retrieve a single booking
 		Route::put('/{id}', [BookingController::class, 'update']);  // Update a booking
 		Route::delete('/{id}', [BookingController::class, 'destroy']);  // Soft delete a booking
@@ -874,7 +875,7 @@ Route::post('/test-smtp-email', function (\Illuminate\Http\Request $request) {
 			'message' => 'Test email sent successfully to ' . $email,
 			'mail_config' => $mailConfig,
 		]);
-	} catch (\Illuminate\Mail\SendException $e) {
+	} catch (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $e) {
 		return response()->json([
 			'success' => false,
 			'message' => 'Failed to send test email via SMTP',

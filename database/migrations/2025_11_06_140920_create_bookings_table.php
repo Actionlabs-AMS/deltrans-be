@@ -22,7 +22,9 @@ return new class extends Migration {
             $table->bigInteger('cypa_id_from')->unsigned();
             $table->bigInteger('cypa_id_to')->unsigned();
             $table->date('expected_date')->nullable();
+            $table->unsignedInteger('expected_container')->default(0);
             $table->boolean('is_complete')->default(false);
+            $table->boolean('is_ship_in')->default(true);
             $table->timestamps();
             $table->softDeletes();
 
@@ -35,7 +37,9 @@ return new class extends Migration {
             $table->index('cypa_id_from');
             $table->index('cypa_id_to');
             $table->index('expected_date');
+            $table->index('expected_container');
             $table->index('is_complete');
+            $table->index('is_ship_in');
         });
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');

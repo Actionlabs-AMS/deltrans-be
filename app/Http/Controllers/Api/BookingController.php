@@ -24,7 +24,11 @@ use App\Services\MessageService;
  *     @OA\Property(property="cypa_id_from", type="integer", example=1),
  *     @OA\Property(property="cypa_id_to", type="integer", example=2),
  *     @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
+ *     @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers for the booking"),
+ *     @OA\Property(property="containers_count", type="integer", example=7, description="Number of containers currently added to the booking"),
+ *     @OA\Property(property="remaining_container", type="integer", example=3, description="expected_container - actual containers count (may be negative)"),
  *     @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
+ *     @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (true=Ship In, false=Ship Out)"),
  *     @OA\Property(property="actual_no_of_waybill", type="integer", example=5, description="Actual number of waybills created for this booking"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
@@ -87,6 +91,12 @@ class BookingController extends BaseController
      *         in="query",
      *         description="Filter by completion status (0=Incomplete, 1=Complete)",
      *         @OA\Schema(type="integer", example=0)
+     *     ),
+     *     @OA\Parameter(
+     *         name="is_ship_in",
+     *         in="query",
+     *         description="Filter by ship-in status (0=Ship Out, 1=Ship In)",
+     *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
      *         name="expected_date",
@@ -279,6 +289,67 @@ class BookingController extends BaseController
     }
 
     /**
+     * Get remaining container breakdown for a booking.
+     *
+     * @OA\Get(
+     *     path="/api/bookings/{id}/remaining-container",
+     *     summary="Get remaining container breakdown for a booking",
+     *     tags={"Booking Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Booking ID",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Remaining container breakdown retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="booking_id", type="integer", example=1),
+     *                 @OA\Property(property="expected_container", type="integer", example=10),
+     *                 @OA\Property(property="containers_count", type="integer", example=7),
+     *                 @OA\Property(property="remaining_container", type="integer", example=3, description="expected_container - containers_count (may be negative)")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Booking not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Booking not found.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
+     */
+    public function remainingContainer($id)
+    {
+        try {
+            $payload = $this->service->remainingContainer((int) $id);
+
+            return response()->json([
+                'data' => $payload,
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Booking not found.'
+            ], 404);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
+        }
+    }
+
+    /**
      * Store a newly created resource in storage.
      * 
      * @OA\Post(
@@ -289,14 +360,16 @@ class BookingController extends BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"shipping_line_id", "cypa_id_from", "cypa_id_to"},
+ *             required={"shipping_line_id", "cypa_id_from", "cypa_id_to", "expected_container"},
      *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional, unique)"),
      *             @OA\Property(property="vessel", type="string", example="MSC OSCAR", description="Vessel name (optional)"),
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
      *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
-     *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)")
+ *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (required)"),
+     *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)"),
+     *             @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (optional)")
      *         )
      *     ),
      *     @OA\Response(
@@ -311,7 +384,11 @@ class BookingController extends BaseController
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
+ *                 @OA\Property(property="expected_container", type="integer", example=10),
+ *                 @OA\Property(property="containers_count", type="integer", example=7),
+ *                 @OA\Property(property="remaining_container", type="integer", example=3),
      *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
+     *                 @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )
@@ -369,7 +446,9 @@ class BookingController extends BaseController
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
      *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
-     *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)")
+ *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (optional)"),
+     *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)"),
+     *             @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (optional)")
      *         )
      *     ),
      *     @OA\Response(
@@ -384,7 +463,11 @@ class BookingController extends BaseController
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
+ *                 @OA\Property(property="expected_container", type="integer", example=10),
+ *                 @OA\Property(property="containers_count", type="integer", example=7),
+ *                 @OA\Property(property="remaining_container", type="integer", example=3),
      *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
+     *                 @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )
