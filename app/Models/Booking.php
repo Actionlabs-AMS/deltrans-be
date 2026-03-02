@@ -37,6 +37,7 @@ class Booking extends Model
         'expected_container' => 'integer',
         'is_complete' => 'boolean',
         'is_ship_in' => 'boolean',
+        'auto_complete_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

@@ -172,6 +172,81 @@ class SoaAndBillingController extends BaseController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/soa/{id}/line-items",
+     *     summary="Get SOA line items (transaction table list, paginated)",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="page", in="query", description="Page number", @OA\Schema(type="integer", default=1)),
+     *     @OA\Parameter(name="per_page", in="query", description="Items per page", @OA\Schema(type="integer", default=10)),
+     *     @OA\Response(response=200, description="Line items list (same data as SOA PDF table)", @OA\JsonContent(
+     *         @OA\Property(property="data", type="array", @OA\Items(type="object", description="One object per row; keys match column names (Date, Booking Number, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, Amount, 12% VAT, Total Amount)")),
+     *         @OA\Property(property="columns", type="array", @OA\Items(type="object", @OA\Property(property="id", type="integer"), @OA\Property(property="name", type="string"))),
+     *         @OA\Property(property="meta", type="object",
+     *             @OA\Property(property="current_page", type="integer"),
+     *             @OA\Property(property="from", type="integer", nullable=true),
+     *             @OA\Property(property="last_page", type="integer"),
+     *             @OA\Property(property="links", type="array", @OA\Items(type="object", @OA\Property(property="url", type="string", nullable=true), @OA\Property(property="label", type="string"), @OA\Property(property="active", type="boolean"))),
+     *             @OA\Property(property="path", type="string"),
+     *             @OA\Property(property="per_page", type="integer"),
+     *             @OA\Property(property="to", type="integer", nullable=true),
+     *             @OA\Property(property="total", type="integer"),
+     *             @OA\Property(property="all", type="integer"),
+     *             @OA\Property(property="trashed", type="integer", example=0),
+     *             @OA\Property(property="total_amount", type="number", format="float"),
+     *             @OA\Property(property="total_vat", type="number", format="float"),
+     *             @OA\Property(property="grand_total", type="number", format="float")
+     *         )
+     *     )),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function lineItems($id)
+    {
+        try {
+            $perPage = (int) request()->get('per_page', 10);
+            $perPage = max(1, min($perPage, 100));
+            $result = $this->service->getSoaLineItems($id, $perPage);
+            $paginator = $result['paginator'];
+
+            $paginatorArray = $paginator->toArray();
+            $meta = [
+                'current_page' => $paginatorArray['current_page'],
+                'from' => $paginatorArray['from'],
+                'last_page' => $paginatorArray['last_page'],
+                'links' => $paginatorArray['links'],
+                'path' => $paginatorArray['path'],
+                'per_page' => $paginatorArray['per_page'],
+                'to' => $paginatorArray['to'],
+                'total' => $paginatorArray['total'],
+                'all' => $paginator->total(),
+                'trashed' => 0,
+                'total_amount' => $result['total_amount'],
+                'total_vat' => $result['total_vat'],
+                'grand_total' => $result['grand_total'],
+            ];
+
+            return response()->json([
+                'data' => $paginator->items(),
+                'columns' => $result['columns'],
+                'meta' => $meta,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Statement of account not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * @OA\Put(
      *     path="/api/soa/{id}",
      *     summary="Update a statement of account",

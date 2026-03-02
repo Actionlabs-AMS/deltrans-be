@@ -25,6 +25,7 @@ return new class extends Migration {
             $table->unsignedInteger('expected_container')->default(0);
             $table->boolean('is_complete')->default(false);
             $table->boolean('is_ship_in')->default(true);
+            $table->timestamp('auto_complete_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
@@ -40,6 +41,7 @@ return new class extends Migration {
             $table->index('expected_container');
             $table->index('is_complete');
             $table->index('is_ship_in');
+            $table->index('auto_complete_at');
         });
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');

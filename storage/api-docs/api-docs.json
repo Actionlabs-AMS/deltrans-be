@@ -9073,10 +9073,6 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
                                         "data": {
                                             "type": "array",
                                             "items": {
@@ -9089,22 +9085,56 @@
                                                     "type": "integer",
                                                     "example": 1
                                                 },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": "string"
+                                                },
                                                 "per_page": {
                                                     "type": "integer",
                                                     "example": 10
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "nullable": true
                                                 },
                                                 "total": {
                                                     "type": "integer",
                                                     "example": 50
                                                 },
-                                                "last_page": {
+                                                "all": {
                                                     "type": "integer",
-                                                    "example": 5
+                                                    "example": 50
+                                                },
+                                                "trashed": {
+                                                    "type": "integer",
+                                                    "example": 2
                                                 }
                                             },
-                                            "type": "object"
-                                        },
-                                        "links": {
                                             "type": "object"
                                         }
                                     },
@@ -15633,6 +15663,155 @@
                     },
                     "400": {
                         "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa/{id}/line-items": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Get SOA line items (transaction table list, paginated)",
+                "operationId": "0645c8d9c850a81caf5081ca7ac61822",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "SOA ID (Statement of Account ID)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Line items list (same data as SOA PDF table)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "description": "One object per row; keys match column names (Date, Booking Number, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, Amount, 12% VAT, Total Amount)",
+                                                "type": "object"
+                                            }
+                                        },
+                                        "columns": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": "string"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "all": {
+                                                    "type": "integer"
+                                                },
+                                                "trashed": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "total_amount": {
+                                                    "type": "number",
+                                                    "format": "float"
+                                                },
+                                                "total_vat": {
+                                                    "type": "number",
+                                                    "format": "float"
+                                                },
+                                                "grand_total": {
+                                                    "type": "number",
+                                                    "format": "float"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"

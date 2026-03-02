@@ -8,6 +8,7 @@ use App\Models\SoaDataOption;
 use App\Http\Resources\SoaAndBillingResource;
 use App\Http\Resources\BillingStatementResource;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
@@ -312,6 +313,83 @@ class SoaAndBillingService extends BaseService
             $count++;
         }
         return $count;
+    }
+
+    /**
+     * Get SOA line items (transaction table rows) for API. Same data as the SOA PDF table. Paginated.
+     *
+     * @param int $id SOA ID
+     * @param int $perPage Items per page (default 10)
+     * @return array{paginator: LengthAwarePaginator, columns: array, total_amount: float, total_vat: float, grand_total: float}
+     * @throws \Exception
+     */
+    public function getSoaLineItems($id, $perPage = 10)
+    {
+        $soa = StatementOfAccount::with('shippingLine')->findOrFail($id);
+        $bookingIds = $soa->booking_ids ?? [];
+        $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
+            ->with([
+                'shippingLine',
+                'driver',
+                'fleetTruck',
+                'fixedExpense',
+                'booking' => function ($q) {
+                    $q->with(['cypaFrom', 'cypaTo', 'containers']);
+                }
+            ])
+            ->orderBy('booking_id')
+            ->orderBy('id')
+            ->get();
+
+        $transactionTemplateIds = $soa->shippingLine->transaction_information_template ?? [];
+        $transactionColumns = collect();
+        if (!empty($transactionTemplateIds)) {
+            $transactionColumns = SoaDataOption::whereIn('id', $transactionTemplateIds)
+                ->orderByRaw('FIELD(id, ' . implode(',', $transactionTemplateIds) . ')')
+                ->get(['id', 'name', 'description']);
+
+            $columnNames = $transactionColumns->pluck('name')->map('strtolower')->toArray();
+            $amountIndex = array_search('amount', $columnNames);
+            $vatIndex = array_search('vat', $columnNames);
+            if ($vatIndex === false) {
+                $vatIndex = array_search('12% vat', $columnNames);
+            }
+            if ($vatIndex === false) {
+                $vatIndex = array_search('12%vat', $columnNames);
+            }
+            if ($amountIndex !== false && $vatIndex !== false && $amountIndex > $vatIndex) {
+                $columnsArray = $transactionColumns->all();
+                $amountColumn = $columnsArray[$amountIndex];
+                $vatColumn = $columnsArray[$vatIndex];
+                $columnsArray[$vatIndex] = $amountColumn;
+                $columnsArray[$amountIndex] = $vatColumn;
+                $transactionColumns = collect($columnsArray);
+            }
+        }
+
+        $built = $this->buildSoaTransactionData($waybills, $soa, $transactionColumns);
+        $transactionData = $built['transactionData'];
+        $total = count($transactionData);
+
+        $currentPage = (int) request('page', 1);
+        $currentPage = max(1, $currentPage);
+        $paginator = new LengthAwarePaginator(
+            array_slice($transactionData, ($currentPage - 1) * $perPage, $perPage),
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        $columns = $transactionColumns->map(fn($col) => ['id' => $col->id, 'name' => $col->name])->values()->all();
+
+        return [
+            'paginator' => $paginator,
+            'columns' => $columns,
+            'total_amount' => (float) $built['totalAmount'],
+            'total_vat' => (float) $built['totalVat'],
+            'grand_total' => (float) $built['grandTotal'],
+        ];
     }
 
     /**

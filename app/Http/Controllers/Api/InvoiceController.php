@@ -271,15 +271,19 @@ class InvoiceController extends BaseController
      *     @OA\Parameter(name="date_from", in="query", description="Filter invoices by invoice date from (Y-m-d)", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="date_to", in="query", description="Filter invoices to date", @OA\Schema(type="string", format="date")),
      *     @OA\Response(response=200, description="List of invoices", @OA\JsonContent(
-     *         @OA\Property(property="success", type="boolean", example=true),
      *         @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Invoice")),
      *         @OA\Property(property="meta", type="object",
      *             @OA\Property(property="current_page", type="integer", example=1),
+     *             @OA\Property(property="from", type="integer", nullable=true),
+     *             @OA\Property(property="last_page", type="integer", example=5),
+     *             @OA\Property(property="links", type="array", @OA\Items(type="object", @OA\Property(property="url", type="string", nullable=true), @OA\Property(property="label", type="string"), @OA\Property(property="active", type="boolean"))),
+     *             @OA\Property(property="path", type="string"),
      *             @OA\Property(property="per_page", type="integer", example=10),
+     *             @OA\Property(property="to", type="integer", nullable=true),
      *             @OA\Property(property="total", type="integer", example=50),
-     *             @OA\Property(property="last_page", type="integer", example=5)
-     *         ),
-     *         @OA\Property(property="links", type="object")
+     *             @OA\Property(property="all", type="integer", example=50),
+     *             @OA\Property(property="trashed", type="integer", example=2)
+     *         )
      *     )),
      *     @OA\Response(response=401, description="Unauthenticated"),
      *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
@@ -290,7 +294,9 @@ class InvoiceController extends BaseController
         try {
             $perPage = request()->get('per_page', 10);
             $result = $this->service->listInvoices($perPage);
-            $items = collect($result->items())->map(function ($invoice) {
+            $paginator = $result['paginator'];
+            $metaExtra = $result['meta_extra'];
+            $items = collect($paginator->items())->map(function ($invoice) {
                 $arr = $invoice->toArray();
                 $totals = $this->service->getComputedTotals(
                     (int) $invoice->statement_of_account_id,
@@ -298,21 +304,24 @@ class InvoiceController extends BaseController
                 );
                 return array_merge($arr, $totals);
             })->all();
+
+            $paginatorArray = $paginator->toArray();
+            $meta = [
+                'current_page' => $paginatorArray['current_page'],
+                'from' => $paginatorArray['from'],
+                'last_page' => $paginatorArray['last_page'],
+                'links' => $paginatorArray['links'],
+                'path' => $paginatorArray['path'],
+                'per_page' => $paginatorArray['per_page'],
+                'to' => $paginatorArray['to'],
+                'total' => $paginatorArray['total'],
+                'all' => $metaExtra['all'],
+                'trashed' => $metaExtra['trashed'],
+            ];
+
             return response()->json([
-                'success' => true,
                 'data' => $items,
-                'meta' => [
-                    'current_page' => $result->currentPage(),
-                    'per_page' => $result->perPage(),
-                    'total' => $result->total(),
-                    'last_page' => $result->lastPage(),
-                ],
-                'links' => [
-                    'first' => $result->url(1),
-                    'last' => $result->url($result->lastPage()),
-                    'prev' => $result->previousPageUrl(),
-                    'next' => $result->nextPageUrl(),
-                ],
+                'meta' => $meta,
             ]);
         } catch (\Exception $e) {
             return $this->messageService->responseError();
