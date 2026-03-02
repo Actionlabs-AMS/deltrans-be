@@ -1,109 +1,79 @@
-# Booking Completion: Two Types of Triggers
+# Two Ways a Booking Becomes Complete
 
-This document explains how bookings get marked **Complete** (`is_complete = true`). There are **two distinct triggers**: one when an invoice is created (immediate), and one after a **3-week** auto-complete window (scheduled).
+A booking is marked **Complete** (`is_complete = true`) in one of two ways:
 
----
-
-## 1. Trigger 1: Invoice creation (immediate)
-
-### When it happens
-
-When a user **generates/creates an invoice** from a Statement of Account (SOA), the system immediately marks all bookings in that SOA as complete.
-
-### What the system does
-
-- After the invoice is successfully created, the system reads the SOA’s **booking ID(s)**.
-- All those bookings are updated to **Complete = Yes** (`is_complete = true`).
-- No timer is involved; completion is immediate.
-
-### Why it matters
-
-- Bookings that have been invoiced are treated as **billing-processed**.
-- Dashboards and reports that use completion status stay in sync.
-- Users do not need to mark those bookings complete by hand.
-
-### Scope / notes
-
-- One SOA can include **multiple bookings**; **all** of them are marked complete when the invoice is created.
-- This only runs in the **invoice generation flow** (create invoice from SOA).
-- Setting `is_complete = true` here is **one-way**: the system does not automatically set bookings back to incomplete if the invoice is later changed or removed.
+1. **Invoice creation** — immediate.
+2. **Auto-complete after inactivity** — a 3-week countdown, then a scheduled job sets it complete.
 
 ---
 
-## 2. Trigger 2: Auto-complete after 3 weeks (scheduled)
+## 1) Invoice creation (immediate)
 
-A booking can also be marked complete **automatically 3 weeks** after a “due” time, if no invoice was created in the meantime. This uses a **timer** stored on the booking: `auto_complete_at`.
-
-### The 3-week window
-
-- The delay is **3 weeks** (21 days), defined by `WEEKS_UNTIL_AUTO_COMPLETE = 3` in the observers and in the `AutoCompleteBookings` command.
-- The timer is stored as a **timestamp** on the booking: `auto_complete_at`. When that date/time has passed, the scheduled command can set the booking to complete.
-
-### How the timer starts (first time)
-
-The timer **starts** when a booking is first tied to an SOA:
-
-- **SOA created:** When a Statement of Account is **created** and includes one or more booking IDs, the system sets `auto_complete_at = now() + 3 weeks` for each of those bookings (only if they are not already complete).
-- So: “3 weeks from the first SOA that includes this booking” is when the auto-complete is due, unless something resets or clears the timer.
-
-### How the timer resets (pushed forward)
-
-The **same 3-week window** is applied again from “now” when any of the following happens (so the due date is pushed 3 weeks forward):
-
-1. **SOA updated**  
-   When an SOA is **updated**, the timer is reset for **all bookings currently in that SOA** (again to `now() + 3 weeks`). So any edit to the SOA that contains the booking pushes the auto-complete date out.
-
-2. **Booking updated**  
-   When the **booking** itself is updated and the change is “meaningful” (any field except `auto_complete_at`, `is_complete`, `updated_at`, `created_at`, `deleted_at`), the timer is reset to `now() + 3 weeks`. So ongoing changes to the booking keep pushing the due date out.
-
-3. **Waybill detail saved/deleted/restored**  
-   When a waybill detail linked to the booking is saved, deleted, or restored, the booking’s timer (if it exists) is reset to `now() + 3 weeks`.
-
-4. **Container saved/deleted**  
-   When a container linked to the booking is saved or deleted, the booking’s timer (if it exists) is reset to `now() + 3 weeks`.
-
-In all these cases, the system only updates bookings that are **not** already complete and that **already have** an `auto_complete_at` set; it does not start a new timer for bookings that never had one.
-
-### How the timer is cleared (stopped)
-
-The timer is **removed** (`auto_complete_at` set to `null`) when the booking no longer has any SOA pointing to it:
-
-- **Booking removed from an SOA:** When an SOA is **updated** and a booking is **removed** from its `booking_ids`, the system checks whether **any other** (non-deleted) SOA still references that booking. If **none** do, it sets `auto_complete_at = null` for that booking (only if the booking is not complete). So the auto-complete timer is cleared when the booking is no longer on any SOA.
-
-- **SOA deleted:** When an SOA is **deleted**, for each booking that was in that SOA, the system checks whether any other SOA still references it. If **none** do, it sets `auto_complete_at = null` for that booking (only if not complete). So deleting the only SOA that contained the booking clears the timer.
-
-If the booking is still referenced by at least one other SOA, the timer is **not** cleared; it can still run or be reset by other SOA/booking/waybill/container events.
-
-### When auto-complete actually runs (3 weeks “due”)
-
-- A **scheduled command** runs periodically: `php artisan bookings:auto-complete` (configured in `app/Console/Kernel.php` to run **hourly**).
-- The command finds bookings where:
-  - `is_complete = false`,
-  - `auto_complete_at` is not null,
-  - `auto_complete_at <= now()` (the 3-week due time has passed).
-- For those bookings it sets:
-  - `is_complete = true`,
-  - `auto_complete_at = null`.
-
-So in practice: the timer **starts** when the booking is first put on an SOA (or when the timer is set), can be **reset** many times by SOA/booking/waybill/container activity, and when it is **not** reset for 3 weeks and the command runs, the booking is marked complete.
+- **What happens:** When a user creates an **Invoice** from a **Statement of Account (SOA)**.
+- **Result:** The system immediately sets **all bookings** in that SOA to `is_complete = true`.
+- No timer; completion is instant.
 
 ---
 
-## Summary table
+## 2) Auto-complete after inactivity (scheduled)
 
-| Trigger              | When it runs                          | Effect                                      |
-|----------------------|----------------------------------------|---------------------------------------------|
-| **Invoice creation** | User creates an invoice from an SOA   | All bookings in that SOA → `is_complete = true` (immediate). |
-| **Auto-complete**    | Scheduled command, after 3 weeks due | Bookings with `auto_complete_at <= now()` → `is_complete = true`, `auto_complete_at = null`. |
+When an SOA is created, the system starts a **3-week countdown** for each booking in that SOA. A scheduled job checks this timer and marks the booking complete when the 3 weeks have passed with no activity.
 
-- **Timer starts:** When an SOA that includes the booking is **created** (or when an update sets/resets the timer).
-- **Timer resets (3 weeks from now):** SOA updated (with that booking), booking meaningfully updated, waybill detail or container saved/deleted/restored.
-- **Timer cleared:** Booking removed from every SOA (or the only SOA containing it is deleted), so no SOA references it.
+### Timer starts / resets when SOA changes
+
+- **SOA created**  
+  For every booking in the new SOA, a timer starts: due date = **now + 3 weeks**.
+
+- **SOA updated**
+  - **New bookings added** to the SOA → a timer **starts** for those new bookings (due = now + 3 weeks).
+  - **Bookings still in** the SOA → their timer **resets** (due = now + 3 weeks).
+  - **Booking removed** from the SOA → its timer is **cleared** (`auto_complete_at = null`), but only if that booking is **not** in any other active SOA.
+
+- **SOA deleted**  
+  The timer is **cleared** for all bookings that were in that SOA, but only if they are **not** in any other active SOA.
+
+### Timer extends when booking data changes
+
+Any change to the booking or its related data **pushes the due date forward** (resets to now + 3 weeks):
+
+- Adding or updating a **booking**.
+- Adding, editing, deleting, or restoring a **Waybill**.
+- Adding, editing, or deleting a **Container**.
+
+So the 3-week inactivity period restarts whenever there is such a change.
+
+### Completion rule
+
+If there are **no changes** (as above) for **3 weeks in a row**, the scheduled job runs and sets `is_complete = true` for that booking.
 
 ---
 
-## Scope / notes (both triggers)
+## Artisan commands
 
-- One SOA can include **multiple bookings**; invoice creation marks **all** of them complete; the 3-week timer is **per booking**.
-- Completion is only set to `true`; the system does not automatically revert to incomplete if an invoice is changed or removed, or if an SOA is later edited.
-- The 3-week value is defined in: `StatementOfAccountObserver`, `BookingObserver`, `WaybillDetailObserver`, `ContainerObserver`, and `AutoCompleteBookings` command.
+| Command | What it does |
+|--------|----------------|
+| `php artisan schedule:list` | Shows all scheduled tasks and when they run (use this to **check the running cron**). |
+| `php artisan schedule:run` | Runs the scheduler once (same as what cron runs every minute). |
+| `php artisan schedule:work` | Runs the scheduler in the foreground (e.g. local dev); runs every minute until you stop it. |
+| `php artisan bookings:auto-complete` | Runs the auto-complete job **once now**: marks complete all bookings whose 3-week due date has passed. |
+
+**On the server**, cron usually runs the scheduler every minute:
+
+```bash
+* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+The **bookings:auto-complete** command is scheduled in `app/Console/Kernel.php` to run **hourly**.
+
+---
+
+## Quick summary
+
+| Way to complete | Trigger | Result |
+|-----------------|--------|--------|
+| **Invoice** | User creates invoice from SOA | All bookings in that SOA → `is_complete = true` right away. |
+| **Auto-complete** | No activity for 3 weeks | Scheduled job sets `is_complete = true` when due date has passed. |
+
+- Timer **starts** when a booking is first added to an SOA (or when new bookings are added on SOA update).
+- Timer **resets** (due = now + 3 weeks) when the SOA is updated, or when the booking, a waybill, or a container changes.
+- Timer **clears** when the booking is removed from every SOA (or the only SOA that had it is deleted).
