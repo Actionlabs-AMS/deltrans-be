@@ -11,9 +11,11 @@ use App\Models\HelperCAHistory;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
+use Illuminate\Support\Facades\Log;
+
 class BudgetSummaryService
 {
-    private const TYPE_BUDGET = 'Budget';
+    private const TYPE_BUDGET = 'Issued Budget';
     private const TYPE_TRUCK_EXPENSE = 'Truck Expense';
     private const TYPE_PARTS_EXPENSE = 'Parts Expense';
     private const TYPE_OTHER_EXPENSE = 'Other Expense';
@@ -47,7 +49,7 @@ class BudgetSummaryService
     /**
      * Collect all rows from the 6 tables, map to unified shape, sort, and compute totals.
      */
-    public function list(int $perPage = 10, ?string $shift = 'All'): array
+    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type): array
     {
         $all = collect();
 
@@ -167,6 +169,10 @@ class BudgetSummaryService
         }
 
         // Sort by transaction_date desc, then id desc
+        if ($type && $type !== 'All') {
+           $all = $all->filter(fn($row) => $row['type'] === $type);
+        }
+
         $sorted = $all->sortByDesc(function ($item) {
             return $item['transaction_date'] . ' ' . str_pad((string) $item['id'], 10, '0', STR_PAD_LEFT);
         })->values();
