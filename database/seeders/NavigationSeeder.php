@@ -184,7 +184,7 @@ class NavigationSeeder extends Seeder
             [
                 'name' => 'Budget Management',
                 'slug' => 'budget-management',
-                'icon' => 'chest',
+                'icon' => 'wallet',
                 'description' => 'Manage increase or decrease of budget',
                 'parent_id' => null,
                 'active' => true,
