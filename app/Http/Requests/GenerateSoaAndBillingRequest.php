@@ -34,15 +34,8 @@ class GenerateSoaAndBillingRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'booking_id' => [
-                'required_without:booking_ids',
-                'nullable',
-                'integer',
-                'exists:bookings,id',
-            ],
             'booking_ids' => [
-                'required_without:booking_id',
-                'nullable',
+                'required',
                 'array',
                 'min:1',
             ],
@@ -106,9 +99,8 @@ class GenerateSoaAndBillingRequest extends FormRequest
             'shipping_line_id.required' => 'The shipping line is required.',
             'shipping_line_id.exists' => 'The selected shipping line does not exist.',
             'dli_sa_number.required' => 'The DLI SA number is required.',
-            'booking_id.required_without' => 'Either booking_id or booking_ids is required.',
-            'booking_id.exists' => 'The selected booking does not exist.',
-            'booking_ids.required_without' => 'Either booking_id or booking_ids is required.',
+            'booking_ids.required' => 'At least one booking is required.',
+            'booking_ids.min' => 'At least one booking is required.',
             'booking_ids.*.exists' => 'One or more selected bookings do not exist.',
             'billing_statement_no.required' => 'The billing statement number is required.',
             'billing_statement_no.max' => 'The billing statement number must not exceed 255 characters.',
@@ -148,9 +140,6 @@ class GenerateSoaAndBillingRequest extends FormRequest
     {
         if ($this->filled('booking_ids') && is_array($this->input('booking_ids'))) {
             return array_values(array_map('intval', $this->input('booking_ids')));
-        }
-        if ($this->filled('booking_id')) {
-            return [(int) $this->input('booking_id')];
         }
         return [];
     }

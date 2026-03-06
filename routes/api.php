@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\SoaAndBillingController;
+use App\Http\Controllers\Api\SoaBillingCheckerController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\TruckMaintenanceController;
 use App\Http\Controllers\Api\BookingController;
@@ -290,6 +291,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/{id}/send-email', [SoaAndBillingController::class, 'sendSoaEmail']);  // Send SOA PDF via email
 		Route::post('/{id}/send-billing-and-soa-email', [SoaAndBillingController::class, 'sendBillingAndSoaEmail']);  // Send combined Billing + SOA PDF via email, {id} = SOA ID
 
+		// Line items by booking ID(s) (transaction table data, same as SOA PDF)
+		Route::get('/line-items', [SoaAndBillingController::class, 'lineItems']);  // Get line items by booking_ids[] and shipping_line_id (query)
+
 		// Standard CRUD operations
 		Route::get('/', [SoaAndBillingController::class, 'index']);  // Retrieve all statement of accounts
 		Route::get('/{id}', [SoaAndBillingController::class, 'show']);  // Retrieve a single statement of account
@@ -328,6 +332,15 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::prefix('soa-and-billing')->group(function () {
 		Route::post('/generate', [SoaAndBillingController::class, 'generateSoaAndBilling']);  // Generate SOA + Billing in one request
 		Route::post('/attachments', [SoaAndBillingController::class, 'storeAttachments']);  // Upload temp images for PDF attachments (returns token)
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| SOA / Billing / Invoice Booking Validator (check valid vs invalid bookings by type)
+	|--------------------------------------------------------------------------
+	*/
+	Route::prefix('soa-billing-check')->group(function () {
+		Route::post('/validate', [SoaBillingCheckerController::class, 'validateBookings']);  // Validate bookings for type 1=SOA, 2=Billing, 3=Invoice
 	});
 
 	/*
@@ -412,6 +425,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [BookingController::class, 'index']);  // Retrieve all bookings
 		Route::get('/by-shipping-line/{shipping_line_id}', [BookingController::class, 'byShippingLine']);  // Bookings by shipping line + optional expected_date range
 		Route::post('/', [BookingController::class, 'store']);  // Create a new booking
+		Route::get('/{id}/remaining-container', [BookingController::class, 'remainingContainer']);  // Remaining container breakdown for a booking
 		Route::get('/{id}', [BookingController::class, 'show']);  // Retrieve a single booking
 		Route::put('/{id}', [BookingController::class, 'update']);  // Update a booking
 		Route::delete('/{id}', [BookingController::class, 'destroy']);  // Soft delete a booking
@@ -883,7 +897,7 @@ Route::post('/test-smtp-email', function (\Illuminate\Http\Request $request) {
 			'message' => 'Test email sent successfully to ' . $email,
 			'mail_config' => $mailConfig,
 		]);
-	} catch (\Illuminate\Mail\SendException $e) {
+	} catch (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $e) {
 		return response()->json([
 			'success' => false,
 			'message' => 'Failed to send test email via SMTP',

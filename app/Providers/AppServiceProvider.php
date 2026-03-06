@@ -2,6 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\Booking;
+use App\Models\Container;
+use App\Models\StatementOfAccount;
+use App\Models\WaybillDetail;
+use App\Observers\BookingObserver;
+use App\Observers\ContainerObserver;
+use App\Observers\StatementOfAccountObserver;
+use App\Observers\WaybillDetailObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Blade;
@@ -31,6 +39,11 @@ class AppServiceProvider extends ServiceProvider
         // Dynamically configure mail settings from database options
         // Primary: Database options, Fallback: Environment variables
         $this->configureMailFromDatabase();
+
+        StatementOfAccount::observe(StatementOfAccountObserver::class);
+        Booking::observe(BookingObserver::class);
+        WaybillDetail::observe(WaybillDetailObserver::class);
+        Container::observe(ContainerObserver::class);
     }
 
     /**

@@ -22,6 +22,11 @@ class Kernel extends ConsoleKernel
         $schedule->command('backup:cleanup')
             ->dailyAt('02:00')
             ->withoutOverlapping();
+
+        // Auto-complete bookings after SOA inactivity window
+        $schedule->command('bookings:auto-complete')
+            ->hourly()
+            ->withoutOverlapping();
     }
 
     /**

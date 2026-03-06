@@ -29,7 +29,9 @@ class BookingRequest extends FormRequest
             'cypa_id_from' => 'required|integer|exists:cypa_details,id',
             'cypa_id_to' => 'required|integer|exists:cypa_details,id',
             'expected_date' => 'nullable|date',
+            'expected_container' => 'required|integer|min:0',
             'is_complete' => 'nullable|boolean',
+            'is_ship_in' => 'nullable|boolean',
         ];
 
         // For update, make some fields optional
@@ -40,7 +42,9 @@ class BookingRequest extends FormRequest
             $rules['cypa_id_from'] = 'sometimes|required|integer|exists:cypa_details,id';
             $rules['cypa_id_to'] = 'sometimes|required|integer|exists:cypa_details,id';
             $rules['expected_date'] = 'sometimes|nullable|date';
+            $rules['expected_container'] = 'sometimes|required|integer|min:0';
             $rules['is_complete'] = 'sometimes|nullable|boolean';
+            $rules['is_ship_in'] = 'sometimes|nullable|boolean';
         }
 
         return $rules;
@@ -63,8 +67,12 @@ class BookingRequest extends FormRequest
             'cypa_id_to.required' => 'The CYPA ID (to) is required.',
             'cypa_id_to.exists' => 'The selected CYPA (to) does not exist.',
             'expected_date.date' => 'The expected date must be a valid date.',
+            'expected_container.required' => 'The expected container count is required.',
+            'expected_container.integer' => 'The expected container count must be a whole number.',
+            'expected_container.min' => 'The expected container count must be 0 or greater.',
             'vessel.max' => 'The vessel must not exceed 255 characters.',
             'is_complete.boolean' => 'The is_complete field must be true or false.',
+            'is_ship_in.boolean' => 'The is_ship_in field must be true or false.',
         ];
     }
 }

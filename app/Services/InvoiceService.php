@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Booking;
 use App\Models\Invoice;
 use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
@@ -256,6 +257,12 @@ class InvoiceService
         }
 
         $invoice = Invoice::create($payload);
+
+        $bookingIds = $soa->booking_ids ?? [];
+        if (!empty($bookingIds)) {
+            Booking::whereIn('id', $bookingIds)->update(['is_complete' => true]);
+        }
+
         $invoice->load(['statementOfAccount.shippingLine']);
 
         return $invoice;
@@ -400,11 +407,15 @@ class InvoiceService
     }
 
     /**
-     * List invoices with pagination
+     * List invoices with pagination.
+     * Returns paginator and counts for meta (all, trashed) to match SOA/billing API shape.
      */
     public function listInvoices($perPage = 10)
     {
         try {
+            $allInvoices = Invoice::count();
+            $trashedInvoices = Invoice::onlyTrashed()->count();
+
             $query = Invoice::with(['statementOfAccount.shippingLine']);
 
             if (request('search')) {
@@ -413,6 +424,12 @@ class InvoiceService
                         ->orWhereHas('statementOfAccount.shippingLine', function ($query) {
                             $query->where('name', 'LIKE', '%' . request('search') . '%');
                         });
+                });
+            }
+
+            if (request('shipping_line_id')) {
+                $query->whereHas('statementOfAccount', function ($q) {
+                    $q->where('shipping_line_id', request('shipping_line_id'));
                 });
             }
 
@@ -430,7 +447,15 @@ class InvoiceService
 
             $query->orderBy('id', 'desc');
 
-            return $query->paginate($perPage);
+            $paginator = $query->paginate($perPage)->withQueryString();
+
+            return [
+                'paginator' => $paginator,
+                'meta_extra' => [
+                    'all' => $allInvoices,
+                    'trashed' => $trashedInvoices,
+                ],
+            ];
         } catch (\Exception $e) {
             throw new \Exception('Failed to list invoices: ' . $e->getMessage());
         }

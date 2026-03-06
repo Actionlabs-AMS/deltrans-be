@@ -22,7 +22,9 @@ class Booking extends Model
         'cypa_id_from',
         'cypa_id_to',
         'expected_date',
+        'expected_container',
         'is_complete',
+        'is_ship_in',
     ];
 
     /**
@@ -32,7 +34,10 @@ class Booking extends Model
      */
     protected $casts = [
         'expected_date' => 'date',
+        'expected_container' => 'integer',
         'is_complete' => 'boolean',
+        'is_ship_in' => 'boolean',
+        'auto_complete_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -51,7 +56,9 @@ class Booking extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'expected_container' => 0,
         'is_complete' => false,
+        'is_ship_in' => true,
     ];
 
     /**

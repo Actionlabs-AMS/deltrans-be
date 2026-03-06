@@ -31,6 +31,7 @@ class BookingService extends BaseService
     public function show(int $id)
     {
         $model = $this->model::with(['shippingLine', 'cypaFrom', 'cypaTo', 'containers'])
+            ->withCount('containers')
             ->findOrFail($id);
 
         // Count waybills for this booking
@@ -52,7 +53,11 @@ class BookingService extends BaseService
     {
         $model = $this->model::findOrFail($id);
         $model->update($data);
-        return $this->resource::make($model->fresh()->load(['shippingLine', 'cypaFrom', 'cypaTo', 'containers']));
+        return $this->resource::make(
+            $model->fresh()
+                ->load(['shippingLine', 'cypaFrom', 'cypaTo', 'containers'])
+                ->loadCount('containers')
+        );
     }
 
     /**
@@ -64,7 +69,9 @@ class BookingService extends BaseService
             $allBookings = $this->getTotalCount();
             $trashedBookings = $this->getTrashedCount();
 
-            $query = Booking::query()->with(['shippingLine', 'cypaFrom', 'cypaTo']);
+            $query = Booking::query()
+                ->with(['shippingLine', 'cypaFrom', 'cypaTo'])
+                ->withCount('containers');
 
             // Apply onlyTrashed() first if we're in trash view
             if ($trash) {
@@ -113,6 +120,11 @@ class BookingService extends BaseService
                 $query->where('is_complete', request('is_complete'));
             }
 
+            // Filter by is_ship_in
+            if (request()->has('is_ship_in')) {
+                $query->where('is_ship_in', request('is_ship_in'));
+            }
+
             // Filter by expected_date
             if (request('expected_date')) {
                 $query->whereDate('expected_date', request('expected_date'));
@@ -157,6 +169,7 @@ class BookingService extends BaseService
 
         $query = (clone $baseQuery)
             ->with(['shippingLine', 'cypaFrom', 'cypaTo'])
+            ->withCount('containers')
             ->orderBy('expected_date', 'asc')
             ->orderBy('id', 'desc');
 
@@ -167,5 +180,25 @@ class BookingService extends BaseService
             'remaining_balance' => round($remainingBalance, 2),
             'total_paid' => round($totalPaid, 2),
         ]);
+    }
+
+    /**
+     * Get remaining container breakdown for a booking.
+     */
+    public function remainingContainer(int $id): array
+    {
+        $booking = Booking::query()
+            ->withCount('containers')
+            ->findOrFail($id);
+
+        $expectedContainer = (int) ($booking->expected_container ?? 0);
+        $containersCount = (int) ($booking->containers_count ?? 0);
+
+        return [
+            'booking_id' => (int) $booking->id,
+            'expected_container' => $expectedContainer,
+            'containers_count' => $containersCount,
+            'remaining_container' => $expectedContainer - $containersCount,
+        ];
     }
 }

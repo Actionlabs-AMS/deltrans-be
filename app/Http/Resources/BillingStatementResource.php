@@ -31,7 +31,6 @@ class BillingStatementResource extends JsonResource
                 ] : null;
             }),
             'shipping_line_id' => $this->statement_of_account_id ? $this->shipping_line_id : null,
-            'booking_id' => $this->statement_of_account_id ? $this->booking_id : null,
             'booking_ids' => $this->statementOfAccount?->booking_ids ?? [],
 
             // Loaded relations

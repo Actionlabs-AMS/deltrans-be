@@ -620,6 +620,15 @@
                         }
                     },
                     {
+                        "name": "is_ship_in",
+                        "in": "query",
+                        "description": "Filter by ship-in status (0=Ship Out, 1=Ship In)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
                         "name": "expected_date",
                         "in": "query",
                         "description": "Filter by expected date",
@@ -730,7 +739,8 @@
                                 "required": [
                                     "shipping_line_id",
                                     "cypa_id_from",
-                                    "cypa_id_to"
+                                    "cypa_id_to",
+                                    "expected_container"
                                 ],
                                 "properties": {
                                     "reference_number": {
@@ -764,10 +774,20 @@
                                         "format": "date",
                                         "example": "2025-02-10"
                                     },
+                                    "expected_container": {
+                                        "description": "Expected number of containers (required)",
+                                        "type": "integer",
+                                        "example": 10
+                                    },
                                     "is_complete": {
                                         "description": "Whether the booking is complete (optional)",
                                         "type": "boolean",
                                         "example": false
+                                    },
+                                    "is_ship_in": {
+                                        "description": "Whether the booking is ship-in (optional)",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
@@ -816,10 +836,27 @@
                                                     "example": "2025-02-10",
                                                     "nullable": true
                                                 },
+                                                "expected_container": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "containers_count": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                },
+                                                "remaining_container": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
                                                 "is_complete": {
                                                     "description": "Whether the booking is complete",
                                                     "type": "boolean",
                                                     "example": false
+                                                },
+                                                "is_ship_in": {
+                                                    "description": "Whether the booking is ship-in",
+                                                    "type": "boolean",
+                                                    "example": true
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -1157,10 +1194,20 @@
                                         "format": "date",
                                         "example": "2025-02-10"
                                     },
+                                    "expected_container": {
+                                        "description": "Expected number of containers (optional)",
+                                        "type": "integer",
+                                        "example": 10
+                                    },
                                     "is_complete": {
                                         "description": "Whether the booking is complete (optional)",
                                         "type": "boolean",
                                         "example": false
+                                    },
+                                    "is_ship_in": {
+                                        "description": "Whether the booking is ship-in (optional)",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
@@ -1209,10 +1256,27 @@
                                                     "example": "2025-02-10",
                                                     "nullable": true
                                                 },
+                                                "expected_container": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "containers_count": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                },
+                                                "remaining_container": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
                                                 "is_complete": {
                                                     "description": "Whether the booking is complete",
                                                     "type": "boolean",
                                                     "example": false
+                                                },
+                                                "is_ship_in": {
+                                                    "description": "Whether the booking is ship-in",
+                                                    "type": "boolean",
+                                                    "example": true
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -1318,6 +1382,101 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Resource has been moved to trash."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Booking not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/bookings/{id}/remaining-container": {
+            "get": {
+                "tags": [
+                    "Booking Management"
+                ],
+                "summary": "Get remaining container breakdown for a booking",
+                "description": "Get remaining container breakdown for a booking.",
+                "operationId": "34d8a8fa08b4c78dc1728d083c724817",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Booking ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Remaining container breakdown retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "booking_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "expected_container": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "containers_count": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                },
+                                                "remaining_container": {
+                                                    "description": "expected_container - containers_count (may be negative)",
+                                                    "type": "integer",
+                                                    "example": 3
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -8873,6 +9032,14 @@
                         }
                     },
                     {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID (via statement of account)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
                         "name": "statement_of_account_id",
                         "in": "query",
                         "description": "Filter by statement of account ID",
@@ -8883,7 +9050,7 @@
                     {
                         "name": "date_from",
                         "in": "query",
-                        "description": "Filter invoices from date",
+                        "description": "Filter invoices by invoice date from (Y-m-d)",
                         "schema": {
                             "type": "string",
                             "format": "date"
@@ -8906,10 +9073,6 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
                                         "data": {
                                             "type": "array",
                                             "items": {
@@ -8922,22 +9085,56 @@
                                                     "type": "integer",
                                                     "example": 1
                                                 },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": "string"
+                                                },
                                                 "per_page": {
                                                     "type": "integer",
                                                     "example": 10
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "nullable": true
                                                 },
                                                 "total": {
                                                     "type": "integer",
                                                     "example": 50
                                                 },
-                                                "last_page": {
+                                                "all": {
                                                     "type": "integer",
-                                                    "example": 5
+                                                    "example": 50
+                                                },
+                                                "trashed": {
+                                                    "type": "integer",
+                                                    "example": 2
                                                 }
                                             },
-                                            "type": "object"
-                                        },
-                                        "links": {
                                             "type": "object"
                                         }
                                     },
@@ -15580,6 +15777,32 @@
                         }
                     },
                     {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter SOA created from date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter SOA created to date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
                         "name": "search",
                         "in": "query",
                         "description": "Search by DLI SA number, work order, or shipping line name",
@@ -15809,6 +16032,167 @@
                 ]
             }
         },
+        "/api/soa/line-items": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Get line items by booking ID(s) and shipping line (transaction table list, paginated)",
+                "operationId": "ef3ab7b58c169888043f19fcd8c1b281",
+                "parameters": [
+                    {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Shipping line ID (columns come from its transaction_information_template; all bookings must belong to this shipping line)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "booking_ids",
+                        "in": "query",
+                        "description": "Booking IDs (array). E.g. booking_ids[]=1&booking_ids[]=2 or single booking_ids[]=3",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Line items list (same data as SOA PDF table)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "description": "One object per row; keys match column names (Date, Booking Number, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, Amount, 12% VAT, Total Amount)",
+                                                "type": "object"
+                                            }
+                                        },
+                                        "columns": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "links": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "url": {
+                                                                "type": "string",
+                                                                "nullable": true
+                                                            },
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "active": {
+                                                                "type": "boolean"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "path": {
+                                                    "type": "string"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "all": {
+                                                    "type": "integer"
+                                                },
+                                                "trashed": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "total_amount": {
+                                                    "type": "number",
+                                                    "format": "float"
+                                                },
+                                                "total_vat": {
+                                                    "type": "number",
+                                                    "format": "float"
+                                                },
+                                                "grand_total": {
+                                                    "type": "number",
+                                                    "format": "float"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing/invalid booking_ids, shipping_line_id, or bookings do not belong to shipping line"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/soa/{id}/download": {
             "get": {
                 "tags": [
@@ -15907,6 +16291,24 @@
                         "description": "Filter by shipping line ID",
                         "schema": {
                             "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter billing statements created from date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter billing statements created to date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
                         }
                     },
                     {
@@ -16760,6 +17162,52 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa-billing-check/validate": {
+            "post": {
+                "tags": [
+                    "SOA, Billing & Invoice - Booking Validator"
+                ],
+                "summary": "Validate bookings for SOA, Billing, or Invoice",
+                "description": "Validate bookings for SOA (type 1), Billing (type 2), or Invoice (type 3).\nReturns valid_bookings and invalid_bookings (with reason per invalid).",
+                "operationId": "5f7f91d0687cbf7fceb05bf383dadb05",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BookingCheckerValidateInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Validation result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BookingCheckerValidateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error (invalid request body)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     },
                     "500": {
                         "$ref": "#/components/responses/GeneralError"
@@ -23643,10 +24091,30 @@
                         "example": "2025-02-10",
                         "nullable": true
                     },
+                    "expected_container": {
+                        "description": "Expected number of containers for the booking",
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "containers_count": {
+                        "description": "Number of containers currently added to the booking",
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "remaining_container": {
+                        "description": "expected_container - actual containers count (may be negative)",
+                        "type": "integer",
+                        "example": 3
+                    },
                     "is_complete": {
                         "description": "Whether the booking is complete",
                         "type": "boolean",
                         "example": false
+                    },
+                    "is_ship_in": {
+                        "description": "Whether the booking is ship-in (true=Ship In, false=Ship Out)",
+                        "type": "boolean",
+                        "example": true
                     },
                     "actual_no_of_waybill": {
                         "description": "Actual number of waybills created for this booking",
@@ -25233,11 +25701,6 @@
                             2
                         ]
                     },
-                    "booking_id": {
-                        "description": "First booking ID (backward compatibility)",
-                        "type": "integer",
-                        "example": 1
-                    },
                     "work_order": {
                         "type": "string",
                         "example": "WO-001",
@@ -25318,12 +25781,6 @@
                     },
                     "shipping_line_id": {
                         "description": "From statement_of_accounts.shipping_line_id",
-                        "type": "integer",
-                        "example": 1,
-                        "nullable": true
-                    },
-                    "booking_id": {
-                        "description": "First booking ID from SOA booking_ids",
                         "type": "integer",
                         "example": 1,
                         "nullable": true
@@ -25449,6 +25906,67 @@
                         "type": "boolean",
                         "example": false,
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "BookingCheckerValidateInput": {
+                "title": "Validate Bookings for SOA/Billing/Invoice",
+                "required": [
+                    "booking_ids",
+                    "type"
+                ],
+                "properties": {
+                    "booking_ids": {
+                        "description": "Array of booking IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    },
+                    "type": {
+                        "description": "1 = SOA, 2 = Billing, 3 = Invoice",
+                        "type": "integer",
+                        "example": 2
+                    }
+                },
+                "type": "object"
+            },
+            "BookingCheckerValidateResponse": {
+                "title": "Validate Bookings Response",
+                "properties": {
+                    "valid_bookings": {
+                        "description": "Bookings that pass the condition for the given type",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "invalid_bookings": {
+                        "description": "Bookings that fail with reason",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "booking": {
+                                    "description": "Booking object",
+                                    "type": "object"
+                                },
+                                "reason": {
+                                    "description": "Why the booking is invalid",
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "has_soa": {
+                        "description": "For type 2 and 3 only. True if any selected booking has an SOA, false if all have no SOA. Default false.",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -26112,6 +26630,10 @@
         {
             "name": "SOA and Billing Management",
             "description": "API endpoints for SOA and billing management"
+        },
+        {
+            "name": "SOA, Billing & Invoice - Booking Validator",
+            "description": "Validate bookings for SOA, Billing, or Invoice (type 1, 2, or 3). Returns valid and invalid bookings with reasons."
         },
         {
             "name": "SOA Data Option Management",

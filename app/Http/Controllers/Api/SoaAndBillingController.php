@@ -26,7 +26,6 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
  *     @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
  *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Array of booking IDs"),
- *     @OA\Property(property="booking_id", type="integer", example=1, description="First booking ID (backward compatibility)"),
  *     @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
  *     @OA\Property(property="total_amount", type="number", format="float", example=15000.00),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
@@ -35,11 +34,10 @@ use Illuminate\Support\Facades\Storage;
  * @OA\Schema(
  *     schema="SoaAndBillingGenerateInput",
  *     title="Generate SOA Input",
- *     required={"shipping_line_id", "dli_sa_number"},
+ *     required={"shipping_line_id", "dli_sa_number", "booking_ids"},
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
  *     @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
- *     @OA\Property(property="booking_id", type="integer", example=1, description="Single booking (use when only one; mutually exclusive with booking_ids)"),
- *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Multiple bookings (use booking_id for single)"),
+ *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Booking IDs (array)"),
  *     @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
  * )
  * @OA\Schema(
@@ -50,7 +48,6 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(property="statement_of_account_id", type="integer", example=1, description="Related statement of account ID"),
  *     @OA\Property(property="statement_of_account", type="object", nullable=true, description="Linked SOA (id, dli_sa_number, work_order, booking_ids, shipping_line_id)"),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1, nullable=true, description="From statement_of_accounts.shipping_line_id"),
- *     @OA\Property(property="booking_id", type="integer", example=1, nullable=true, description="First booking ID from SOA booking_ids"),
  *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), nullable=true, description="From statement_of_accounts.booking_ids"),
  *     @OA\Property(property="shipping_line", type="object", nullable=true, description="Shipping line from SOA when loaded"),
  *     @OA\Property(property="booking", type="object", nullable=true, description="Booking from SOA when loaded"),
@@ -95,6 +92,9 @@ class SoaAndBillingController extends BaseController
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="page", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="shipping_line_id", in="query", description="Filter by shipping line ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="date_from", in="query", description="Filter SOA created from date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", description="Filter SOA created to date (Y-m-d)", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="search", in="query", description="Search by DLI SA number, work order, or shipping line name", @OA\Schema(type="string")),
      *     @OA\Response(response=200, description="List of statement of accounts", @OA\JsonContent(
      *         @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/soa_and_billing")),
@@ -169,6 +169,120 @@ class SoaAndBillingController extends BaseController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/soa/line-items",
+     *     summary="Get line items by booking ID(s) and shipping line (transaction table list, paginated)",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="shipping_line_id", in="query", required=true, description="Shipping line ID (columns come from its transaction_information_template; all bookings must belong to this shipping line)", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="booking_ids", in="query", required=true, description="Booking IDs (array). E.g. booking_ids[]=1&booking_ids[]=2 or single booking_ids[]=3", @OA\Schema(type="array", @OA\Items(type="integer"))),
+     *     @OA\Parameter(name="page", in="query", description="Page number", @OA\Schema(type="integer", default=1)),
+     *     @OA\Parameter(name="per_page", in="query", description="Items per page", @OA\Schema(type="integer", default=10)),
+     *     @OA\Response(response=200, description="Line items list (same data as SOA PDF table)", @OA\JsonContent(
+     *         @OA\Property(property="data", type="array", @OA\Items(type="object", description="One object per row; keys match column names (Date, Booking Number, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, Amount, 12% VAT, Total Amount)")),
+     *         @OA\Property(property="columns", type="array", @OA\Items(type="object", @OA\Property(property="id", type="integer"), @OA\Property(property="name", type="string"))),
+     *         @OA\Property(property="meta", type="object",
+     *             @OA\Property(property="current_page", type="integer"),
+     *             @OA\Property(property="from", type="integer", nullable=true),
+     *             @OA\Property(property="last_page", type="integer"),
+     *             @OA\Property(property="links", type="array", @OA\Items(type="object", @OA\Property(property="url", type="string", nullable=true), @OA\Property(property="label", type="string"), @OA\Property(property="active", type="boolean"))),
+     *             @OA\Property(property="path", type="string"),
+     *             @OA\Property(property="per_page", type="integer"),
+     *             @OA\Property(property="to", type="integer", nullable=true),
+     *             @OA\Property(property="total", type="integer"),
+     *             @OA\Property(property="all", type="integer"),
+     *             @OA\Property(property="trashed", type="integer", example=0),
+     *             @OA\Property(property="total_amount", type="number", format="float"),
+     *             @OA\Property(property="total_vat", type="number", format="float"),
+     *             @OA\Property(property="grand_total", type="number", format="float")
+     *         )
+     *     )),
+     *     @OA\Response(response=400, description="Missing/invalid booking_ids, shipping_line_id, or bookings do not belong to shipping line"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function lineItems()
+    {
+        try {
+            $shippingLineId = request()->input('shipping_line_id');
+            if ($shippingLineId === null || $shippingLineId === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'shipping_line_id is required.',
+                ], 400);
+            }
+            $shippingLineId = (int) $shippingLineId;
+
+            $bookingIds = $this->normalizeLineItemsBookingIds(request());
+            if (empty($bookingIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'booking_ids (array) is required. E.g. booking_ids[]=1&booking_ids[]=2',
+                ], 400);
+            }
+
+            $perPage = (int) request()->get('per_page', 10);
+            $perPage = max(1, min($perPage, 100));
+            $result = $this->service->getLineItemsByBookingIds($bookingIds, $shippingLineId, $perPage);
+            $paginator = $result['paginator'];
+
+            $paginatorArray = $paginator->toArray();
+            $meta = [
+                'current_page' => $paginatorArray['current_page'],
+                'from' => $paginatorArray['from'],
+                'last_page' => $paginatorArray['last_page'],
+                'links' => $paginatorArray['links'],
+                'path' => $paginatorArray['path'],
+                'per_page' => $paginatorArray['per_page'],
+                'to' => $paginatorArray['to'],
+                'total' => $paginatorArray['total'],
+                'all' => $paginator->total(),
+                'trashed' => 0,
+                'total_amount' => $result['total_amount'],
+                'total_vat' => $result['total_vat'],
+                'grand_total' => $result['grand_total'],
+            ];
+
+            return response()->json([
+                'data' => $paginator->items(),
+                'columns' => $result['columns'],
+                'meta' => $meta,
+            ]);
+        } catch (\Exception $e) {
+            $msg = $e->getMessage();
+            $is400 = $msg === 'At least one booking_id is required.'
+                || $msg === 'Shipping line not found.'
+                || str_starts_with($msg, 'One or more bookings (ID(s):');
+            return response()->json([
+                'success' => false,
+                'message' => $msg,
+            ], $is400 ? 400 : 500);
+        }
+    }
+
+    /**
+     * Normalize booking_ids from request to an array of IDs.
+     * Accepts booking_ids[]=1&booking_ids[]=2 or booking_ids=1 (single value as array of one).
+     *
+     * @return array<int>
+     */
+    private function normalizeLineItemsBookingIds(\Illuminate\Http\Request $request): array
+    {
+        if (!$request->has('booking_ids')) {
+            return [];
+        }
+        $input = $request->input('booking_ids');
+        if (is_array($input)) {
+            $ids = array_values(array_filter(array_map('intval', $input)));
+        } elseif ($input !== null && $input !== '') {
+            $ids = [(int) $input];
+        } else {
+            $ids = [];
+        }
+        return array_values(array_unique($ids));
+    }
+
+    /**
      * @OA\Put(
      *     path="/api/soa/{id}",
      *     summary="Update a statement of account",
@@ -178,8 +292,7 @@ class SoaAndBillingController extends BaseController
      *     @OA\RequestBody(required=false, @OA\JsonContent(
      *         @OA\Property(property="shipping_line_id", type="integer", example=1),
      *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
-     *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking"),
-     *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}),
+     *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Booking IDs (array)"),
      *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
      *     )),
      *     @OA\Response(response=200, description="Statement of account updated", @OA\JsonContent(
@@ -256,6 +369,8 @@ class SoaAndBillingController extends BaseController
      *     @OA\Parameter(name="search", in="query", description="Search by billing statement number, payment term, bus style, or shipping line name", @OA\Schema(type="string")),
      *     @OA\Parameter(name="statement_of_account_id", in="query", description="Filter by statement of account ID", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="shipping_line_id", in="query", description="Filter by shipping line ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="date_from", in="query", description="Filter billing statements created from date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", description="Filter billing statements created to date (Y-m-d)", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="booking_id", in="query", description="Filter by booking ID", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="is_paid", in="query", description="Filter by payment status (0=unpaid, 1=paid)", @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="List of billing statements", @OA\JsonContent(
@@ -427,8 +542,7 @@ class SoaAndBillingController extends BaseController
      *         required={"shipping_line_id", "dli_sa_number", "billing_statement_no"},
      *         @OA\Property(property="shipping_line_id", type="integer", example=1),
      *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
-     *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking (use when only one)"),
-     *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Multiple bookings"),
+     *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Booking IDs (array)"),
      *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
      *         @OA\Property(property="billing_statement_no", type="string", example="BS-2024-001"),
      *         @OA\Property(property="prepared_by", type="integer", nullable=true),
