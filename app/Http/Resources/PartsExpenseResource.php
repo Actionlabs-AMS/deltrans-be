@@ -17,6 +17,7 @@ class PartsExpenseResource extends JsonResource
             'quantity' => $this->quantity,
             'article' => $this->article,
             'amount_per_item' => (float) $this->amount_per_item,
+            'total_amount' => (float) $this->quantity * (float) $this->amount_per_item,
             'transaction_date' => $this->transaction_date?->format('Y-m-d'),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),

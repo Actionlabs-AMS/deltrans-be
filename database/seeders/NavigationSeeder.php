@@ -299,7 +299,16 @@ class NavigationSeeder extends Seeder
                         'description' => 'Manage and view daily operation expenses',
                         'active' => true,
                         'show_in_menu' => true,
-                    ],                    [
+                    ],  
+                    [
+                        'name' => 'Detailed Expenses',
+                        'slug' => 'detailed-expenses/:date',
+                        'icon' => 'activity',
+                        'description' => 'Display the detailed expenses of a selected date',
+                        'active' => true,
+                        'show_in_menu' => false,
+                    ],                  
+                    [
                         'name' => 'Transport Summary Report',
                         'slug' => 'transport-summary-report',
                         'icon' => 'wallet',

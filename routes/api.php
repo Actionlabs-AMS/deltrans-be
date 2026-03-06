@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\PartsExpenseController;
 use App\Http\Controllers\Api\FundsForStackRunController;
 use App\Http\Controllers\Api\CashAdvanceController;
 use App\Http\Controllers\Api\BudgetSummaryController;
+use App\Http\Controllers\Api\ReportsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -815,6 +816,24 @@ Route::middleware('auth:sanctum')->group(function () {
 	// 	Route::patch('/restore/{id}', [TruckController::class, 'restore']); // Restore a soft-deleted shipping line
 	// 	Route::delete('/{id}', [TruckController::class, 'forceDelete']); // Permanently delete a soft-deleted shipping line
 	// });
+
+		/*
+	|--------------------------------------------------------------------------
+	| Report Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Report Operations
+	|
+	*/
+	Route::prefix('reports')->group(function () {
+		// Standard CRUD operations
+		Route::get('/summary', [ReportsController::class, 'index']);  // Retrieve all reports data
+		Route::get('/issued-budget', [ReportsController::class, 'getIssuedBudget']); 
+		Route::get('/truck-trip-expense', [ReportsController::class, 'getTruckExpense']);  
+		Route::get('/parts-expense', [ReportsController::class, 'getPartsExpense']);  
+		Route::get('/cash-advances', [ReportsController::class, 'getReportCashAdvances']);  
+
+	});
 
 });
 
