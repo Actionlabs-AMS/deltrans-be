@@ -180,6 +180,18 @@ class NavigationSeeder extends Seeder
                 ],
             ],
 
+            // Budget Management Section
+            [
+                'name' => 'Budget Management',
+                'slug' => 'budget-management',
+                'icon' => 'wallet',
+                'description' => 'Manage increase or decrease of budget',
+                'parent_id' => null,
+                'active' => true,
+                'show_in_menu' => true,
+                'children' => [],
+            ],
+
             // User Management Section
             [
                 'name' => 'User Management',

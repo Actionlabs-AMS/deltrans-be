@@ -57,9 +57,10 @@ class BudgetSummaryController
     {
         $request->validated();
         $shift = $request->get('shift', 'All');
+        $type = $request->get('type', 'All');
         $perPage = (int) $request->get('per_page', 10);
 
-        $result = $this->service->list($perPage, $shift);
+        $result = $this->service->list($perPage, $shift, $type);
 
         return response()->json(array_merge($result, [
             'status_code' => 200,
