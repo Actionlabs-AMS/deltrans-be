@@ -291,7 +291,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/{id}/send-billing-and-soa-email', [SoaAndBillingController::class, 'sendBillingAndSoaEmail']);  // Send combined Billing + SOA PDF via email, {id} = SOA ID
 
 		// Line items by booking ID(s) (transaction table data, same as SOA PDF)
-		Route::get('/line-items', [SoaAndBillingController::class, 'lineItems']);  // Get line items for booking_id or booking_ids[] (query)
+		Route::get('/line-items', [SoaAndBillingController::class, 'lineItems']);  // Get line items by booking_ids[] and shipping_line_id (query)
 
 		// Standard CRUD operations
 		Route::get('/', [SoaAndBillingController::class, 'index']);  // Retrieve all statement of accounts

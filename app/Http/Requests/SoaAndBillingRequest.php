@@ -32,15 +32,8 @@ class SoaAndBillingRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'booking_id' => [
-                'required_without:booking_ids',
-                'nullable',
-                'integer',
-                'exists:bookings,id',
-            ],
             'booking_ids' => [
-                'required_without:booking_id',
-                'nullable',
+                'required',
                 'array',
                 'min:1',
             ],
@@ -67,9 +60,8 @@ class SoaAndBillingRequest extends FormRequest
             'shipping_line_id.required' => 'The shipping line is required.',
             'shipping_line_id.exists' => 'The selected shipping line does not exist.',
             'dli_sa_number.required' => 'The DLI SA number is required.',
-            'booking_id.required_without' => 'Either booking_id or booking_ids is required.',
-            'booking_id.exists' => 'The selected booking does not exist.',
-            'booking_ids.required_without' => 'Either booking_id or booking_ids is required.',
+            'booking_ids.required' => 'At least one booking is required.',
+            'booking_ids.min' => 'At least one booking is required.',
             'booking_ids.*.exists' => 'One or more selected bookings do not exist.',
             'work_order.max' => 'The work order must not exceed 255 characters.',
         ];
@@ -111,9 +103,6 @@ class SoaAndBillingRequest extends FormRequest
     {
         if ($this->filled('booking_ids') && is_array($this->input('booking_ids'))) {
             return array_values(array_map('intval', $this->input('booking_ids')));
-        }
-        if ($this->filled('booking_id')) {
-            return [(int) $this->input('booking_id')];
         }
         return [];
     }
