@@ -293,8 +293,7 @@ class SoaAndBillingController extends BaseController
      *     @OA\RequestBody(required=false, @OA\JsonContent(
      *         @OA\Property(property="shipping_line_id", type="integer", example=1),
      *         @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
-     *         @OA\Property(property="booking_id", type="integer", example=1, description="Single booking"),
-     *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}),
+     *         @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Booking IDs (array)"),
      *         @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
      *     )),
      *     @OA\Response(response=200, description="Statement of account updated", @OA\JsonContent(

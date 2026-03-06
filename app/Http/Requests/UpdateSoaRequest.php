@@ -33,12 +33,6 @@ class UpdateSoaRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-            'booking_id' => [
-                'sometimes',
-                'nullable',
-                'integer',
-                'exists:bookings,id',
-            ],
             'booking_ids' => [
                 'sometimes',
                 'nullable',
@@ -66,7 +60,6 @@ class UpdateSoaRequest extends FormRequest
     {
         return [
             'shipping_line_id.exists' => 'The selected shipping line does not exist.',
-            'booking_id.exists' => 'The selected booking does not exist.',
             'booking_ids.*.exists' => 'One or more selected bookings do not exist.',
             'work_order.max' => 'The work order must not exceed 255 characters.',
         ];
@@ -102,15 +95,12 @@ class UpdateSoaRequest extends FormRequest
     }
 
     /**
-     * Resolve booking_ids for the request (only when booking_id or booking_ids are present).
+     * Resolve booking_ids for the request (only when booking_ids are present).
      */
     public function resolveBookingIds(): array
     {
         if ($this->filled('booking_ids') && is_array($this->input('booking_ids'))) {
             return array_values(array_map('intval', $this->input('booking_ids')));
-        }
-        if ($this->filled('booking_id')) {
-            return [(int) $this->input('booking_id')];
         }
         return [];
     }
