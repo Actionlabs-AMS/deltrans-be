@@ -12663,6 +12663,360 @@
                 ]
             }
         },
+        "/api/reports/summary": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get transport summary report",
+                "description": "Returns a paginated list of daily accounting and operational summaries with optional filtering by date range and date-specific search.",
+                "operationId": "getReportSummary",
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "description": "Filter start date (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "description": "Filter end date (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-28"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "description": "Filter type (weekly/monthly)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search for a specific date (e.g., '2026-03' or '05')",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "2026-03-04"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReportSummaryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/issued-budget": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get detailed issued budget records",
+                "description": "Returns searchable budget records for a specific date selected from the summary report.",
+                "operationId": "getIssuedBudget",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "description": "The specific date (YYYY-MM-DD)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-28"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IssuedBudgetResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/truck-trip-expense": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get detailed truck expense records",
+                "description": "Returns searchable truck expense records for a specific transaction date.",
+                "operationId": "getTruckExpense",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "description": "The specific date to filter expenses (YYYY-MM-DD)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by helper name or other details",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TruckExpenseResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Transaction date is required or invalid"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/parts-expense": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get detailed parts expense records",
+                "description": "Returns searchable records of truck parts and maintenance expenses for a specific date.",
+                "operationId": "getPartsExpense",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "description": "The specific date to filter parts expenses (YYYY-MM-DD)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by plate number, receipt number, or article",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PartsExpenseResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Transaction date is required or invalid"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/cash-advances": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get detailed cash advance records",
+                "description": "Returns a unified list of cash advances for both drivers and helpers for a specific transaction date.",
+                "operationId": "getReportCashAdvances",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "description": "The specific date to filter cash advances (YYYY-MM-DD)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by name or shift",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CashAdvanceResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Transaction date is required or invalid"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/user-management/roles": {
             "get": {
                 "tags": [
@@ -24402,6 +24756,368 @@
                 },
                 "type": "object"
             },
+            "ReportSummaryRow": {
+                "description": "Daily summary row for accounting and operational metrics",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-03"
+                    },
+                    "accounting_day": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "accounting_night": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "truck_expense": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "parts_expense": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "bale_day": {
+                        "type": "integer"
+                    },
+                    "bale_night": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "IssuedBudgetRow": {
+                "description": "Detailed record of a single budget issuance used within the response array",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-03"
+                    },
+                    "shift": {
+                        "type": "string",
+                        "example": "Day"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 5000
+                    },
+                    "source": {
+                        "type": "string",
+                        "example": "Petty Cash"
+                    }
+                },
+                "type": "object"
+            },
+            "TruckExpenseRow": {
+                "description": "Detailed record of a single truck trip expense",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "shift": {
+                        "type": "string",
+                        "example": "Day"
+                    },
+                    "helper_id": {
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "helper_name": {
+                        "type": "string",
+                        "example": "Manuel Rivera",
+                        "nullable": true
+                    },
+                    "cash_on_hand": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 150.5
+                    },
+                    "issued_cash_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2000
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-03"
+                    }
+                },
+                "type": "object"
+            },
+            "PartsExpenseRow": {
+                "description": "Detailed record of a specific part purchase or maintenance expense",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-03"
+                    },
+                    "shift": {
+                        "type": "string",
+                        "example": "Day"
+                    },
+                    "plate_number": {
+                        "type": "string",
+                        "example": "NAF 6567"
+                    },
+                    "receipt_number": {
+                        "type": "string",
+                        "example": "OR-12345"
+                    },
+                    "article": {
+                        "type": "string",
+                        "example": "Tire Sealant"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "amount_per_item": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 450
+                    },
+                    "total_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 900
+                    }
+                },
+                "type": "object"
+            },
+            "CashAdvanceRow": {
+                "description": "Unified record for either a driver or helper cash advancement",
+                "properties": {
+                    "type": {
+                        "description": "1 for Driver, 2 for Helper",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "id": {
+                        "type": "integer",
+                        "example": 101
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 1500
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-03"
+                    },
+                    "transaction_date_formatted": {
+                        "type": "string",
+                        "example": "March 03, 2026"
+                    },
+                    "shift": {
+                        "type": "string",
+                        "example": "Night"
+                    },
+                    "driver_id": {
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "driver_name": {
+                        "type": "string",
+                        "example": "Manuel Rivera",
+                        "nullable": true
+                    },
+                    "helper_id": {
+                        "type": "integer",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "helper_name": {
+                        "type": "string",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "example": "2026-03-03 23:53:44"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "example": "2026-03-03 23:53:44"
+                    },
+                    "deleted_at": {
+                        "type": "string",
+                        "example": null,
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ReportSummaryResponse": {
+                "properties": {
+                    "status": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Daily report summary retrieved successfully."
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ReportSummaryRow"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "IssuedBudgetResponse": {
+                "description": "Full response object for the Issued Budget drill-down",
+                "properties": {
+                    "status": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Detailed issued budget retrieved successfully."
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IssuedBudgetRow"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "TruckExpenseResponse": {
+                "description": "Full response object for the Truck Expenses drill-down",
+                "properties": {
+                    "status": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Detailed truck expenses retrieved successfully."
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TruckExpenseRow"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "PartsExpenseResponse": {
+                "description": "Full response object for the Parts Expense drill-down",
+                "properties": {
+                    "status": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Detailed parts expenses retrieved successfully."
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PartsExpenseRow"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "CashAdvanceResponse": {
+                "description": "Full response object for the Cash Advances drill-down",
+                "properties": {
+                    "status": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Detailed cash advances retrieved successfully."
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CashAdvanceRow"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "PaginationMeta": {
+                "properties": {
+                    "current_page": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "from": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "last_page": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "path": {
+                        "type": "string",
+                        "example": "http://localhost/api/reports/summary"
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "to": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "total": {
+                        "type": "integer",
+                        "example": 25
+                    }
+                },
+                "type": "object"
+            },
             "ShippingLine": {
                 "title": "Shipping Line Model",
                 "description": "A shipping line resource",
@@ -25376,6 +26092,10 @@
         {
             "name": "Rate Per Client Management",
             "description": "API endpoints for rate per client management"
+        },
+        {
+            "name": "Reports",
+            "description": "Endpoints for operational summaries and detailed expense drill-downs"
         },
         {
             "name": "Role Management",

@@ -1,0 +1,354 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\IssuedBudget;
+use App\Models\TruckTripExpense;
+use App\Models\PartsExpense;
+use App\Models\DriverCashAdvance;
+use App\Models\HelperCashAdvance;
+use App\Http\Resources\ReportsResource;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Request;
+
+
+class ReportsService 
+{
+    
+    public function getSummaryReport($startDate, $endDate, $type = 'weekly', $search = null) 
+    {
+        try {
+            $perPage = ($type === 'monthly') ? 10 : 7;
+
+            // 1. Accounting Totals Map
+            $accountingData = DB::table('issued_budget')
+                ->select('transaction_date')
+                ->selectRaw("SUM(CASE WHEN shift = 'day' THEN amount ELSE 0 END) as day_total")
+                ->selectRaw("SUM(CASE WHEN shift = 'night' THEN amount ELSE 0 END) as night_total")
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->groupBy('transaction_date')
+                ->get();
+
+            $accountingMap = [];
+            foreach ($accountingData as $row) {
+                $accountingMap[trim($row->transaction_date)] = [
+                    'day' => (float)$row->day_total,
+                    'night' => (float)$row->night_total
+                ];
+            }
+
+            // 2. Truck Expenses Map
+            $truckData = DB::table('truck_trip_expense')
+                ->select('transaction_date')
+                ->selectRaw("SUM(issued_cash_amount) as total")
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->groupBy('transaction_date')
+                ->get();
+
+            $truckMap = [];
+            foreach ($truckData as $row) {
+                $truckMap[trim($row->transaction_date)] = (float)$row->total;
+            }
+
+            // 3. Parts Expenses Map (Quantity * Amount)
+            $partsData = DB::table('parts_expense')
+                ->select('transaction_date')
+                ->selectRaw("SUM(quantity * amount_per_item) as total")
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->groupBy('transaction_date')
+                ->get();
+
+            $partsMap = [];
+            foreach ($partsData as $row) {
+                $partsMap[trim($row->transaction_date)] = (float)$row->total;
+            }
+
+            // 4. Bale / Cash Advances Map
+            // We merge Helper and Driver history into one shift-based map
+            $baleMap = [];
+            $caTables = ['driver_cash_advancement_history', 'helper_cash_advancement_history'];
+
+            foreach ($caTables as $table) {
+                $caData = DB::table($table)
+                    ->select('transaction_date', 'shift')
+                    ->selectRaw("SUM(amount) as total")
+                    ->whereBetween('transaction_date', [$startDate, $endDate])
+                    ->groupBy('transaction_date', 'shift')
+                    ->get();
+
+                foreach ($caData as $row) {
+                    $dateKey = trim($row->transaction_date);
+                    $shiftKey = strtolower(trim($row->shift)); // Ensures 'day' matches 'day'
+                    
+                    $baleMap[$dateKey][$shiftKey] = ($baleMap[$dateKey][$shiftKey] ?? 0) + (float)$row->total;
+                }
+            }
+
+            $period = CarbonPeriod::create($startDate, $endDate);
+            $report = [];
+            $i = 0;
+            
+            foreach ($period as $date) {
+                $currentDate = $date->format('Y-m-d');
+                
+                // 🌟 LOGIC: If search exists, only include if the date matches the search string
+                // This allows searching for "2026-03" or "04" or "Friday" depending on format
+                if ($search && !str_contains($currentDate, $search)) {
+                    continue;
+                }
+
+                $report[] = (object) [
+                    'id'                => $i++,
+                    'date'              => $currentDate,
+                    'accounting_day'    => $accountingMap[$currentDate]['day'] ?? 0,
+                    'accounting_night'  => $accountingMap[$currentDate]['night'] ?? 0,
+                    'truck_expense'     => $truckMap[$currentDate] ?? 0,
+                    'parts_expense'     => $partsMap[$currentDate] ?? 0,
+                    'bale_day'          => $baleMap[$currentDate]['day'] ?? 0,
+                    'bale_night'        => $baleMap[$currentDate]['night'] ?? 0,
+                    'created_at'        => null,
+                    'updated_at'        => null,
+                    'deleted_at'        => null,
+                ];
+            }
+
+            $items = collect($report);
+            $totalCount = $items->count();
+
+            // Determine perPage based on type
+            $perPage = ($type === 'monthly') ? $totalCount : 7;
+            $perPage = max($perPage, 1);
+
+            $currentPage = LengthAwarePaginator::resolveCurrentPage();
+            $currentPageItems = $items->slice(($currentPage - 1) * $perPage, $perPage)->values();
+            
+            $paginatedResults = new LengthAwarePaginator(
+                $currentPageItems, 
+                $totalCount, 
+                $perPage, 
+                $currentPage, 
+                [
+                    'path' => Request::url(), 
+                    'query' => Request::query()
+                ]
+            );
+
+            return ReportsResource::collection($paginatedResults);
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch report summary: ' . $e->getMessage());
+        }
+    }
+
+    public function get_issued_budget($perPage = 10, $formattedDate, $searchTerm = null)
+    {
+        try {
+            // 1. Initialize Query with necessary relationships
+            // Assuming your IssuedBudget model has these relationships
+            $query = IssuedBudget::query(); 
+
+            // 2. --- Exact Date Filter (Drill-down Logic) ---
+            // We filter specifically by the date passed from the summary row
+            if ($formattedDate) {
+                $query->whereDate('transaction_date', $formattedDate);
+            }
+
+            // 3. --- Optional Search (If user searches within the detailed tab) ---
+            $searchTerm = request('search');
+            if ($searchTerm) {
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('source', 'LIKE', '%' . $searchTerm . '%')
+                    ->orWhere('amount', 'LIKE', '%' . $searchTerm . '%')
+                    ->orWhere('shift', 'LIKE', '%' . $searchTerm . '%');
+                });
+            }
+
+            // 4. --- Ordering ---
+            $sortColumn = request('order', 'created_at'); // Default to entry order
+            $sortDirection = request('sort', 'desc');
+            $query->orderBy($sortColumn, $sortDirection);
+
+            // 5. Return paginated results
+            return $query->paginate($perPage)->withQueryString();
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch detailed issued budget: ' . $e->getMessage());
+        }
+    }
+
+    public function get_truck_expense($perPage = 10, $formattedDate, $searchTerm = null)
+    {
+        try {
+           
+            $query = TruckTripExpense::with('helper');
+
+  
+            if ($formattedDate) {
+                $query->whereDate('transaction_date', $formattedDate);
+            }
+
+            // 3. --- Optional Search (If user searches within the detailed tab) ---
+            $searchTerm = request('search');
+            if ($searchTerm) {
+                // $query->where(function($q) use ($searchTerm) {
+                //     $q->where('helper_id', 'LIKE', '%' . $searchTerm . '%')
+                //     ->orWhere('issued_cash_amount', 'LIKE', '%' . $searchTerm . '%')
+                //     ->orWhere('shift', 'LIKE', '%' . $searchTerm . '%');
+                // });
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('issued_cash_amount', 'LIKE', '%' . $searchTerm . '%')
+                    ->orWhere('shift', 'LIKE', '%' . $searchTerm . '%')
+                    // 🌟 Search in the related helper table
+                    ->orWhereHas('helper', function($helperQuery) use ($searchTerm) {
+                        $helperQuery->where('first_name', 'LIKE', '%' . $searchTerm . '%')
+                                    ->orWhere('last_name', 'LIKE', '%' . $searchTerm . '%');
+                    });
+                });
+            }
+
+            // 4. --- Ordering ---
+            $sortColumn = request('order', 'created_at'); // Default to entry order
+            $sortDirection = request('sort', 'desc');
+            $query->orderBy($sortColumn, $sortDirection);
+
+            // 5. Return paginated results
+            return $query->paginate($perPage)->withQueryString();
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch detailed truck trip expense: ' . $e->getMessage());
+        }
+    }
+
+    public function get_parts_expense($perPage = 10, $formattedDate, $searchTerm = null)
+    {
+        try {
+           
+            $query = PartsExpense::query(); 
+
+  
+            if ($formattedDate) {
+                $query->whereDate('transaction_date', $formattedDate);
+            }
+
+            // 3. --- Optional Search (If user searches within the detailed tab) ---
+            $searchTerm = request('search');
+            if ($searchTerm) {
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('plate_number', 'LIKE', '%' . $searchTerm . '%')
+                    ->orWhere('receipt_no', 'LIKE', '%' . $searchTerm . '%')
+                    ->orWhere('article', 'LIKE', '%' . $searchTerm . '%');
+                });
+            }
+
+            // 4. --- Ordering ---
+            $sortColumn = request('order', 'created_at'); // Default to entry order
+            $sortDirection = request('sort', 'desc');
+            $query->orderBy($sortColumn, $sortDirection);
+
+            // 5. Return paginated results
+            return $query->paginate($perPage)->withQueryString();
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch detailed parts expense: ' . $e->getMessage());
+        }
+    }
+
+    public function get_cash_advances($perPage, $date, $search = null)
+    {
+        // 1. Capture sorting parameters from the request
+        $sortColumn = request('order', 'created_at'); // Default to created_at
+        $sortDirection = request('sort', 'desc');     // Default to desc
+
+        // 2. Driver Query
+        $drivers = DB::table('driver_cash_advancement_history as dca')
+            ->join('drivers as d', 'd.id', '=', 'dca.driver_id')
+            ->select(
+                'dca.id', 
+                'dca.amount', 
+                'dca.transaction_date', 
+                'dca.shift', 
+                'dca.driver_id', 
+                DB::raw('NULL as helper_id'), 
+                DB::raw("CONCAT(d.first_name, ' ', d.last_name) as person_name"),
+                'dca.created_at'
+            )
+            ->whereDate('dca.transaction_date', $date)
+            ->whereNull('dca.deleted_at');
+
+        // 3. Helper Query
+        $helpers = DB::table('helper_cash_advancement_history as hca')
+            ->join('helpers as h', 'h.id', '=', 'hca.helper_id')
+            ->select(
+                'hca.id', 
+                'hca.amount', 
+                'hca.transaction_date', 
+                'hca.shift', 
+                DB::raw('NULL as driver_id'), 
+                'hca.helper_id', 
+                DB::raw("CONCAT(h.first_name, ' ', h.last_name) as person_name"),
+                'hca.created_at'
+            )
+            ->whereDate('hca.transaction_date', $date)
+            ->whereNull('hca.deleted_at');
+
+        // 4. Combine
+        $combined = $drivers->union($helpers);
+
+        // 5. Wrap and Apply Dynamic Sorting
+        $query = DB::table(DB::raw("({$combined->toSql()}) as combined"))
+            ->mergeBindings($combined);
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('person_name', 'LIKE', "%{$search}%")
+                ->orWhere('shift', 'LIKE', "%{$search}%")
+                ->orWhere('amount', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // 🌟 DYNAMIC SORTING APPLIED HERE
+        // Map frontend column names to subquery column names if they differ
+        $map = [
+            'driver_name' => 'person_name',
+            'helper_name' => 'person_name',
+        ];
+
+        $finalSortColumn = $map[$sortColumn] ?? $sortColumn;
+
+        $paginated = $query->orderBy($finalSortColumn, $sortDirection)->paginate($perPage);
+
+       $paginated->getCollection()->transform(function ($item) {
+            // 1. Check if it's a Driver record
+            if (!empty($item->driver_id)) {
+                $model = new \App\Models\DriverCAHistory((array) $item);
+                $model->exists = true;
+                
+                // Find the driver, but handle case where driver might be deleted/missing
+                $driver = \App\Models\Driver::find($item->driver_id);
+                if ($driver) {
+                    $model->setRelation('driver', $driver);
+                }
+                return $model;
+            } 
+            
+            // 2. Check if it's a Helper record
+            if (!empty($item->helper_id)) {
+                $model = new \App\Models\HelperCAHistory((array) $item);
+                $model->exists = true;
+
+                $helper = \App\Models\Helper::find($item->helper_id);
+                if ($helper) {
+                    $model->setRelation('helper', $helper);
+                }
+                return $model;
+            }
+
+            return $item; // Fallback to avoid breaking the collection
+        });
+
+        return $paginated;
+    }
+}

@@ -37,7 +37,10 @@ class DatabaseSeeder extends Seeder
             InvoiceSeeder::class,
             TruckMaintenanceRecordsSeeder::class,
             DriverCAHistorySeeder::class,
-            HelperCAHistorySeeder::class
+            HelperCAHistorySeeder::class,
+            IssuedBudgetSeeder::class,
+            TruckTripExpenseSeeder::class,
+            PartsExpenseSeeder::class
         ]);
     }
 }
