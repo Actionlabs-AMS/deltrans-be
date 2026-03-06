@@ -16,8 +16,8 @@ use Illuminate\Http\JsonResponse;
  * @OA\Schema(
  *     schema="BookingCheckerValidateInput",
  *     title="Validate Bookings for SOA/Billing/Invoice",
- *     required={"booking_id", "type"},
- *     @OA\Property(property="booking_id", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs"),
+ *     required={"booking_ids", "type"},
+ *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs"),
  *     @OA\Property(property="type", type="integer", example=2, description="1 = SOA, 2 = Billing, 3 = Invoice")
  * )
  * @OA\Schema(
@@ -27,7 +27,8 @@ use Illuminate\Http\JsonResponse;
  *     @OA\Property(property="invalid_bookings", type="array", @OA\Items(
  *         @OA\Property(property="booking", type="object", description="Booking object"),
  *         @OA\Property(property="reason", type="string", description="Why the booking is invalid")
- *     ), description="Bookings that fail with reason")
+ *     ), description="Bookings that fail with reason"),
+ *     @OA\Property(property="has_soa", type="boolean", description="For type 2 and 3 only. True if any selected booking has an SOA, false if all have no SOA. Default false.")
  * )
  */
 class SoaBillingCheckerController extends Controller
@@ -61,7 +62,7 @@ class SoaBillingCheckerController extends Controller
     {
         try {
             $result = $this->checkerService->validateBookings(
-                $request->input('booking_id'),
+                $request->input('booking_ids', []),
                 (int) $request->input('type')
             );
             return response()->json($result, 200);

@@ -316,7 +316,144 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
-     * Get SOA line items (transaction table rows) for API. Same data as the SOA PDF table. Paginated.
+     * Get line items (transaction table rows) by booking ID(s) and shipping line. Same data shape as SOA PDF table. Paginated.
+     * Columns come from shipping_line.transaction_information_template. All bookings must belong to the given shipping line.
+     *
+     * @param array<int> $bookingIds One or more booking IDs
+     * @param int $shippingLineId Shipping line ID (required; columns and validation)
+     * @param int $perPage Items per page (default 10)
+     * @return array{paginator: LengthAwarePaginator, columns: array, total_amount: float, total_vat: float, grand_total: float}
+     * @throws \Exception
+     */
+    public function getLineItemsByBookingIds(array $bookingIds, int $shippingLineId, $perPage = 10)
+    {
+        $bookingIds = array_values(array_unique(array_map('intval', $bookingIds)));
+        if (empty($bookingIds)) {
+            throw new \Exception('At least one booking_id is required.');
+        }
+
+        $shippingLine = \App\Models\ShippingLine::find($shippingLineId);
+        if (!$shippingLine) {
+            throw new \Exception('Shipping line not found.');
+        }
+
+        $bookings = \App\Models\Booking::whereIn('id', $bookingIds)->get(['id', 'shipping_line_id']);
+        $mismatched = $bookings->filter(fn($b) => (int) $b->shipping_line_id !== $shippingLineId);
+        if ($mismatched->isNotEmpty()) {
+            $ids = $mismatched->pluck('id')->implode(', ');
+            throw new \Exception("One or more bookings (ID(s): {$ids}) do not belong to the specified shipping line.");
+        }
+
+        $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
+            ->with([
+                'shippingLine',
+                'driver',
+                'fleetTruck',
+                'fixedExpense',
+                'booking' => function ($q) {
+                    $q->with(['cypaFrom', 'cypaTo', 'containers', 'shippingLine']);
+                }
+            ])
+            ->orderBy('booking_id')
+            ->orderBy('id')
+            ->get();
+
+        if ($waybills->isEmpty()) {
+            $transactionColumns = collect();
+            $transactionData = [];
+            $totalAmount = 0;
+            $totalVat = 0;
+            $grandTotal = 0;
+        } else {
+            $transactionTemplateIds = $shippingLine->transaction_information_template ?? [];
+            $transactionColumns = collect();
+            if (!empty($transactionTemplateIds)) {
+                $transactionColumns = SoaDataOption::whereIn('id', $transactionTemplateIds)
+                    ->orderByRaw('FIELD(id, ' . implode(',', $transactionTemplateIds) . ')')
+                    ->get(['id', 'name', 'description']);
+
+                $columnNames = $transactionColumns->pluck('name')->map('strtolower')->toArray();
+                $amountIndex = array_search('amount', $columnNames);
+                $vatIndex = array_search('vat', $columnNames);
+                if ($vatIndex === false) {
+                    $vatIndex = array_search('12% vat', $columnNames);
+                }
+                if ($vatIndex === false) {
+                    $vatIndex = array_search('12%vat', $columnNames);
+                }
+                if ($amountIndex !== false && $vatIndex !== false && $amountIndex > $vatIndex) {
+                    $columnsArray = $transactionColumns->all();
+                    $amountColumn = $columnsArray[$amountIndex];
+                    $vatColumn = $columnsArray[$vatIndex];
+                    $columnsArray[$vatIndex] = $amountColumn;
+                    $columnsArray[$amountIndex] = $vatColumn;
+                    $transactionColumns = collect($columnsArray);
+                }
+            }
+
+            $fallbackSoa = (object) ['work_order' => null];
+            $soaPerWaybill = [];
+            foreach ($waybills as $waybill) {
+                $soa = $this->findSoaContainingBooking((int) $waybill->booking_id);
+                if ($soa) {
+                    $soaPerWaybill[$waybill->id] = $soa;
+                }
+            }
+
+            $built = $this->buildSoaTransactionData($waybills, $fallbackSoa, $transactionColumns, $soaPerWaybill);
+            $transactionData = $built['transactionData'];
+            $totalAmount = $built['totalAmount'];
+            $totalVat = $built['totalVat'];
+            $grandTotal = $built['grandTotal'];
+        }
+
+        if (!isset($transactionData)) {
+            $transactionData = [];
+        }
+        if (!isset($totalAmount)) {
+            $totalAmount = 0;
+        }
+        if (!isset($totalVat)) {
+            $totalVat = 0;
+        }
+        if (!isset($grandTotal)) {
+            $grandTotal = 0;
+        }
+        $columns = isset($transactionColumns) ? $transactionColumns->map(fn($col) => ['id' => $col->id, 'name' => $col->name])->values()->all() : [];
+        $total = count($transactionData);
+
+        $currentPage = (int) request('page', 1);
+        $currentPage = max(1, $currentPage);
+        $paginator = new LengthAwarePaginator(
+            array_slice($transactionData, ($currentPage - 1) * $perPage, $perPage),
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return [
+            'paginator' => $paginator,
+            'columns' => $columns,
+            'total_amount' => (float) $totalAmount,
+            'total_vat' => (float) $totalVat,
+            'grand_total' => (float) $grandTotal,
+        ];
+    }
+
+    /**
+     * Find one Statement of Account that contains the given booking ID.
+     */
+    private function findSoaContainingBooking(int $bookingId): ?StatementOfAccount
+    {
+        return StatementOfAccount::query()
+            ->whereNull('deleted_at')
+            ->whereRaw("JSON_CONTAINS(booking_ids, CAST(? AS JSON), '$')", [$bookingId])
+            ->first();
+    }
+
+    /**
+     * Get SOA line items (transaction table rows) for API by SOA ID. Same data as the SOA PDF table. Paginated.
      *
      * @param int $id SOA ID
      * @param int $perPage Items per page (default 10)
@@ -517,11 +654,12 @@ class SoaAndBillingService extends BaseService
      * Uses waybill_details.rate for AMOUNT (not total_rate_per_client).
      *
      * @param \Illuminate\Support\Collection $waybills Waybills with booking.containers loaded
-     * @param \App\Models\StatementOfAccount $soa
+     * @param \App\Models\StatementOfAccount|object $soa Fallback SOA for work_order when soaPerWaybill not used
      * @param \Illuminate\Support\Collection $transactionColumns
+     * @param array<int, \App\Models\StatementOfAccount|object> $soaPerWaybill Optional waybill_id => SOA (use this SOA for that waybill's row)
      * @return array{transactionData: array, totalAmount: float, totalVat: float, grandTotal: float}
      */
-    private function buildSoaTransactionData($waybills, $soa, $transactionColumns)
+    private function buildSoaTransactionData($waybills, $soa, $transactionColumns, array $soaPerWaybill = [])
     {
         $vatPercent = 12.00;
         $transactionData = [];
@@ -529,6 +667,7 @@ class SoaAndBillingService extends BaseService
         $totalVat = 0;
 
         foreach ($waybills as $waybill) {
+            $effectiveSoa = $soaPerWaybill[$waybill->id] ?? $soa;
             $containersForWaybill = collect();
             if ($waybill->relationLoaded('booking') && $waybill->booking) {
                 $containersForWaybill = ($waybill->booking->containers ?? collect())
@@ -540,7 +679,7 @@ class SoaAndBillingService extends BaseService
             foreach ($containerList as $container) {
                 $row = [];
                 foreach ($transactionColumns as $column) {
-                    $row[$column->name] = $this->mapTransactionField($column->name, $waybill, $soa, $container);
+                    $row[$column->name] = $this->mapTransactionField($column->name, $waybill, $effectiveSoa, $container);
                 }
                 $transactionData[] = $row;
             }

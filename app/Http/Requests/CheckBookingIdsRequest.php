@@ -22,12 +22,12 @@ class CheckBookingIdsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'booking_id' => [
+            'booking_ids' => [
                 'required',
                 'array',
                 'min:1',
             ],
-            'booking_id.*' => [
+            'booking_ids.*' => [
                 'integer',
                 'exists:bookings,id',
             ],
@@ -47,9 +47,9 @@ class CheckBookingIdsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'booking_id.required' => 'At least one booking is required.',
-            'booking_id.min' => 'At least one booking is required.',
-            'booking_id.*.exists' => 'One or more selected bookings do not exist.',
+            'booking_ids.required' => 'At least one booking is required.',
+            'booking_ids.min' => 'At least one booking is required.',
+            'booking_ids.*.exists' => 'One or more selected bookings do not exist.',
             'type.required' => 'Type is required.',
             'type.in' => 'Type must be 1 (SOA), 2 (Billing), or 3 (Invoice).',
         ];

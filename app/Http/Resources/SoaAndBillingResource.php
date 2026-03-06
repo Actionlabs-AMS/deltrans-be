@@ -44,7 +44,6 @@ class SoaAndBillingResource extends JsonResource
             // SOA fields
             'dli_sa_number' => $this->dli_sa_number,
             'booking_ids' => $this->booking_ids ?? [],
-            'booking_id' => $this->booking_id,
             'work_order' => $this->work_order ?? null,
 
             // Computed (from waybills / first booking)

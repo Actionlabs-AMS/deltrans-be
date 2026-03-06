@@ -26,7 +26,6 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(property="shipping_line_id", type="integer", example=1),
  *     @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
  *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Array of booking IDs"),
- *     @OA\Property(property="booking_id", type="integer", example=1, description="First booking ID (backward compatibility)"),
  *     @OA\Property(property="work_order", type="string", example="WO-001", nullable=true),
  *     @OA\Property(property="total_amount", type="number", format="float", example=15000.00),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
@@ -50,7 +49,6 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(property="statement_of_account_id", type="integer", example=1, description="Related statement of account ID"),
  *     @OA\Property(property="statement_of_account", type="object", nullable=true, description="Linked SOA (id, dli_sa_number, work_order, booking_ids, shipping_line_id)"),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1, nullable=true, description="From statement_of_accounts.shipping_line_id"),
- *     @OA\Property(property="booking_id", type="integer", example=1, nullable=true, description="First booking ID from SOA booking_ids"),
  *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), nullable=true, description="From statement_of_accounts.booking_ids"),
  *     @OA\Property(property="shipping_line", type="object", nullable=true, description="Shipping line from SOA when loaded"),
  *     @OA\Property(property="booking", type="object", nullable=true, description="Booking from SOA when loaded"),
@@ -173,11 +171,12 @@ class SoaAndBillingController extends BaseController
 
     /**
      * @OA\Get(
-     *     path="/api/soa/{id}/line-items",
-     *     summary="Get SOA line items (transaction table list, paginated)",
+     *     path="/api/soa/line-items",
+     *     summary="Get line items by booking ID(s) and shipping line (transaction table list, paginated)",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="shipping_line_id", in="query", required=true, description="Shipping line ID (columns come from its transaction_information_template; all bookings must belong to this shipping line)", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="booking_ids", in="query", required=true, description="Booking IDs (array). E.g. booking_ids[]=1&booking_ids[]=2 or single booking_ids[]=3", @OA\Schema(type="array", @OA\Items(type="integer"))),
      *     @OA\Parameter(name="page", in="query", description="Page number", @OA\Schema(type="integer", default=1)),
      *     @OA\Parameter(name="per_page", in="query", description="Items per page", @OA\Schema(type="integer", default=10)),
      *     @OA\Response(response=200, description="Line items list (same data as SOA PDF table)", @OA\JsonContent(
@@ -199,16 +198,33 @@ class SoaAndBillingController extends BaseController
      *             @OA\Property(property="grand_total", type="number", format="float")
      *         )
      *     )),
-     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=400, description="Missing/invalid booking_ids, shipping_line_id, or bookings do not belong to shipping line"),
      *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
-    public function lineItems($id)
+    public function lineItems()
     {
         try {
+            $shippingLineId = request()->input('shipping_line_id');
+            if ($shippingLineId === null || $shippingLineId === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'shipping_line_id is required.',
+                ], 400);
+            }
+            $shippingLineId = (int) $shippingLineId;
+
+            $bookingIds = $this->normalizeLineItemsBookingIds(request());
+            if (empty($bookingIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'booking_ids (array) is required. E.g. booking_ids[]=1&booking_ids[]=2',
+                ], 400);
+            }
+
             $perPage = (int) request()->get('per_page', 10);
             $perPage = max(1, min($perPage, 100));
-            $result = $this->service->getSoaLineItems($id, $perPage);
+            $result = $this->service->getLineItemsByBookingIds($bookingIds, $shippingLineId, $perPage);
             $paginator = $result['paginator'];
 
             $paginatorArray = $paginator->toArray();
@@ -233,17 +249,38 @@ class SoaAndBillingController extends BaseController
                 'columns' => $result['columns'],
                 'meta' => $meta,
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Statement of account not found.',
-            ], 404);
         } catch (\Exception $e) {
+            $msg = $e->getMessage();
+            $is400 = $msg === 'At least one booking_id is required.'
+                || $msg === 'Shipping line not found.'
+                || str_starts_with($msg, 'One or more bookings (ID(s):');
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+                'message' => $msg,
+            ], $is400 ? 400 : 500);
         }
+    }
+
+    /**
+     * Normalize booking_ids from request to an array of IDs.
+     * Accepts booking_ids[]=1&booking_ids[]=2 or booking_ids=1 (single value as array of one).
+     *
+     * @return array<int>
+     */
+    private function normalizeLineItemsBookingIds(\Illuminate\Http\Request $request): array
+    {
+        if (!$request->has('booking_ids')) {
+            return [];
+        }
+        $input = $request->input('booking_ids');
+        if (is_array($input)) {
+            $ids = array_values(array_filter(array_map('intval', $input)));
+        } elseif ($input !== null && $input !== '') {
+            $ids = [(int) $input];
+        } else {
+            $ids = [];
+        }
+        return array_values(array_unique($ids));
     }
 
     /**

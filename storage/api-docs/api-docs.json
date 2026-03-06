@@ -15678,21 +15678,33 @@
                 ]
             }
         },
-        "/api/soa/{id}/line-items": {
+        "/api/soa/line-items": {
             "get": {
                 "tags": [
                     "SOA and Billing Management"
                 ],
-                "summary": "Get SOA line items (transaction table list, paginated)",
-                "operationId": "0645c8d9c850a81caf5081ca7ac61822",
+                "summary": "Get line items by booking ID(s) and shipping line (transaction table list, paginated)",
+                "operationId": "ef3ab7b58c169888043f19fcd8c1b281",
                 "parameters": [
                     {
-                        "name": "id",
-                        "in": "path",
-                        "description": "SOA ID (Statement of Account ID)",
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Shipping line ID (columns come from its transaction_information_template; all bookings must belong to this shipping line)",
                         "required": true,
                         "schema": {
                             "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "booking_ids",
+                        "in": "query",
+                        "description": "Booking IDs (array). E.g. booking_ids[]=1&booking_ids[]=2 or single booking_ids[]=3",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
                         }
                     },
                     {
@@ -15813,8 +15825,8 @@
                             }
                         }
                     },
-                    "404": {
-                        "$ref": "#/components/responses/NotFound"
+                    "400": {
+                        "description": "Missing/invalid booking_ids, shipping_line_id, or bookings do not belong to shipping line"
                     },
                     "500": {
                         "$ref": "#/components/responses/GeneralError"
@@ -24973,11 +24985,6 @@
                             2
                         ]
                     },
-                    "booking_id": {
-                        "description": "First booking ID (backward compatibility)",
-                        "type": "integer",
-                        "example": 1
-                    },
                     "work_order": {
                         "type": "string",
                         "example": "WO-001",
@@ -25058,12 +25065,6 @@
                     },
                     "shipping_line_id": {
                         "description": "From statement_of_accounts.shipping_line_id",
-                        "type": "integer",
-                        "example": 1,
-                        "nullable": true
-                    },
-                    "booking_id": {
-                        "description": "First booking ID from SOA booking_ids",
                         "type": "integer",
                         "example": 1,
                         "nullable": true
@@ -25196,11 +25197,11 @@
             "BookingCheckerValidateInput": {
                 "title": "Validate Bookings for SOA/Billing/Invoice",
                 "required": [
-                    "booking_id",
+                    "booking_ids",
                     "type"
                 ],
                 "properties": {
-                    "booking_id": {
+                    "booking_ids": {
                         "description": "Array of booking IDs",
                         "type": "array",
                         "items": {
@@ -25246,6 +25247,10 @@
                             },
                             "type": "object"
                         }
+                    },
+                    "has_soa": {
+                        "description": "For type 2 and 3 only. True if any selected booking has an SOA, false if all have no SOA. Default false.",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
