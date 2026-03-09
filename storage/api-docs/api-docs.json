@@ -958,6 +958,15 @@
                         }
                     },
                     {
+                        "name": "is_complete",
+                        "in": "query",
+                        "description": "Filter by completion status (0=Incomplete, 1=Complete)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "description": "Page number",
@@ -15973,12 +15982,8 @@
                                         "type": "string",
                                         "example": "SA-2024-001"
                                     },
-                                    "booking_id": {
-                                        "description": "Single booking",
-                                        "type": "integer",
-                                        "example": 1
-                                    },
                                     "booking_ids": {
+                                        "description": "Booking IDs (array)",
                                         "type": "array",
                                         "items": {
                                             "type": "integer"
@@ -16653,13 +16658,8 @@
                                         "type": "string",
                                         "example": "SA-2024-001"
                                     },
-                                    "booking_id": {
-                                        "description": "Single booking (use when only one)",
-                                        "type": "integer",
-                                        "example": 1
-                                    },
                                     "booking_ids": {
-                                        "description": "Multiple bookings",
+                                        "description": "Booking IDs (array)",
                                         "type": "array",
                                         "items": {
                                             "type": "integer"
@@ -25726,7 +25726,8 @@
                 "title": "Generate SOA Input",
                 "required": [
                     "shipping_line_id",
-                    "dli_sa_number"
+                    "dli_sa_number",
+                    "booking_ids"
                 ],
                 "properties": {
                     "shipping_line_id": {
@@ -25737,13 +25738,8 @@
                         "type": "string",
                         "example": "SA-2024-001"
                     },
-                    "booking_id": {
-                        "description": "Single booking (use when only one; mutually exclusive with booking_ids)",
-                        "type": "integer",
-                        "example": 1
-                    },
                     "booking_ids": {
-                        "description": "Multiple bookings (use booking_id for single)",
+                        "description": "Booking IDs (array)",
                         "type": "array",
                         "items": {
                             "type": "integer"
@@ -25913,12 +25909,11 @@
             "BookingCheckerValidateInput": {
                 "title": "Validate Bookings for SOA/Billing/Invoice",
                 "required": [
-                    "booking_ids",
                     "type"
                 ],
                 "properties": {
                     "booking_ids": {
-                        "description": "Array of booking IDs",
+                        "description": "Array of booking IDs (preferred when provided; if present, statement_of_account_id will be ignored)",
                         "type": "array",
                         "items": {
                             "type": "integer"
@@ -25928,6 +25923,11 @@
                             2,
                             3
                         ]
+                    },
+                    "statement_of_account_id": {
+                        "description": "Statement of Account ID to validate against (used only when booking_ids is not provided)",
+                        "type": "integer",
+                        "example": 10
                     },
                     "type": {
                         "description": "1 = SOA, 2 = Billing, 3 = Invoice",

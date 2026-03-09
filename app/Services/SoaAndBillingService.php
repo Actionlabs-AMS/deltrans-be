@@ -448,7 +448,8 @@ class SoaAndBillingService extends BaseService
     {
         return StatementOfAccount::query()
             ->whereNull('deleted_at')
-            ->whereRaw("JSON_CONTAINS(booking_ids, CAST(? AS JSON), '$')", [$bookingId])
+            // MariaDB doesn't support CAST(<int> AS JSON) reliably; pass JSON literal instead (e.g. "6")
+            ->whereRaw("JSON_CONTAINS(booking_ids, ?, '$')", [json_encode($bookingId)])
             ->first();
     }
 

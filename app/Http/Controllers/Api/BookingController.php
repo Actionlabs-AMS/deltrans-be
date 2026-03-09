@@ -169,6 +169,12 @@ class BookingController extends BaseController
      *         @OA\Schema(type="string", format="date", example="2025-01-31")
      *     ),
      *     @OA\Parameter(
+     *         name="is_complete",
+     *         in="query",
+     *         description="Filter by completion status (0=Incomplete, 1=Complete)",
+     *         @OA\Schema(type="integer", example=0)
+     *     ),
+     *     @OA\Parameter(
      *         name="page",
      *         in="query",
      *         description="Page number",
@@ -214,6 +220,7 @@ class BookingController extends BaseController
         $validated = request()->validate([
             'expected_date_from' => 'nullable|date',
             'expected_date_to' => 'nullable|date',
+            'is_complete' => 'nullable|boolean',
         ], [
             'expected_date_from.date' => 'The expected_date_from must be a valid date (Y-m-d).',
             'expected_date_to.date' => 'The expected_date_to must be a valid date (Y-m-d).',
@@ -236,12 +243,14 @@ class BookingController extends BaseController
         $perPage = request()->get('per_page', 10);
         $expectedDateFrom = $validated['expected_date_from'] ?? null;
         $expectedDateTo = $validated['expected_date_to'] ?? null;
+        $isComplete = request()->has('is_complete') ? request()->boolean('is_complete') : null;
 
         return $this->service->listByShippingLine(
             (int) $shipping_line_id,
             $expectedDateFrom,
             $expectedDateTo,
-            (int) $perPage
+            (int) $perPage,
+            $isComplete
         );
     }
 

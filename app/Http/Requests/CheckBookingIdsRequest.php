@@ -23,13 +23,18 @@ class CheckBookingIdsRequest extends FormRequest
     {
         return [
             'booking_ids' => [
-                'required',
+                'nullable',
                 'array',
                 'min:1',
             ],
             'booking_ids.*' => [
                 'integer',
                 'exists:bookings,id',
+            ],
+            'statement_of_account_id' => [
+                'nullable',
+                'integer',
+                'exists:statement_of_accounts,id',
             ],
             'type' => [
                 'required',
@@ -47,11 +52,24 @@ class CheckBookingIdsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'booking_ids.required' => 'At least one booking is required.',
             'booking_ids.min' => 'At least one booking is required.',
             'booking_ids.*.exists' => 'One or more selected bookings do not exist.',
+            'statement_of_account_id.exists' => 'The selected statement of account does not exist.',
             'type.required' => 'Type is required.',
             'type.in' => 'Type must be 1 (SOA), 2 (Billing), or 3 (Invoice).',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $bookingIds = $this->input('booking_ids');
+            $hasBookingIds = is_array($bookingIds) && count($bookingIds) > 0;
+            $hasSoaId = !is_null($this->input('statement_of_account_id')) && $this->input('statement_of_account_id') !== '';
+
+            if (!$hasBookingIds && !$hasSoaId) {
+                $validator->errors()->add('booking_ids', 'Provide either booking_ids or statement_of_account_id.');
+            }
+        });
     }
 }

@@ -17,7 +17,8 @@ class ListSoaWithNoVat extends Command
         $this->newLine();
 
         $soaIds = DB::table('statement_of_accounts')
-            ->join('waybill_details', DB::raw('JSON_CONTAINS(statement_of_accounts.booking_ids, CAST(waybill_details.booking_id AS JSON), \'$\')'), '=', DB::raw('1'))
+            // MariaDB-safe: avoid CAST(... AS JSON); JSON_CONTAINS accepts JSON text like "6"
+            ->join('waybill_details', DB::raw('JSON_CONTAINS(statement_of_accounts.booking_ids, CAST(waybill_details.booking_id AS CHAR), \'$\')'), '=', DB::raw('1'))
             ->where('waybill_details.has_vat', 0)
             ->whereNull('statement_of_accounts.deleted_at')
             ->whereNull('waybill_details.deleted_at')

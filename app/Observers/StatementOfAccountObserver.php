@@ -73,7 +73,8 @@ class StatementOfAccountObserver
     {
         $query = StatementOfAccount::query()
             ->whereNull('deleted_at')
-            ->whereRaw("JSON_CONTAINS(booking_ids, CAST(? AS JSON), '$')", [$bookingId]);
+            // MariaDB-safe: pass JSON literal (e.g. "6") instead of CAST(... AS JSON)
+            ->whereRaw("JSON_CONTAINS(booking_ids, ?, '$')", [json_encode($bookingId)]);
 
         if ($excludeSoaId !== null) {
             $query->where('id', '!=', $excludeSoaId);
