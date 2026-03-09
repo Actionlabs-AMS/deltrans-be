@@ -243,7 +243,7 @@ class BookingController extends BaseController
         $perPage = request()->get('per_page', 10);
         $expectedDateFrom = $validated['expected_date_from'] ?? null;
         $expectedDateTo = $validated['expected_date_to'] ?? null;
-        $isComplete = request()->has('is_complete') ? request()->boolean('is_complete') : null;
+        $isComplete = array_key_exists('is_complete', $validated) ? (int) $validated['is_complete'] : null;
 
         return $this->service->listByShippingLine(
             (int) $shipping_line_id,
