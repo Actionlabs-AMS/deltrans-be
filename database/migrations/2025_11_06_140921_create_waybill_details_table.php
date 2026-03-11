@@ -43,6 +43,7 @@ return new class extends Migration {
             $table->bigInteger('fixed_expense_id')->unsigned(); //auto
             $table->decimal('post_expense_amount', 15, 2)->default(0); // field
             $table->decimal('total_expense', 15, places: 2)->default(0); // field
+            $table->bigInteger('prepared_by')->unsigned()->nullable();
 
             $table->timestamps();
             $table->softDeletes();
@@ -53,6 +54,7 @@ return new class extends Migration {
             $table->foreign('helper_id')->references('id')->on('helpers')->onDelete('set null');
             $table->foreign('truck_plate_number')->references('plate_number')->on('fleet_trucks')->onDelete('cascade');
             $table->foreign('fixed_expense_id')->references('id')->on('fixed_expenses')->onDelete('cascade');
+            $table->foreign('prepared_by')->references('id')->on('users')->onDelete('set null');
 
             $table->index('transaction_date');
             $table->index('booking_id');
@@ -63,6 +65,7 @@ return new class extends Migration {
             $table->index('fixed_expense_id');
             $table->index('pickup_date');
             $table->index('delivered_date');
+            $table->index('prepared_by');
         });
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');

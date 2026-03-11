@@ -28,6 +28,7 @@ class WaybillDetailService extends BaseService
                 'driver',
                 'fleetTruck',
                 'fixedExpense',
+                'preparedByUser.getUserMetas',
             ]);
 
             // Apply onlyTrashed() first if we're in trash view
@@ -131,6 +132,7 @@ class WaybillDetailService extends BaseService
             'driver',
             'fleetTruck',
             'fixedExpense',
+            'preparedByUser.getUserMetas',
         ]));
     }
 
@@ -148,6 +150,7 @@ class WaybillDetailService extends BaseService
             'driver',
             'fleetTruck',
             'fixedExpense',
+            'preparedByUser.getUserMetas',
         ]));
     }
 
@@ -162,6 +165,7 @@ class WaybillDetailService extends BaseService
             'driver',
             'fleetTruck',
             'fixedExpense',
+            'preparedByUser.getUserMetas',
         ])->findOrFail($id);
         return $this->resource::make($model);
     }

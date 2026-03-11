@@ -788,6 +788,12 @@
                                         "description": "Whether the booking is ship-in (optional)",
                                         "type": "boolean",
                                         "example": true
+                                    },
+                                    "prepared_by": {
+                                        "description": "User ID who prepared the booking",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -1217,6 +1223,12 @@
                                         "description": "Whether the booking is ship-in (optional)",
                                         "type": "boolean",
                                         "example": true
+                                    },
+                                    "prepared_by": {
+                                        "description": "User ID who prepared the booking",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -24131,6 +24143,12 @@
                         "type": "integer",
                         "example": 5
                     },
+                    "prepared_by": {
+                        "description": "Display name of user who prepared (from users/user_meta; POST/PUT accept user ID)",
+                        "type": "string",
+                        "example": "John Doe",
+                        "nullable": true
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -26208,6 +26226,12 @@
                         "example": 1,
                         "nullable": true
                     },
+                    "prepared_by": {
+                        "description": "Display name of user who prepared (from users/user_meta; POST/PUT accept user ID)",
+                        "type": "string",
+                        "example": "John Doe",
+                        "nullable": true
+                    },
                     "booking_id": {
                         "type": "integer",
                         "example": 1,
@@ -26462,6 +26486,12 @@
                         "type": "number",
                         "format": "float",
                         "example": 4700,
+                        "nullable": true
+                    },
+                    "prepared_by": {
+                        "description": "User ID who prepared the waybill",
+                        "type": "integer",
+                        "example": 1,
                         "nullable": true
                     }
                 },

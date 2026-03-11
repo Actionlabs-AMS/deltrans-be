@@ -30,6 +30,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
  *     @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (true=Ship In, false=Ship Out)"),
  *     @OA\Property(property="actual_no_of_waybill", type="integer", example=5, description="Actual number of waybills created for this booking"),
+ *     @OA\Property(property="prepared_by", type="string", example="John Doe", nullable=true, description="Display name of user who prepared (from users/user_meta; POST/PUT accept user ID)"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
  * )
@@ -378,7 +379,8 @@ class BookingController extends BaseController
      *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
  *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (required)"),
      *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)"),
-     *             @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (optional)")
+     *             @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (optional)"),
+     *             @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the booking")
      *         )
      *     ),
      *     @OA\Response(
@@ -423,7 +425,7 @@ class BookingController extends BaseController
     public function store(BookingRequest $request)
     {
         try {
-            $data = $request->all();
+            $data = $request->validated();
             $booking = $this->service->store($data);
             return response($booking, 201);
         } catch (\Exception $e) {
@@ -455,9 +457,10 @@ class BookingController extends BaseController
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
      *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
- *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (optional)"),
+     *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (optional)"),
      *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)"),
-     *             @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (optional)")
+     *             @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (optional)"),
+     *             @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the booking")
      *         )
      *     ),
      *     @OA\Response(
@@ -509,7 +512,7 @@ class BookingController extends BaseController
     public function update(BookingRequest $request, $id)
     {
         try {
-            $data = $request->all();
+            $data = $request->validated();
             $booking = $this->service->update($data, $id);
             return response($booking, 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {

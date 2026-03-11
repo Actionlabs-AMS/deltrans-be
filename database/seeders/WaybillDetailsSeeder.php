@@ -40,6 +40,8 @@ class WaybillDetailsSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
+        $firstUserId = DB::table('users')->value('id');
+
         $bookings = DB::table('bookings')
             ->select('id', 'shipping_line_id', 'cypa_id_from', 'cypa_id_to')
             ->get()
@@ -150,6 +152,9 @@ class WaybillDetailsSeeder extends Seeder
                     'total_rate_per_client' => $totalRatePerClient,
                     'total_expense' => ($postExpense) + ($fixedExpense->total_expenses ?? 0),
                 ];
+                if ($firstUserId !== null) {
+                    $waybill['prepared_by'] = $firstUserId;
+                }
                 WaybillDetail::updateOrCreate(
                     ['waybill_number' => $waybill['waybill_number']],
                     $waybill

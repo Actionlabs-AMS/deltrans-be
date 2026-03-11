@@ -44,17 +44,7 @@ class BillingStatementResource extends JsonResource
             // Prepared by: display name from users / user_meta (first_name, last_name, or user_login)
             'prepared_by' => $this->when($this->prepared_by, function () {
                 $user = $this->preparedByUser;
-                if (!$user) {
-                    return null;
-                }
-                $firstName = $user->relationLoaded('getUserMetas')
-                    ? ($user->getUserMetas->pluck('meta_value', 'meta_key')['first_name'] ?? null)
-                    : $user->getMeta('first_name');
-                $lastName = $user->relationLoaded('getUserMetas')
-                    ? ($user->getUserMetas->pluck('meta_value', 'meta_key')['last_name'] ?? null)
-                    : $user->getMeta('last_name');
-                $name = trim(($firstName ?? '') . ' ' . ($lastName ?? ''));
-                return $name !== '' ? $name : $user->user_login;
+                return $user ? $user->getDisplayName() : null;
             }),
 
             // Billing details

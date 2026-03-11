@@ -32,6 +32,7 @@ class BookingRequest extends FormRequest
             'expected_container' => 'required|integer|min:0',
             'is_complete' => 'nullable|boolean',
             'is_ship_in' => 'nullable|boolean',
+            'prepared_by' => 'nullable|integer|exists:users,id',
         ];
 
         // For update, make some fields optional
@@ -45,6 +46,7 @@ class BookingRequest extends FormRequest
             $rules['expected_container'] = 'sometimes|required|integer|min:0';
             $rules['is_complete'] = 'sometimes|nullable|boolean';
             $rules['is_ship_in'] = 'sometimes|nullable|boolean';
+            $rules['prepared_by'] = 'sometimes|nullable|integer|exists:users,id';
         }
 
         return $rules;
