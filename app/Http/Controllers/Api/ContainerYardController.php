@@ -19,6 +19,7 @@ use App\Http\Resources\ContainerYardResource;
  * description="A container yard resource",
  * @OA\Property(property="id", type="integer", example=1),
  * @OA\Property(property="name", type="string", example="North Yard"),
+ * @OA\Property(property="short_name", type="string", example="NY", description="Short name/code for the container yard"),
  * @OA\Property(property="address", type="string", example="123 Port St."),
  * @OA\Property(property="contact_name", type="string", example="John Doe"),
  * @OA\Property(property="contact_mobile", type="string", example="09171234567"),
@@ -34,6 +35,7 @@ use App\Http\Resources\ContainerYardResource;
  * description="Data required to create or update a container yard",                
  * required={"name", "address", "type", "is_active"},                
  * @OA\Property(property="name", type="string", example="North Yard"),                
+ * @OA\Property(property="short_name", type="string", example="NY", description="Short name/code for the container yard"),
  * @OA\Property(property="address", type="string", example="123 Port St."),                
  * @OA\Property(property="contact_name", type="string", example="John Doe"),                
  * @OA\Property(property="contact_mobile", type="string", example="09171234567"),                
@@ -78,6 +80,13 @@ class ContainerYardController extends BaseController
      * description="Search term for filtering by Name, Address, Contact Name, or Location Type.",
      * required=false,
      * @OA\Schema(type="string", example="North Yard")
+     * ),
+     * @OA\Parameter(
+     * name="short_name",
+     * in="query",
+     * description="Filter by short name (partial match).",
+     * required=false,
+     * @OA\Schema(type="string", example="NY")
      * ),
      * @OA\Response(
      * response=200,

@@ -12,6 +12,21 @@ class TruckTripExpenseService extends BaseService
         parent::__construct(new TruckTripExpenseResource(new TruckTripExpense), new TruckTripExpense());
     }
 
+    public function store(array $data)
+    {
+        $model = TruckTripExpense::create($data);
+        $model->load('helper');
+        return TruckTripExpenseResource::make($model);
+    }
+
+    public function update(array $data, int $id)
+    {
+        $model = TruckTripExpense::findOrFail($id);
+        $model->update($data);
+        $model->load('helper');
+        return TruckTripExpenseResource::make($model);
+    }
+
     public function list($perPage = 10, $trash = false)
     {
         $query = TruckTripExpense::query()->with('helper');

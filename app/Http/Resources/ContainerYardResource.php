@@ -18,6 +18,7 @@ class ContainerYardResource extends JsonResource
             // Identity
             'id' => $this->id,
             'name' => $this->name,
+            'short_name' => $this->short_name,
 
             // Address / contact
             'address' => $this->address,

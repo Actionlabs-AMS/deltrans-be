@@ -50,11 +50,17 @@ class ContainerYardService extends BaseService
                 $query->where(function ($q) {
                     //$searchTerm = '%' . request('search') . '%';
                     $q->where('name', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('short_name', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('address', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('contact_name', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('location_type', 'LIKE', '%' . request('search') . '%');
                 });
 
+            }
+
+            // Filter by short_name (exact or partial)
+            if (request()->filled('short_name')) {
+                $query->where('short_name', 'LIKE', '%' . request('short_name') . '%');
             }
 
             // Filter by is_active

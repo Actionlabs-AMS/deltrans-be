@@ -13,6 +13,7 @@ class ContainerYard extends Model
 
     protected $fillable = [
         'name',
+        'short_name',
         'address',
         'contact_name',
         'contact_mobile',

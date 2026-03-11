@@ -96,10 +96,10 @@ class CashAdvanceController
      */
     public function show(Request $request, $id)
     {
+        $request->validate([
+            'type' => 'required|integer|in:1,2',
+        ]);
         $type = (int) $request->query('type');
-        if (!in_array($type, [1, 2], true)) {
-            return response()->json(['message' => 'The type parameter is required and must be 1 or 2.'], 422);
-        }
         try {
             $data = $this->service->show($type, (int) $id);
             return response()->json(array_merge($data, ['status_code' => 200, 'message' => 'Cash advance fetched successfully.']));
@@ -151,9 +151,6 @@ class CashAdvanceController
     public function update(CashAdvanceRequest $request, $id)
     {
         $data = $request->validated();
-        if (!isset($data['type']) || !in_array((int) $data['type'], [1, 2], true)) {
-            return response()->json(['message' => 'The type field is required and must be 1 or 2.'], 422);
-        }
         try {
             $record = $this->service->update($data, (int) $id);
             return response()->json([
@@ -180,10 +177,10 @@ class CashAdvanceController
      */
     public function destroy(Request $request, $id)
     {
-        $type = $request->query('type');
-        if (!$type || !in_array((int) $type, [1, 2], true)) {
-            return response()->json(['message' => 'The type parameter is required and must be 1 or 2.'], 422);
-        }
+        $request->validate([
+            'type' => 'required|integer|in:1,2',
+        ]);
+        $type = (int) $request->query('type');
         try {
             $this->service->destroy((int) $type, (int) $id);
             return response()->json([

@@ -4063,6 +4063,16 @@
                             "type": "string",
                             "example": "North Yard"
                         }
+                    },
+                    {
+                        "name": "short_name",
+                        "in": "query",
+                        "description": "Filter by short name (partial match).",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "NY"
+                        }
                     }
                 ],
                 "responses": {
@@ -24390,6 +24400,11 @@
                         "type": "string",
                         "example": "North Yard"
                     },
+                    "short_name": {
+                        "description": "Short name/code for the container yard",
+                        "type": "string",
+                        "example": "NY"
+                    },
                     "address": {
                         "type": "string",
                         "example": "123 Port St."
@@ -24444,6 +24459,11 @@
                     "name": {
                         "type": "string",
                         "example": "North Yard"
+                    },
+                    "short_name": {
+                        "description": "Short name/code for the container yard",
+                        "type": "string",
+                        "example": "NY"
                     },
                     "address": {
                         "type": "string",
