@@ -22,6 +22,12 @@ class WaybillDetailResource extends JsonResource
 
             // Reference IDs
             'shipping_line_id' => $this->shipping_line_id,
+            // Prepared by: display name from users / user_meta (GET returns name; POST/PUT use ID)
+            'prepared_by' => $this->when($this->prepared_by, function () {
+                $user = $this->preparedByUser;
+                return $user ? $user->getDisplayName() : null;
+            }),
+
             'booking_id' => $this->booking_id,
             'driver_id' => $this->driver_id,
             'helper_id' => $this->helper_id,

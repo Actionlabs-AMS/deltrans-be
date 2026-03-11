@@ -41,18 +41,10 @@ class BillingStatementResource extends JsonResource
                 ? new BookingResource($this->booking)
                 : null,
 
-            // Prepared by
-            'prepared_by' => $this->prepared_by,
-            'prepared_by_user' => $this->whenLoaded('preparedByUser', function () {
+            // Prepared by: display name from users / user_meta (first_name, last_name, or user_login)
+            'prepared_by' => $this->when($this->prepared_by, function () {
                 $user = $this->preparedByUser;
-                $name = $user->name ?? null;
-                if (!$name && isset($user->first_name)) {
-                    $name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
-                }
-                return [
-                    'id' => $user->id,
-                    'name' => $name ?? '',
-                ];
+                return $user ? $user->getDisplayName() : null;
             }),
 
             // Billing details

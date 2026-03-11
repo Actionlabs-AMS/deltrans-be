@@ -14,6 +14,7 @@ class TruckTripExpense extends Model
 
     protected $fillable = [
         'shift',
+        'plate_number',
         'helper_id',
         'cash_on_hand',
         'issued_cash_amount',

@@ -10,7 +10,7 @@ use App\Http\Resources\CashAdvanceResource;
 /**
  * @OA\Tag(
  *     name="Cash Advance (Unified)",
- *     description="Unified API for driver and helper cash advancement. type: 1 = driver_cash_advancement_history, 2 = helper_cash_advancement_history. GET: type 0 or null returns both; POST/PATCH/DELETE: type is required."
+ *     description="Unified API for driver and helper cash advancement. type: 1 = driver, 2 = helper. Rule: only one cash advance per (transaction_date + shift) per driver or helper—e.g. helper_id 1 cannot have two Day-shift requests on the same transaction_date. GET: type 0 or null returns both; POST/PATCH/DELETE: type is required."
  * )
  * @OA\Schema(
  *     schema="CashAdvanceRecord",
@@ -96,10 +96,10 @@ class CashAdvanceController
      */
     public function show(Request $request, $id)
     {
+        $request->validate([
+            'type' => 'required|integer|in:1,2',
+        ]);
         $type = (int) $request->query('type');
-        if (!in_array($type, [1, 2], true)) {
-            return response()->json(['message' => 'The type parameter is required and must be 1 or 2.'], 422);
-        }
         try {
             $data = $this->service->show($type, (int) $id);
             return response()->json(array_merge($data, ['status_code' => 200, 'message' => 'Cash advance fetched successfully.']));
@@ -116,7 +116,7 @@ class CashAdvanceController
      *     security={{"sanctum": {}}},
      *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/CashAdvanceStoreInput")),
      *     @OA\Response(response=201, description="Created", @OA\JsonContent(@OA\Property(property="data", ref="#/components/schemas/CashAdvanceRecord"))),
-     *     @OA\Response(response=422, description="Validation error")
+     *     @OA\Response(response=422, description="Validation error (e.g. duplicate: same driver/helper already has a cash advance for this shift on this transaction_date)")
      * )
      */
     public function store(CashAdvanceRequest $request)
@@ -151,9 +151,6 @@ class CashAdvanceController
     public function update(CashAdvanceRequest $request, $id)
     {
         $data = $request->validated();
-        if (!isset($data['type']) || !in_array((int) $data['type'], [1, 2], true)) {
-            return response()->json(['message' => 'The type field is required and must be 1 or 2.'], 422);
-        }
         try {
             $record = $this->service->update($data, (int) $id);
             return response()->json([
@@ -180,10 +177,10 @@ class CashAdvanceController
      */
     public function destroy(Request $request, $id)
     {
-        $type = $request->query('type');
-        if (!$type || !in_array((int) $type, [1, 2], true)) {
-            return response()->json(['message' => 'The type parameter is required and must be 1 or 2.'], 422);
-        }
+        $request->validate([
+            'type' => 'required|integer|in:1,2',
+        ]);
+        $type = (int) $request->query('type');
         try {
             $this->service->destroy((int) $type, (int) $id);
             return response()->json([

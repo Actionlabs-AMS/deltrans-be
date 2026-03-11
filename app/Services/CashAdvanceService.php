@@ -6,6 +6,7 @@ use App\Models\DriverCAHistory;
 use App\Models\HelperCAHistory;
 use App\Http\Resources\CashAdvanceResource;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
 
 class CashAdvanceService
 {
@@ -157,14 +158,59 @@ class CashAdvanceService
         unset($data['type']);
         if ($type === 1) {
             $model = DriverCAHistory::findOrFail($id);
+            $this->ensureOnePerShiftPerDate($model->driver_id, null, $model->transaction_date, $model->shift, $data, $id, 1);
             $model->update(array_intersect_key($data, array_flip(['amount', 'transaction_date', 'shift'])));
             $model->load('driver');
         } else {
             $model = HelperCAHistory::findOrFail($id);
+            $this->ensureOnePerShiftPerDate(null, $model->helper_id, $model->transaction_date, $model->shift, $data, $id, 2);
             $model->update(array_intersect_key($data, array_flip(['amount', 'transaction_date', 'shift'])));
             $model->load('helper');
         }
         return (new CashAdvanceResource($model))->toArray(request());
+    }
+
+    /**
+     * Ensure only one cash advance per (transaction_date, shift) per driver or helper.
+     * For update: exclude record with $excludeId.
+     */
+    protected function ensureOnePerShiftPerDate(
+        ?int $driverId,
+        ?int $helperId,
+        $currentDate,
+        ?string $currentShift,
+        array $updateData,
+        int $excludeId,
+        int $type
+    ): void {
+        $transactionDate = isset($updateData['transaction_date'])
+            ? \Carbon\Carbon::parse($updateData['transaction_date'])->format('Y-m-d')
+            : (\Carbon\Carbon::parse($currentDate)->format('Y-m-d'));
+        $shift = $updateData['shift'] ?? $currentShift;
+        if ($type === 1 && $driverId !== null) {
+            $exists = DriverCAHistory::where('driver_id', $driverId)
+                ->where('transaction_date', $transactionDate)
+                ->where('shift', $shift)
+                ->where('id', '!=', $excludeId)
+                ->exists();
+            if ($exists) {
+                throw ValidationException::withMessages([
+                    'transaction_date' => ['This driver already has a cash advance for this shift on this date. Only one request per shift per transaction date is allowed.'],
+                ]);
+            }
+        }
+        if ($type === 2 && $helperId !== null) {
+            $exists = HelperCAHistory::where('helper_id', $helperId)
+                ->where('transaction_date', $transactionDate)
+                ->where('shift', $shift)
+                ->where('id', '!=', $excludeId)
+                ->exists();
+            if ($exists) {
+                throw ValidationException::withMessages([
+                    'transaction_date' => ['This helper already has a cash advance for this shift on this date. Only one request per shift per transaction date is allowed.'],
+                ]);
+            }
+        }
     }
 
     public function destroy(int $type, int $id): void

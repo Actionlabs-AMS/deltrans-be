@@ -32,6 +32,7 @@ class ContainerYardRequest extends FormRequest
                 'max:255',
                 Rule::unique('cypa_details', 'name')->ignore($yardId),
             ],
+            'short_name' => 'nullable|string|max:255',
 
             // PIPE SYNTAX:
             'address' => 'required|string',

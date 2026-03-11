@@ -167,4 +167,22 @@ class User extends Authenticatable
 		$meta = $this->getUserMetas()->where('meta_key', $key)->first();
 		return $meta ? $meta->meta_value : null;
 	}
+
+	/**
+	 * Get display name from user_meta (first_name, last_name) or fallback to user_login.
+	 * Use with eager-loaded getUserMetas to avoid N+1.
+	 *
+	 * @return string
+	 */
+	public function getDisplayName(): string
+	{
+		$firstName = $this->relationLoaded('getUserMetas')
+			? ($this->getUserMetas->pluck('meta_value', 'meta_key')['first_name'] ?? null)
+			: $this->getMeta('first_name');
+		$lastName = $this->relationLoaded('getUserMetas')
+			? ($this->getUserMetas->pluck('meta_value', 'meta_key')['last_name'] ?? null)
+			: $this->getMeta('last_name');
+		$name = trim(($firstName ?? '') . ' ' . ($lastName ?? ''));
+		return $name !== '' ? $name : $this->user_login;
+	}
 }

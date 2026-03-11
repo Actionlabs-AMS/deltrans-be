@@ -38,6 +38,7 @@ class WaybillDetail extends Model
         'fixed_expense_id',
         'post_expense_amount',
         'total_expense',
+        'prepared_by',
     ];
 
     /**
@@ -136,6 +137,14 @@ class WaybillDetail extends Model
     public function containers()
     {
         return $this->hasMany(Container::class, 'waybill_id');
+    }
+
+    /**
+     * Get the user who prepared the waybill detail.
+     */
+    public function preparedByUser()
+    {
+        return $this->belongsTo(User::class, 'prepared_by');
     }
 }
 

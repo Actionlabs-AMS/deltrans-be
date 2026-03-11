@@ -25,6 +25,7 @@ class Booking extends Model
         'expected_container',
         'is_complete',
         'is_ship_in',
+        'prepared_by',
     ];
 
     /**
@@ -99,5 +100,13 @@ class Booking extends Model
     public function waybills()
     {
         return $this->hasMany(WaybillDetail::class, 'booking_id');
+    }
+
+    /**
+     * Get the user who prepared the booking.
+     */
+    public function preparedByUser()
+    {
+        return $this->belongsTo(User::class, 'prepared_by');
     }
 }

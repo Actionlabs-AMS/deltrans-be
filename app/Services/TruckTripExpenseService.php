@@ -12,6 +12,21 @@ class TruckTripExpenseService extends BaseService
         parent::__construct(new TruckTripExpenseResource(new TruckTripExpense), new TruckTripExpense());
     }
 
+    public function store(array $data)
+    {
+        $model = TruckTripExpense::create($data);
+        $model->load('helper');
+        return TruckTripExpenseResource::make($model);
+    }
+
+    public function update(array $data, int $id)
+    {
+        $model = TruckTripExpense::findOrFail($id);
+        $model->update($data);
+        $model->load('helper');
+        return TruckTripExpenseResource::make($model);
+    }
+
     public function list($perPage = 10, $trash = false)
     {
         $query = TruckTripExpense::query()->with('helper');
@@ -22,11 +37,15 @@ class TruckTripExpenseService extends BaseService
         if (request('search')) {
             $query->where(function ($q) {
                 $q->where('shift', 'LIKE', '%' . request('search') . '%')
+                    ->orWhere('plate_number', 'LIKE', '%' . request('search') . '%')
                     ->orWhereHas('helper', function ($q) {
                         $q->where('first_name', 'LIKE', '%' . request('search') . '%')
                             ->orWhere('last_name', 'LIKE', '%' . request('search') . '%');
                     });
             });
+        }
+        if (request('plate_number')) {
+            $query->where('plate_number', request('plate_number'));
         }
         if (request('helper_id')) {
             $query->where('helper_id', request('helper_id'));

@@ -22,7 +22,7 @@ class BookingService extends BaseService
         // Create the model - defaults will be applied from model $attributes
         $model = $this->model::create($data);
 
-        return $this->resource::make($model->fresh());
+        return $this->resource::make($model->fresh()->load(['preparedByUser.getUserMetas']));
     }
 
     /**
@@ -30,7 +30,7 @@ class BookingService extends BaseService
      */
     public function show(int $id)
     {
-        $model = $this->model::with(['shippingLine', 'cypaFrom', 'cypaTo', 'containers'])
+        $model = $this->model::with(['shippingLine', 'cypaFrom', 'cypaTo', 'containers', 'preparedByUser.getUserMetas'])
             ->withCount('containers')
             ->findOrFail($id);
 
@@ -55,7 +55,7 @@ class BookingService extends BaseService
         $model->update($data);
         return $this->resource::make(
             $model->fresh()
-                ->load(['shippingLine', 'cypaFrom', 'cypaTo', 'containers'])
+                ->load(['shippingLine', 'cypaFrom', 'cypaTo', 'containers', 'preparedByUser.getUserMetas'])
                 ->loadCount('containers')
         );
     }
@@ -70,7 +70,7 @@ class BookingService extends BaseService
             $trashedBookings = $this->getTrashedCount();
 
             $query = Booking::query()
-                ->with(['shippingLine', 'cypaFrom', 'cypaTo'])
+                ->with(['shippingLine', 'cypaFrom', 'cypaTo', 'preparedByUser.getUserMetas'])
                 ->withCount('containers');
 
             // Apply onlyTrashed() first if we're in trash view
@@ -149,7 +149,7 @@ class BookingService extends BaseService
      * Get bookings by shipping line ID, optionally filtered by expected_date range.
      * Includes total_cost, remaining_balance, total_paid based on waybills (total_rate_per_client) in the filtered set.
      */
-    public function listByShippingLine(int $shippingLineId, ?string $expectedDateFrom = null, ?string $expectedDateTo = null, int $perPage = 10)
+    public function listByShippingLine(int $shippingLineId, ?string $expectedDateFrom = null, ?string $expectedDateTo = null, int $perPage = 10, ?int $isComplete = null)
     {
         $baseQuery = Booking::query()
             ->where('shipping_line_id', $shippingLineId);
@@ -160,6 +160,9 @@ class BookingService extends BaseService
         if ($expectedDateTo) {
             $baseQuery->whereDate('expected_date', '<=', $expectedDateTo);
         }
+        if (!is_null($isComplete)) {
+            $baseQuery->where('is_complete', (int) $isComplete);
+        }
 
         $filteredBookingIds = (clone $baseQuery)->pluck('id');
 
@@ -168,7 +171,7 @@ class BookingService extends BaseService
         $totalPaid = (float) WaybillDetail::whereIn('booking_id', (clone $baseQuery)->where('is_complete', true)->pluck('id'))->sum('total_rate_per_client');
 
         $query = (clone $baseQuery)
-            ->with(['shippingLine', 'cypaFrom', 'cypaTo'])
+            ->with(['shippingLine', 'cypaFrom', 'cypaTo', 'preparedByUser.getUserMetas'])
             ->withCount('containers')
             ->orderBy('expected_date', 'asc')
             ->orderBy('id', 'desc');

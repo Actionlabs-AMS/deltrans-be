@@ -14,8 +14,9 @@ class CashAdvanceRequest extends FormRequest
 
     public function rules(): array
     {
-        // GET: type optional (0, 1, 2 or null)
-        if ($this->isMethod('GET')) {
+        // GET (index): type optional (0, 1, 2 or null)
+        // GET (show): type required (1 or 2) because IDs can overlap across tables
+        if ($this->isMethod('GET') && !$this->route('id')) {
             return [
                 'type' => 'nullable|integer|in:0,1,2',
                 'per_page' => 'nullable|integer|min:1|max:100',
@@ -24,6 +25,11 @@ class CashAdvanceRequest extends FormRequest
                 'transaction_date_to' => 'nullable|date',
                 'created_at_from' => 'nullable|date',
                 'created_at_to' => 'nullable|date',
+            ];
+        }
+        if ($this->isMethod('GET') && $this->route('id')) {
+            return [
+                'type' => 'required|integer|in:1,2',
             ];
         }
 
@@ -49,6 +55,13 @@ class CashAdvanceRequest extends FormRequest
             ];
         }
 
+        // DELETE: type required (1 or 2)
+        if ($this->isMethod('DELETE')) {
+            return [
+                'type' => 'required|integer|in:1,2',
+            ];
+        }
+
         return [];
     }
 
@@ -59,6 +72,22 @@ class CashAdvanceRequest extends FormRequest
         }
         // Allow type in query for PATCH (e.g. ?type=1)
         if (($this->isMethod('PATCH') || $this->isMethod('PUT')) && $this->query('type') && !$this->has('type')) {
+            $this->merge(['type' => (int) $this->query('type')]);
+        }
+
+        // Backward-compatible: accept driver_id/helper_id instead of requestor_id on POST
+        if ($this->isMethod('POST') && !$this->has('requestor_id')) {
+            $type = $this->has('type') ? (int) $this->type : null;
+            if ($type === 1 && $this->has('driver_id')) {
+                $this->merge(['requestor_id' => (int) $this->driver_id]);
+            }
+            if ($type === 2 && $this->has('helper_id')) {
+                $this->merge(['requestor_id' => (int) $this->helper_id]);
+            }
+        }
+
+        // Allow type in query for GET show and DELETE (e.g. /cash-advances/{id}?type=1)
+        if (($this->isMethod('GET') || $this->isMethod('DELETE')) && $this->query('type') && !$this->has('type')) {
             $this->merge(['type' => (int) $this->query('type')]);
         }
     }
@@ -76,6 +105,36 @@ class CashAdvanceRequest extends FormRequest
             }
             if ($type === 2 && !\App\Models\Helper::where('id', $requestorId)->exists()) {
                 $validator->errors()->add('requestor_id', 'The selected requestor_id does not exist in helpers.');
+            }
+
+            // One request per shift per transaction_date: driver/helper cannot have another cash advance for same date + shift
+            $transactionDate = $this->input('transaction_date');
+            $shift = $this->input('shift');
+            if (!$transactionDate || !$shift) {
+                return;
+            }
+            try {
+                $date = \Carbon\Carbon::parse($transactionDate)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return;
+            }
+            if ($type === 1) {
+                $exists = \App\Models\DriverCAHistory::where('driver_id', $requestorId)
+                    ->where('transaction_date', $date)
+                    ->where('shift', $shift)
+                    ->exists();
+                if ($exists) {
+                    $validator->errors()->add('transaction_date', 'This driver already has a cash advance for this shift on this date. Only one request per shift per transaction date is allowed.');
+                }
+            }
+            if ($type === 2) {
+                $exists = \App\Models\HelperCAHistory::where('helper_id', $requestorId)
+                    ->where('transaction_date', $date)
+                    ->where('shift', $shift)
+                    ->exists();
+                if ($exists) {
+                    $validator->errors()->add('transaction_date', 'This helper already has a cash advance for this shift on this date. Only one request per shift per transaction date is allowed.');
+                }
             }
         });
     }

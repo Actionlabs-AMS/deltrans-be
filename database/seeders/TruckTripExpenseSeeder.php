@@ -16,14 +16,16 @@ class TruckTripExpenseSeeder extends Seeder
         
         $period = CarbonPeriod::create($start, $end);
 
+        $plates = \Illuminate\Support\Facades\DB::table('fleet_trucks')->where('is_active', 1)->pluck('plate_number')->toArray();
+        $plateNumbers = $plates ?: ['ABC-1234', 'XYZ-5678', 'NCK-6498'];
+
         foreach ($period as $date) {
             $currentDate = $date->format('Y-m-d');
 
-            // We'll create one expense record per day
-            // You can loop this if you want multiple trucks per day
             TruckTripExpense::create([
-                'shift' => $date->day % 2 == 0 ? 'Day' : 'Night', // Alternates shift based on day
-                'helper_id' => rand(1, 5), // Assumes you have helpers with IDs 1-5
+                'shift' => $date->day % 2 == 0 ? 'Day' : 'Night',
+                'plate_number' => $plateNumbers[array_rand($plateNumbers)],
+                'helper_id' => rand(1, 5),
                 'cash_on_hand' => rand(100, 500),
                 'issued_cash_amount' => rand(1000, 3000),
                 'transaction_date' => $currentDate,

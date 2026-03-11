@@ -173,7 +173,7 @@ class SoaAndBillingService extends BaseService
                 'is_paid' => $data['is_paid'] ?? false,
             ];
             $billingStatement = BillingStatement::create($billingData);
-            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser']);
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas']);
 
             return [
                 'soa' => SoaAndBillingResource::make($soa),
@@ -448,7 +448,8 @@ class SoaAndBillingService extends BaseService
     {
         return StatementOfAccount::query()
             ->whereNull('deleted_at')
-            ->whereRaw("JSON_CONTAINS(booking_ids, CAST(? AS JSON), '$')", [$bookingId])
+            // MariaDB doesn't support CAST(<int> AS JSON) reliably; pass JSON literal instead (e.g. "6")
+            ->whereRaw("JSON_CONTAINS(booking_ids, ?, '$')", [json_encode($bookingId)])
             ->first();
     }
 
@@ -905,7 +906,7 @@ class SoaAndBillingService extends BaseService
             }
 
             return BillingStatementResource::collection(
-                $query->with(['statementOfAccount', 'shippingLine', 'preparedByUser'])->paginate($perPage)->withQueryString()
+                $query->with(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas'])->paginate($perPage)->withQueryString()
             )->additional([
                         'meta' => [
                             'all' => $allBillingStatements,
@@ -943,7 +944,7 @@ class SoaAndBillingService extends BaseService
             }
 
             $billingStatement = BillingStatement::create($data);
-            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser']);
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas']);
 
             return BillingStatementResource::make($billingStatement);
         } catch (ModelNotFoundException $e) {
@@ -967,7 +968,7 @@ class SoaAndBillingService extends BaseService
             $billingStatement = BillingStatement::with([
                 'statementOfAccount',
                 'shippingLine',
-                'preparedByUser'
+                'preparedByUser.getUserMetas'
             ])->findOrFail($id);
 
             $bookingIds = $billingStatement->statementOfAccount->booking_ids ?? [];
@@ -1145,7 +1146,7 @@ class SoaAndBillingService extends BaseService
             $billingStatement = BillingStatement::with([
                 'statementOfAccount',
                 'shippingLine',
-                'preparedByUser'
+                'preparedByUser.getUserMetas'
             ])->findOrFail($billingStatementId);
 
             $soa = $billingStatement->statementOfAccount;
@@ -1356,7 +1357,7 @@ class SoaAndBillingService extends BaseService
             $billingStatement = BillingStatement::with([
                 'statementOfAccount',
                 'shippingLine',
-                'preparedByUser'
+                'preparedByUser.getUserMetas'
             ])->findOrFail($id);
 
             return BillingStatementResource::make($billingStatement);
@@ -1379,7 +1380,7 @@ class SoaAndBillingService extends BaseService
         try {
             $billingStatement = BillingStatement::findOrFail($id);
             $billingStatement->update(array_intersect_key($data, array_flip($billingStatement->getFillable())));
-            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser']);
+            $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas']);
             return BillingStatementResource::make($billingStatement);
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Billing statement not found.');

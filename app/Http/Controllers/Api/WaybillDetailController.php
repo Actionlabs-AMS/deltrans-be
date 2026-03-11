@@ -20,6 +20,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="waybill_number", type="string", example="WB-001"),
  *     @OA\Property(property="transaction_date", type="string", format="date", example="2025-12-22"),
  *     @OA\Property(property="shipping_line_id", type="integer", example=1, nullable=true),
+ *     @OA\Property(property="prepared_by", type="string", example="John Doe", nullable=true, description="Display name of user who prepared (from users/user_meta; POST/PUT accept user ID)"),
  *     @OA\Property(property="booking_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="driver_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="helper_id", type="integer", format="int64", nullable=true),
@@ -72,7 +73,8 @@ use App\Services\MessageService;
  *     @OA\Property(property="has_vat", type="boolean", example=true, nullable=true),
  *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, nullable=true),
  *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00),
- *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, nullable=true)
+ *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, nullable=true),
+ *     @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the waybill")
  * )
  */
 class WaybillDetailController extends BaseController

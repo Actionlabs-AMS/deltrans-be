@@ -44,6 +44,7 @@ class WaybillDetailRequest extends FormRequest
             'total_rate_per_client' => 'nullable|numeric|min:0',
             'post_expense_amount' => 'nullable|numeric|min:0',
             'total_expense' => 'nullable|numeric|min:0',
+            'prepared_by' => 'nullable|integer|exists:users,id',
         ];
 
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
@@ -68,6 +69,7 @@ class WaybillDetailRequest extends FormRequest
             $rules['has_vat'] = 'sometimes|nullable|boolean';
             $rules['total_rate_per_client'] = 'sometimes|nullable|numeric|min:0';
             $rules['total_expense'] = 'sometimes|nullable|numeric|min:0';
+            $rules['prepared_by'] = 'sometimes|nullable|integer|exists:users,id';
         }
 
         return $rules;

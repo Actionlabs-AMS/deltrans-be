@@ -788,6 +788,12 @@
                                         "description": "Whether the booking is ship-in (optional)",
                                         "type": "boolean",
                                         "example": true
+                                    },
+                                    "prepared_by": {
+                                        "description": "User ID who prepared the booking",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -955,6 +961,15 @@
                             "type": "string",
                             "format": "date",
                             "example": "2025-01-31"
+                        }
+                    },
+                    {
+                        "name": "is_complete",
+                        "in": "query",
+                        "description": "Filter by completion status (0=Incomplete, 1=Complete)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 0
                         }
                     },
                     {
@@ -1208,6 +1223,12 @@
                                         "description": "Whether the booking is ship-in (optional)",
                                         "type": "boolean",
                                         "example": true
+                                    },
+                                    "prepared_by": {
+                                        "description": "User ID who prepared the booking",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -2250,7 +2271,7 @@
                         }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error (e.g. duplicate: same driver/helper already has a cash advance for this shift on this transaction_date)"
                     }
                 },
                 "security": [
@@ -4053,6 +4074,16 @@
                         "schema": {
                             "type": "string",
                             "example": "North Yard"
+                        }
+                    },
+                    {
+                        "name": "short_name",
+                        "in": "query",
+                        "description": "Filter by short name (partial match).",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "NY"
                         }
                     }
                 ],
@@ -20643,6 +20674,14 @@
                         }
                     },
                     {
+                        "name": "plate_number",
+                        "in": "query",
+                        "description": "Filter by truck plate number",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
                         "name": "helper_id",
                         "in": "query",
                         "schema": {
@@ -24293,6 +24332,12 @@
                         "type": "integer",
                         "example": 5
                     },
+                    "prepared_by": {
+                        "description": "Display name of user who prepared (from users/user_meta; POST/PUT accept user ID)",
+                        "type": "string",
+                        "example": "John Doe",
+                        "nullable": true
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -24562,6 +24607,11 @@
                         "type": "string",
                         "example": "North Yard"
                     },
+                    "short_name": {
+                        "description": "Short name/code for the container yard",
+                        "type": "string",
+                        "example": "NY"
+                    },
                     "address": {
                         "type": "string",
                         "example": "123 Port St."
@@ -24616,6 +24666,11 @@
                     "name": {
                         "type": "string",
                         "example": "North Yard"
+                    },
+                    "short_name": {
+                        "description": "Short name/code for the container yard",
+                        "type": "string",
+                        "example": "NY"
                     },
                     "address": {
                         "type": "string",
@@ -26100,9 +26155,10 @@
                         "nullable": true
                     },
                     "prepared_by": {
-                        "description": "User ID who prepared the billing statement",
-                        "type": "integer",
-                        "example": 1
+                        "description": "Display name of user who prepared (from users / user_meta first_name, last_name, or user_login)",
+                        "type": "string",
+                        "example": "John Doe",
+                        "nullable": true
                     },
                     "billing_statement_no": {
                         "type": "string",
@@ -26209,12 +26265,11 @@
             "BookingCheckerValidateInput": {
                 "title": "Validate Bookings for SOA/Billing/Invoice",
                 "required": [
-                    "booking_ids",
                     "type"
                 ],
                 "properties": {
                     "booking_ids": {
-                        "description": "Array of booking IDs",
+                        "description": "Array of booking IDs (preferred when provided; if present, statement_of_account_id will be ignored)",
                         "type": "array",
                         "items": {
                             "type": "integer"
@@ -26224,6 +26279,11 @@
                             2,
                             3
                         ]
+                    },
+                    "statement_of_account_id": {
+                        "description": "Statement of Account ID to validate against (used only when booking_ids is not provided)",
+                        "type": "integer",
+                        "example": 10
                     },
                     "type": {
                         "description": "1 = SOA, 2 = Billing, 3 = Invoice",
@@ -26253,7 +26313,7 @@
                                     "type": "object"
                                 },
                                 "reason": {
-                                    "description": "Why the booking is invalid",
+                                    "description": "Why the booking is invalid (e.g. no waybills, already has SOA/Billing/Invoice)",
                                     "type": "string"
                                 }
                             },
@@ -26398,6 +26458,11 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "plate_number": {
+                        "description": "Truck plate number",
+                        "type": "string",
+                        "nullable": true
+                    },
                     "helper_id": {
                         "type": "integer",
                         "nullable": true
@@ -26443,6 +26508,11 @@
                             "2nd"
                         ]
                     },
+                    "plate_number": {
+                        "description": "Truck plate number",
+                        "type": "string",
+                        "nullable": true
+                    },
                     "helper_id": {
                         "type": "integer"
                     },
@@ -26481,6 +26551,12 @@
                     "shipping_line_id": {
                         "type": "integer",
                         "example": 1,
+                        "nullable": true
+                    },
+                    "prepared_by": {
+                        "description": "Display name of user who prepared (from users/user_meta; POST/PUT accept user ID)",
+                        "type": "string",
+                        "example": "John Doe",
                         "nullable": true
                     },
                     "booking_id": {
@@ -26738,6 +26814,12 @@
                         "format": "float",
                         "example": 4700,
                         "nullable": true
+                    },
+                    "prepared_by": {
+                        "description": "User ID who prepared the waybill",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -26837,7 +26919,7 @@
         },
         {
             "name": "Cash Advance (Unified)",
-            "description": "Unified API for driver and helper cash advancement. type: 1 = driver_cash_advancement_history, 2 = helper_cash_advancement_history. GET: type 0 or null returns both; POST/PATCH/DELETE: type is required."
+            "description": "Unified API for driver and helper cash advancement. type: 1 = driver, 2 = helper. Rule: only one cash advance per (transaction_date + shift) per driver or helper—e.g. helper_id 1 cannot have two Day-shift requests on the same transaction_date. GET: type 0 or null returns both; POST/PATCH/DELETE: type is required."
         },
         {
             "name": "Category Management",
@@ -26929,7 +27011,7 @@
         },
         {
             "name": "SOA, Billing & Invoice - Booking Validator",
-            "description": "Validate bookings for SOA, Billing, or Invoice (type 1, 2, or 3). Returns valid and invalid bookings with reasons."
+            "description": "Validate bookings for SOA, Billing, or Invoice (type 1, 2, or 3). Condition: a booking is valid only if it has at least one waybill (waybill_details with that booking_id). Returns valid and invalid bookings with reasons."
         },
         {
             "name": "SOA Data Option Management",

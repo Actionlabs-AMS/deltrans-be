@@ -11,13 +11,14 @@ use Illuminate\Http\JsonResponse;
 /**
  * @OA\Tag(
  *     name="SOA, Billing & Invoice - Booking Validator",
- *     description="Validate bookings for SOA, Billing, or Invoice (type 1, 2, or 3). Returns valid and invalid bookings with reasons."
+ *     description="Validate bookings for SOA, Billing, or Invoice (type 1, 2, or 3). Condition: a booking is valid only if it has at least one waybill (waybill_details with that booking_id). Returns valid and invalid bookings with reasons."
  * )
  * @OA\Schema(
  *     schema="BookingCheckerValidateInput",
  *     title="Validate Bookings for SOA/Billing/Invoice",
- *     required={"booking_ids", "type"},
- *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs"),
+ *     required={"type"},
+ *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs (preferred when provided; if present, statement_of_account_id will be ignored)"),
+ *     @OA\Property(property="statement_of_account_id", type="integer", example=10, description="Statement of Account ID to validate against (used only when booking_ids is not provided)"),
  *     @OA\Property(property="type", type="integer", example=2, description="1 = SOA, 2 = Billing, 3 = Invoice")
  * )
  * @OA\Schema(
@@ -26,7 +27,7 @@ use Illuminate\Http\JsonResponse;
  *     @OA\Property(property="valid_bookings", type="array", @OA\Items(type="object"), description="Bookings that pass the condition for the given type"),
  *     @OA\Property(property="invalid_bookings", type="array", @OA\Items(
  *         @OA\Property(property="booking", type="object", description="Booking object"),
- *         @OA\Property(property="reason", type="string", description="Why the booking is invalid")
+ *         @OA\Property(property="reason", type="string", description="Why the booking is invalid (e.g. no waybills, already has SOA/Billing/Invoice)")
  *     ), description="Bookings that fail with reason"),
  *     @OA\Property(property="has_soa", type="boolean", description="For type 2 and 3 only. True if any selected booking has an SOA, false if all have no SOA. Default false.")
  * )

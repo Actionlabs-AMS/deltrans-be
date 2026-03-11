@@ -39,6 +39,12 @@ class BookingResource extends JsonResource
             'is_ship_in' => (bool) $this->is_ship_in,
             'actual_no_of_waybill' => isset($this->actual_no_of_waybill) ? (int) $this->actual_no_of_waybill : 0,
 
+            // Prepared by: display name from users / user_meta (GET returns name; POST/PUT use ID)
+            'prepared_by' => $this->when($this->prepared_by, function () {
+                $user = $this->preparedByUser;
+                return $user ? $user->getDisplayName() : null;
+            }),
+
             // Loaded relations
             'shipping_line' => $this->whenLoaded('shippingLine'),
             'cypa_from' => $this->whenLoaded('cypaFrom'),

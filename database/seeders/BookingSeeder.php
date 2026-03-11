@@ -17,6 +17,7 @@ class BookingSeeder extends Seeder
         $shippingLineIds = DB::table('shipping_lines')->pluck('id')->toArray();
         $shippingLineNames = DB::table('shipping_lines')->pluck('name', 'id')->toArray();
         $cypaIds = DB::table('cypa_details')->where('is_active', 1)->pluck('id')->toArray();
+        $firstUserId = DB::table('users')->value('id');
 
         if (empty($shippingLineIds) || empty($cypaIds) || count($cypaIds) < 2) {
             $this->command->warn('Required related records not found. Please seed shipping_lines and cypa_details first.');
@@ -49,7 +50,7 @@ class BookingSeeder extends Seeder
                 if ($cypaFrom === $cypaTo) {
                     $cypaTo = $cypaIds[($idx + 2) % count($cypaIds)];
                 }
-                $bookings[] = [
+                $row = [
                     'reference_number' => $prefix . '-' . $year . '-' . $refCounter,
                     'vessel' => $vessels[$v % count($vessels)],
                     'shipping_line_id' => $lineId,
@@ -59,6 +60,10 @@ class BookingSeeder extends Seeder
                     'is_complete' => ($idx + $v) % 3 !== 0,
                     'is_ship_in' => true,
                 ];
+                if ($firstUserId !== null) {
+                    $row['prepared_by'] = $firstUserId;
+                }
+                $bookings[] = $row;
                 $refCounter++;
             }
         }

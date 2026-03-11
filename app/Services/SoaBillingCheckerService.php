@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\BillingStatement;
 use App\Models\Invoice;
 use App\Models\StatementOfAccount;
+use App\Models\WaybillDetail;
 
 class SoaBillingCheckerService
 {
@@ -22,6 +23,16 @@ class SoaBillingCheckerService
     public function validateBookings(array $bookingIds, int $type): array
     {
         $bookingIds = array_values(array_unique(array_map('intval', $bookingIds)));
+
+        $statementOfAccountId = request()->filled('statement_of_account_id')
+            ? (int) request()->input('statement_of_account_id')
+            : null;
+
+        if (empty($bookingIds) && !is_null($statementOfAccountId)) {
+            $soa = StatementOfAccount::select('id', 'booking_ids')->find($statementOfAccountId);
+            $bookingIds = array_values(array_unique(array_map('intval', $soa ? ($soa->booking_ids ?? []) : [])));
+        }
+
         if (empty($bookingIds)) {
             return [
                 'valid_bookings' => [],
@@ -30,17 +41,45 @@ class SoaBillingCheckerService
             ];
         }
 
-        $hasSoa = $this->getBookingIdsWithSoa($bookingIds);
-        $hasBilling = $type >= 2 ? $this->getBookingIdsWithBilling($bookingIds) : [];
-        $hasInvoice = $type === 3 ? $this->getBookingIdsWithInvoice($bookingIds) : [];
+        $hasSoa = !is_null($statementOfAccountId) ? $bookingIds : $this->getBookingIdsWithSoa($bookingIds);
+        $hasBilling = [];
+        $hasInvoice = [];
+        if ($type >= 2) {
+            if (!is_null($statementOfAccountId)) {
+                $hasBilling = BillingStatement::where('statement_of_account_id', $statementOfAccountId)->exists() ? $bookingIds : [];
+            } else {
+                $hasBilling = $this->getBookingIdsWithBilling($bookingIds);
+            }
+        }
+        if ($type === 3) {
+            if (!is_null($statementOfAccountId)) {
+                $hasInvoice = Invoice::where('statement_of_account_id', $statementOfAccountId)->exists() ? $bookingIds : [];
+            } else {
+                $hasInvoice = $this->getBookingIdsWithInvoice($bookingIds);
+            }
+        }
 
         // For type 2 and 3: true if any selected booking has an SOA, default false.
+        // When statement_of_account_id is provided (and booking_ids is not), assume bookings belong to that SOA.
         $has_soa = ($type === 2 || $type === 3) && !empty($hasSoa);
+
+        // Condition: booking is valid only if it has at least one waybill (waybill_details with this booking_id).
+        $bookingIdsWithWaybills = WaybillDetail::whereIn('booking_id', $bookingIds)
+            ->distinct()
+            ->pluck('booking_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
 
         $validIds = [];
         $invalidReasons = []; // booking_id => reason
 
         foreach ($bookingIds as $id) {
+            if (!in_array($id, $bookingIdsWithWaybills, true)) {
+                $invalidReasons[$id] = 'Booking must have at least one waybill.';
+                continue;
+            }
+
             $idHasSoa = in_array($id, $hasSoa, true);
             $idHasBilling = in_array($id, $hasBilling, true);
             $idHasInvoice = in_array($id, $hasInvoice, true);
@@ -77,7 +116,7 @@ class SoaBillingCheckerService
         // Type 2 or 3 (when has_soa): 1 Billing = 1 SOA, 1 Invoice = 1 SOA.
         // When has_soa is true: all must have SOA and belong to the same single SOA.
         // When has_soa is false (all bookings have no SOA), valid from per-booking logic.
-        if (($type === 2 || $type === 3) && $has_soa) {
+        if (($type === 2 || $type === 3) && $has_soa && is_null($statementOfAccountId)) {
             $idsWithoutSoa = array_diff($bookingIds, $hasSoa);
             if (!empty($idsWithoutSoa)) {
                 foreach ($bookingIds as $id) {

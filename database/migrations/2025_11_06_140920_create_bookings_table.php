@@ -26,12 +26,14 @@ return new class extends Migration {
             $table->boolean('is_complete')->default(false);
             $table->boolean('is_ship_in')->default(true);
             $table->timestamp('auto_complete_at')->nullable();
+            $table->bigInteger('prepared_by')->unsigned()->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('shipping_line_id')->references('id')->on('shipping_lines')->onDelete('cascade');
             $table->foreign('cypa_id_from')->references('id')->on('cypa_details')->onDelete('cascade');
             $table->foreign('cypa_id_to')->references('id')->on('cypa_details')->onDelete('cascade');
+            $table->foreign('prepared_by')->references('id')->on('users')->onDelete('set null');
 
             $table->index('reference_number');
             $table->index('shipping_line_id');
@@ -42,6 +44,7 @@ return new class extends Migration {
             $table->index('is_complete');
             $table->index('is_ship_in');
             $table->index('auto_complete_at');
+            $table->index('prepared_by');
         });
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
