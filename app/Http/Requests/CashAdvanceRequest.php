@@ -106,6 +106,36 @@ class CashAdvanceRequest extends FormRequest
             if ($type === 2 && !\App\Models\Helper::where('id', $requestorId)->exists()) {
                 $validator->errors()->add('requestor_id', 'The selected requestor_id does not exist in helpers.');
             }
+
+            // One request per shift per transaction_date: driver/helper cannot have another cash advance for same date + shift
+            $transactionDate = $this->input('transaction_date');
+            $shift = $this->input('shift');
+            if (!$transactionDate || !$shift) {
+                return;
+            }
+            try {
+                $date = \Carbon\Carbon::parse($transactionDate)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return;
+            }
+            if ($type === 1) {
+                $exists = \App\Models\DriverCAHistory::where('driver_id', $requestorId)
+                    ->where('transaction_date', $date)
+                    ->where('shift', $shift)
+                    ->exists();
+                if ($exists) {
+                    $validator->errors()->add('transaction_date', 'This driver already has a cash advance for this shift on this date. Only one request per shift per transaction date is allowed.');
+                }
+            }
+            if ($type === 2) {
+                $exists = \App\Models\HelperCAHistory::where('helper_id', $requestorId)
+                    ->where('transaction_date', $date)
+                    ->where('shift', $shift)
+                    ->exists();
+                if ($exists) {
+                    $validator->errors()->add('transaction_date', 'This helper already has a cash advance for this shift on this date. Only one request per shift per transaction date is allowed.');
+                }
+            }
         });
     }
 
