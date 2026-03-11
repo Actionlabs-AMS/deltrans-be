@@ -51,7 +51,7 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), nullable=true, description="From statement_of_accounts.booking_ids"),
  *     @OA\Property(property="shipping_line", type="object", nullable=true, description="Shipping line from SOA when loaded"),
  *     @OA\Property(property="booking", type="object", nullable=true, description="Booking from SOA when loaded"),
- *     @OA\Property(property="prepared_by", type="integer", example=1, description="User ID who prepared the billing statement"),
+ *     @OA\Property(property="prepared_by", type="string", example="John Doe", nullable=true, description="Display name of user who prepared (from users / user_meta first_name, last_name, or user_login)"),
  *     @OA\Property(property="billing_statement_no", type="string", example="BS-2024-001"),
  *     @OA\Property(property="payment_term", type="string", example="Net 30", nullable=true),
  *     @OA\Property(property="ci_date", type="string", format="date", example="2024-01-15", nullable=true),

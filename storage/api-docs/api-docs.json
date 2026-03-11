@@ -25820,9 +25820,10 @@
                         "nullable": true
                     },
                     "prepared_by": {
-                        "description": "User ID who prepared the billing statement",
-                        "type": "integer",
-                        "example": 1
+                        "description": "Display name of user who prepared (from users / user_meta first_name, last_name, or user_login)",
+                        "type": "string",
+                        "example": "John Doe",
+                        "nullable": true
                     },
                     "billing_statement_no": {
                         "type": "string",
