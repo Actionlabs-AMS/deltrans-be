@@ -351,4 +351,116 @@ class ReportsService
 
         return $paginated;
     }
+
+    public function getTruckSummary($startDate, $endDate, $filterType = 'weekly', $search = null, $perPage = 15)
+    {
+        try {
+            $query = DB::table('waybill_details')
+                // Join with fixed_expenses to get the cost data
+                ->leftJoin('fixed_expenses', 'waybill_details.fixed_expense_id', '=', 'fixed_expenses.id')
+                ->select(
+                    'waybill_details.truck_plate_number', 
+                    DB::raw('count(waybill_details.id) as total_trips'),
+                    DB::raw('SUM(IFNULL(fixed_expenses.total_expenses, 0)) as total_expenses')
+                );
+
+            // 1. --- Date Filtering Logic ---
+            if ($filterType === 'monthly' && $startDate) {
+                $date = \Carbon\Carbon::parse($startDate);
+                $query->whereMonth('waybill_details.transaction_date', $date->month)
+                    ->whereYear('waybill_details.transaction_date', $date->year);
+            } else {
+                if ($startDate && $endDate) {
+                    $query->whereBetween('waybill_details.transaction_date', [$startDate, $endDate]);
+                }
+            }
+
+            // 2. --- Optional Search ---
+            $search = request('search');
+            if ($search) {
+                $query->where('waybill_details.truck_plate_number', 'LIKE', "%{$search}%");
+            }
+
+            // 3. --- Grouping and Ordering ---
+            // Note: We use the raw column name or the alias depending on your DB driver
+            $sortColumn = request('order', 'total_trips'); 
+            $sortDirection = request('sort', 'desc');
+            
+            $query->groupBy('waybill_details.truck_plate_number')
+                ->orderBy($sortColumn, $sortDirection);
+
+            return $query->paginate($perPage)->withQueryString();
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch truck summary: ' . $e->getMessage());
+        }
+    }
+
+    public function getTruckDetailedReport($startDate, $endDate, $filterType = 'weekly', $plateNumber = null, $perPage = 15)
+    {
+        try {
+            $query = DB::table('waybill_details as a')
+                ->join('bookings as b', 'a.booking_id', '=', 'b.id')
+                ->leftJoin('containers as c', 'c.waybill_id', '=', 'a.id')
+                ->join('shipping_lines as d', 'd.id', '=', 'b.shipping_line_id')
+                ->join('cypa_details as e', 'e.id', '=', 'b.cypa_id_from')
+                ->join('cypa_details as f', 'f.id', '=', 'b.cypa_id_to')
+                ->join('drivers as g', 'g.id', '=', 'a.driver_id')
+                ->join('helpers as h', 'h.id', '=', 'a.helper_id')
+                ->join('fixed_expenses as i', 'i.id', '=', 'a.fixed_expense_id')
+                ->select([
+                    'a.transaction_date',
+                    'd.name as shipping_line_name',
+                    'a.truck_plate_number',
+                    'a.waybill_number',
+                    'c.container_number',
+                    'e.short_name as from',
+                    'f.short_name as to',
+                    DB::raw("'Completed' as status"), 
+                    'a.container_size',
+                    'i.total_expenses',
+                    'a.remarks',
+                    'g.last_name as driver',
+                    'h.last_name as helper',
+                    DB::raw("'System Admin' as encoded_by")
+                ]);
+
+            // 1. --- Date Filtering Logic ---
+            if ($filterType === 'monthly' && $startDate) {
+                $date = \Carbon\Carbon::parse($startDate);
+                $query->whereMonth('a.transaction_date', $date->month)
+                    ->whereYear('a.transaction_date', $date->year);
+            } else {
+                if ($startDate && $endDate) {
+                    $query->whereBetween('a.transaction_date', [$startDate, $endDate]);
+                }
+            }
+
+            // 2. --- Specific Truck Filter ---
+            if ($plateNumber) {
+                $query->where('a.truck_plate_number', $plateNumber);
+            }
+
+            // 3. --- Optional Search (Matches Summary Pattern) ---
+            $search = request('search');
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('a.waybill_number', 'LIKE', "%{$search}%")
+                    ->orWhere('c.container_number', 'LIKE', "%{$search}%")
+                    ->orWhere('d.name', 'LIKE', "%{$search}%");
+                });
+            }
+
+            // 4. --- Ordering ---
+            $sortColumn = request('order', 'a.transaction_date'); 
+            $sortDirection = request('sort', 'asc');
+            $query->orderBy($sortColumn, $sortDirection);
+
+            // 5. Return paginated results with query string
+            return $query->paginate($perPage)->withQueryString();
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch detailed report: ' . $e->getMessage());
+        }
+    }
 }
