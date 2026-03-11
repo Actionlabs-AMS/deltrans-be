@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\BillingStatement;
 use App\Models\Invoice;
 use App\Models\StatementOfAccount;
+use App\Models\WaybillDetail;
 
 class SoaBillingCheckerService
 {
@@ -62,10 +63,23 @@ class SoaBillingCheckerService
         // When statement_of_account_id is provided (and booking_ids is not), assume bookings belong to that SOA.
         $has_soa = ($type === 2 || $type === 3) && !empty($hasSoa);
 
+        // Condition: booking is valid only if it has at least one waybill (waybill_details with this booking_id).
+        $bookingIdsWithWaybills = WaybillDetail::whereIn('booking_id', $bookingIds)
+            ->distinct()
+            ->pluck('booking_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
         $validIds = [];
         $invalidReasons = []; // booking_id => reason
 
         foreach ($bookingIds as $id) {
+            if (!in_array($id, $bookingIdsWithWaybills, true)) {
+                $invalidReasons[$id] = 'Booking must have at least one waybill.';
+                continue;
+            }
+
             $idHasSoa = in_array($id, $hasSoa, true);
             $idHasBilling = in_array($id, $hasBilling, true);
             $idHasInvoice = in_array($id, $hasInvoice, true);
