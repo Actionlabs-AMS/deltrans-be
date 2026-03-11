@@ -37,11 +37,15 @@ class TruckTripExpenseService extends BaseService
         if (request('search')) {
             $query->where(function ($q) {
                 $q->where('shift', 'LIKE', '%' . request('search') . '%')
+                    ->orWhere('plate_number', 'LIKE', '%' . request('search') . '%')
                     ->orWhereHas('helper', function ($q) {
                         $q->where('first_name', 'LIKE', '%' . request('search') . '%')
                             ->orWhere('last_name', 'LIKE', '%' . request('search') . '%');
                     });
             });
+        }
+        if (request('plate_number')) {
+            $query->where('plate_number', request('plate_number'));
         }
         if (request('helper_id')) {
             $query->where('helper_id', request('helper_id'));

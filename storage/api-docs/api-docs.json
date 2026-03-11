@@ -20493,6 +20493,14 @@
                         }
                     },
                     {
+                        "name": "plate_number",
+                        "in": "query",
+                        "description": "Filter by truck plate number",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
                         "name": "helper_id",
                         "in": "query",
                         "schema": {
@@ -26141,6 +26149,11 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "plate_number": {
+                        "description": "Truck plate number",
+                        "type": "string",
+                        "nullable": true
+                    },
                     "helper_id": {
                         "type": "integer",
                         "nullable": true
@@ -26185,6 +26198,11 @@
                             "1st",
                             "2nd"
                         ]
+                    },
+                    "plate_number": {
+                        "description": "Truck plate number",
+                        "type": "string",
+                        "nullable": true
                     },
                     "helper_id": {
                         "type": "integer"

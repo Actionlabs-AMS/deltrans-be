@@ -19,6 +19,7 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('shift')->nullable();
+            $table->string('plate_number')->nullable();
             $table->bigInteger('helper_id')->unsigned()->nullable();
             $table->decimal('cash_on_hand', 15, 2)->default(0)->comment('Current money');
             $table->decimal('issued_cash_amount', 15, 2)->default(0);
@@ -34,6 +35,7 @@ return new class extends Migration
 
             // Indexes
             $table->index('shift');
+            $table->index('plate_number');
             $table->index('helper_id', 'idx_helper_id');
             $table->index('transaction_date', 'idx_transaction_date');
         });

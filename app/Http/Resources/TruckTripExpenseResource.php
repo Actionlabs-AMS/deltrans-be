@@ -12,6 +12,7 @@ class TruckTripExpenseResource extends JsonResource
         return [
             'id' => $this->id,
             'shift' => $this->shift,
+            'plate_number' => $this->plate_number,
             'helper_id' => $this->helper_id,
             'helper_name' => $this->whenLoaded('helper', function () {
                 return $this->helper ? trim($this->helper->first_name . ' ' . $this->helper->last_name) : null;
