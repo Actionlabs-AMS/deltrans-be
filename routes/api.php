@@ -60,6 +60,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 	// Dashboard Routes
 	Route::prefix('dashboard')->group(function () {
+		Route::get('/', [DashboardController::class, 'getDashboard']);
+		Route::get('/kpis', [DashboardController::class, 'getKpis']);
+		Route::get('/sales-overview', [DashboardController::class, 'getSalesOverview']);
+		Route::get('/overdue-payments', [DashboardController::class, 'getOverduePayments']);
 		Route::get('/stats', [DashboardController::class, 'getStats']);
 	});
 

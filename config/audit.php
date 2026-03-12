@@ -41,6 +41,10 @@ return [
     'skip_routes' => [
         'api/files/url',
         'api/options/*',
+        'api/dashboard',
+        'api/dashboard/kpis',
+        'api/dashboard/sales-overview',
+        'api/dashboard/overdue-payments',
         'api/dashboard/stats',
     ],
 

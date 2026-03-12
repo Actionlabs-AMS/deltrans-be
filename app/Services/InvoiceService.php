@@ -201,9 +201,11 @@ class InvoiceService
                     $containerCount = 1;
             }
 
+            // total_rate_per_client is already the full amount for this waybill (all containers);
+            // do not multiply by container count to avoid double multiplication on the invoice.
             $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
             $hasVat = (bool) ($waybill->has_vat ?? false);
-            $waybillTotal = $base * $containerCount;
+            $waybillTotal = $base;
             $lineTotal = $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
 
             if (!isset($grouped[$key])) {

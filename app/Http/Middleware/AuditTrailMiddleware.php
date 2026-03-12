@@ -56,6 +56,10 @@ class AuditTrailMiddleware
         $skipRoutes = [
             'api/files/url', // File URL generation
             'api/options/*', // Options endpoints
+            'api/dashboard', // Combined dashboard payload
+            'api/dashboard/kpis', // Dashboard KPIs
+            'api/dashboard/sales-overview', // Dashboard chart
+            'api/dashboard/overdue-payments', // Dashboard overdue table
             'api/dashboard/stats', // Dashboard stats (frequent calls)
         ];
 
