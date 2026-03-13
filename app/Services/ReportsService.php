@@ -408,6 +408,18 @@ class ReportsService
                 ->join('drivers as g', 'g.id', '=', 'a.driver_id')
                 ->join('helpers as h', 'h.id', '=', 'a.helper_id')
                 ->join('fixed_expenses as i', 'i.id', '=', 'a.fixed_expense_id')
+                
+                // JOIN 1: For First Name
+                ->leftJoin('user_meta as um1', function($join) {
+                    $join->on('um1.user_id', '=', 'a.prepared_by')
+                        ->where('um1.meta_key', '=', 'first_name');
+                })
+                // JOIN 2: For Last Name
+                ->leftJoin('user_meta as um2', function($join) {
+                    $join->on('um2.user_id', '=', 'a.prepared_by')
+                        ->where('um2.meta_key', '=', 'last_name');
+                })
+                
                 ->select([
                     'a.transaction_date',
                     'd.name as shipping_line_name',
@@ -422,7 +434,8 @@ class ReportsService
                     'a.remarks',
                     'g.last_name as driver',
                     'h.last_name as helper',
-                    DB::raw("'System Admin' as encoded_by")
+                    // Concatenate the meta_values from the two separate joins
+                    DB::raw("CONCAT(IFNULL(um1.meta_value, ''), ' ', IFNULL(um2.meta_value, '')) as encoded_by")
                 ]);
 
             // 1. --- Date Filtering Logic ---
@@ -441,13 +454,15 @@ class ReportsService
                 $query->where('a.truck_plate_number', $plateNumber);
             }
 
-            // 3. --- Optional Search (Matches Summary Pattern) ---
+            // 3. --- Optional Search ---
             $search = request('search');
             if ($search) {
                 $query->where(function($q) use ($search) {
                     $q->where('a.waybill_number', 'LIKE', "%{$search}%")
                     ->orWhere('c.container_number', 'LIKE', "%{$search}%")
-                    ->orWhere('d.name', 'LIKE', "%{$search}%");
+                    ->orWhere('d.name', 'LIKE', "%{$search}%")
+                    ->orWhere('um1.meta_value', 'LIKE', "%{$search}%")
+                    ->orWhere('um2.meta_value', 'LIKE', "%{$search}%");
                 });
             }
 

@@ -25710,9 +25710,13 @@
                         "type": "string",
                         "example": "MSKU1234567"
                     },
-                    "route": {
+                    "from": {
                         "type": "string",
-                        "example": "MNL to CEB"
+                        "example": "Manila"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "Cebu"
                     },
                     "status": {
                         "type": "string",

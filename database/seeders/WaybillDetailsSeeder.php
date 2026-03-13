@@ -238,6 +238,7 @@ class WaybillDetailsSeeder extends Seeder
                         'fixed_expense_id'      => rand(1, 3),
                         'post_expense_amount'   => 500,
                         'total_expense'         => 1500,
+                        'prepared_by'           => rand(1, 22),
                         'created_at'            => now(),
                         'updated_at'            => now(),
                     ];
