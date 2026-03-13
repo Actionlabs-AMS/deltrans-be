@@ -47,6 +47,7 @@ class ShippingLineSeeder extends Seeder
         $shippingLines = [
             [
                 'name' => 'Maersk Line',
+                'short_name' => 'MAERSK',
                 'email_address' => 'contact@maersk.com',
                 'address' => 'Esplanaden 50, 1098 Copenhagen K, Denmark',
                 'contact_name' => 'John Anderson',
@@ -59,6 +60,7 @@ class ShippingLineSeeder extends Seeder
             ],
             [
                 'name' => 'MSC Mediterranean Shipping Company',
+                'short_name' => 'MSC',
                 'email_address' => 'info@msc.com',
                 'address' => 'Rue de la Loi 12, 1040 Brussels, Belgium',
                 'contact_name' => 'Maria Garcia',
@@ -71,6 +73,7 @@ class ShippingLineSeeder extends Seeder
             ],
             [
                 'name' => 'CMA CGM',
+                'short_name' => 'CMA CGM',
                 'email_address' => 'contact@cmacgm.com',
                 'address' => '4 Quai d\'Arenc, 13002 Marseille, France',
                 'contact_name' => 'Pierre Dubois',
@@ -83,6 +86,7 @@ class ShippingLineSeeder extends Seeder
             ],
             [
                 'name' => 'COSCO Shipping Lines',
+                'short_name' => 'COSCO',
                 'email_address' => 'info@coscoshipping.com',
                 'address' => 'No. 1000 Pudong Avenue, Shanghai, China',
                 'contact_name' => 'Li Wei',
@@ -95,6 +99,7 @@ class ShippingLineSeeder extends Seeder
             ],
             [
                 'name' => 'Evergreen Line',
+                'short_name' => 'EVERGREEN',
                 'email_address' => 'service@evergreen-line.com',
                 'address' => 'No. 166, Minsheng E. Rd., Taipei, Taiwan',
                 'contact_name' => 'Chen Ming',
@@ -107,6 +112,7 @@ class ShippingLineSeeder extends Seeder
             ],
             [
                 'name' => 'Hapag-Lloyd',
+                'short_name' => 'HAPAG',
                 'email_address' => 'info@hapag-lloyd.com',
                 'address' => 'Ballindamm 25, 20095 Hamburg, Germany',
                 'contact_name' => 'Hans Mueller',
@@ -119,6 +125,7 @@ class ShippingLineSeeder extends Seeder
             ],
             [
                 'name' => 'ONE (Ocean Network Express)',
+                'short_name' => 'ONE',
                 'email_address' => 'contact@one-line.com',
                 'address' => '1-1, Uchisaiwaicho 1-chome, Chiyoda-ku, Tokyo, Japan',
                 'contact_name' => 'Yuki Tanaka',
@@ -131,6 +138,7 @@ class ShippingLineSeeder extends Seeder
             ],
             [
                 'name' => 'Yang Ming Marine Transport',
+                'short_name' => 'YANG MING',
                 'email_address' => 'info@yangming.com',
                 'address' => 'No. 271, Ming De 1st Road, Keelung, Taiwan',
                 'contact_name' => 'Wang Li',

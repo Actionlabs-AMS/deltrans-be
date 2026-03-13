@@ -5111,6 +5111,154 @@
                 ]
             }
         },
+        "/api/budget/diesel-expense": {
+            "get": {
+                "tags": [
+                    "Diesel Expense"
+                ],
+                "summary": "List diesel expenses",
+                "operationId": "7341768c65acb04d05596c25e2df7aa3",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by amount or waybill number",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "amount",
+                        "in": "query",
+                        "description": "Exact amount",
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 1500
+                        }
+                    },
+                    {
+                        "name": "amount_min",
+                        "in": "query",
+                        "description": "Minimum amount",
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 1000
+                        }
+                    },
+                    {
+                        "name": "amount_max",
+                        "in": "query",
+                        "description": "Maximum amount",
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 5000
+                        }
+                    },
+                    {
+                        "name": "waybill_number",
+                        "in": "query",
+                        "description": "Filter by related waybill number",
+                        "schema": {
+                            "type": "string",
+                            "example": "WB-001"
+                        }
+                    },
+                    {
+                        "name": "created_at_from",
+                        "in": "query",
+                        "description": "Created at range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "created_at_to",
+                        "in": "query",
+                        "description": "Created at range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/DieselExpense"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/diesel-expense/{id}": {
+            "get": {
+                "tags": [
+                    "Diesel Expense"
+                ],
+                "summary": "Get diesel expense by ID",
+                "operationId": "8f7e6ec50d2ecf68abfa297b931cd2df",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DieselExpense"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/drivers/get-cash-advance/{id}": {
             "get": {
                 "tags": [
@@ -15295,6 +15443,15 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "short_name",
+                        "in": "query",
+                        "description": "Filter by shipping line short name",
+                        "schema": {
+                            "type": "string",
+                            "example": "MAERSK"
+                        }
                     }
                 ],
                 "responses": {
@@ -15394,6 +15551,11 @@
                                         "description": "Shipping line name",
                                         "type": "string",
                                         "example": "Maersk Line"
+                                    },
+                                    "short_name": {
+                                        "description": "Shipping line short name",
+                                        "type": "string",
+                                        "example": "MAERSK"
                                     },
                                     "email_address": {
                                         "description": "Email address",
@@ -15605,6 +15767,11 @@
                                         "description": "Shipping line name",
                                         "type": "string",
                                         "example": "Maersk Line"
+                                    },
+                                    "short_name": {
+                                        "description": "Shipping line short name",
+                                        "type": "string",
+                                        "example": "MAERSK"
                                     },
                                     "email_address": {
                                         "description": "Email address",
@@ -25032,6 +25199,38 @@
                 },
                 "type": "object"
             },
+            "DieselExpense": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 1500
+                    },
+                    "waybill_detail_id": {
+                        "type": "integer",
+                        "example": 101,
+                        "nullable": true
+                    },
+                    "waybill_number": {
+                        "type": "string",
+                        "example": "WB-001",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "DriverCashAdvanceRecord": {
                 "title": "Driver Cash Advance Record",
                 "description": "Details of a single cash advancement entry for a driver.",
@@ -26155,6 +26354,11 @@
                         "type": "string",
                         "example": "Maersk Line"
                     },
+                    "short_name": {
+                        "type": "string",
+                        "example": "MAERSK",
+                        "nullable": true
+                    },
                     "email_address": {
                         "type": "string",
                         "example": "contact@maersk.com"
@@ -26681,6 +26885,11 @@
                         "type": "number",
                         "format": "float"
                     },
+                    "remaining_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
                     "transaction_date": {
                         "type": "string",
                         "format": "date"
@@ -26777,6 +26986,16 @@
                         "nullable": true
                     },
                     "fixed_expense_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "truck_trip_expense_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "diesel_expense_id": {
                         "type": "integer",
                         "example": 1,
                         "nullable": true
@@ -26878,6 +27097,18 @@
                         "format": "float",
                         "example": 200
                     },
+                    "actual_truck_trip_expense_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 350
+                    },
+                    "diesel_expense_amount": {
+                        "description": "Resolved from diesel_expenses.amount using waybill_details.diesel_expense_id",
+                        "type": "number",
+                        "format": "float",
+                        "example": 150,
+                        "nullable": true
+                    },
                     "total_expense": {
                         "type": "number",
                         "format": "float",
@@ -26945,6 +27176,11 @@
                         "type": "integer",
                         "example": 1
                     },
+                    "truck_trip_expense_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
                     "container_size": {
                         "type": "string",
                         "example": "20ft"
@@ -27010,6 +27246,19 @@
                         "type": "number",
                         "format": "float",
                         "example": 200
+                    },
+                    "actual_truck_trip_expense_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 350,
+                        "nullable": true
+                    },
+                    "diesel_expense_amount": {
+                        "description": "Creates or updates a linked diesel_expenses row and stores the resulting diesel_expense_id on the waybill",
+                        "type": "number",
+                        "format": "float",
+                        "example": 150,
+                        "nullable": true
                     },
                     "total_expense": {
                         "type": "number",
@@ -27142,6 +27391,10 @@
         {
             "name": "Dashboard",
             "description": "API endpoints for dashboard statistics"
+        },
+        {
+            "name": "Diesel Expense",
+            "description": "API endpoints for diesel expense management"
         },
         {
             "name": "Driver Cash Advance History",

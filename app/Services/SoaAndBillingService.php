@@ -1564,8 +1564,7 @@ class SoaAndBillingService extends BaseService
 
 
 //todo: SOA PDF and SOA + Billing PDF: remove grid in table
-//todo: rearrange columns in SOA PDF and SOA + Billing PDF
-
+//todo: Rearrange columns in table of SOA of SOA PDF and SOA of SOA + Billing PDF
 // Date
 // Plate No
 // Waybill No
@@ -1580,3 +1579,7 @@ class SoaAndBillingService extends BaseService
 // Stack Run*
 // Work Order*
 // Booking No
+
+//todo: in table of SOA of SOA PDF and SOA of SOA + Billing PDF, instead of cypa.name, use cypa.short_name
+//todo: in table of SOA of SOA PDF and SOA of SOA + Billing PDF, instead od shipping line.name, use shipping line.short_name
+

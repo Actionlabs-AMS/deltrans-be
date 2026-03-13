@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\FundsForStackRunController;
 use App\Http\Controllers\Api\CashAdvanceController;
 use App\Http\Controllers\Api\BudgetSummaryController;
 use App\Http\Controllers\Api\ReportsController;
+use App\Http\Controllers\Api\DieselExpenseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -628,6 +629,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/funds-for-stack-run', [FundsForStackRunController::class, 'store']);
 		Route::patch('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'update']);
 		Route::delete('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'destroy']);
+
+		Route::get('/diesel-expense', [DieselExpenseController::class, 'index']);
+		Route::get('/diesel-expense/{id}', [DieselExpenseController::class, 'show']);
 	});
 
 	/*

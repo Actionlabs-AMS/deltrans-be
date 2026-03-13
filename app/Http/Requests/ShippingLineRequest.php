@@ -21,9 +21,12 @@ class ShippingLineRequest extends FormRequest
      */
     public function rules(): array
     {
+        $shippingLineId = $this->route('id');
+
         return [
-            'name' => 'required|string|max:255|unique:shipping_lines,name,' . $this->id,
-            'email_address' => 'required|email|max:255|unique:shipping_lines,email_address,' . $this->id,
+            'name' => 'required|string|max:255|unique:shipping_lines,name,' . $shippingLineId,
+            'short_name' => 'nullable|string|max:255',
+            'email_address' => 'required|email|max:255|unique:shipping_lines,email_address,' . $shippingLineId,
             'address' => 'nullable|string',
             'contact_name' => 'nullable|string|max:255',
             'contact_mobile' => 'nullable|string|regex:/^[0-9,+-]+$/|max:20',
@@ -49,6 +52,7 @@ class ShippingLineRequest extends FormRequest
             'email_address.required' => 'The email address is required.',
             'email_address.email' => 'Please provide a valid email address.',
             'email_address.unique' => 'This email address is already registered.',
+            'short_name.max' => 'The short name must not exceed 255 characters.',
             'landlines.array' => 'Landlines must be an array.',
             'landlines.*.string' => 'Each landline must be a string.',
             'landlines.*.regex' => 'Each landline must contain only numbers, commas, pluses, or hyphens.',

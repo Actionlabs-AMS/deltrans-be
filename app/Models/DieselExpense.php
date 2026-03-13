@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DieselExpense extends Model
 {
@@ -17,8 +17,8 @@ class DieselExpense extends Model
         'updated_at' => 'datetime',
     ];
 
-    public function waybillDetails(): HasMany
+    public function waybillDetail(): HasOne
     {
-        return $this->hasMany(WaybillDetail::class, 'diesel_expense_id');
+        return $this->hasOne(WaybillDetail::class, 'diesel_expense_id');
     }
 }
