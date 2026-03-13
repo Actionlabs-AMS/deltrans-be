@@ -53,3 +53,6 @@ return new class extends Migration {
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
     }
 };
+
+
+//todo: Shipping Line: add "short_name"

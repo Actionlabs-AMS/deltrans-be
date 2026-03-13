@@ -2,14 +2,27 @@
 
 namespace App\Services;
 
-use App\Models\WaybillDetail;
 use App\Http\Resources\WaybillDetailResource;
+use App\Models\DieselExpense;
+use App\Models\WaybillDetail;
+use Illuminate\Support\Facades\DB;
 
 class WaybillDetailService extends BaseService
 {
-    public function __construct()
+    private array $relations = [
+        'shippingLine',
+        'booking',
+        'driver',
+        'helper',
+        'fleetTruck',
+        'fixedExpense',
+        'truckTripExpense',
+        'dieselExpense',
+        'preparedByUser.getUserMetas',
+    ];
+
+    public function __construct(private TruckTripExpenseBalanceService $truckTripExpenseBalanceService)
     {
-        // Pass the WaybillDetailResource class to the parent constructor
         parent::__construct(new WaybillDetailResource(new WaybillDetail), new WaybillDetail());
     }
 
@@ -22,14 +35,7 @@ class WaybillDetailService extends BaseService
             $allWaybillDetails = $this->getTotalCount();
             $trashedWaybillDetails = $this->getTrashedCount();
 
-            $query = WaybillDetail::query()->with([
-                'shippingLine',
-                'booking',
-                'driver',
-                'fleetTruck',
-                'fixedExpense',
-                'preparedByUser.getUserMetas',
-            ]);
+            $query = WaybillDetail::query()->with($this->relations);
 
             // Apply onlyTrashed() first if we're in trash view
             if ($trash) {
@@ -122,18 +128,19 @@ class WaybillDetailService extends BaseService
      */
     public function store(array $data)
     {
-        // total_rate_per_client and total_expense are now manual inputs, no need to unset them
+        return DB::transaction(function () use ($data) {
+            $data = $this->prepareDieselExpenseData($data);
+            $model = $this->model::create($data);
 
-        $model = $this->model::create($data);
+            $this->syncTruckTripExpenseBalance(
+                null,
+                0.0,
+                $model->truck_trip_expense_id,
+                (float) $model->actual_truck_trip_expense_amount
+            );
 
-        return $this->resource::make($model->load([
-            'shippingLine',
-            'booking',
-            'driver',
-            'fleetTruck',
-            'fixedExpense',
-            'preparedByUser.getUserMetas',
-        ]));
+            return $this->resource::make($model->fresh()->load($this->relations));
+        });
     }
 
     /**
@@ -141,17 +148,23 @@ class WaybillDetailService extends BaseService
      */
     public function update(array $data, int $id)
     {
-        $model = $this->model::findOrFail($id);
-        $model->update($data);
+        return DB::transaction(function () use ($data, $id) {
+            $model = $this->model::query()->lockForUpdate()->findOrFail($id);
+            $oldTripId = $model->truck_trip_expense_id;
+            $oldTripAmount = (float) $model->actual_truck_trip_expense_amount;
+            $data = $this->prepareDieselExpenseData($data, $model);
 
-        return $this->resource::make($model->load([
-            'shippingLine',
-            'booking',
-            'driver',
-            'fleetTruck',
-            'fixedExpense',
-            'preparedByUser.getUserMetas',
-        ]));
+            $model->update($data);
+
+            $this->syncTruckTripExpenseBalance(
+                $oldTripId,
+                $oldTripAmount,
+                $model->truck_trip_expense_id,
+                (float) $model->actual_truck_trip_expense_amount
+            );
+
+            return $this->resource::make($model->fresh()->load($this->relations));
+        });
     }
 
     /**
@@ -159,15 +172,142 @@ class WaybillDetailService extends BaseService
      */
     public function show(int $id)
     {
-        $model = $this->model::with([
-            'shippingLine',
-            'booking',
-            'driver',
-            'fleetTruck',
-            'fixedExpense',
-            'preparedByUser.getUserMetas',
-        ])->findOrFail($id);
+        $model = $this->model::with($this->relations)->findOrFail($id);
         return $this->resource::make($model);
+    }
+
+    public function destroy($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $model = $this->model::query()->lockForUpdate()->findOrFail($id);
+
+            $this->syncTruckTripExpenseBalance(
+                $model->truck_trip_expense_id,
+                (float) $model->actual_truck_trip_expense_amount,
+                null,
+                0.0
+            );
+
+            return $model->delete();
+        });
+    }
+
+    public function restore($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $model = $this->model::withTrashed()->onlyTrashed()->lockForUpdate()->findOrFail($id);
+
+            $this->syncTruckTripExpenseBalance(
+                null,
+                0.0,
+                $model->truck_trip_expense_id,
+                (float) $model->actual_truck_trip_expense_amount
+            );
+
+            $model->restore();
+
+            return $this->resource::make($model->fresh()->load($this->relations));
+        });
+    }
+
+    public function forceDelete($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $model = $this->model::withTrashed()->onlyTrashed()->lockForUpdate()->findOrFail($id);
+            $this->deleteDieselExpenseIfOrphaned($model);
+            $model->forceDelete();
+
+            return $model;
+        });
+    }
+
+    public function bulkDelete($ids)
+    {
+        foreach ($this->model::query()->whereIn('id', $ids)->pluck('id') as $id) {
+            $this->destroy($id);
+        }
+
+        return true;
+    }
+
+    public function bulkRestore($ids)
+    {
+        foreach ($this->model::withTrashed()->onlyTrashed()->whereIn('id', $ids)->pluck('id') as $id) {
+            $this->restore($id);
+        }
+
+        return true;
+    }
+
+    public function bulkForceDelete($ids)
+    {
+        foreach ($this->model::withTrashed()->onlyTrashed()->whereIn('id', $ids)->pluck('id') as $id) {
+            $this->forceDelete($id);
+        }
+
+        return true;
+    }
+
+    private function syncTruckTripExpenseBalance(
+        ?int $oldTripId,
+        float $oldTripAmount,
+        ?int $newTripId,
+        float $newTripAmount
+    ): void {
+        if ($oldTripId && $oldTripAmount > 0) {
+            $this->truckTripExpenseBalanceService->incrementRemainingAmount($oldTripId, $oldTripAmount);
+        }
+
+        if ($newTripId && $newTripAmount > 0) {
+            $this->truckTripExpenseBalanceService->decrementRemainingAmount($newTripId, $newTripAmount);
+        }
+    }
+
+    private function prepareDieselExpenseData(array $data, ?WaybillDetail $existingWaybill = null): array
+    {
+        if (!array_key_exists('diesel_expense_amount', $data)) {
+            return $data;
+        }
+
+        $amount = round((float) ($data['diesel_expense_amount'] ?? 0), 2);
+        unset($data['diesel_expense_amount']);
+
+        if ($amount <= 0) {
+            if ($existingWaybill && $existingWaybill->diesel_expense_id) {
+                DieselExpense::query()->whereKey($existingWaybill->diesel_expense_id)->delete();
+            }
+
+            $data['diesel_expense_id'] = null;
+
+            return $data;
+        }
+
+        if ($existingWaybill && $existingWaybill->diesel_expense_id) {
+            DieselExpense::query()
+                ->whereKey($existingWaybill->diesel_expense_id)
+                ->update(['amount' => $amount]);
+
+            $data['diesel_expense_id'] = $existingWaybill->diesel_expense_id;
+
+            return $data;
+        }
+
+        $dieselExpense = DieselExpense::query()->create([
+            'amount' => $amount,
+        ]);
+
+        $data['diesel_expense_id'] = $dieselExpense->id;
+
+        return $data;
+    }
+
+    private function deleteDieselExpenseIfOrphaned(WaybillDetail $waybillDetail): void
+    {
+        if (!$waybillDetail->diesel_expense_id) {
+            return;
+        }
+
+        DieselExpense::query()->whereKey($waybillDetail->diesel_expense_id)->delete();
     }
 }
 

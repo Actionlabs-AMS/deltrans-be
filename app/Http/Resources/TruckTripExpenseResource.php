@@ -19,6 +19,7 @@ class TruckTripExpenseResource extends JsonResource
             }),
             'cash_on_hand' => (float) $this->cash_on_hand,
             'issued_cash_amount' => (float) $this->issued_cash_amount,
+            'remaining_amount' => (float) $this->remaining_amount,
             'transaction_date' => $this->transaction_date?->format('Y-m-d'),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),

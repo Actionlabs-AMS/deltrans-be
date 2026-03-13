@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WaybillDetail extends Model
@@ -36,7 +37,10 @@ class WaybillDetail extends Model
         'has_vat',
         'total_rate_per_client',
         'fixed_expense_id',
+        'truck_trip_expense_id',
+        'diesel_expense_id',
         'post_expense_amount',
+        'actual_truck_trip_expense_amount',
         'total_expense',
         'prepared_by',
     ];
@@ -52,11 +56,14 @@ class WaybillDetail extends Model
         'delivered_date' => 'date',
         'helper_id' => 'integer',
         'no_of_days' => 'integer',
+        'truck_trip_expense_id' => 'integer',
+        'diesel_expense_id' => 'integer',
         'stack_run' => 'decimal:2',
         'rate' => 'decimal:2',
         'tax_percent' => 'decimal:2',
         'has_vat' => 'boolean',
         'post_expense_amount' => 'decimal:2',
+        'actual_truck_trip_expense_amount' => 'decimal:2',
         'total_rate_per_client' => 'decimal:2',
         'total_expense' => 'decimal:2',
         'created_at' => 'datetime',
@@ -79,6 +86,7 @@ class WaybillDetail extends Model
     protected $attributes = [
         'has_vat' => true,
         'post_expense_amount' => 0.00,
+        'actual_truck_trip_expense_amount' => 0.00,
         'total_rate_per_client' => 0.00,
         'total_expense' => 0.00,
     ];
@@ -86,7 +94,7 @@ class WaybillDetail extends Model
     /**
      * Get the shipping line that owns the waybill detail.
      */
-    public function shippingLine()
+    public function shippingLine(): BelongsTo
     {
         return $this->belongsTo(ShippingLine::class, 'shipping_line_id');
     }
@@ -94,7 +102,7 @@ class WaybillDetail extends Model
     /**
      * Get the booking that owns the waybill detail.
      */
-    public function booking()
+    public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class, 'booking_id');
     }
@@ -102,7 +110,7 @@ class WaybillDetail extends Model
     /**
      * Get the driver that owns the waybill detail.
      */
-    public function driver()
+    public function driver(): BelongsTo
     {
         return $this->belongsTo(Driver::class, 'driver_id');
     }
@@ -110,7 +118,7 @@ class WaybillDetail extends Model
     /**
      * Get the helper that owns the waybill detail.
      */
-    public function helper()
+    public function helper(): BelongsTo
     {
         return $this->belongsTo(Helper::class, 'helper_id');
     }
@@ -118,7 +126,7 @@ class WaybillDetail extends Model
     /**
      * Get the fleet truck that owns the waybill detail.
      */
-    public function fleetTruck()
+    public function fleetTruck(): BelongsTo
     {
         return $this->belongsTo(FleetTruck::class, 'truck_plate_number', 'plate_number');
     }
@@ -126,9 +134,25 @@ class WaybillDetail extends Model
     /**
      * Get the fixed expense that owns the waybill detail.
      */
-    public function fixedExpense()
+    public function fixedExpense(): BelongsTo
     {
         return $this->belongsTo(FixedExpense::class, 'fixed_expense_id');
+    }
+
+    /**
+     * Get the truck trip expense that owns the waybill detail.
+     */
+    public function truckTripExpense(): BelongsTo
+    {
+        return $this->belongsTo(TruckTripExpense::class, 'truck_trip_expense_id');
+    }
+
+    /**
+     * Get the diesel expense linked to the waybill detail.
+     */
+    public function dieselExpense(): BelongsTo
+    {
+        return $this->belongsTo(DieselExpense::class, 'diesel_expense_id');
     }
 
     /**
@@ -142,7 +166,7 @@ class WaybillDetail extends Model
     /**
      * Get the user who prepared the waybill detail.
      */
-    public function preparedByUser()
+    public function preparedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'prepared_by');
     }

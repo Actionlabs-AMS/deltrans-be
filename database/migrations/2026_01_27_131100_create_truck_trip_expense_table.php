@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -23,6 +22,7 @@ return new class extends Migration
             $table->bigInteger('helper_id')->unsigned()->nullable();
             $table->decimal('cash_on_hand', 15, 2)->default(0)->comment('Current money');
             $table->decimal('issued_cash_amount', 15, 2)->default(0);
+            $table->decimal('remaining_amount', 15, 2)->default(0);
             $table->date('transaction_date');
             $table->timestamps();
             $table->softDeletes();
@@ -37,6 +37,7 @@ return new class extends Migration
             $table->index('shift');
             $table->index('plate_number');
             $table->index('helper_id', 'idx_helper_id');
+            $table->index('remaining_amount', 'idx_remaining_amount');
             $table->index('transaction_date', 'idx_transaction_date');
         });
 

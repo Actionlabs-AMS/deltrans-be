@@ -1563,6 +1563,20 @@ class SoaAndBillingService extends BaseService
 }
 
 
-//todo: soa and billing - no tax, only vat (12%)
-//! invoice - add tax base on rate per client
-//! 
+//todo: SOA PDF and SOA + Billing PDF: remove grid in table
+//todo: rearrange columns in SOA PDF and SOA + Billing PDF
+
+// Date
+// Plate No
+// Waybill No
+// Container No
+// Origin
+// Destination
+// Remarks
+// Size
+// Amount
+// 12% Vat*
+// Total Amount*
+// Stack Run*
+// Work Order*
+// Booking No

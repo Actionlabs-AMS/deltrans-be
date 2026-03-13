@@ -41,7 +41,10 @@ return new class extends Migration {
 
             //fixed expenses details
             $table->bigInteger('fixed_expense_id')->unsigned(); //auto
+            $table->bigInteger('truck_trip_expense_id')->unsigned()->nullable(); // field
+            $table->bigInteger('diesel_expense_id')->unsigned()->nullable(); // field
             $table->decimal('post_expense_amount', 15, 2)->default(0); // field
+            $table->decimal('actual_truck_trip_expense_amount', 15, 2)->default(0); // field
             $table->decimal('total_expense', 15, places: 2)->default(0); // field
             $table->bigInteger('prepared_by')->unsigned()->nullable();
 
@@ -63,6 +66,8 @@ return new class extends Migration {
             $table->index('truck_plate_number');
             $table->index('shipping_line_id');
             $table->index('fixed_expense_id');
+            $table->index('truck_trip_expense_id');
+            $table->index('diesel_expense_id');
             $table->index('pickup_date');
             $table->index('delivered_date');
             $table->index('prepared_by');

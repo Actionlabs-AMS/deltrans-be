@@ -96,3 +96,5 @@ return new class extends Migration {
         });
     }
 };
+
+//todo: Billing: set is_paid to true if we generate invoice

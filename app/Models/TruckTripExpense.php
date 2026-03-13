@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TruckTripExpense extends Model
@@ -18,6 +19,7 @@ class TruckTripExpense extends Model
         'helper_id',
         'cash_on_hand',
         'issued_cash_amount',
+        'remaining_amount',
         'transaction_date',
     ];
 
@@ -25,6 +27,7 @@ class TruckTripExpense extends Model
         'transaction_date' => 'date',
         'cash_on_hand' => 'decimal:2',
         'issued_cash_amount' => 'decimal:2',
+        'remaining_amount' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -33,5 +36,10 @@ class TruckTripExpense extends Model
     public function helper(): BelongsTo
     {
         return $this->belongsTo(Helper::class, 'helper_id');
+    }
+
+    public function waybillDetails(): HasMany
+    {
+        return $this->hasMany(WaybillDetail::class, 'truck_trip_expense_id');
     }
 }

@@ -7,13 +7,18 @@ use App\Http\Resources\TruckTripExpenseResource;
 
 class TruckTripExpenseService extends BaseService
 {
-    public function __construct()
+    public function __construct(private TruckTripExpenseBalanceService $truckTripExpenseBalanceService)
     {
         parent::__construct(new TruckTripExpenseResource(new TruckTripExpense), new TruckTripExpense());
     }
 
     public function store(array $data)
     {
+        $cashOnHand = (float) ($data['cash_on_hand'] ?? 0);
+        $issuedCashAmount = (float) ($data['issued_cash_amount'] ?? 0);
+        $data['remaining_amount'] = $this->truckTripExpenseBalanceService
+            ->initializeRemainingAmount($cashOnHand, $issuedCashAmount);
+
         $model = TruckTripExpense::create($data);
         $model->load('helper');
         return TruckTripExpenseResource::make($model);

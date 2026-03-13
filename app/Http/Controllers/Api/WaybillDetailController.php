@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\WaybillDetailRequest;
 use App\Services\WaybillDetailService;
 use App\Services\MessageService;
+use Illuminate\Validation\ValidationException;
 
 /**
  * @OA\Tag(
@@ -25,6 +26,8 @@ use App\Services\MessageService;
  *     @OA\Property(property="driver_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="helper_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="fixed_expense_id", type="integer", example=1, nullable=true),
+ *     @OA\Property(property="truck_trip_expense_id", type="integer", example=1, nullable=true),
+ *     @OA\Property(property="diesel_expense_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="container_size", type="string", example="20ft", nullable=true),
  *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498", nullable=true),
@@ -43,6 +46,8 @@ use App\Services\MessageService;
  *     @OA\Property(property="online_booking_fee", type="number", format="float", example=100.00, nullable=true, description="From linked fixed expense"),
  *     @OA\Property(property="expenses", type="number", format="float", example=2000.00, nullable=true, description="From linked fixed expense"),
  *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00),
+ *     @OA\Property(property="actual_truck_trip_expense_amount", type="number", format="float", example=350.00),
+ *     @OA\Property(property="diesel_expense_amount", type="number", format="float", example=150.00, nullable=true, description="Resolved from diesel_expenses.amount using waybill_details.diesel_expense_id"),
  *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
@@ -59,6 +64,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="driver_id", type="integer", example=1),
  *     @OA\Property(property="helper_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="fixed_expense_id", type="integer", example=1),
+ *     @OA\Property(property="truck_trip_expense_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="container_size", type="string", example="20ft"),
  *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498"),
@@ -73,6 +79,8 @@ use App\Services\MessageService;
  *     @OA\Property(property="has_vat", type="boolean", example=true, nullable=true),
  *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, nullable=true),
  *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00),
+ *     @OA\Property(property="actual_truck_trip_expense_amount", type="number", format="float", example=350.00, nullable=true),
+ *     @OA\Property(property="diesel_expense_amount", type="number", format="float", example=150.00, nullable=true, description="Creates or updates a linked diesel_expenses row and stores the resulting diesel_expense_id on the waybill"),
  *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, nullable=true),
  *     @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the waybill")
  * )
@@ -298,6 +306,11 @@ class WaybillDetailController extends BaseController
             $data = $request->validated();
             $waybillDetail = $this->service->store($data);
             return response($waybillDetail, 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return $this->messageService->responseError();
         }
@@ -359,6 +372,11 @@ class WaybillDetailController extends BaseController
             $data = $request->validated();
             $waybillDetail = $this->service->update($data, $id);
             return response($waybillDetail, 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'The given data was invalid.',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'status_code' => 404,

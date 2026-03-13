@@ -12,8 +12,6 @@ class ShippingLineService extends BaseService
         parent::__construct(new ShippingLineResource(new ShippingLine), new ShippingLine());
     }
 
-    //todo: add filter
-
     /**
      * Retrieve all resources with paginate.
      */

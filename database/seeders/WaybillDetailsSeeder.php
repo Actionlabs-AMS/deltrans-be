@@ -142,6 +142,8 @@ class WaybillDetailsSeeder extends Seeder
                     'delivered_date' => now()->subDays($daysAgo - 1)->toDateString(),
                     'post_expense_amount' => $postExpense,
                     'fixed_expense_id' => $fixedExpenseId,
+                    'truck_trip_expense_id' => null,
+                    'diesel_expense_id' => null,
                     'no_of_days' => $noOfDays,
                     'requirements' => $ratePerClient->requirements ?? null,
                     'remarks' => $ratePerClient->remarks ?? null,
@@ -150,6 +152,7 @@ class WaybillDetailsSeeder extends Seeder
                     'tax_percent' => $taxPercent,
                     'has_vat' => $hasVat,
                     'total_rate_per_client' => $totalRatePerClient,
+                    'actual_truck_trip_expense_amount' => 0,
                     'total_expense' => ($postExpense) + ($fixedExpense->total_expenses ?? 0),
                 ];
                 if ($firstUserId !== null) {
