@@ -59,10 +59,6 @@ class BillingStatementRequest extends FormRequest
                 'nullable',
                 'boolean',
             ],
-            'is_paid' => [
-                'nullable',
-                'boolean',
-            ],
         ];
     }
 
@@ -84,7 +80,6 @@ class BillingStatementRequest extends FormRequest
             'due_date.date' => 'The due date must be a valid date.',
             'bus_style.max' => 'The business style must not exceed 255 characters.',
             'has_details.boolean' => 'The has details field must be true or false.',
-            'is_paid.boolean' => 'The is paid field must be true or false.',
         ];
     }
 

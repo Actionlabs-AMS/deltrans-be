@@ -17233,10 +17233,6 @@
                                     "has_details": {
                                         "type": "boolean",
                                         "nullable": true
-                                    },
-                                    "is_paid": {
-                                        "type": "boolean",
-                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -17401,10 +17397,6 @@
                                         "nullable": true
                                     },
                                     "has_details": {
-                                        "type": "boolean",
-                                        "nullable": true
-                                    },
-                                    "is_paid": {
                                         "type": "boolean",
                                         "nullable": true
                                     }
@@ -26656,11 +26648,6 @@
                         "nullable": true
                     },
                     "has_details": {
-                        "type": "boolean",
-                        "example": false,
-                        "nullable": true
-                    },
-                    "is_paid": {
                         "type": "boolean",
                         "example": false,
                         "nullable": true

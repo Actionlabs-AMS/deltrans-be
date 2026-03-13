@@ -170,7 +170,6 @@ class SoaAndBillingService extends BaseService
                 'due_date' => $data['due_date'] ?? null,
                 'bus_style' => $data['bus_style'] ?? null,
                 'has_details' => $data['has_details'] ?? false,
-                'is_paid' => $data['is_paid'] ?? false,
             ];
             $billingStatement = BillingStatement::create($billingData);
             $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas']);
@@ -943,6 +942,8 @@ class SoaAndBillingService extends BaseService
                 $data['prepared_by'] = auth()->id();
             }
 
+            unset($data['is_paid']);
+
             $billingStatement = BillingStatement::create($data);
             $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas']);
 
@@ -1379,6 +1380,7 @@ class SoaAndBillingService extends BaseService
     {
         try {
             $billingStatement = BillingStatement::findOrFail($id);
+            unset($data['is_paid']);
             $billingStatement->update(array_intersect_key($data, array_flip($billingStatement->getFillable())));
             $billingStatement->load(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas']);
             return BillingStatementResource::make($billingStatement);
