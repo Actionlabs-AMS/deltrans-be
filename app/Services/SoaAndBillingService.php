@@ -595,6 +595,8 @@ class SoaAndBillingService extends BaseService
                 }
             }
 
+            $transactionColumns = $this->orderTransactionColumnsForPdf($transactionColumns);
+
             $vatPercent = 12.00;
             $built = $this->buildSoaTransactionData($waybills, $soa, $transactionColumns);
             $transactionData = $built['transactionData'];
@@ -648,8 +650,41 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
-     * Build SOA transaction table rows: one row per container (per waybill).
-     * If a waybill has 2+ containers, 2+ rows with same data except CONTAINER NUMBER.
+     * Reorder transaction columns for SOA PDF and SOA + Billing PDF to canonical order:
+     * Date, Plate No, Waybill No, Container No, Origin, Destination, Remarks, Size, Amount, 12% VAT, Total Amount, Stack Run, Work Order, Booking No.
+     * Columns not in this list remain at the end in their current order.
+     *
+     * @param \Illuminate\Support\Collection $transactionColumns
+     * @return \Illuminate\Support\Collection
+     */
+    private function orderTransactionColumnsForPdf(\Illuminate\Support\Collection $transactionColumns): \Illuminate\Support\Collection
+    {
+        $order = [
+            'date' => 0, 'bate' => 0,
+            'plate number' => 1, 'plate no' => 1, 'plt#' => 1, 'plt' => 1,
+            'waybill' => 2, 'waybill number' => 2, 'way bill#' => 2, 'way bill' => 2,
+            'container number' => 3, 'container no' => 3, 'container#' => 3,
+            'origin' => 4, 'from' => 4,
+            'destination' => 5, 'to' => 5,
+            'remarks' => 6,
+            'size' => 7,
+            'amount' => 8,
+            '12% vat' => 9, '12%vat' => 9, 'vat' => 9,
+            'total amount' => 10,
+            'stack run' => 11,
+            'work order' => 12,
+            'booking number' => 13, 'booking no' => 13,
+        ];
+        $endOrder = 999;
+        $indexed = $transactionColumns->values()->map(function ($col, $i) use ($order, $endOrder) {
+            $key = strtolower(trim($col->name));
+            return ['col' => $col, 'order' => $order[$key] ?? $endOrder, 'i' => $i];
+        });
+        return $indexed->sortBy(['order', 'i'])->pluck('col')->values();
+    }
+
+    /**
+     * Build transaction rows and totals for SOA PDF / API. One row per waybill (or per container when SOA has one row per container).
      * Totals are computed per waybill (not doubled for multiple containers).
      * Uses waybill_details.rate for AMOUNT (not total_rate_per_client).
      *
@@ -765,10 +800,14 @@ class SoaAndBillingService extends BaseService
                 return $firstContainer ? $firstContainer->container_number : '-';
             case 'origin':
             case 'from':
-                return $waybill->booking->cypaFrom ? $waybill->booking->cypaFrom->name : '-';
+                return $waybill->booking->cypaFrom
+                    ? ($waybill->booking->cypaFrom->short_name ?? $waybill->booking->cypaFrom->name ?? '-')
+                    : '-';
             case 'destination':
             case 'to':
-                return $waybill->booking->cypaTo ? $waybill->booking->cypaTo->name : '-';
+                return $waybill->booking->cypaTo
+                    ? ($waybill->booking->cypaTo->short_name ?? $waybill->booking->cypaTo->name ?? '-')
+                    : '-';
             case 'remarks':
                 return $waybill->remarks ?? '-';
             case 'size':
@@ -1300,6 +1339,8 @@ class SoaAndBillingService extends BaseService
                 }
             }
 
+            $transactionColumns = $this->orderTransactionColumnsForPdf($transactionColumns);
+
             $soaBuilt = $this->buildSoaTransactionData($waybillsSoa, $soaFull, $transactionColumns);
             $transactionData = $soaBuilt['transactionData'];
             $soaTotalAmount = $soaBuilt['totalAmount'];
@@ -1583,5 +1624,3 @@ class SoaAndBillingService extends BaseService
 // Booking No
 
 //todo: in table of SOA of SOA PDF and SOA of SOA + Billing PDF, instead of cypa.name, use cypa.short_name
-//todo: in table of SOA of SOA PDF and SOA of SOA + Billing PDF, instead od shipping line.name, use shipping line.short_name
-

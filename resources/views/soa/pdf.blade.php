@@ -121,7 +121,7 @@
         }
 
         table th {
-            border: 1px solid #000;
+            border: none;
             padding: 9px 6px;
             text-align: left;
             font-weight: bold;
@@ -132,7 +132,7 @@
         }
 
         table td {
-            border: 1px solid #000;
+            border: none;
             padding: 7px 6px;
             text-align: left;
             font-size: 8px;
