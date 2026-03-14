@@ -81,10 +81,6 @@ class GenerateSoaAndBillingRequest extends FormRequest
                 'nullable',
                 'boolean',
             ],
-            'is_paid' => [
-                'nullable',
-                'boolean',
-            ],
         ];
     }
 

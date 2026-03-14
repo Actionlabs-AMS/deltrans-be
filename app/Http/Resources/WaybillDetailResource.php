@@ -32,6 +32,8 @@ class WaybillDetailResource extends JsonResource
             'driver_id' => $this->driver_id,
             'helper_id' => $this->helper_id,
             'fixed_expense_id' => $this->fixed_expense_id,
+            'truck_trip_expense_id' => $this->truck_trip_expense_id,
+            'diesel_expense_id' => $this->diesel_expense_id,
 
             // Container & truck
             'container_size' => $this->container_size,
@@ -61,6 +63,8 @@ class WaybillDetailResource extends JsonResource
             'online_booking_fee' => $this->whenLoaded('fixedExpense', fn () => $this->fixedExpense?->online_booking_fee),
             'expenses' => $this->whenLoaded('fixedExpense', fn () => $this->fixedExpense?->expenses),
             'post_expense_amount' => $this->post_expense_amount,
+            'actual_truck_trip_expense_amount' => $this->actual_truck_trip_expense_amount,
+            'diesel_expense_amount' => $this->whenLoaded('dieselExpense', fn () => $this->dieselExpense?->amount),
             'total_expense' => $this->total_expense,
 
             // Loaded relations
@@ -70,6 +74,8 @@ class WaybillDetailResource extends JsonResource
             'helper' => $this->whenLoaded('helper'),
             'fleet_truck' => $this->whenLoaded('fleetTruck'),
             'fixed_expense' => $this->whenLoaded('fixedExpense'),
+            'truck_trip_expense' => $this->whenLoaded('truckTripExpense'),
+            'diesel_expense' => $this->whenLoaded('dieselExpense'),
 
             // Timestamps
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,

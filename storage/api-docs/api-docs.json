@@ -4530,17 +4530,519 @@
                 ]
             }
         },
+        "/api/dashboard": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get the combined dashboard payload",
+                "description": "Get the combined dashboard payload.",
+                "operationId": "b76010aa6d8ebc0b28a672637263cfc5",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Single dashboard date filter",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Dashboard date range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Dashboard date range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "description": "Fallback year filter for chart-style requests",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2025
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dashboard payload retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "date_from": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2025-08-01"
+                                                },
+                                                "date_to": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2025-08-31"
+                                                },
+                                                "kpis": {
+                                                    "properties": {
+                                                        "shipping_lines": {
+                                                            "type": "integer",
+                                                            "example": 14
+                                                        },
+                                                        "waybills": {
+                                                            "type": "integer",
+                                                            "example": 30000
+                                                        },
+                                                        "waybills_total": {
+                                                            "type": "integer",
+                                                            "example": 32984
+                                                        },
+                                                        "sales": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 20000000
+                                                        },
+                                                        "expenses": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 2000000
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "sales_overview": {
+                                                    "properties": {
+                                                        "months": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string",
+                                                                "example": "2025-08"
+                                                            }
+                                                        },
+                                                        "income": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 440000
+                                                            }
+                                                        },
+                                                        "expenses": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 245000
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "overdue_payments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "shipping_line_name": {
+                                                                "type": "string",
+                                                                "example": "OOCL"
+                                                            },
+                                                            "transaction_no": {
+                                                                "type": "string",
+                                                                "example": "BS-2025-0001"
+                                                            },
+                                                            "overdue_payment_date": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "example": "2025-08-15"
+                                                            },
+                                                            "overdue_payment_amount": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 1000000
+                                                            },
+                                                            "billing_statement_id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "statement_of_account_id": {
+                                                                "type": "integer",
+                                                                "example": 10
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/dashboard/kpis": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get dashboard KPI cards",
+                "description": "Get dashboard KPI cards.",
+                "operationId": "e3ffaa45376734cb46f87e051250b1f5",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2025
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dashboard KPIs retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "date_from": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2025-08-01"
+                                                },
+                                                "date_to": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2025-08-31"
+                                                },
+                                                "kpis": {
+                                                    "properties": {
+                                                        "shipping_lines": {
+                                                            "type": "integer",
+                                                            "example": 14
+                                                        },
+                                                        "waybills": {
+                                                            "type": "integer",
+                                                            "example": 30000
+                                                        },
+                                                        "waybills_total": {
+                                                            "type": "integer",
+                                                            "example": 32984
+                                                        },
+                                                        "sales": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 20000000
+                                                        },
+                                                        "expenses": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 2000000
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/dashboard/sales-overview": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get dashboard sales overview chart data",
+                "description": "Get the sales overview chart payload.",
+                "operationId": "db4278644efcd6bc01c4a389845886f2",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2025
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dashboard sales overview retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "sales_overview": {
+                                                    "properties": {
+                                                        "months": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string",
+                                                                "example": "2025-08"
+                                                            }
+                                                        },
+                                                        "income": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 440000
+                                                            }
+                                                        },
+                                                        "expenses": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 245000
+                                                            }
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/dashboard/overdue-payments": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get dashboard overdue payments table data",
+                "description": "Get the overdue payments table payload.",
+                "operationId": "b884d7ef5110a99458bcbe5717b96860",
+                "responses": {
+                    "200": {
+                        "description": "Overdue payments retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "overdue_payments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "shipping_line_name": {
+                                                                "type": "string",
+                                                                "example": "OOCL"
+                                                            },
+                                                            "transaction_no": {
+                                                                "type": "string",
+                                                                "example": "BS-2025-0001"
+                                                            },
+                                                            "overdue_payment_date": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "example": "2025-08-15"
+                                                            },
+                                                            "overdue_payment_amount": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 1000000
+                                                            },
+                                                            "billing_statement_id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "statement_of_account_id": {
+                                                                "type": "integer",
+                                                                "example": 10
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/dashboard/stats": {
             "get": {
                 "tags": [
                     "Dashboard"
                 ],
-                "summary": "Get dashboard statistics",
-                "description": "Get dashboard statistics",
+                "summary": "Get enhanced dashboard statistics",
+                "description": "Get enhanced dashboard statistics for widgets and legacy consumers.",
                 "operationId": "97f93f93be9753e12dfa48ed63db092c",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2025
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Dashboard statistics retrieved successfully",
+                        "description": "Enhanced dashboard statistics retrieved successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -4566,6 +5068,28 @@
                                                 "total_tags": {
                                                     "type": "integer",
                                                     "example": 128
+                                                },
+                                                "shipping_lines": {
+                                                    "type": "integer",
+                                                    "example": 14
+                                                },
+                                                "waybills": {
+                                                    "type": "integer",
+                                                    "example": 30000
+                                                },
+                                                "waybills_total": {
+                                                    "type": "integer",
+                                                    "example": 32984
+                                                },
+                                                "sales": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 20000000
+                                                },
+                                                "expenses": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 2000000
                                                 }
                                             },
                                             "type": "object"
@@ -4577,20 +5101,155 @@
                         }
                     },
                     "401": {
-                        "description": "Unauthenticated",
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/diesel-expense": {
+            "get": {
+                "tags": [
+                    "Diesel Expense"
+                ],
+                "summary": "List diesel expenses",
+                "operationId": "7341768c65acb04d05596c25e2df7aa3",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by amount or waybill number",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "amount",
+                        "in": "query",
+                        "description": "Exact amount",
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 1500
+                        }
+                    },
+                    {
+                        "name": "amount_min",
+                        "in": "query",
+                        "description": "Minimum amount",
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 1000
+                        }
+                    },
+                    {
+                        "name": "amount_max",
+                        "in": "query",
+                        "description": "Maximum amount",
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 5000
+                        }
+                    },
+                    {
+                        "name": "waybill_number",
+                        "in": "query",
+                        "description": "Filter by related waybill number",
+                        "schema": {
+                            "type": "string",
+                            "example": "WB-001"
+                        }
+                    },
+                    {
+                        "name": "created_at_from",
+                        "in": "query",
+                        "description": "Created at range start",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "created_at_to",
+                        "in": "query",
+                        "description": "Created at range end",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Unauthenticated."
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/DieselExpense"
+                                            }
                                         }
                                     },
                                     "type": "object"
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/diesel-expense/{id}": {
+            "get": {
+                "tags": [
+                    "Diesel Expense"
+                ],
+                "summary": "Get diesel expense by ID",
+                "operationId": "8f7e6ec50d2ecf68abfa297b931cd2df",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DieselExpense"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
                     }
                 },
                 "security": [
@@ -14965,6 +15624,15 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "short_name",
+                        "in": "query",
+                        "description": "Filter by shipping line short name",
+                        "schema": {
+                            "type": "string",
+                            "example": "MAERSK"
+                        }
                     }
                 ],
                 "responses": {
@@ -15064,6 +15732,11 @@
                                         "description": "Shipping line name",
                                         "type": "string",
                                         "example": "Maersk Line"
+                                    },
+                                    "short_name": {
+                                        "description": "Shipping line short name",
+                                        "type": "string",
+                                        "example": "MAERSK"
                                     },
                                     "email_address": {
                                         "description": "Email address",
@@ -15275,6 +15948,11 @@
                                         "description": "Shipping line name",
                                         "type": "string",
                                         "example": "Maersk Line"
+                                    },
+                                    "short_name": {
+                                        "description": "Shipping line short name",
+                                        "type": "string",
+                                        "example": "MAERSK"
                                     },
                                     "email_address": {
                                         "description": "Email address",
@@ -16736,10 +17414,6 @@
                                     "has_details": {
                                         "type": "boolean",
                                         "nullable": true
-                                    },
-                                    "is_paid": {
-                                        "type": "boolean",
-                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -16904,10 +17578,6 @@
                                         "nullable": true
                                     },
                                     "has_details": {
-                                        "type": "boolean",
-                                        "nullable": true
-                                    },
-                                    "is_paid": {
                                         "type": "boolean",
                                         "nullable": true
                                     }
@@ -24702,6 +25372,38 @@
                 },
                 "type": "object"
             },
+            "DieselExpense": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 1500
+                    },
+                    "waybill_detail_id": {
+                        "type": "integer",
+                        "example": 101,
+                        "nullable": true
+                    },
+                    "waybill_number": {
+                        "type": "string",
+                        "example": "WB-001",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "DriverCashAdvanceRecord": {
                 "title": "Driver Cash Advance Record",
                 "description": "Details of a single cash advancement entry for a driver.",
@@ -25957,6 +26659,11 @@
                         "type": "string",
                         "example": "Maersk Line"
                     },
+                    "short_name": {
+                        "type": "string",
+                        "example": "MAERSK",
+                        "nullable": true
+                    },
                     "email_address": {
                         "type": "string",
                         "example": "contact@maersk.com"
@@ -26257,11 +26964,6 @@
                         "type": "boolean",
                         "example": false,
                         "nullable": true
-                    },
-                    "is_paid": {
-                        "type": "boolean",
-                        "example": false,
-                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -26483,6 +27185,11 @@
                         "type": "number",
                         "format": "float"
                     },
+                    "remaining_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "readOnly": true
+                    },
                     "transaction_date": {
                         "type": "string",
                         "format": "date"
@@ -26579,6 +27286,16 @@
                         "nullable": true
                     },
                     "fixed_expense_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "truck_trip_expense_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "diesel_expense_id": {
                         "type": "integer",
                         "example": 1,
                         "nullable": true
@@ -26680,6 +27397,18 @@
                         "format": "float",
                         "example": 200
                     },
+                    "actual_truck_trip_expense_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 350
+                    },
+                    "diesel_expense_amount": {
+                        "description": "Resolved from diesel_expenses.amount using waybill_details.diesel_expense_id",
+                        "type": "number",
+                        "format": "float",
+                        "example": 150,
+                        "nullable": true
+                    },
                     "total_expense": {
                         "type": "number",
                         "format": "float",
@@ -26747,6 +27476,11 @@
                         "type": "integer",
                         "example": 1
                     },
+                    "truck_trip_expense_id": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
                     "container_size": {
                         "type": "string",
                         "example": "20ft"
@@ -26812,6 +27546,19 @@
                         "type": "number",
                         "format": "float",
                         "example": 200
+                    },
+                    "actual_truck_trip_expense_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 350,
+                        "nullable": true
+                    },
+                    "diesel_expense_amount": {
+                        "description": "Creates or updates a linked diesel_expenses row and stores the resulting diesel_expense_id on the waybill",
+                        "type": "number",
+                        "format": "float",
+                        "example": 150,
+                        "nullable": true
                     },
                     "total_expense": {
                         "type": "number",
@@ -26944,6 +27691,10 @@
         {
             "name": "Dashboard",
             "description": "API endpoints for dashboard statistics"
+        },
+        {
+            "name": "Diesel Expense",
+            "description": "API endpoints for diesel expense management"
         },
         {
             "name": "Driver Cash Advance History",

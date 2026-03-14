@@ -20,6 +20,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="helper_name", type="string", nullable=true),
  *     @OA\Property(property="cash_on_hand", type="number", format="float"),
  *     @OA\Property(property="issued_cash_amount", type="number", format="float"),
+ *     @OA\Property(property="remaining_amount", type="number", format="float", readOnly=true),
  *     @OA\Property(property="transaction_date", type="string", format="date"),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
  *     @OA\Property(property="updated_at", type="string", format="date-time")

@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\TruckTripExpense;
+use App\Models\WaybillDetail;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class WaybillDetailRequest extends FormRequest
 {
@@ -32,6 +35,7 @@ class WaybillDetailRequest extends FormRequest
             'container_type' => 'nullable|string|max:255',
             'truck_plate_number' => 'required|string|exists:fleet_trucks,plate_number',
             'fixed_expense_id' => 'required|integer|exists:fixed_expenses,id',
+            'truck_trip_expense_id' => 'nullable|integer|exists:truck_trip_expense,id',
             'pickup_date' => 'required|date',
             'delivered_date' => 'required|date|after_or_equal:pickup_date',
             'no_of_days' => 'required|integer|min:0',
@@ -43,6 +47,8 @@ class WaybillDetailRequest extends FormRequest
             'has_vat' => 'nullable|boolean',
             'total_rate_per_client' => 'nullable|numeric|min:0',
             'post_expense_amount' => 'nullable|numeric|min:0',
+            'actual_truck_trip_expense_amount' => 'nullable|numeric|min:0',
+            'diesel_expense_amount' => 'nullable|numeric|min:0',
             'total_expense' => 'nullable|numeric|min:0',
             'prepared_by' => 'nullable|integer|exists:users,id',
         ];
@@ -58,6 +64,7 @@ class WaybillDetailRequest extends FormRequest
             $rules['container_type'] = 'sometimes|nullable|string|max:255';
             $rules['truck_plate_number'] = 'sometimes|required|string|exists:fleet_trucks,plate_number';
             $rules['fixed_expense_id'] = 'sometimes|required|integer|exists:fixed_expenses,id';
+            $rules['truck_trip_expense_id'] = 'sometimes|nullable|integer|exists:truck_trip_expense,id';
             $rules['pickup_date'] = 'sometimes|required|date';
             $rules['delivered_date'] = 'sometimes|required|date|after_or_equal:pickup_date';
             $rules['no_of_days'] = 'sometimes|required|integer|min:0';
@@ -68,11 +75,52 @@ class WaybillDetailRequest extends FormRequest
             $rules['tax_percent'] = 'sometimes|nullable|numeric|min:0';
             $rules['has_vat'] = 'sometimes|nullable|boolean';
             $rules['total_rate_per_client'] = 'sometimes|nullable|numeric|min:0';
+            $rules['post_expense_amount'] = 'sometimes|nullable|numeric|min:0';
+            $rules['actual_truck_trip_expense_amount'] = 'sometimes|nullable|numeric|min:0';
+            $rules['diesel_expense_amount'] = 'sometimes|nullable|numeric|min:0';
             $rules['total_expense'] = 'sometimes|nullable|numeric|min:0';
             $rules['prepared_by'] = 'sometimes|nullable|integer|exists:users,id';
         }
 
         return $rules;
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $tripId = $this->input('truck_trip_expense_id');
+            if (!$tripId) {
+                return;
+            }
+
+            $amount = (float) ($this->input('actual_truck_trip_expense_amount', 0) ?? 0);
+            if ($amount <= 0) {
+                return;
+            }
+
+            $trip = TruckTripExpense::query()->find($tripId);
+            if (!$trip) {
+                return;
+            }
+
+            $availableAmount = (float) $trip->remaining_amount;
+            $waybillId = $this->route('id');
+
+            if ($waybillId) {
+                $existingWaybill = WaybillDetail::query()->find($waybillId);
+
+                if ($existingWaybill && (int) $existingWaybill->truck_trip_expense_id === (int) $tripId) {
+                    $availableAmount += (float) $existingWaybill->actual_truck_trip_expense_amount;
+                }
+            }
+
+            if ($amount > $availableAmount) {
+                $validator->errors()->add(
+                    'actual_truck_trip_expense_amount',
+                    'The selected truck trip expense has insufficient remaining amount.'
+                );
+            }
+        });
     }
 
     /**
@@ -102,6 +150,7 @@ class WaybillDetailRequest extends FormRequest
             'truck_plate_number.exists' => 'The selected truck plate number does not exist.',
             'fixed_expense_id.required' => 'The fixed expense is required.',
             'fixed_expense_id.exists' => 'The selected fixed expense does not exist.',
+            'truck_trip_expense_id.exists' => 'The selected truck trip expense does not exist.',
             'no_of_days.required' => 'The number of days is required.',
             'stack_run.required' => 'The stack run is required.',
             'rate.required' => 'The rate is required.',
@@ -116,6 +165,10 @@ class WaybillDetailRequest extends FormRequest
             'delivered_date.after_or_equal' => 'The delivered date must be after or equal to the pickup date.',
             'post_expense_amount.numeric' => 'The post expense amount must be a valid number.',
             'post_expense_amount.min' => 'The post expense amount must be at least 0.',
+            'actual_truck_trip_expense_amount.numeric' => 'The actual truck trip expense amount must be a valid number.',
+            'actual_truck_trip_expense_amount.min' => 'The actual truck trip expense amount must be at least 0.',
+            'diesel_expense_amount.numeric' => 'The diesel expense amount must be a valid number.',
+            'diesel_expense_amount.min' => 'The diesel expense amount must be at least 0.',
         ];
     }
 }

@@ -17,6 +17,7 @@ class ShippingLine extends Model
      */
     protected $fillable = [
         'name',
+        'short_name',
         'email_address',
         'address',
         'contact_name',

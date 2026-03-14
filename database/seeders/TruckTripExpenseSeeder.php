@@ -21,13 +21,16 @@ class TruckTripExpenseSeeder extends Seeder
 
         foreach ($period as $date) {
             $currentDate = $date->format('Y-m-d');
+            $cashOnHand = rand(100, 500);
+            $issuedCashAmount = rand(1000, 3000);
 
             TruckTripExpense::create([
                 'shift' => $date->day % 2 == 0 ? 'Day' : 'Night',
                 'plate_number' => $plateNumbers[array_rand($plateNumbers)],
                 'helper_id' => rand(1, 5),
-                'cash_on_hand' => rand(100, 500),
-                'issued_cash_amount' => rand(1000, 3000),
+                'cash_on_hand' => $cashOnHand,
+                'issued_cash_amount' => $issuedCashAmount,
+                'remaining_amount' => $cashOnHand + $issuedCashAmount,
                 'transaction_date' => $currentDate,
             ]);
         }

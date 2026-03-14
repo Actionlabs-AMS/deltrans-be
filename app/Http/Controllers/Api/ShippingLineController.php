@@ -18,6 +18,7 @@ use App\Services\MessageService;
  *     description="A shipping line resource",
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="name", type="string", example="Maersk Line"),
+ *     @OA\Property(property="short_name", type="string", example="MAERSK", nullable=true),
  *     @OA\Property(property="email_address", type="string", example="contact@maersk.com"),
  *     @OA\Property(property="address", type="string", example="Esplanaden 50, 1098 Copenhagen K, Denmark", nullable=true),
  *     @OA\Property(property="contact_name", type="string", example="John Anderson", nullable=true),
@@ -65,6 +66,12 @@ class ShippingLineController extends BaseController
      *         in="query",
      *         description="Search term",
      *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="short_name",
+     *         in="query",
+     *         description="Filter by shipping line short name",
+     *         @OA\Schema(type="string", example="MAERSK")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -153,6 +160,7 @@ class ShippingLineController extends BaseController
      *         @OA\JsonContent(
      *             required={"name", "email_address"},
      *             @OA\Property(property="name", type="string", example="Maersk Line", description="Shipping line name"),
+     *             @OA\Property(property="short_name", type="string", example="MAERSK", description="Shipping line short name"),
      *             @OA\Property(property="email_address", type="string", example="contact@maersk.com", description="Email address"),
      *             @OA\Property(property="address", type="string", example="123 Shipping St", description="Address"),
      *             @OA\Property(property="contact_name", type="string", example="John Doe", description="Contact person name"),
@@ -189,7 +197,7 @@ class ShippingLineController extends BaseController
     public function store(ShippingLineRequest $request)
     {
         try {
-            $data = $request->all();
+            $data = $request->validated();
             $shippingLine = $this->service->store($data);
             return response($shippingLine, 201);
         } catch (\Exception $e) {
@@ -216,6 +224,7 @@ class ShippingLineController extends BaseController
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", example="Maersk Line", description="Shipping line name"),
+     *             @OA\Property(property="short_name", type="string", example="MAERSK", description="Shipping line short name"),
      *             @OA\Property(property="email_address", type="string", example="contact@maersk.com", description="Email address"),
      *             @OA\Property(property="address", type="string", example="123 Shipping St", description="Address"),
      *             @OA\Property(property="contact_name", type="string", example="John Doe", description="Contact person name"),
@@ -259,7 +268,7 @@ class ShippingLineController extends BaseController
     public function update(ShippingLineRequest $request, int $id)
     {
         try {
-            $data = $request->all();
+            $data = $request->validated();
             $shippingLine = $this->service->update($data, $id);
             return response($shippingLine, 200);
         } catch (\Exception $e) {

@@ -73,8 +73,7 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(property="ci_date", type="string", format="date", example="2024-01-15", nullable=true),
  *     @OA\Property(property="due_date", type="string", format="date", example="2024-02-15", nullable=true),
  *     @OA\Property(property="bus_style", type="string", example="Business Style", nullable=true),
- *     @OA\Property(property="has_details", type="boolean", example=false, nullable=true),
- *     @OA\Property(property="is_paid", type="boolean", example=false, nullable=true)
+ *     @OA\Property(property="has_details", type="boolean", example=false, nullable=true)
  * )
  */
 class SoaAndBillingController extends BaseController
@@ -465,8 +464,7 @@ class SoaAndBillingController extends BaseController
      *         @OA\Property(property="ci_date", type="string", format="date", nullable=true),
      *         @OA\Property(property="due_date", type="string", format="date", nullable=true),
      *         @OA\Property(property="bus_style", type="string", nullable=true),
-     *         @OA\Property(property="has_details", type="boolean", nullable=true),
-     *         @OA\Property(property="is_paid", type="boolean", nullable=true)
+ *         @OA\Property(property="has_details", type="boolean", nullable=true)
      *     )),
      *     @OA\Response(response=200, description="Billing statement updated", @OA\JsonContent(
      *         @OA\Property(property="data", type="object", ref="#/components/schemas/BillingStatement")
@@ -550,8 +548,7 @@ class SoaAndBillingController extends BaseController
      *         @OA\Property(property="ci_date", type="string", format="date", nullable=true),
      *         @OA\Property(property="due_date", type="string", format="date", nullable=true),
      *         @OA\Property(property="bus_style", type="string", nullable=true),
-     *         @OA\Property(property="has_details", type="boolean", nullable=true),
-     *         @OA\Property(property="is_paid", type="boolean", nullable=true)
+ *         @OA\Property(property="has_details", type="boolean", nullable=true)
      *     )),
      *     @OA\Response(response=201, description="SOA and Billing created", @OA\JsonContent(
      *         @OA\Property(property="data", type="object",

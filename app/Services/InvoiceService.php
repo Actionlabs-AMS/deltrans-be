@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\BillingStatement;
 use App\Models\Invoice;
 use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
 use App\Models\Container;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -201,9 +203,11 @@ class InvoiceService
                     $containerCount = 1;
             }
 
+            // total_rate_per_client is already the full amount for this waybill (all containers);
+            // do not multiply by container count to avoid double multiplication on the invoice.
             $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
             $hasVat = (bool) ($waybill->has_vat ?? false);
-            $waybillTotal = $base * $containerCount;
+            $waybillTotal = $base;
             $lineTotal = $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
 
             if (!isset($grouped[$key])) {
@@ -241,27 +245,34 @@ class InvoiceService
     {
         $soa = StatementOfAccount::findOrFail($data['statement_of_account_id']);
 
-        // Only store minimal fields; totals are computed on download/send email
-        $payload = [
-            'statement_of_account_id' => $soa->id,
-            'invoice_number' => $data['invoice_number'] ?? null,
-            'date' => $data['date'] ?? null,
-            'discount' => $data['discount'] ?? 0,
-            'discount_id' => $data['discount_id'] ?? null,
-        ];
-        if (empty($payload['invoice_number'])) {
-            $payload['invoice_number'] = $this->generateInvoiceNumber();
-        }
-        if (empty($payload['date'])) {
-            $payload['date'] = now();
-        }
+        $invoice = DB::transaction(function () use ($data, $soa) {
+            // Only store minimal fields; totals are computed on download/send email
+            $payload = [
+                'statement_of_account_id' => $soa->id,
+                'invoice_number' => $data['invoice_number'] ?? null,
+                'date' => $data['date'] ?? null,
+                'discount' => $data['discount'] ?? 0,
+                'discount_id' => $data['discount_id'] ?? null,
+            ];
+            if (empty($payload['invoice_number'])) {
+                $payload['invoice_number'] = $this->generateInvoiceNumber();
+            }
+            if (empty($payload['date'])) {
+                $payload['date'] = now();
+            }
 
-        $invoice = Invoice::create($payload);
+            $invoice = Invoice::create($payload);
 
-        $bookingIds = $soa->booking_ids ?? [];
-        if (!empty($bookingIds)) {
-            Booking::whereIn('id', $bookingIds)->update(['is_complete' => true]);
-        }
+            $bookingIds = $soa->booking_ids ?? [];
+            if (!empty($bookingIds)) {
+                Booking::whereIn('id', $bookingIds)->update(['is_complete' => true]);
+            }
+
+            BillingStatement::where('statement_of_account_id', $soa->id)
+                ->update(['is_paid' => true]);
+
+            return $invoice;
+        });
 
         $invoice->load(['statementOfAccount.shippingLine']);
 

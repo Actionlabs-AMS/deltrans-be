@@ -67,8 +67,8 @@
         .page-soa .client-details div { margin-bottom: 3px; }
         .page-soa table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 9px; page-break-inside: auto; }
         .page-soa table thead { background-color: #e0e0e0; }
-        .page-soa table th { border: 1px solid #000; padding: 9px 6px; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 8px; background-color: #e0e0e0; letter-spacing: 0.3px; }
-        .page-soa table td { border: 1px solid #000; padding: 7px 6px; text-align: left; font-size: 8px; vertical-align: middle; word-wrap: break-word; }
+        .page-soa table th { border: none; padding: 9px 6px; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 8px; background-color: #e0e0e0; letter-spacing: 0.3px; }
+        .page-soa table td { border: none; padding: 7px 6px; text-align: left; font-size: 8px; vertical-align: middle; word-wrap: break-word; }
         .page-soa table tbody tr { page-break-inside: avoid; }
         .page-soa table tbody tr:nth-child(even) { background-color: #f9f9f9; }
         .page-soa .text-right { text-align: right; }

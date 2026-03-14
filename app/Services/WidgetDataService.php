@@ -266,7 +266,7 @@ class WidgetDataService
 	private function getDashboardStatsWidgetData(string $widgetType, array $queryConfig): array
 	{
 		if ($widgetType === 'metric') {
-			$stats = $this->dashboardService->getEnhancedStats();
+			$stats = $this->dashboardService->getEnhancedStats($queryConfig);
 			$metric = $queryConfig['metric'] ?? 'total_users';
 			return ['value' => $stats[$metric] ?? 0];
 		}

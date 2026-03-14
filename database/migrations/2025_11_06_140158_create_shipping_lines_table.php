@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('name');
+            $table->string('short_name')->nullable();
             $table->string('email_address');
             $table->text('address')->nullable();
             $table->string('contact_name')->nullable();
@@ -33,6 +34,7 @@ return new class extends Migration {
             // Indexes
             $table->index('email_address');
             $table->index('name');
+            $table->index('short_name');
         });
 
         // Re-enable foreign key checks

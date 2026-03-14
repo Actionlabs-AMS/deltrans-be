@@ -12,8 +12,6 @@ class ShippingLineService extends BaseService
         parent::__construct(new ShippingLineResource(new ShippingLine), new ShippingLine());
     }
 
-    //todo: add filter
-
     /**
      * Retrieve all resources with paginate.
      */
@@ -34,11 +32,16 @@ class ShippingLineService extends BaseService
             if (request('search')) {
                 $query->where(function ($q) {
                     $q->where('name', 'LIKE', '%' . request('search') . '%')
+                        ->orWhere('short_name', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('email_address', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('contact_name', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('contact_mobile', 'LIKE', '%' . request('search') . '%')
                         ->orWhere('tin', 'LIKE', '%' . request('search') . '%');
                 });
+            }
+
+            if (request()->filled('short_name')) {
+                $query->where('short_name', 'LIKE', '%' . request('short_name') . '%');
             }
 
             // Apply ordering
