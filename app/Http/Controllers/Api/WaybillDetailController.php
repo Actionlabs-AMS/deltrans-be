@@ -48,6 +48,8 @@ use Illuminate\Validation\ValidationException;
  *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00),
  *     @OA\Property(property="actual_truck_trip_expense_amount", type="number", format="float", example=350.00),
  *     @OA\Property(property="diesel_expense_amount", type="number", format="float", example=150.00, nullable=true, description="Resolved from diesel_expenses.amount using waybill_details.diesel_expense_id"),
+ *     @OA\Property(property="vishner_or", type="string", example="OR-12345", nullable=true, description="Resolved from diesel_expenses.vishner_or using waybill_details.diesel_expense_id"),
+ *     @OA\Property(property="vishner_dr", type="string", example="DR-12345", nullable=true, description="Resolved from diesel_expenses.vishner_dr using waybill_details.diesel_expense_id"),
  *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
@@ -80,7 +82,10 @@ use Illuminate\Validation\ValidationException;
  *     @OA\Property(property="total_rate_per_client", type="number", format="float", example=2500.00, nullable=true),
  *     @OA\Property(property="post_expense_amount", type="number", format="float", example=200.00),
  *     @OA\Property(property="actual_truck_trip_expense_amount", type="number", format="float", example=350.00, nullable=true),
+ *     @OA\Property(property="diesel_expense_id", type="integer", example=1, nullable=true, description="Existing diesel expense to update (optional; otherwise uses waybill_details.diesel_expense_id)"),
  *     @OA\Property(property="diesel_expense_amount", type="number", format="float", example=150.00, nullable=true, description="Creates or updates a linked diesel_expenses row and stores the resulting diesel_expense_id on the waybill"),
+ *     @OA\Property(property="vishner_or", type="string", example="OR-12345", nullable=true, description="Creates/updates diesel_expenses.vishner_or"),
+ *     @OA\Property(property="vishner_dr", type="string", example="DR-12345", nullable=true, description="Creates/updates diesel_expenses.vishner_dr"),
  *     @OA\Property(property="total_expense", type="number", format="float", example=4700.00, nullable=true),
  *     @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the waybill")
  * )

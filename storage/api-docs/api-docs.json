@@ -4601,27 +4601,44 @@
                                                 },
                                                 "kpis": {
                                                     "properties": {
-                                                        "shipping_lines": {
+                                                        "shipping_line_count": {
+                                                            "description": "Total count of shipping_lines (not filtered by date)",
                                                             "type": "integer",
                                                             "example": 14
                                                         },
-                                                        "waybills": {
+                                                        "waybills_completed": {
+                                                            "description": "Waybill details in range where booking.is_complete = true",
                                                             "type": "integer",
                                                             "example": 30000
                                                         },
                                                         "waybills_total": {
+                                                            "description": "All waybill details in range",
                                                             "type": "integer",
                                                             "example": 32984
                                                         },
                                                         "sales": {
+                                                            "description": "Sum of invoice total amount due in range (same logic as invoice PDF)",
                                                             "type": "number",
                                                             "format": "float",
                                                             "example": 20000000
                                                         },
-                                                        "expenses": {
+                                                        "waybill_expenses": {
+                                                            "description": "total_expense + actual_truck_trip_expense_amount + diesel_expense.amount for waybills in range",
                                                             "type": "number",
                                                             "format": "float",
                                                             "example": 2000000
+                                                        },
+                                                        "parts_expense": {
+                                                            "description": "Sum of quantity * amount_per_item in parts_expense in range",
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 50000
+                                                        },
+                                                        "diesel_expense": {
+                                                            "description": "Sum of diesel_expenses.amount for waybills in date range",
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 15000
                                                         }
                                                     },
                                                     "type": "object"
@@ -4638,14 +4655,16 @@
                                                         "income": {
                                                             "type": "array",
                                                             "items": {
+                                                                "description": "Sales (total amount due) by month from invoice date",
                                                                 "type": "number",
                                                                 "format": "float",
                                                                 "example": 440000
                                                             }
                                                         },
-                                                        "expenses": {
+                                                        "waybill_expenses": {
                                                             "type": "array",
                                                             "items": {
+                                                                "description": "Waybill expenses by month from waybill transaction_date",
                                                                 "type": "number",
                                                                 "format": "float",
                                                                 "example": 245000
@@ -4775,11 +4794,11 @@
                                                 },
                                                 "kpis": {
                                                     "properties": {
-                                                        "shipping_lines": {
+                                                        "shipping_line_count": {
                                                             "type": "integer",
                                                             "example": 14
                                                         },
-                                                        "waybills": {
+                                                        "waybills_completed": {
                                                             "type": "integer",
                                                             "example": 30000
                                                         },
@@ -4792,10 +4811,20 @@
                                                             "format": "float",
                                                             "example": 20000000
                                                         },
-                                                        "expenses": {
+                                                        "waybill_expenses": {
                                                             "type": "number",
                                                             "format": "float",
                                                             "example": 2000000
+                                                        },
+                                                        "parts_expense": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 50000
+                                                        },
+                                                        "diesel_expense": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 15000
                                                         }
                                                     },
                                                     "type": "object"
@@ -4892,7 +4921,7 @@
                                                                 "example": 440000
                                                             }
                                                         },
-                                                        "expenses": {
+                                                        "waybill_expenses": {
                                                             "type": "array",
                                                             "items": {
                                                                 "type": "number",
@@ -5053,27 +5082,11 @@
                                         },
                                         "data": {
                                             "properties": {
-                                                "total_users": {
-                                                    "type": "integer",
-                                                    "example": 150
-                                                },
-                                                "total_media": {
-                                                    "type": "integer",
-                                                    "example": 234
-                                                },
-                                                "total_categories": {
-                                                    "type": "integer",
-                                                    "example": 45
-                                                },
-                                                "total_tags": {
-                                                    "type": "integer",
-                                                    "example": 128
-                                                },
-                                                "shipping_lines": {
+                                                "shipping_line_count": {
                                                     "type": "integer",
                                                     "example": 14
                                                 },
-                                                "waybills": {
+                                                "waybills_completed": {
                                                     "type": "integer",
                                                     "example": 30000
                                                 },
@@ -5086,10 +5099,20 @@
                                                     "format": "float",
                                                     "example": 20000000
                                                 },
-                                                "expenses": {
+                                                "waybill_expenses": {
                                                     "type": "number",
                                                     "format": "float",
                                                     "example": 2000000
+                                                },
+                                                "parts_expense": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 50000
+                                                },
+                                                "diesel_expense": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 15000
                                                 }
                                             },
                                             "type": "object"
@@ -25260,6 +25283,16 @@
                         "format": "float",
                         "example": 1500
                     },
+                    "vishner_or": {
+                        "type": "string",
+                        "example": "OR-2025-001",
+                        "nullable": true
+                    },
+                    "vishner_dr": {
+                        "type": "string",
+                        "example": "DR-2025-001",
+                        "nullable": true
+                    },
                     "waybill_detail_id": {
                         "type": "integer",
                         "example": 101,
@@ -27154,6 +27187,18 @@
                         "example": 150,
                         "nullable": true
                     },
+                    "vishner_or": {
+                        "description": "Resolved from diesel_expenses.vishner_or using waybill_details.diesel_expense_id",
+                        "type": "string",
+                        "example": "OR-12345",
+                        "nullable": true
+                    },
+                    "vishner_dr": {
+                        "description": "Resolved from diesel_expenses.vishner_dr using waybill_details.diesel_expense_id",
+                        "type": "string",
+                        "example": "DR-12345",
+                        "nullable": true
+                    },
                     "total_expense": {
                         "type": "number",
                         "format": "float",
@@ -27298,11 +27343,29 @@
                         "example": 350,
                         "nullable": true
                     },
+                    "diesel_expense_id": {
+                        "description": "Existing diesel expense to update (optional; otherwise uses waybill_details.diesel_expense_id)",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
                     "diesel_expense_amount": {
                         "description": "Creates or updates a linked diesel_expenses row and stores the resulting diesel_expense_id on the waybill",
                         "type": "number",
                         "format": "float",
                         "example": 150,
+                        "nullable": true
+                    },
+                    "vishner_or": {
+                        "description": "Creates/updates diesel_expenses.vishner_or",
+                        "type": "string",
+                        "example": "OR-12345",
+                        "nullable": true
+                    },
+                    "vishner_dr": {
+                        "description": "Creates/updates diesel_expenses.vishner_dr",
+                        "type": "string",
+                        "example": "DR-12345",
                         "nullable": true
                     },
                     "total_expense": {

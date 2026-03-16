@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\DieselExpense;
+use App\Models\WaybillDetail;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use App\Models\WaybillDetail;
 
 class WaybillDetailsSeeder extends Seeder
 {
@@ -164,6 +165,22 @@ class WaybillDetailsSeeder extends Seeder
                 );
                 $waybillNumber++;
                 $created++;
+            }
+        }
+
+        // Link first 2 waybills to first 2 diesel expenses (so seed data includes vishner_or, vishner_dr)
+        $dieselIds = DieselExpense::orderBy('id')->limit(2)->pluck('id')->toArray();
+        if (count($dieselIds) >= 2) {
+            $waybillsToLink = WaybillDetail::orderBy('id')->limit(2)->get();
+            foreach ($waybillsToLink as $i => $wd) {
+                $dieselId = $dieselIds[$i] ?? null;
+                if ($dieselId) {
+                    $diesel = DieselExpense::find($dieselId);
+                    $wd->update([
+                        'diesel_expense_id' => $dieselId,
+                        'total_expense' => (float) $wd->total_expense + (float) ($diesel->amount ?? 0),
+                    ]);
+                }
             }
         }
 

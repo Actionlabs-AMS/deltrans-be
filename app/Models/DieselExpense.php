@@ -9,6 +9,8 @@ class DieselExpense extends Model
 {
     protected $fillable = [
         'amount',
+        'vishner_or',
+        'vishner_dr',
     ];
 
     protected $casts = [

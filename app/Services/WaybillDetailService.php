@@ -265,12 +265,27 @@ class WaybillDetailService extends BaseService
 
     private function prepareDieselExpenseData(array $data, ?WaybillDetail $existingWaybill = null): array
     {
-        if (!array_key_exists('diesel_expense_amount', $data)) {
+        $hasDieselPayload = array_key_exists('diesel_expense_amount', $data)
+            || array_key_exists('vishner_or', $data)
+            || array_key_exists('vishner_dr', $data)
+            || array_key_exists('diesel_expense_id', $data);
+
+        if (!$hasDieselPayload) {
             return $data;
         }
 
         $amount = round((float) ($data['diesel_expense_amount'] ?? 0), 2);
         unset($data['diesel_expense_amount']);
+
+        $vishnerOr = array_key_exists('vishner_or', $data) ? ($data['vishner_or'] !== null ? (string) $data['vishner_or'] : null) : null;
+        $vishnerDr = array_key_exists('vishner_dr', $data) ? ($data['vishner_dr'] !== null ? (string) $data['vishner_dr'] : null) : null;
+        unset($data['vishner_or'], $data['vishner_dr']);
+
+        $requestedDieselExpenseId = null;
+        if (array_key_exists('diesel_expense_id', $data)) {
+            $requestedDieselExpenseId = $data['diesel_expense_id'] !== null ? (int) $data['diesel_expense_id'] : null;
+            unset($data['diesel_expense_id']);
+        }
 
         if ($amount <= 0) {
             if ($existingWaybill && $existingWaybill->diesel_expense_id) {
@@ -282,18 +297,27 @@ class WaybillDetailService extends BaseService
             return $data;
         }
 
-        if ($existingWaybill && $existingWaybill->diesel_expense_id) {
-            DieselExpense::query()
-                ->whereKey($existingWaybill->diesel_expense_id)
-                ->update(['amount' => $amount]);
+        $dieselExpenseIdToUse = $requestedDieselExpenseId
+            ?? ($existingWaybill?->diesel_expense_id ? (int) $existingWaybill->diesel_expense_id : null);
 
-            $data['diesel_expense_id'] = $existingWaybill->diesel_expense_id;
+        if ($dieselExpenseIdToUse) {
+            DieselExpense::query()
+                ->whereKey($dieselExpenseIdToUse)
+                ->update([
+                    'amount' => $amount,
+                    'vishner_or' => $vishnerOr,
+                    'vishner_dr' => $vishnerDr,
+                ]);
+
+            $data['diesel_expense_id'] = $dieselExpenseIdToUse;
 
             return $data;
         }
 
         $dieselExpense = DieselExpense::query()->create([
             'amount' => $amount,
+            'vishner_or' => $vishnerOr,
+            'vishner_dr' => $vishnerDr,
         ]);
 
         $data['diesel_expense_id'] = $dieselExpense->id;

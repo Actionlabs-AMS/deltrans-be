@@ -65,11 +65,13 @@ class DashboardController extends BaseController
      *                 @OA\Property(
      *                     property="kpis",
      *                     type="object",
-     *                     @OA\Property(property="shipping_lines", type="integer", example=14),
-     *                     @OA\Property(property="waybills", type="integer", example=30000),
-     *                     @OA\Property(property="waybills_total", type="integer", example=32984),
-     *                     @OA\Property(property="sales", type="number", format="float", example=20000000),
-     *                     @OA\Property(property="expenses", type="number", format="float", example=2000000)
+     *                     @OA\Property(property="shipping_line_count", type="integer", example=14, description="Total count of shipping_lines (not filtered by date)"),
+     *                     @OA\Property(property="waybills_completed", type="integer", example=30000, description="Waybill details in range where booking.is_complete = true"),
+     *                     @OA\Property(property="waybills_total", type="integer", example=32984, description="All waybill details in range"),
+     *                     @OA\Property(property="sales", type="number", format="float", example=20000000, description="Sum of invoice total amount due in range (same logic as invoice PDF)"),
+     *                     @OA\Property(property="waybill_expenses", type="number", format="float", example=2000000, description="total_expense + actual_truck_trip_expense_amount + diesel_expense.amount for waybills in range"),
+     *                     @OA\Property(property="parts_expense", type="number", format="float", example=50000, description="Sum of quantity * amount_per_item in parts_expense in range"),
+     *                     @OA\Property(property="diesel_expense", type="number", format="float", example=15000, description="Sum of diesel_expenses.amount for waybills in date range")
      *                 ),
      *                 @OA\Property(
      *                     property="sales_overview",
@@ -82,12 +84,12 @@ class DashboardController extends BaseController
      *                     @OA\Property(
      *                         property="income",
      *                         type="array",
-     *                         @OA\Items(type="number", format="float", example=440000)
+     *                         @OA\Items(type="number", format="float", example=440000, description="Sales (total amount due) by month from invoice date")
      *                     ),
      *                     @OA\Property(
-     *                         property="expenses",
+     *                         property="waybill_expenses",
      *                         type="array",
-     *                         @OA\Items(type="number", format="float", example=245000)
+     *                         @OA\Items(type="number", format="float", example=245000, description="Waybill expenses by month from waybill transaction_date")
      *                     )
      *                 ),
      *                 @OA\Property(
@@ -148,11 +150,13 @@ class DashboardController extends BaseController
      *                 @OA\Property(
      *                     property="kpis",
      *                     type="object",
-     *                     @OA\Property(property="shipping_lines", type="integer", example=14),
-     *                     @OA\Property(property="waybills", type="integer", example=30000),
+     *                     @OA\Property(property="shipping_line_count", type="integer", example=14),
+     *                     @OA\Property(property="waybills_completed", type="integer", example=30000),
      *                     @OA\Property(property="waybills_total", type="integer", example=32984),
      *                     @OA\Property(property="sales", type="number", format="float", example=20000000),
-     *                     @OA\Property(property="expenses", type="number", format="float", example=2000000)
+     *                     @OA\Property(property="waybill_expenses", type="number", format="float", example=2000000),
+     *                     @OA\Property(property="parts_expense", type="number", format="float", example=50000),
+     *                     @OA\Property(property="diesel_expense", type="number", format="float", example=15000)
      *                 )
      *             )
      *         )
@@ -213,7 +217,7 @@ class DashboardController extends BaseController
      *                         @OA\Items(type="number", format="float", example=440000)
      *                     ),
      *                     @OA\Property(
-     *                         property="expenses",
+     *                         property="waybill_expenses",
      *                         type="array",
      *                         @OA\Items(type="number", format="float", example=245000)
      *                     )
@@ -307,15 +311,13 @@ class DashboardController extends BaseController
      *             @OA\Property(
      *                 property="data",
      *                 type="object",
-     *                 @OA\Property(property="total_users", type="integer", example=150),
-     *                 @OA\Property(property="total_media", type="integer", example=234),
-     *                 @OA\Property(property="total_categories", type="integer", example=45),
-     *                 @OA\Property(property="total_tags", type="integer", example=128),
-     *                 @OA\Property(property="shipping_lines", type="integer", example=14),
-     *                 @OA\Property(property="waybills", type="integer", example=30000),
+     *                 @OA\Property(property="shipping_line_count", type="integer", example=14),
+     *                 @OA\Property(property="waybills_completed", type="integer", example=30000),
      *                 @OA\Property(property="waybills_total", type="integer", example=32984),
      *                 @OA\Property(property="sales", type="number", format="float", example=20000000),
-     *                 @OA\Property(property="expenses", type="number", format="float", example=2000000)
+     *                 @OA\Property(property="waybill_expenses", type="number", format="float", example=2000000),
+     *                 @OA\Property(property="parts_expense", type="number", format="float", example=50000),
+     *                 @OA\Property(property="diesel_expense", type="number", format="float", example=15000)
      *             )
      *         )
      *     ),

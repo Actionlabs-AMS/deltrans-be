@@ -3,26 +3,20 @@
 namespace App\Services;
 
 use App\Models\BillingStatement;
-use App\Models\Category;
+use App\Models\DieselExpense;
 use App\Models\Invoice;
-use App\Models\MediaLibrary;
 use App\Models\PartsExpense;
+use App\Models\ShippingLine;
 use App\Models\StatementOfAccount;
-use App\Models\Tag;
-use App\Models\TruckTripExpense;
-use App\Models\User;
 use App\Models\WaybillDetail;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
 class DashboardService
 {
-    /**
-     * Get legacy dashboard statistics.
-     */
-    public function getStats(): array
-    {
-        return $this->getLegacyStats();
+    public function __construct(
+        private readonly InvoiceService $invoiceService
+    ) {
     }
 
     /**
@@ -57,13 +51,13 @@ class DashboardService
             });
 
         return [
-            'shipping_lines' => (clone $waybillQuery)
-                ->distinct()
-                ->count('shipping_line_id'),
-            'waybills' => (clone $completedWaybillQuery)->count(),
+            'shipping_line_count' => ShippingLine::count(),
+            'waybills_completed' => (clone $completedWaybillQuery)->count(),
             'waybills_total' => (clone $waybillQuery)->count(),
-            'sales' => $this->getInvoiceBasedSalesTotal($start, $end),
-            'expenses' => $this->getExpensesTotal($start, $end),
+            'sales' => $this->getSalesTotalAmountDue($start, $end),
+            'waybill_expenses' => $this->getWaybillExpensesTotal($start, $end),
+            'parts_expense' => $this->getPartsExpenseTotal($start, $end),
+            'diesel_expense' => $this->getDieselExpenseTotal($start, $end),
         ];
     }
 
@@ -76,24 +70,24 @@ class DashboardService
 
         $months = $this->getMonthKeys($start, $end);
         $incomeByMonth = array_fill_keys($months, 0.0);
-        $expenseByMonth = array_fill_keys($months, 0.0);
+        $waybillExpensesByMonth = array_fill_keys($months, 0.0);
 
-        foreach ($this->getInvoiceIncomeByMonth($start, $end) as $month => $amount) {
+        foreach ($this->getSalesTotalAmountDueByMonth($start, $end) as $month => $amount) {
             if (array_key_exists($month, $incomeByMonth)) {
                 $incomeByMonth[$month] = round((float) $amount, 2);
             }
         }
 
-        foreach ($this->getExpenseTotalsByMonth($start, $end) as $month => $amount) {
-            if (array_key_exists($month, $expenseByMonth)) {
-                $expenseByMonth[$month] = round((float) $amount, 2);
+        foreach ($this->getWaybillExpensesByMonth($start, $end) as $month => $amount) {
+            if (array_key_exists($month, $waybillExpensesByMonth)) {
+                $waybillExpensesByMonth[$month] = round((float) $amount, 2);
             }
         }
 
         return [
             'months' => array_keys($incomeByMonth),
             'income' => array_values($incomeByMonth),
-            'expenses' => array_values($expenseByMonth),
+            'waybill_expenses' => array_values($waybillExpensesByMonth),
         ];
     }
 
@@ -128,14 +122,11 @@ class DashboardService
     }
 
     /**
-     * Get the enhanced stats payload used by widgets.
+     * Get the enhanced stats payload used by widgets (KPIs only, no legacy counts).
      */
     public function getEnhancedStats(array $filters = []): array
     {
-        return array_merge(
-            $this->getLegacyStats(),
-            $this->getKpis($filters)
-        );
+        return $this->getKpis($filters);
     }
 
     /**
@@ -189,19 +180,6 @@ class DashboardService
     }
 
     /**
-     * Get the legacy stats used by the existing dashboard widgets.
-     */
-    private function getLegacyStats(): array
-    {
-        return [
-            'total_users' => User::count(),
-            'total_media' => MediaLibrary::count(),
-            'total_categories' => Category::count(),
-            'total_tags' => Tag::count(),
-        ];
-    }
-
-    /**
      * Build the list of year-month keys for the chart.
      *
      * @return array<int, string>
@@ -224,101 +202,103 @@ class DashboardService
     }
 
     /**
-     * Get invoice-based sales total for the selected range.
+     * Sales total = sum of "total amount due" for all invoices in range (same logic as invoice PDF).
      */
-    private function getInvoiceBasedSalesTotal(Carbon $start, Carbon $end): float
+    private function getSalesTotalAmountDue(Carbon $start, Carbon $end): float
     {
-        return round(array_sum($this->getInvoiceIncomeByMonth($start, $end)), 2);
+        return round(array_sum($this->getSalesTotalAmountDueByMonth($start, $end)), 2);
     }
 
     /**
-     * Get invoice-based income grouped by month.
+     * Sales (total amount due) by month from invoice date. Uses InvoiceService::getComputedTotals per invoice.
      *
      * @return array<string, float>
      */
-    private function getInvoiceIncomeByMonth(Carbon $start, Carbon $end): array
+    private function getSalesTotalAmountDueByMonth(Carbon $start, Carbon $end): array
     {
-        $invoiceSummaries = Invoice::query()
+        $invoices = Invoice::query()
             ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
-            ->selectRaw('statement_of_account_id, MIN(date) as invoice_date')
-            ->groupBy('statement_of_account_id')
-            ->get();
-
-        $amountsBySoa = $this->getStatementOfAccountAmounts(
-            $invoiceSummaries->pluck('statement_of_account_id')->all()
-        );
+            ->get(['id', 'statement_of_account_id', 'date', 'discount']);
 
         $incomeByMonth = [];
 
-        foreach ($invoiceSummaries as $invoiceSummary) {
-            $monthKey = Carbon::parse($invoiceSummary->invoice_date)->format('Y-m');
-            $soaId = (int) $invoiceSummary->statement_of_account_id;
-
-            $incomeByMonth[$monthKey] = ($incomeByMonth[$monthKey] ?? 0)
-                + (float) ($amountsBySoa[$soaId] ?? 0);
+        foreach ($invoices as $invoice) {
+            $totals = $this->invoiceService->getComputedTotals(
+                (int) $invoice->statement_of_account_id,
+                (float) ($invoice->discount ?? 0)
+            );
+            $monthKey = $invoice->date ? $invoice->date->format('Y-m') : Carbon::now()->format('Y-m');
+            $incomeByMonth[$monthKey] = ($incomeByMonth[$monthKey] ?? 0) + (float) ($totals['total_amount'] ?? 0);
         }
 
         return $incomeByMonth;
     }
 
     /**
-     * Get the total expenses for the selected range.
+     * Waybill expenses = sum over waybills in range of (total_expense + actual_truck_trip_expense_amount) + diesel.
      */
-    private function getExpensesTotal(Carbon $start, Carbon $end): float
+    private function getWaybillExpensesTotal(Carbon $start, Carbon $end): float
     {
-        $waybillExpenses = (float) WaybillDetail::query()
+        $waybillPart = (float) WaybillDetail::query()
             ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()])
-            ->sum('total_expense');
+            ->selectRaw('COALESCE(SUM(total_expense), 0) + COALESCE(SUM(actual_truck_trip_expense_amount), 0) as total')
+            ->value('total');
 
-        $truckTripExpenses = (float) TruckTripExpense::query()
-            ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()])
-            ->sum('issued_cash_amount');
-
-        $partsExpenses = (float) PartsExpense::query()
-            ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()])
-            ->selectRaw('COALESCE(SUM(quantity * amount_per_item), 0) as total_amount')
-            ->value('total_amount');
-
-        return round($waybillExpenses + $truckTripExpenses + $partsExpenses, 2);
+        return round($waybillPart + $this->getDieselExpenseTotal($start, $end), 2);
     }
 
     /**
-     * Get monthly expense totals for the selected range.
+     * Waybill expenses by month (transaction_date). total_expense + actual_truck_trip_expense_amount per month + diesel per month.
      *
      * @return array<string, float>
      */
-    private function getExpenseTotalsByMonth(Carbon $start, Carbon $end): array
+    private function getWaybillExpensesByMonth(Carbon $start, Carbon $end): array
     {
+        $waybillPart = WaybillDetail::query()
+            ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()])
+            ->selectRaw("DATE_FORMAT(transaction_date, '%Y-%m') as month_key, COALESCE(SUM(total_expense), 0) + COALESCE(SUM(actual_truck_trip_expense_amount), 0) as total_amount")
+            ->groupBy('month_key')
+            ->pluck('total_amount', 'month_key')
+            ->toArray();
+
+        $dieselByMonth = DieselExpense::query()
+            ->join('waybill_details', 'waybill_details.diesel_expense_id', '=', 'diesel_expenses.id')
+            ->whereNull('waybill_details.deleted_at')
+            ->whereBetween('waybill_details.transaction_date', [$start->toDateString(), $end->toDateString()])
+            ->selectRaw("DATE_FORMAT(waybill_details.transaction_date, '%Y-%m') as month_key, COALESCE(SUM(diesel_expenses.amount), 0) as total_amount")
+            ->groupBy('month_key')
+            ->pluck('total_amount', 'month_key')
+            ->toArray();
+
         $totals = [];
-
-        $waybillExpenses = WaybillDetail::query()
-            ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()])
-            ->selectRaw("DATE_FORMAT(transaction_date, '%Y-%m') as month_key, COALESCE(SUM(total_expense), 0) as total_amount")
-            ->groupBy('month_key')
-            ->pluck('total_amount', 'month_key')
-            ->toArray();
-
-        $truckTripExpenses = TruckTripExpense::query()
-            ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()])
-            ->selectRaw("DATE_FORMAT(transaction_date, '%Y-%m') as month_key, COALESCE(SUM(issued_cash_amount), 0) as total_amount")
-            ->groupBy('month_key')
-            ->pluck('total_amount', 'month_key')
-            ->toArray();
-
-        $partsExpenses = PartsExpense::query()
-            ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()])
-            ->selectRaw("DATE_FORMAT(transaction_date, '%Y-%m') as month_key, COALESCE(SUM(quantity * amount_per_item), 0) as total_amount")
-            ->groupBy('month_key')
-            ->pluck('total_amount', 'month_key')
-            ->toArray();
-
-        foreach ([$waybillExpenses, $truckTripExpenses, $partsExpenses] as $sourceTotals) {
-            foreach ($sourceTotals as $monthKey => $amount) {
-                $totals[$monthKey] = ($totals[$monthKey] ?? 0) + (float) $amount;
-            }
+        foreach (array_unique(array_merge(array_keys($waybillPart), array_keys($dieselByMonth))) as $monthKey) {
+            $totals[$monthKey] = (float) ($waybillPart[$monthKey] ?? 0) + (float) ($dieselByMonth[$monthKey] ?? 0);
         }
 
         return $totals;
+    }
+
+    /**
+     * Parts expense total = sum(quantity * amount_per_item) in range.
+     */
+    private function getPartsExpenseTotal(Carbon $start, Carbon $end): float
+    {
+        return round((float) PartsExpense::query()
+            ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()])
+            ->selectRaw('COALESCE(SUM(quantity * amount_per_item), 0) as total_amount')
+            ->value('total_amount'), 2);
+    }
+
+    /**
+     * Get the total diesel expense for the selected range (diesel_expenses.amount via waybill_details.transaction_date).
+     */
+    private function getDieselExpenseTotal(Carbon $start, Carbon $end): float
+    {
+        return round((float) DieselExpense::query()
+            ->join('waybill_details', 'waybill_details.diesel_expense_id', '=', 'diesel_expenses.id')
+            ->whereNull('waybill_details.deleted_at')
+            ->whereBetween('waybill_details.transaction_date', [$start->toDateString(), $end->toDateString()])
+            ->sum('diesel_expenses.amount'), 2);
     }
 
     /**
