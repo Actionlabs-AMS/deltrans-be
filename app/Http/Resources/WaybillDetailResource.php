@@ -65,8 +65,7 @@ class WaybillDetailResource extends JsonResource
             'post_expense_amount' => $this->post_expense_amount,
             'actual_truck_trip_expense_amount' => $this->actual_truck_trip_expense_amount,
             'diesel_expense_amount' => $this->whenLoaded('dieselExpense', fn () => $this->dieselExpense?->amount),
-            'vishner_or' => $this->whenLoaded('dieselExpense', fn () => $this->dieselExpense?->vishner_or),
-            'vishner_dr' => $this->whenLoaded('dieselExpense', fn () => $this->dieselExpense?->vishner_dr),
+            'purchase_order' => $this->whenLoaded('dieselExpense', fn () => $this->dieselExpense?->purchase_order),
             'total_expense' => $this->total_expense,
 
             // Loaded relations

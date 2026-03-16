@@ -50,8 +50,7 @@ class WaybillDetailRequest extends FormRequest
             'actual_truck_trip_expense_amount' => 'nullable|numeric|min:0',
             'diesel_expense_id' => 'nullable|integer|exists:diesel_expenses,id',
             'diesel_expense_amount' => 'nullable|numeric|min:0',
-            'vishner_or' => 'nullable|string|max:255',
-            'vishner_dr' => 'nullable|string|max:255',
+            'purchase_order' => 'nullable|string|max:255',
             'total_expense' => 'nullable|numeric|min:0',
             'prepared_by' => 'nullable|integer|exists:users,id',
         ];
@@ -82,8 +81,7 @@ class WaybillDetailRequest extends FormRequest
             $rules['actual_truck_trip_expense_amount'] = 'sometimes|nullable|numeric|min:0';
             $rules['diesel_expense_id'] = 'sometimes|nullable|integer|exists:diesel_expenses,id';
             $rules['diesel_expense_amount'] = 'sometimes|nullable|numeric|min:0';
-            $rules['vishner_or'] = 'sometimes|nullable|string|max:255';
-            $rules['vishner_dr'] = 'sometimes|nullable|string|max:255';
+            $rules['purchase_order'] = 'sometimes|nullable|string|max:255';
             $rules['total_expense'] = 'sometimes|nullable|numeric|min:0';
             $rules['prepared_by'] = 'sometimes|nullable|integer|exists:users,id';
         }

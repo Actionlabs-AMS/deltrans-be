@@ -25283,14 +25283,9 @@
                         "format": "float",
                         "example": 1500
                     },
-                    "vishner_or": {
+                    "purchase_order": {
                         "type": "string",
-                        "example": "OR-2025-001",
-                        "nullable": true
-                    },
-                    "vishner_dr": {
-                        "type": "string",
-                        "example": "DR-2025-001",
+                        "example": "PO-2025-001",
                         "nullable": true
                     },
                     "waybill_detail_id": {
@@ -27187,16 +27182,10 @@
                         "example": 150,
                         "nullable": true
                     },
-                    "vishner_or": {
-                        "description": "Resolved from diesel_expenses.vishner_or using waybill_details.diesel_expense_id",
+                    "purchase_order": {
+                        "description": "Resolved from diesel_expenses.purchase_order using waybill_details.diesel_expense_id",
                         "type": "string",
-                        "example": "OR-12345",
-                        "nullable": true
-                    },
-                    "vishner_dr": {
-                        "description": "Resolved from diesel_expenses.vishner_dr using waybill_details.diesel_expense_id",
-                        "type": "string",
-                        "example": "DR-12345",
+                        "example": "PO-2025-001",
                         "nullable": true
                     },
                     "total_expense": {
@@ -27356,16 +27345,10 @@
                         "example": 150,
                         "nullable": true
                     },
-                    "vishner_or": {
-                        "description": "Creates/updates diesel_expenses.vishner_or",
+                    "purchase_order": {
+                        "description": "Creates/updates diesel_expenses.purchase_order",
                         "type": "string",
-                        "example": "OR-12345",
-                        "nullable": true
-                    },
-                    "vishner_dr": {
-                        "description": "Creates/updates diesel_expenses.vishner_dr",
-                        "type": "string",
-                        "example": "DR-12345",
+                        "example": "PO-2025-001",
                         "nullable": true
                     },
                     "total_expense": {

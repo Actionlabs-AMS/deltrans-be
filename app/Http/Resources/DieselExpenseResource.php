@@ -12,6 +12,7 @@ class DieselExpenseResource extends JsonResource
         return [
             'id' => $this->id,
             'amount' => (float) $this->amount,
+            'purchase_order' => $this->purchase_order,
             'waybill_detail_id' => $this->whenLoaded('waybillDetail', function () {
                 return $this->waybillDetail?->id;
             }),

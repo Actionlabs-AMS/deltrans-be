@@ -266,8 +266,7 @@ class WaybillDetailService extends BaseService
     private function prepareDieselExpenseData(array $data, ?WaybillDetail $existingWaybill = null): array
     {
         $hasDieselPayload = array_key_exists('diesel_expense_amount', $data)
-            || array_key_exists('vishner_or', $data)
-            || array_key_exists('vishner_dr', $data)
+            || array_key_exists('purchase_order', $data)
             || array_key_exists('diesel_expense_id', $data);
 
         if (!$hasDieselPayload) {
@@ -277,9 +276,8 @@ class WaybillDetailService extends BaseService
         $amount = round((float) ($data['diesel_expense_amount'] ?? 0), 2);
         unset($data['diesel_expense_amount']);
 
-        $vishnerOr = array_key_exists('vishner_or', $data) ? ($data['vishner_or'] !== null ? (string) $data['vishner_or'] : null) : null;
-        $vishnerDr = array_key_exists('vishner_dr', $data) ? ($data['vishner_dr'] !== null ? (string) $data['vishner_dr'] : null) : null;
-        unset($data['vishner_or'], $data['vishner_dr']);
+        $purchaseOrder = array_key_exists('purchase_order', $data) ? ($data['purchase_order'] !== null ? (string) $data['purchase_order'] : null) : null;
+        unset($data['purchase_order']);
 
         $requestedDieselExpenseId = null;
         if (array_key_exists('diesel_expense_id', $data)) {
@@ -305,8 +303,7 @@ class WaybillDetailService extends BaseService
                 ->whereKey($dieselExpenseIdToUse)
                 ->update([
                     'amount' => $amount,
-                    'vishner_or' => $vishnerOr,
-                    'vishner_dr' => $vishnerDr,
+                    'purchase_order' => $purchaseOrder,
                 ]);
 
             $data['diesel_expense_id'] = $dieselExpenseIdToUse;
@@ -316,8 +313,7 @@ class WaybillDetailService extends BaseService
 
         $dieselExpense = DieselExpense::query()->create([
             'amount' => $amount,
-            'vishner_or' => $vishnerOr,
-            'vishner_dr' => $vishnerDr,
+            'purchase_order' => $purchaseOrder,
         ]);
 
         $data['diesel_expense_id'] = $dieselExpense->id;

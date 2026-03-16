@@ -168,7 +168,7 @@ class WaybillDetailsSeeder extends Seeder
             }
         }
 
-        // Link first 2 waybills to first 2 diesel expenses (so seed data includes vishner_or, vishner_dr)
+        // Link first 2 waybills to first 2 diesel expenses (so seed data includes purchase_order)
         $dieselIds = DieselExpense::orderBy('id')->limit(2)->pluck('id')->toArray();
         if (count($dieselIds) >= 2) {
             $waybillsToLink = WaybillDetail::orderBy('id')->limit(2)->get();
