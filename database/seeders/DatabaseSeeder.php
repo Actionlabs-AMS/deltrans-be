@@ -40,7 +40,8 @@ class DatabaseSeeder extends Seeder
             HelperCAHistorySeeder::class,
             IssuedBudgetSeeder::class,
             TruckTripExpenseSeeder::class,
-            PartsExpenseSeeder::class
+            PartsExpenseSeeder::class,
+            DieselExpenseSeeder::class,
         ]);
     }
 }

@@ -14005,7 +14005,7 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "example": "NAH 8123"
+                            "example": "NAE 5234"
                         }
                     },
                     {
@@ -26391,6 +26391,10 @@
                 "title": "Transport Detailed Row",
                 "description": "Detailed waybill and expense information for a specific trip",
                 "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 101
+                    },
                     "transaction_date": {
                         "type": "string",
                         "format": "date",
@@ -26402,7 +26406,7 @@
                     },
                     "plate_number": {
                         "type": "string",
-                        "example": "NAH 8123"
+                        "example": "NAE 5234"
                     },
                     "waybill_number": {
                         "type": "string",
@@ -26428,7 +26432,7 @@
                         "type": "string",
                         "example": "40ft"
                     },
-                    "expenses": {
+                    "truck_expenses": {
                         "type": "number",
                         "format": "float",
                         "example": 1500.5
@@ -26449,6 +26453,11 @@
                     "encoded_by": {
                         "type": "string",
                         "example": "System Admin"
+                    },
+                    "diesel_consumption": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 1500.5
                     }
                 },
                 "type": "object"

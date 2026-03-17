@@ -102,20 +102,22 @@ use App\Http\Resources\TransportDetailedResource;
  * schema="TransportDetailedRow",
  * title="Transport Detailed Row",
  * description="Detailed waybill and expense information for a specific trip",
+ * @OA\Property(property="id", type="integer", example=101),
  * @OA\Property(property="transaction_date", type="string", format="date", example="2026-03-10"),
  * @OA\Property(property="shipping_line", type="string", example="Maersk"),
- * @OA\Property(property="plate_number", type="string", example="NAH 8123"),
+ * @OA\Property(property="plate_number", type="string", example="NAE 5234"),
  * @OA\Property(property="waybill_number", type="string", example="WB-100234"),
  * @OA\Property(property="container_number", type="string", example="MSKU1234567"),
-* @OA\Property(property="from", type="string", example="Manila"),
+ * @OA\Property(property="from", type="string", example="Manila"),
  * @OA\Property(property="to", type="string", example="Cebu"),
  * @OA\Property(property="status", type="string", example="Completed"),
  * @OA\Property(property="size", type="string", example="40ft"),
- * @OA\Property(property="expenses", type="number", format="float", example=1500.50),
+ * @OA\Property(property="truck_expenses", type="number", format="float", example=1500.50),
  * @OA\Property(property="remarks", type="string", nullable=true, example="Delivered on time"),
  * @OA\Property(property="driver", type="string", example="Dela Cruz"),
  * @OA\Property(property="helper", type="string", example="Reyes"),
- * @OA\Property(property="encoded_by", type="string", example="System Admin")
+ * @OA\Property(property="encoded_by", type="string", example="System Admin"),
+ * @OA\Property(property="diesel_consumption", type="number", format="float", example=1500.50),
  * )
  *
  * 
@@ -648,7 +650,7 @@ class ReportsController extends BaseController
      * in="path",
      * required=true,
      * description="The truck plate number to filter by",
-     * @OA\Schema(type="string", example="NAH 8123")
+     * @OA\Schema(type="string", example="NAE 5234")
      * ),
      * @OA\Parameter(name="start_date", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-02-23")),
      * @OA\Parameter(name="end_date", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-03-01")),

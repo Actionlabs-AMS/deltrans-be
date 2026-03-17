@@ -188,6 +188,7 @@ class WaybillDetailsSeeder extends Seeder
 
     //     $this->command->info("Waybill details seeded: {$created} waybills (rate per client data stored inline).");
     // }
+    
     public function run(): void
     {
         $trucks = [
@@ -197,29 +198,39 @@ class WaybillDetailsSeeder extends Seeder
             'NAM 3789', 'NAN 4890'
         ];
 
-        // Define the date range: Feb 23 to March 8, 2026
         $startDate = Carbon::create(2026, 2, 23);
         $endDate = Carbon::create(2026, 3, 8);
+        
+        // 1. Calculate approximate total rows first
+        // 14 trucks * 14 days * ~2.5 avg trips = ~490 to 500 rows
+        $totalExpectedRows = 600; // Over-estimate to be safe
+
+        // 2. Create the "Pool" of IDs
+        // We take 100 IDs and fill the rest of the 600 slots with null
+        $dieselPool = array_merge(
+            range(1, 100), 
+            array_fill(0, $totalExpectedRows - 100, null)
+        );
+        
+        // 3. Shuffle the pool so the 100 IDs are scattered everywhere
+        $shuffledPool = collect($dieselPool)->shuffle();
 
         $data = [];
 
-        // Loop through each day in the range
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
-            
             foreach ($trucks as $plate) {
-                // Requirement: 2-3 transactions per day per truck
                 $transactionsPerDay = rand(2, 3);
 
                 for ($i = 0; $i < $transactionsPerDay; $i++) {
                     $rate = rand(5000, 15000);
-                    $taxPercent = 12; // Standard 12% VAT example
+                    $taxPercent = 12;
                     $totalRate = $rate * (1 + ($taxPercent / 100));
 
                     $data[] = [
                         'waybill_number'        => 'WB-' . strtoupper(Str::random(8)),
                         'transaction_date'      => $date->toDateString(),
                         'shipping_line_id'      => rand(1, 5),
-                        'booking_id'            => rand(1, 16), // Your foreign key range
+                        'booking_id'            => rand(1, 16),
                         'driver_id'             => rand(1, 10),
                         'helper_id'             => rand(1, 10),
                         'container_size'        => collect(['20ft', '40ft'])->random(),
@@ -236,7 +247,13 @@ class WaybillDetailsSeeder extends Seeder
                         'has_vat'               => true,
                         'total_rate_per_client' => $totalRate,
                         'fixed_expense_id'      => rand(1, 3),
+                        'truck_trip_expense_id' => rand(1, 14),
+                        
+                        // 🌟 4. Pull from the shuffled pool of IDs and Nulls
+                        'diesel_expense_id'     => $shuffledPool->shift(), 
+                        
                         'post_expense_amount'   => 500,
+                        'actual_truck_trip_expense_amount'    => rand(1,100),
                         'total_expense'         => 1500,
                         'prepared_by'           => rand(1, 22),
                         'created_at'            => now(),
@@ -246,7 +263,6 @@ class WaybillDetailsSeeder extends Seeder
             }
         }
 
-        // Chunk the insert to avoid memory issues if the dataset is large
         foreach (array_chunk($data, 100) as $chunk) {
             DB::table('waybill_details')->insert($chunk);
         }

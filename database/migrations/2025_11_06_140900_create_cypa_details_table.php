@@ -17,7 +17,6 @@ return new class extends Migration {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('name');
-            $table->string('short_name')->nullable();
             $table->text('address')->nullable();
             $table->string('contact_name')->nullable();
             $table->string('contact_mobile')->nullable();

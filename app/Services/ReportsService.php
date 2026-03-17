@@ -396,6 +396,97 @@ class ReportsService
         }
     }
 
+    // public function getTruckDetailedReport($startDate, $endDate, $filterType = 'weekly', $plateNumber = null, $perPage = 15)
+    // {
+    //     try {
+    //         $query = DB::table('waybill_details as a')
+    //             ->join('bookings as b', 'a.booking_id', '=', 'b.id')
+    //             ->leftJoin('containers as c', 'c.waybill_id', '=', 'a.id')
+    //             ->join('shipping_lines as d', 'd.id', '=', 'b.shipping_line_id')
+    //             ->join('cypa_details as e', 'e.id', '=', 'b.cypa_id_from')
+    //             ->join('cypa_details as f', 'f.id', '=', 'b.cypa_id_to')
+    //             ->join('drivers as g', 'g.id', '=', 'a.driver_id')
+    //             ->join('helpers as h', 'h.id', '=', 'a.helper_id')
+    //             ->join('fixed_expenses as i', 'i.id', '=', 'a.fixed_expense_id')
+                
+    //             // 🌟 NEW JOIN: Get Diesel Expense amount
+    //             ->leftJoin('diesel_expenses as j', 'j.id', '=', 'a.diesel_expense_id')
+                
+    //             // JOIN 1: For First Name
+    //             ->leftJoin('user_meta as um1', function($join) {
+    //                 $join->on('um1.user_id', '=', 'a.prepared_by')
+    //                     ->where('um1.meta_key', '=', 'first_name');
+    //             })
+    //             // JOIN 2: For Last Name
+    //             ->leftJoin('user_meta as um2', function($join) {
+    //                 $join->on('um2.user_id', '=', 'a.prepared_by')
+    //                     ->where('um2.meta_key', '=', 'last_name');
+    //             })
+                
+    //             ->select([
+    //                 'a.id',
+    //                 'a.transaction_date',
+    //                 'd.name as shipping_line_name',
+    //                 'a.truck_plate_number',
+    //                 'a.waybill_number',
+    //                 'c.container_number',
+    //                 'e.short_name as from',
+    //                 'f.short_name as to',
+    //                 DB::raw("'Completed' as status"), 
+    //                 'a.container_size',
+    //                 'i.total_expenses', // This is from fixed_expenses
+                    
+    //                 // 🌟 NEW SELECT: Get the amount from diesel_expenses
+    //                 // We use IFNULL to return 0 instead of null for easier frontend handling
+    //                 DB::raw('IFNULL(j.amount, 0) as diesel_amount'),
+                    
+    //                 'a.remarks',
+    //                 'g.last_name as driver',
+    //                 'h.last_name as helper',
+    //                 DB::raw("CONCAT(IFNULL(um1.meta_value, ''), ' ', IFNULL(um2.meta_value, '')) as encoded_by")
+    //             ]);
+
+    //         // 1. --- Date Filtering Logic ---
+    //         if ($filterType === 'monthly' && $startDate) {
+    //             $date = \Carbon\Carbon::parse($startDate);
+    //             $query->whereMonth('a.transaction_date', $date->month)
+    //                 ->whereYear('a.transaction_date', $date->year);
+    //         } else {
+    //             if ($startDate && $endDate) {
+    //                 $query->whereBetween('a.transaction_date', [$startDate, $endDate]);
+    //             }
+    //         }
+
+    //         // 2. --- Specific Truck Filter ---
+    //         if ($plateNumber) {
+    //             $query->where('a.truck_plate_number', $plateNumber);
+    //         }
+
+    //         // 3. --- Optional Search ---
+    //         $search = request('search');
+    //         if ($search) {
+    //             $query->where(function($q) use ($search) {
+    //                 $q->where('a.waybill_number', 'LIKE', "%{$search}%")
+    //                 ->orWhere('c.container_number', 'LIKE', "%{$search}%")
+    //                 ->orWhere('d.name', 'LIKE', "%{$search}%")
+    //                 ->orWhere('um1.meta_value', 'LIKE', "%{$search}%")
+    //                 ->orWhere('um2.meta_value', 'LIKE', "%{$search}%");
+    //             });
+    //         }
+
+    //         // 4. --- Ordering ---
+    //         $sortColumn = request('order', 'a.transaction_date'); 
+    //         $sortDirection = request('sort', 'asc');
+    //         $query->orderBy($sortColumn, $sortDirection);
+
+    //         // 5. Return paginated results with query string
+    //         return $query->paginate($perPage)->withQueryString();
+
+    //     } catch (\Exception $e) {
+    //         throw new \Exception('Failed to fetch detailed report: ' . $e->getMessage());
+    //     }
+    // }
+
     public function getTruckDetailedReport($startDate, $endDate, $filterType = 'weekly', $plateNumber = null, $perPage = 15)
     {
         try {
@@ -407,20 +498,24 @@ class ReportsService
                 ->join('cypa_details as f', 'f.id', '=', 'b.cypa_id_to')
                 ->join('drivers as g', 'g.id', '=', 'a.driver_id')
                 ->join('helpers as h', 'h.id', '=', 'a.helper_id')
-                ->join('fixed_expenses as i', 'i.id', '=', 'a.fixed_expense_id')
                 
-                // JOIN 1: For First Name
+                // 🌟 REMOVED: fixed_expenses join
+                // 🌟 NEW JOIN: truck_trip_expenses
+                ->leftJoin('truck_trip_expense as tte', 'tte.id', '=', 'a.truck_trip_expense_id')
+                
+                ->leftJoin('diesel_expenses as j', 'j.id', '=', 'a.diesel_expense_id')
+                
                 ->leftJoin('user_meta as um1', function($join) {
                     $join->on('um1.user_id', '=', 'a.prepared_by')
                         ->where('um1.meta_key', '=', 'first_name');
                 })
-                // JOIN 2: For Last Name
                 ->leftJoin('user_meta as um2', function($join) {
                     $join->on('um2.user_id', '=', 'a.prepared_by')
                         ->where('um2.meta_key', '=', 'last_name');
                 })
                 
                 ->select([
+                    'a.id',
                     'a.transaction_date',
                     'd.name as shipping_line_name',
                     'a.truck_plate_number',
@@ -430,11 +525,14 @@ class ReportsService
                     'f.short_name as to',
                     DB::raw("'Completed' as status"), 
                     'a.container_size',
-                    'i.total_expenses',
+                    
+                    // 🌟 NEW SELECT: Calculate truck_expense (Cash on Hand + Issued Cash)
+                    DB::raw('IFNULL(tte.cash_on_hand, 0) + IFNULL(tte.issued_cash_amount, 0) as truck_expense'),
+                    
+                    DB::raw('IFNULL(j.amount, 0) as diesel_amount'),
                     'a.remarks',
                     'g.last_name as driver',
                     'h.last_name as helper',
-                    // Concatenate the meta_values from the two separate joins
                     DB::raw("CONCAT(IFNULL(um1.meta_value, ''), ' ', IFNULL(um2.meta_value, '')) as encoded_by")
                 ]);
 
@@ -471,7 +569,6 @@ class ReportsService
             $sortDirection = request('sort', 'asc');
             $query->orderBy($sortColumn, $sortDirection);
 
-            // 5. Return paginated results with query string
             return $query->paginate($perPage)->withQueryString();
 
         } catch (\Exception $e) {

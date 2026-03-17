@@ -9,6 +9,7 @@ class TransportDetailedResource extends JsonResource
     public function toArray($request)
     {
         return [
+            'id'                 => $this->id,
             'transaction_date'   => $this->transaction_date,
             'shipping_line'      => $this->shipping_line_name,
             'plate_number'       => $this->truck_plate_number,
@@ -18,11 +19,13 @@ class TransportDetailedResource extends JsonResource
             'to'                 => $this->to,
             'status'             => $this->status,
             'size'               => $this->container_size,
-            'expenses'           => (float) $this->total_expenses,
+            'truck_expenses'     => (float) $this->truck_expense,
             'remarks'            => $this->remarks,
             'driver'             => $this->driver,
             'helper'             => $this->helper,
             'encoded_by'         => $this->encoded_by,
+            'diesel_consumption' => $this->diesel_amount,
+            'purchase_order'     => $this->purchase_order,
         ];
     }
 }
