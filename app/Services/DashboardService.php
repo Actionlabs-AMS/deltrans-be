@@ -61,6 +61,7 @@ class DashboardService
             'waybill_expenses' => $this->getWaybillExpensesTotal($start, $end),
             'parts_expense' => $this->getPartsExpenseTotal($start, $end),
             'diesel_expense' => $this->getDieselExpenseTotal($start, $end),
+            'overdue_count' => count($this->getOverduePayments($filters)),
         ];
     }
 

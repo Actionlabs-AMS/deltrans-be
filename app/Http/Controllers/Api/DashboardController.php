@@ -71,7 +71,8 @@ class DashboardController extends BaseController
      *                     @OA\Property(property="sales", type="number", format="float", example=20000000, description="Sum of invoice total amount due in range (same logic as invoice PDF)"),
      *                     @OA\Property(property="waybill_expenses", type="number", format="float", example=2000000, description="total_expense + actual_truck_trip_expense_amount + diesel_expense.amount for waybills in range"),
      *                     @OA\Property(property="parts_expense", type="number", format="float", example=50000, description="Sum of quantity * amount_per_item in parts_expense in range"),
-     *                     @OA\Property(property="diesel_expense", type="number", format="float", example=15000, description="Sum of diesel_expenses.amount for waybills in date range")
+     *                     @OA\Property(property="diesel_expense", type="number", format="float", example=15000, description="Sum of diesel_expenses.amount for waybills in date range"),
+     *                     @OA\Property(property="overdue_count", type="integer", example=3, description="Count of overdue items (billing due_date or SOA+waybill no_of_days before filter end)")
      *                 ),
      *                 @OA\Property(
      *                     property="sales_overview",
@@ -157,7 +158,8 @@ class DashboardController extends BaseController
      *                     @OA\Property(property="sales", type="number", format="float", example=20000000),
      *                     @OA\Property(property="waybill_expenses", type="number", format="float", example=2000000),
      *                     @OA\Property(property="parts_expense", type="number", format="float", example=50000),
-     *                     @OA\Property(property="diesel_expense", type="number", format="float", example=15000)
+     *                     @OA\Property(property="diesel_expense", type="number", format="float", example=15000),
+     *                     @OA\Property(property="overdue_count", type="integer", example=3, description="Count of overdue items (billing or SOA+waybill due before filter end)")
      *                 )
      *             )
      *         )

@@ -4673,6 +4673,11 @@
                                                     },
                                                     "type": "object"
                                                 },
+                                                "overdue_count": {
+                                                    "description": "Count of overdue items (billing due_date or SOA+waybill no_of_days before filter end)",
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
                                                 "overdue_payments": {
                                                     "type": "array",
                                                     "items": {
@@ -4697,7 +4702,8 @@
                                                             },
                                                             "billing_statement_id": {
                                                                 "type": "integer",
-                                                                "example": 1
+                                                                "example": 1,
+                                                                "nullable": true
                                                             },
                                                             "statement_of_account_id": {
                                                                 "type": "integer",
@@ -4960,6 +4966,40 @@
                 "summary": "Get dashboard overdue payments table data",
                 "description": "Get the overdue payments table payload.",
                 "operationId": "b884d7ef5110a99458bcbe5717b96860",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2025
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Overdue payments retrieved successfully",
@@ -4973,6 +5013,10 @@
                                         },
                                         "data": {
                                             "properties": {
+                                                "overdue_count": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
                                                 "overdue_payments": {
                                                     "type": "array",
                                                     "items": {
@@ -4997,7 +5041,8 @@
                                                             },
                                                             "billing_statement_id": {
                                                                 "type": "integer",
-                                                                "example": 1
+                                                                "example": 1,
+                                                                "nullable": true
                                                             },
                                                             "statement_of_account_id": {
                                                                 "type": "integer",

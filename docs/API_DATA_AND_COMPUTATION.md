@@ -50,6 +50,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | `waybill_expenses` | number | total_expense + actual_truck_trip_expense_amount + diesel_expense.amount for waybills in range |
 | `parts_expense` | number | Sum of `quantity * amount_per_item` in parts_expense in range |
 | `diesel_expense` | number | Sum of diesel_expenses.amount for waybills in range |
+| `overdue_count` | integer | Count of overdue items (billing due_date or SOA+waybill no_of_days before filter end; same as `data.overdue_payments` length) |
 
 **How we pull/compute:**
 
@@ -62,6 +63,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | **waybill_expenses** | **waybill_details** in range: `SUM(total_expense) + SUM(actual_truck_trip_expense_amount)` + **diesel_expense** total (see below). |
 | **parts_expense** | **parts_expense** where `transaction_date` in range → `SUM(quantity * amount_per_item)`. |
 | **diesel_expense** | **diesel_expenses** joined to **waybill_details** on `diesel_expense_id`, `waybill_details.deleted_at IS NULL`, `transaction_date` in range → **SUM(diesel_expenses.amount)**. |
+| **overdue_count** | **count** of `getOverduePayments($filters)` (billing statements with `due_date` &lt; filter end, plus SOAs without billing where soa.created_at + waybill no_of_days &lt; filter end). |
 
 ---
 
