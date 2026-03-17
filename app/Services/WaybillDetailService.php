@@ -285,16 +285,7 @@ class WaybillDetailService extends BaseService
             unset($data['diesel_expense_id']);
         }
 
-        if ($amount <= 0) {
-            if ($existingWaybill && $existingWaybill->diesel_expense_id) {
-                DieselExpense::query()->whereKey($existingWaybill->diesel_expense_id)->delete();
-            }
-
-            $data['diesel_expense_id'] = null;
-
-            return $data;
-        }
-
+        // Treat amount 0 as a valid diesel expense: update or create so GET returns diesel_expense_id and details
         $dieselExpenseIdToUse = $requestedDieselExpenseId
             ?? ($existingWaybill?->diesel_expense_id ? (int) $existingWaybill->diesel_expense_id : null);
 
