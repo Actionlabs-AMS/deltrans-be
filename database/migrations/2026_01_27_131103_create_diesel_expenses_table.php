@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->decimal('amount', 15, 2)->default(0);
+            $table->string('purchase_order')->nullable();
             $table->timestamps();
             $table->index('amount');
         });

@@ -613,6 +613,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::delete('/issued-budget/{id}', [IssuedBudgetController::class, 'destroy']);
 
 		Route::get('/truck-trip-expense', [TruckTripExpenseController::class, 'index']);
+		Route::get('/truck-trip-expense/latest', [TruckTripExpenseController::class, 'latest']);
 		Route::get('/truck-trip-expense/{id}', [TruckTripExpenseController::class, 'show']);
 		Route::post('/truck-trip-expense', [TruckTripExpenseController::class, 'store']);
 		Route::patch('/truck-trip-expense/{id}', [TruckTripExpenseController::class, 'update']);

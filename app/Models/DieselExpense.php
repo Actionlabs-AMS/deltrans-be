@@ -9,6 +9,7 @@ class DieselExpense extends Model
 {
     protected $fillable = [
         'amount',
+        'purchase_order',
     ];
 
     protected $casts = [

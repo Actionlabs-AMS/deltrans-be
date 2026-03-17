@@ -14,6 +14,7 @@ use App\Services\MessageService;
  *     schema="DieselExpense",
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="amount", type="number", format="float", example=1500.00),
+ *     @OA\Property(property="purchase_order", type="string", example="PO-2025-001", nullable=true),
  *     @OA\Property(property="waybill_detail_id", type="integer", example=101, nullable=true),
  *     @OA\Property(property="waybill_number", type="string", example="WB-001", nullable=true),
  *     @OA\Property(property="created_at", type="string", format="date-time"),

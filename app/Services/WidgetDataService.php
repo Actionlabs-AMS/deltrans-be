@@ -267,7 +267,7 @@ class WidgetDataService
 	{
 		if ($widgetType === 'metric') {
 			$stats = $this->dashboardService->getEnhancedStats($queryConfig);
-			$metric = $queryConfig['metric'] ?? 'total_users';
+			$metric = $queryConfig['metric'] ?? 'sales';
 			return ['value' => $stats[$metric] ?? 0];
 		}
 		return ['data' => []];

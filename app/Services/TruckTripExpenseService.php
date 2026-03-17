@@ -81,4 +81,23 @@ class TruckTripExpenseService extends BaseService
         $model = $this->model::with('helper')->findOrFail($id);
         return $this->resource::make($model);
     }
+
+    /**
+     * Get the latest truck trip expense for the given plate_number and helper_id.
+     * The returned record has remaining_amount kept in sync by waybill create/update/delete
+     * via TruckTripExpenseBalanceService (decrement when waybill uses amount, increment on revert).
+     *
+     * @return \App\Http\Resources\TruckTripExpenseResource|null
+     */
+    public function getLatestByPlateAndHelper(string $plateNumber, int $helperId)
+    {
+        $model = TruckTripExpense::query()
+            ->with('helper')
+            ->where('plate_number', $plateNumber)
+            ->where('helper_id', $helperId)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        return $model ? TruckTripExpenseResource::make($model) : null;
+    }
 }

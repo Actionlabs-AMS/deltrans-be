@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\TruckTripExpenseRequest;
 use App\Services\TruckTripExpenseService;
 use App\Services\MessageService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
@@ -64,6 +66,45 @@ class TruckTripExpenseController extends BaseController
     {
         $perPage = request()->get('per_page', 10);
         return $this->service->list($perPage);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/budget/truck-trip-expense/latest",
+     *     summary="Get latest truck trip expense by plate number and helper",
+     *     description="Returns the most recent truck trip expense for the given plate_number and helper_id. remaining_amount is kept in sync when waybills are created, updated, or deleted.",
+     *     tags={"Truck Trip Expense"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="plate_number", in="query", required=true, description="Truck plate number", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="helper_id", in="query", required=true, description="Helper ID", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Success", @OA\JsonContent(@OA\Property(property="data", ref="#/components/schemas/TruckTripExpense"))),
+     *     @OA\Response(response=404, description="No truck trip expense found for the given plate_number and helper_id"),
+     *     @OA\Response(response=422, description="Validation error (missing or invalid plate_number or helper_id)")
+     * )
+     */
+    public function latest(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'plate_number' => ['required', 'string', 'max:255'],
+            'helper_id' => ['required', 'integer', 'exists:helpers,id'],
+        ], [
+            'plate_number.required' => 'Plate number is required.',
+            'helper_id.required' => 'Helper ID is required.',
+            'helper_id.exists' => 'The selected helper does not exist.',
+        ]);
+
+        $resource = $this->service->getLatestByPlateAndHelper(
+            $validated['plate_number'],
+            (int) $validated['helper_id']
+        );
+
+        if ($resource === null) {
+            return response()->json([
+                'message' => 'No truck trip expense found for the given plate number and helper.',
+            ], 404);
+        }
+
+        return response()->json(['data' => $resource]);
     }
 
     /**

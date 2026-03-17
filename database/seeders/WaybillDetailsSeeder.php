@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\DieselExpense;
+use App\Models\WaybillDetail;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use App\Models\WaybillDetail;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
