@@ -855,8 +855,8 @@ Route::post('/validate', [AuthController::class, 'activateUser'])->middleware('t
 Route::post('/generate-password', [AuthController::class, 'genTempPassword'])->middleware('throttle:auth');
 // New explicit forgot-password endpoint used by the frontend
 Route::post('/auth/forgot-password', [AuthController::class, 'genTempPassword'])->middleware('throttle:auth');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
-Route::post('/auth/enable-2fa-setup', [AuthController::class, 'enable2FASetup'])->middleware('throttle:login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/auth/enable-2fa-setup', [AuthController::class, 'enable2FASetup']);
 
 // Microsoft Graph Test Route (for testing integration)
 Route::get('/test-microsoft-graph', function () {
