@@ -4639,6 +4639,11 @@
                                                             "type": "number",
                                                             "format": "float",
                                                             "example": 15000
+                                                        },
+                                                        "overdue_count": {
+                                                            "description": "Count of overdue items (billing due_date or SOA+waybill no_of_days before filter end)",
+                                                            "type": "integer",
+                                                            "example": 3
                                                         }
                                                     },
                                                     "type": "object"
@@ -4831,6 +4836,11 @@
                                                             "type": "number",
                                                             "format": "float",
                                                             "example": 15000
+                                                        },
+                                                        "overdue_count": {
+                                                            "description": "Count of overdue items (billing or SOA+waybill due before filter end)",
+                                                            "type": "integer",
+                                                            "example": 3
                                                         }
                                                     },
                                                     "type": "object"
