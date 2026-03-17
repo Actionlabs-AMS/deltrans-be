@@ -92,6 +92,7 @@ class DashboardController extends BaseController
      *                         @OA\Items(type="number", format="float", example=245000, description="Waybill expenses by month from waybill transaction_date")
      *                     )
      *                 ),
+     *                 @OA\Property(property="overdue_count", type="integer", example=3, description="Count of overdue items (billing due_date or SOA+waybill no_of_days before filter end)"),
      *                 @OA\Property(
      *                     property="overdue_payments",
      *                     type="array",
@@ -101,7 +102,7 @@ class DashboardController extends BaseController
      *                         @OA\Property(property="transaction_no", type="string", example="BS-2025-0001"),
      *                         @OA\Property(property="overdue_payment_date", type="string", format="date", example="2025-08-15"),
      *                         @OA\Property(property="overdue_payment_amount", type="number", format="float", example=1000000),
-     *                         @OA\Property(property="billing_statement_id", type="integer", example=1),
+     *                         @OA\Property(property="billing_statement_id", type="integer", nullable=true, example=1),
      *                         @OA\Property(property="statement_of_account_id", type="integer", example=10)
      *                     )
      *                 )
@@ -250,6 +251,10 @@ class DashboardController extends BaseController
      *     summary="Get dashboard overdue payments table data",
      *     tags={"Dashboard"},
      *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="date", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_from", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="year", in="query", @OA\Schema(type="integer", example=2025)),
      *     @OA\Response(
      *         response=200,
      *         description="Overdue payments retrieved successfully",
@@ -258,6 +263,7 @@ class DashboardController extends BaseController
      *             @OA\Property(
      *                 property="data",
      *                 type="object",
+     *                 @OA\Property(property="overdue_count", type="integer", example=3),
      *                 @OA\Property(
      *                     property="overdue_payments",
      *                     type="array",
@@ -267,7 +273,7 @@ class DashboardController extends BaseController
      *                         @OA\Property(property="transaction_no", type="string", example="BS-2025-0001"),
      *                         @OA\Property(property="overdue_payment_date", type="string", format="date", example="2025-08-15"),
      *                         @OA\Property(property="overdue_payment_amount", type="number", format="float", example=1000000),
-     *                         @OA\Property(property="billing_statement_id", type="integer", example=1),
+     *                         @OA\Property(property="billing_statement_id", type="integer", nullable=true, example=1),
      *                         @OA\Property(property="statement_of_account_id", type="integer", example=10)
      *                     )
      *                 )
@@ -277,13 +283,17 @@ class DashboardController extends BaseController
      *     @OA\Response(response=401, description="Unauthenticated")
      * )
      */
-    public function getOverduePayments(): JsonResponse
+    public function getOverduePayments(Request $request): JsonResponse
     {
         try {
+            $filters = $this->getFilters($request);
+            $overduePayments = $this->service->getOverduePayments($filters);
+
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'overdue_payments' => $this->service->getOverduePayments(),
+                    'overdue_count' => count($overduePayments),
+                    'overdue_payments' => $overduePayments,
                 ],
             ], 200);
         } catch (\Exception $e) {

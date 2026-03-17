@@ -26,12 +26,15 @@ class DashboardService
     {
         ['start' => $start, 'end' => $end] = $this->resolveDateRange($filters);
 
+        $overduePayments = $this->getOverduePayments($filters);
+
         return [
             'date_from' => $start->toDateString(),
             'date_to' => $end->toDateString(),
             'kpis' => $this->getKpis($filters),
             'sales_overview' => $this->getSalesOverview($filters),
-            'overdue_payments' => $this->getOverduePayments(),
+            'overdue_count' => count($overduePayments),
+            'overdue_payments' => $overduePayments,
         ];
     }
 
@@ -92,25 +95,33 @@ class DashboardService
     }
 
     /**
-     * Get overdue payments grouped by billing statement.
+     * Get overdue payments: SOAs with billing_statements (due_date before filter end) plus
+     * SOAs without billing_statements where SOA created_at + waybill no_of_days is before filter end.
+     *
+     * Uses the dashboard date filter end as "as of" date for overdue comparison.
      */
-    public function getOverduePayments(): array
+    public function getOverduePayments(array $filters = []): array
     {
+        ['end' => $end] = $this->resolveDateRange($filters);
+        $asOfDate = $end->copy()->endOfDay()->toDateString();
+
+        $rows = [];
+
+        // Part 1: SOAs with billing_statements — overdue when due_date < as_of and not paid
         $statements = BillingStatement::query()
             ->where('is_paid', false)
-            ->whereDate('due_date', '<', Carbon::today()->toDateString())
+            ->whereDate('due_date', '<', $asOfDate)
+            ->whereNotNull('due_date')
             ->with(['statementOfAccount.shippingLine'])
             ->orderBy('due_date')
             ->get();
 
-        $amountsBySoa = $this->getStatementOfAccountAmounts(
-            $statements->pluck('statement_of_account_id')->all()
-        );
+        $soaIdsFromBilling = $statements->pluck('statement_of_account_id')->unique()->values()->all();
+        $amountsBySoa = $this->getStatementOfAccountAmounts($soaIdsFromBilling);
 
-        return $statements->map(function (BillingStatement $statement) use ($amountsBySoa) {
+        foreach ($statements as $statement) {
             $statementOfAccountId = (int) $statement->statement_of_account_id;
-
-            return [
+            $rows[] = [
                 'shipping_line_name' => $statement->statementOfAccount?->shippingLine?->name ?? '',
                 'transaction_no' => $statement->billing_statement_no,
                 'overdue_payment_date' => optional($statement->due_date)->toDateString(),
@@ -118,7 +129,69 @@ class DashboardService
                 'billing_statement_id' => $statement->id,
                 'statement_of_account_id' => $statementOfAccountId,
             ];
-        })->toArray();
+        }
+
+        // Part 2: SOAs with no billing_statements — overdue when (soa.created_at + waybill.no_of_days) < as_of
+        $soasWithoutBilling = StatementOfAccount::query()
+            ->whereDoesntHave('billingStatements')
+            ->with(['shippingLine'])
+            ->get();
+
+        $overdueSoaIds = [];
+        $earliestDueBySoa = [];
+
+        foreach ($soasWithoutBilling as $soa) {
+            $bookingIds = $soa->booking_ids ?? [];
+            if ($bookingIds === []) {
+                continue;
+            }
+
+            $waybills = WaybillDetail::query()
+                ->whereIn('booking_id', $bookingIds)
+                ->get(['id', 'booking_id', 'no_of_days']);
+
+            $soaCreatedAt = $soa->created_at;
+            if (!$soaCreatedAt) {
+                continue;
+            }
+
+            foreach ($waybills as $waybill) {
+                $noOfDays = (int) ($waybill->no_of_days ?? 0);
+                $dueDate = $soaCreatedAt->copy()->addDays($noOfDays)->toDateString();
+                if ($dueDate < $asOfDate) {
+                    $soaId = (int) $soa->id;
+                    $overdueSoaIds[$soaId] = true;
+                    if (!isset($earliestDueBySoa[$soaId]) || $dueDate < $earliestDueBySoa[$soaId]) {
+                        $earliestDueBySoa[$soaId] = $dueDate;
+                    }
+                    break;
+                }
+            }
+        }
+
+        if ($overdueSoaIds !== []) {
+            $overdueIds = array_keys($overdueSoaIds);
+            $amountsBySoaPart2 = $this->getStatementOfAccountAmounts($overdueIds);
+            $soas = StatementOfAccount::query()
+                ->whereIn('id', $overdueIds)
+                ->with(['shippingLine'])
+                ->get()
+                ->keyBy('id');
+
+            foreach ($overdueIds as $soaId) {
+                $soa = $soas->get($soaId);
+                $rows[] = [
+                    'shipping_line_name' => $soa?->shippingLine?->name ?? '',
+                    'transaction_no' => $soa?->dli_sa_number ?? 'SOA-' . $soaId,
+                    'overdue_payment_date' => $earliestDueBySoa[$soaId] ?? '',
+                    'overdue_payment_amount' => round((float) ($amountsBySoaPart2[$soaId] ?? 0), 2),
+                    'billing_statement_id' => null,
+                    'statement_of_account_id' => $soaId,
+                ];
+            }
+        }
+
+        return $rows;
     }
 
     /**

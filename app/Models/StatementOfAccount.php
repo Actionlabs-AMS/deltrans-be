@@ -51,6 +51,14 @@ class StatementOfAccount extends Model
     }
 
     /**
+     * Get the billing statements for this statement of account.
+     */
+    public function billingStatements()
+    {
+        return $this->hasMany(BillingStatement::class, 'statement_of_account_id');
+    }
+
+    /**
      * Get the first booking ID (backward compatibility).
      */
     public function getBookingIdAttribute(): ?int
