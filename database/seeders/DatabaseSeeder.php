@@ -30,6 +30,9 @@ class DatabaseSeeder extends Seeder
             FixedExpenseSeeder::class,
             RatePerClientSeeder::class,
             BookingSeeder::class,
+            TruckTripExpenseSeeder::class,
+            DieselExpenseSeeder::class,
+            WaybillDetailsSeeder::class,
             ContainerSeeder::class,
             StatementOfAccountSeeder::class,
             BillingStatementSeeder::class,
@@ -38,11 +41,7 @@ class DatabaseSeeder extends Seeder
             DriverCAHistorySeeder::class,
             HelperCAHistorySeeder::class,
             IssuedBudgetSeeder::class,
-            TruckTripExpenseSeeder::class,
             PartsExpenseSeeder::class,
-            DieselExpenseSeeder::class,
-            ContainerSeeder::class,
-            WaybillDetailsSeeder::class,
         ]);
     }
 }

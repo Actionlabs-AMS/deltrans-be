@@ -216,12 +216,28 @@ class WaybillDetailsSeeder extends Seeder
     
     public function run(): void
     {
-        $trucks = [
-            'NAA 1123', 'NAB 2456', 'NAC 3789', 'NAD 4012', 
-            'NAE 5234', 'NAF 6567', 'NAG 7890', 'NAH 8123', 
-            'NAI 9345', 'NAJ 0456', 'NAK 1567', 'NAL 2678', 
-            'NAM 3789', 'NAN 4890'
-        ];
+        $truckPlates = DB::table('fleet_trucks')->pluck('plate_number')->toArray();
+        $bookingRows = DB::table('bookings')->select('id', 'shipping_line_id')->get();
+        $bookingIds = $bookingRows->pluck('id')->toArray();
+        $bookingToShippingLine = $bookingRows->pluck('shipping_line_id', 'id')->toArray();
+        $drivers = DB::table('drivers')
+            ->select('id', 'helper_id', 'assigned_truck_plate_numbers', 'is_active')
+            ->get();
+        $activeDrivers = $drivers->where('is_active', 1)->values();
+        $activeDriverIds = $activeDrivers->pluck('id')->toArray();
+        $driverHelperById = $drivers->pluck('helper_id', 'id')->toArray();
+
+        $helpers = DB::table('helpers')->select('id', 'is_active')->get();
+        $activeHelperIds = $helpers->where('is_active', 1)->pluck('id')->toArray();
+        $fixedExpenseIds = DB::table('fixed_expenses')->pluck('id')->toArray();
+        $truckTripExpenseIds = DB::table('truck_trip_expense')->pluck('id')->toArray();
+        $dieselExpenseIds = DB::table('diesel_expenses')->pluck('id')->toArray();
+        $userIds = DB::table('users')->pluck('id')->toArray();
+
+        if (empty($truckPlates) || empty($bookingIds) || empty($activeDriverIds) || empty($fixedExpenseIds)) {
+            $this->command?->warn('Required related records not found. Please seed fleet_trucks, bookings, drivers, and fixed_expenses first.');
+            return;
+        }
 
         $startDate = Carbon::create(2026, 2, 23);
         $endDate = Carbon::create(2026, 3, 8);
@@ -230,23 +246,68 @@ class WaybillDetailsSeeder extends Seeder
         // 14 trucks * 14 days * ~2.5 avg trips = ~490 to 500 rows
         $totalExpectedRows = 600; // Over-estimate to be safe
 
-        // 2. Create the "Pool" of IDs
-        // We take 100 IDs and fill the rest of the 600 slots with null
+        // 2. Create the "Pool" of diesel IDs + nulls (diesel_expense_id is nullable)
+        $dieselSample = !empty($dieselExpenseIds) ? array_slice($dieselExpenseIds, 0, min(100, count($dieselExpenseIds))) : [];
         $dieselPool = array_merge(
-            range(1, 100), 
-            array_fill(0, $totalExpectedRows - 100, null)
+            $dieselSample,
+            array_fill(0, max(0, $totalExpectedRows - count($dieselSample)), null)
         );
         
         // 3. Shuffle the pool so the 100 IDs are scattered everywhere
         $shuffledPool = collect($dieselPool)->shuffle();
 
         $data = [];
+        $containerSizes = ['20ft', '40ft'];
+        $containerTypes = ['Dry', 'Reefer', 'Flat Rack'];
+
+        // Build plate -> driver_ids map using drivers.assigned_truck_plate_numbers (JSON)
+        $driverIdsByPlate = [];
+        foreach ($activeDrivers as $d) {
+            $assigned = $d->assigned_truck_plate_numbers;
+            if ($assigned === null || $assigned === '') {
+                continue;
+            }
+            $plates = is_string($assigned) ? json_decode($assigned, true) : $assigned;
+            if (!is_array($plates)) {
+                continue;
+            }
+            foreach ($plates as $p) {
+                if (!is_string($p) || $p === '') {
+                    continue;
+                }
+                $driverIdsByPlate[$p] ??= [];
+                $driverIdsByPlate[$p][] = (int) $d->id;
+            }
+        }
+
+        // helper_id is nullable; include nulls for realism (prefer active helpers)
+        $helperPool = !empty($activeHelperIds)
+            ? array_merge($activeHelperIds, array_fill(0, max(1, (int) floor(count($activeHelperIds) / 3)), null))
+            : [null];
+
+        // prepared_by is nullable; include nulls too
+        $preparedByPool = !empty($userIds) ? array_merge($userIds, array_fill(0, max(1, (int) floor(count($userIds) / 4)), null)) : [null];
 
         for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
-            foreach ($trucks as $plate) {
+            foreach ($truckPlates as $plate) {
                 $transactionsPerDay = rand(2, 3);
 
                 for ($i = 0; $i < $transactionsPerDay; $i++) {
+                    $bookingId = $bookingIds[array_rand($bookingIds)];
+                    $shippingLineId = $bookingToShippingLine[$bookingId] ?? null;
+                    if ($shippingLineId === null) {
+                        // Should not happen, but skip if booking row is inconsistent
+                        continue;
+                    }
+
+                    // Prefer a driver assigned to this plate; fallback to any active driver.
+                    $candidateDrivers = $driverIdsByPlate[$plate] ?? $activeDriverIds;
+                    $driverId = $candidateDrivers[array_rand($candidateDrivers)];
+
+                    // Prefer helper assigned to the driver if present; fallback to helper pool (nullable).
+                    $driverHelperId = $driverHelperById[$driverId] ?? null;
+                    $helperId = $driverHelperId !== null ? (int) $driverHelperId : $helperPool[array_rand($helperPool)];
+
                     $rate = rand(5000, 15000);
                     $taxPercent = 12;
                     $totalRate = $rate * (1 + ($taxPercent / 100));
@@ -254,12 +315,12 @@ class WaybillDetailsSeeder extends Seeder
                     $data[] = [
                         'waybill_number'        => 'WB-' . strtoupper(Str::random(8)),
                         'transaction_date'      => $date->toDateString(),
-                        'shipping_line_id'      => rand(1, 5),
-                        'booking_id'            => rand(1, 16),
-                        'driver_id'             => rand(1, 10),
-                        'helper_id'             => rand(1, 10),
-                        'container_size'        => collect(['20ft', '40ft'])->random(),
-                        'container_type'        => collect(['Dry', 'Reefer', 'Flat Rack'])->random(),
+                        'shipping_line_id'      => $shippingLineId,
+                        'booking_id'            => $bookingId,
+                        'driver_id'             => $driverId,
+                        'helper_id'             => $helperId,
+                        'container_size'        => $containerSizes[array_rand($containerSizes)],
+                        'container_type'        => $containerTypes[array_rand($containerTypes)],
                         'truck_plate_number'    => $plate,
                         'pickup_date'           => $date->copy()->addHours(rand(1, 5)),
                         'delivered_date'        => $date->copy()->addHours(rand(6, 12)),
@@ -271,8 +332,8 @@ class WaybillDetailsSeeder extends Seeder
                         'tax_percent'           => $taxPercent,
                         'has_vat'               => true,
                         'total_rate_per_client' => $totalRate,
-                        'fixed_expense_id'      => rand(1, 3),
-                        'truck_trip_expense_id' => rand(1, 14),
+                        'fixed_expense_id'      => $fixedExpenseIds[array_rand($fixedExpenseIds)],
+                        'truck_trip_expense_id' => !empty($truckTripExpenseIds) ? $truckTripExpenseIds[array_rand($truckTripExpenseIds)] : null,
                         
                         // 🌟 4. Pull from the shuffled pool of IDs and Nulls
                         'diesel_expense_id'     => $shuffledPool->shift(), 
@@ -280,7 +341,7 @@ class WaybillDetailsSeeder extends Seeder
                         'post_expense_amount'   => 500,
                         'actual_truck_trip_expense_amount'    => rand(1,100),
                         'total_expense'         => 1500,
-                        'prepared_by'           => rand(1, 22),
+                        'prepared_by'           => $preparedByPool[array_rand($preparedByPool)],
                         'created_at'            => now(),
                         'updated_at'            => now(),
                     ];

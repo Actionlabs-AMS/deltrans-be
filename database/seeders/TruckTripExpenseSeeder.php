@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\TruckTripExpense;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\DB;
 
 class TruckTripExpenseSeeder extends Seeder
 {
@@ -24,6 +25,10 @@ class TruckTripExpenseSeeder extends Seeder
             'NAM 3789', 'NAN 4890'
         ];
 
+        $helperIds = DB::table('helpers')->pluck('id')->toArray();
+        // allow nulls since helper_id is nullable
+        $helperPool = !empty($helperIds) ? array_merge($helperIds, array_fill(0, max(1, (int) floor(count($helperIds) / 3)), null)) : [null];
+
         foreach ($period as $date) {
             $currentDate = $date->format('Y-m-d');
             $cashOnHand = rand(100, 500);
@@ -32,7 +37,7 @@ class TruckTripExpenseSeeder extends Seeder
             TruckTripExpense::create([
                 'shift' => $date->day % 2 == 0 ? 'Day' : 'Night',
                 'plate_number' => $plateNumbers[array_rand($plateNumbers)],
-                'helper_id' => rand(1, 5),
+                'helper_id' => $helperPool[array_rand($helperPool)],
                 'cash_on_hand' => $cashOnHand,
                 'issued_cash_amount' => $issuedCashAmount,
                 'remaining_amount' => $cashOnHand + $issuedCashAmount,
