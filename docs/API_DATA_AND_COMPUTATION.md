@@ -20,6 +20,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | `date_to` | string (date) | End of applied date range |
 | `kpis` | object | See [KPIs](#11-kpis) below |
 | `sales_overview` | object | See [Sales overview](#12-sales-overview) below |
+| `overdue_count` | integer | Count of overdue items (same filters as overdue_payments) |
 | `overdue_payments` | array | See [Overdue payments](#13-overdue-payments) below |
 
 **How we pull/compute:**
@@ -31,7 +32,8 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
   - No params → current month (start of month → end of month).
 - **KPIs:** `getKpis($filters)` — see below.
 - **Sales overview:** `getSalesOverview($filters)` — see below.
-- **Overdue payments:** `getOverduePayments()` — no date filter; see below.
+- **Overdue count:** `count(getOverduePayments($filters))`.
+- **Overdue payments:** `getOverduePayments($filters)` — uses filter end date as "as of" for overdue; see below.
 
 ---
 
@@ -48,6 +50,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | `waybill_expenses` | number | total_expense + actual_truck_trip_expense_amount + diesel_expense.amount for waybills in range |
 | `parts_expense` | number | Sum of `quantity * amount_per_item` in parts_expense in range |
 | `diesel_expense` | number | Sum of diesel_expenses.amount for waybills in range |
+| `overdue_count` | integer | Count of overdue items (billing due_date or SOA+waybill no_of_days before filter end; same as `data.overdue_payments` length) |
 
 **How we pull/compute:**
 
@@ -60,6 +63,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | **waybill_expenses** | **waybill_details** in range: `SUM(total_expense) + SUM(actual_truck_trip_expense_amount)` + **diesel_expense** total (see below). |
 | **parts_expense** | **parts_expense** where `transaction_date` in range → `SUM(quantity * amount_per_item)`. |
 | **diesel_expense** | **diesel_expenses** joined to **waybill_details** on `diesel_expense_id`, `waybill_details.deleted_at IS NULL`, `transaction_date` in range → **SUM(diesel_expenses.amount)**. |
+| **overdue_count** | **count** of `getOverduePayments($filters)` (billing statements with `due_date` &lt; filter end, plus SOAs without billing where soa.created_at + waybill no_of_days &lt; filter end). |
 
 ---
 
@@ -81,23 +85,26 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 
 ---
 
-### 1.4 Overdue payments (`data.overdue_payments`)
+### 1.4 Overdue payments (`data.overdue_count`, `data.overdue_payments`)
 
-**Data returned:** Array of objects:
+**Data returned:** `overdue_count` (integer) and an array of objects:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `shipping_line_name` | string | From SOA → shipping_line |
-| `transaction_no` | string | Billing statement number |
-| `overdue_payment_date` | string (date) | Due date |
+| `transaction_no` | string | Billing statement number or SOA `dli_sa_number` (or `SOA-{id}` when no billing) |
+| `overdue_payment_date` | string (date) | Due date (from billing or SOA created_at + waybill no_of_days) |
 | `overdue_payment_amount` | number | SOA amount (computed) |
-| `billing_statement_id` | integer | PK |
-| `statement_of_account_id` | integer | FK |
+| `billing_statement_id` | integer \| null | Billing statement PK, or null for SOAs without billing |
+| `statement_of_account_id` | integer | SOA FK |
 
 **How we pull/compute:**
 
-- **Source:** **billing_statements** where `is_paid = false` and `due_date < today`, ordered by `due_date`, with `statementOfAccount.shippingLine`.
-- **Amount:** For each statement’s `statement_of_account_id`, amount = sum of **waybill_details** `total_rate_per_client` for bookings in that SOA’s `booking_ids` (same `getStatementOfAccountAmounts` logic as sales).
+- **"As of" date:** End of the dashboard date range from filters (same as `date_to` / year end / single date).
+- **Part 1 — SOAs with billing_statements:** **billing_statements** where `is_paid = false`, `due_date` is not null, and `due_date < as_of_date`, ordered by `due_date`, with `statementOfAccount.shippingLine`. Each row uses the billing statement’s due date and SOA amount.
+- **Part 2 — SOAs with no billing_statements:** **statement_of_accounts** that have no **billing_statements** (via `whereDoesntHave('billingStatements')`). For each such SOA, get waybills via SOA → Booking → **waybill_details** (using `booking_ids`). For each waybill, due date = `statement_of_account.created_at + waybill_details.no_of_days` (in days). If that due date is **before** the as_of date, the SOA is overdue. One row per such SOA: `transaction_no` = SOA `dli_sa_number` or `SOA-{id}`, `overdue_payment_date` = earliest such due date among its waybills, `billing_statement_id` = null.
+- **Amount:** For each row’s `statement_of_account_id`, amount = sum of **waybill_details** `total_rate_per_client` for bookings in that SOA’s `booking_ids` (same `getStatementOfAccountAmounts` logic as sales).
+- **overdue_count:** Number of items in the `overdue_payments` array.
 
 ---
 
@@ -115,7 +122,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 
 - **`GET /api/dashboard/kpis`** — Returns `date_from`, `date_to`, `kpis` (same KPIs and computation).
 - **`GET /api/dashboard/sales-overview`** — Returns `sales_overview` only (same computation).
-- **`GET /api/dashboard/overdue-payments`** — Returns `overdue_payments` only (same computation).
+- **`GET /api/dashboard/overdue-payments`** — Accepts same date params; returns `overdue_count` and `overdue_payments` (same computation).
 
 ---
 
