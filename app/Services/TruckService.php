@@ -17,6 +17,47 @@ class TruckService extends BaseService
     /**
      * Retrieve all resources with paginate.
      */
+    // public function list($perPage = 10, $search = null, $trash = false)
+    // {
+    //     try {
+    //         $allFleetTruck = $this->getTotalCount();
+    //         $trashedFleetTruck = $this->getTrashedCount();
+
+    //         $query = FleetTruck::query();
+
+    //         // Apply onlyTrashed() first if we're in trash view
+    //         // if ($trash) {
+    //         //     $query->onlyTrashed();
+    //         // }
+
+    //         // Then apply search conditions
+    //         if (request('search')) {
+    //             $query->where(function ($q) {
+    //                 $q->where('plate_number', 'LIKE', '%' . request('search') . '%')
+    //                     ->orWhere('condition', 'LIKE', '%' . request('search') . '%');
+    //             });
+    //         }
+
+    //         // Filter by is_active
+    //         if (request('is_active') !== null) {
+    //             $query->where('is_active', request('is_active'));
+    //         }
+
+    //         // Apply ordering
+    //         if (request('order')) {
+    //             $query->orderBy(request('order'), request('sort') ?? 'asc');
+    //         } else {
+    //             $query->orderBy('id', 'desc');
+    //         }
+
+    //         return TruckResource::collection(
+    //             $query->paginate($perPage)->withQueryString()
+    //         )->additional(['meta' => ['all' => $allFleetTruck, 'trashed' => $trashedFleetTruck]]);
+    //     } catch (\Exception $e) {
+    //         throw new \Exception('Failed to fetch truck list: ' . $e->getMessage());
+    //     }
+    // }
+
     public function list($perPage = 10, $search = null, $trash = false)
     {
         try {
@@ -25,12 +66,12 @@ class TruckService extends BaseService
 
             $query = FleetTruck::query();
 
-            // Apply onlyTrashed() first if we're in trash view
-            // if ($trash) {
-            //     $query->onlyTrashed();
-            // }
+            // 1. Apply Trash Filter
+            if ($trash) {
+                $query->onlyTrashed();
+            }
 
-            // Then apply search conditions
+            // 2. Apply Text Search
             if (request('search')) {
                 $query->where(function ($q) {
                     $q->where('plate_number', 'LIKE', '%' . request('search') . '%')
@@ -38,12 +79,13 @@ class TruckService extends BaseService
                 });
             }
 
-            // Filter by is_active
-            if (request('is_active') !== null) {
+            // 3. 🌟 NEW: Filter by is_active
+            // We use has() to ensure the key exists, then check the value
+            if (request()->has('is_active') && request('is_active') !== '') {
                 $query->where('is_active', request('is_active'));
             }
 
-            // Apply ordering
+            // 4. Apply ordering
             if (request('order')) {
                 $query->orderBy(request('order'), request('sort') ?? 'asc');
             } else {
@@ -52,7 +94,12 @@ class TruckService extends BaseService
 
             return TruckResource::collection(
                 $query->paginate($perPage)->withQueryString()
-            )->additional(['meta' => ['all' => $allFleetTruck, 'trashed' => $trashedFleetTruck]]);
+            )->additional([
+                'meta' => [
+                    'all' => $allFleetTruck, 
+                    'trashed' => $trashedFleetTruck
+                ]
+            ]);
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch truck list: ' . $e->getMessage());
         }

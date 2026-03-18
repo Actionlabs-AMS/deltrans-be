@@ -43,6 +43,8 @@ class WaybillDetailsSeeder extends Seeder
     //         ->pluck('id')
     //         ->toArray();
 
+    //     $firstUserId = DB::table('users')->value('id');
+
     //     $bookings = DB::table('bookings')
     //         ->select('id', 'shipping_line_id', 'cypa_id_from', 'cypa_id_to')
     //         ->get()
@@ -143,6 +145,8 @@ class WaybillDetailsSeeder extends Seeder
     //                 'delivered_date' => now()->subDays($daysAgo - 1)->toDateString(),
     //                 'post_expense_amount' => $postExpense,
     //                 'fixed_expense_id' => $fixedExpenseId,
+    //                 'truck_trip_expense_id' => null,
+    //                 'diesel_expense_id' => null,
     //                 'no_of_days' => $noOfDays,
     //                 'requirements' => $ratePerClient->requirements ?? null,
     //                 'remarks' => $ratePerClient->remarks ?? null,
@@ -151,14 +155,34 @@ class WaybillDetailsSeeder extends Seeder
     //                 'tax_percent' => $taxPercent,
     //                 'has_vat' => $hasVat,
     //                 'total_rate_per_client' => $totalRatePerClient,
+    //                 'actual_truck_trip_expense_amount' => 0,
     //                 'total_expense' => ($postExpense) + ($fixedExpense->total_expenses ?? 0),
     //             ];
+    //             if ($firstUserId !== null) {
+    //                 $waybill['prepared_by'] = $firstUserId;
+    //             }
     //             WaybillDetail::updateOrCreate(
     //                 ['waybill_number' => $waybill['waybill_number']],
     //                 $waybill
     //             );
     //             $waybillNumber++;
     //             $created++;
+    //         }
+    //     }
+
+    //     // Link first 2 waybills to first 2 diesel expenses (so seed data includes purchase_order)
+    //     $dieselIds = DieselExpense::orderBy('id')->limit(2)->pluck('id')->toArray();
+    //     if (count($dieselIds) >= 2) {
+    //         $waybillsToLink = WaybillDetail::orderBy('id')->limit(2)->get();
+    //         foreach ($waybillsToLink as $i => $wd) {
+    //             $dieselId = $dieselIds[$i] ?? null;
+    //             if ($dieselId) {
+    //                 $diesel = DieselExpense::find($dieselId);
+    //                 $wd->update([
+    //                     'diesel_expense_id' => $dieselId,
+    //                     'total_expense' => (float) $wd->total_expense + (float) ($diesel->amount ?? 0),
+    //                 ]);
+    //             }
     //         }
     //     }
 

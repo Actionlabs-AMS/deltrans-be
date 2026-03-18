@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -18,6 +19,8 @@ class DieselExpenseSeeder extends Seeder
 
         for ($i = 0; $i < 100; $i++) {
             $data[] = [
+                'purchase_order' => 'PO-' . $now->year . '-' . strtoupper(Str::random(6)),
+                
                 // Generates a random integer between 1000 and 10000
                 'amount' => rand(1000, 10000), 
                 'created_at' => $now,

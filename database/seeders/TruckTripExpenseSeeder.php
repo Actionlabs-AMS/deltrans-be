@@ -17,7 +17,12 @@ class TruckTripExpenseSeeder extends Seeder
         $period = CarbonPeriod::create($start, $end);
 
         $plates = \Illuminate\Support\Facades\DB::table('fleet_trucks')->where('is_active', 1)->pluck('plate_number')->toArray();
-        $plateNumbers = $plates ?: ['ABC-1234', 'XYZ-5678', 'NCK-6498'];
+        $plateNumbers = $plates ?: [
+            'NAA 1123', 'NAB 2456', 'NAC 3789', 'NAD 4012', 
+            'NAE 5234', 'NAF 6567', 'NAG 7890', 'NAH 8123', 
+            'NAI 9345', 'NAJ 0456', 'NAK 1567', 'NAL 2678', 
+            'NAM 3789', 'NAN 4890'
+        ];
 
         foreach ($period as $date) {
             $currentDate = $date->format('Y-m-d');

@@ -113,6 +113,7 @@ use App\Http\Resources\TransportDetailedResource;
  * @OA\Property(property="status", type="string", example="Completed"),
  * @OA\Property(property="size", type="string", example="40ft"),
  * @OA\Property(property="truck_expenses", type="number", format="float", example=1500.50),
+ * @OA\Property(property="purchase_order", type="string", example="P.O 1001"),
  * @OA\Property(property="remarks", type="string", nullable=true, example="Delivered on time"),
  * @OA\Property(property="driver", type="string", example="Dela Cruz"),
  * @OA\Property(property="helper", type="string", example="Reyes"),
@@ -253,6 +254,48 @@ class ReportsController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
+    // public function index()
+    // {
+    //     try {
+    //         $reportData = $this->service->getSummaryReport(
+    //             request('start_date'), 
+    //             request('end_date'),
+    //             request('filter_type', 'weekly'),
+    //             request('search')
+    //         );
+
+    //         // 2. Extract the underlying paginator to build custom meta
+    //         $paginator = $reportData->resource;
+
+    //         // 3. Construct the response explicitly
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Daily report summary retrieved successfully.',
+    //             // data is now a sibling to meta
+    //             'data' => $reportData, 
+    //             'meta' => [
+    //                 'current_page' => $paginator->currentPage(),
+    //                 'from'         => $paginator->firstItem(),
+    //                 'last_page'    => $paginator->lastPage(),
+    //                 'path'         => $paginator->path(),
+    //                 'per_page'     => $paginator->perPage(),
+    //                 'to'           => $paginator->lastItem(),
+    //                 'total'        => $paginator->total(),
+    //                 'all'          => $paginator->total(),
+    //                 'trashed'      => 0,
+
+    //             ],
+    //         ], 200);
+            
+
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function index()
     {
         try {
@@ -260,17 +303,16 @@ class ReportsController extends BaseController
                 request('start_date'), 
                 request('end_date'),
                 request('filter_type', 'weekly'),
-                request('search')
+                request('search'),
+                request('order'), // 🌟 New
+                request('sort', 'asc') // 🌟 New
             );
 
-            // 2. Extract the underlying paginator to build custom meta
             $paginator = $reportData->resource;
 
-            // 3. Construct the response explicitly
             return response()->json([
                 'status' => true,
                 'message' => 'Daily report summary retrieved successfully.',
-                // data is now a sibling to meta
                 'data' => $reportData, 
                 'meta' => [
                     'current_page' => $paginator->currentPage(),
@@ -282,10 +324,8 @@ class ReportsController extends BaseController
                     'total'        => $paginator->total(),
                     'all'          => $paginator->total(),
                     'trashed'      => 0,
-
                 ],
             ], 200);
-            
 
         } catch (\Exception $e) {
             return response()->json([
@@ -674,7 +714,7 @@ class ReportsController extends BaseController
                 'start_date'  => 'nullable|date',
                 'end_date'    => 'nullable|date|after_or_equal:start_date',
                 'filter_type' => 'nullable|in:weekly,monthly',
-                'per_page'    => 'nullable|integer|min:1|max:100',
+                'per_page'    => 'nullable|integer|min:1|max:500',
                 'search'      => 'nullable|string'
             ]);
 

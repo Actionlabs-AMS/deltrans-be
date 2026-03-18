@@ -26523,6 +26523,10 @@
                         "format": "float",
                         "example": 1500.5
                     },
+                    "purchase_order": {
+                        "type": "string",
+                        "example": "P.O 1001"
+                    },
                     "remarks": {
                         "type": "string",
                         "example": "Delivered on time",

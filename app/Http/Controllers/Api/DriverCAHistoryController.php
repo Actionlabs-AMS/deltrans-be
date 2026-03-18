@@ -181,4 +181,6 @@ class DriverCAHistoryController extends BaseController
                 'message' => 'Cash advance history fetched successfully.'
             ]);
     }
+
+    
 }
