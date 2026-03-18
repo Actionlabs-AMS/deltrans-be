@@ -2,33 +2,35 @@
 
 namespace Database\Seeders;
 
-use App\Models\DieselExpense;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DieselExpenseSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     * Creates sample diesel_expenses with amount and purchase_order for testing.
      */
     public function run(): void
     {
-        if (DieselExpense::count() > 0) {
-            $this->command->info('Diesel expenses already present, skipping.');
+        $data = [];
+        $now = Carbon::now();
 
-            return;
+        for ($i = 0; $i < 100; $i++) {
+            $data[] = [
+                'purchase_order' => 'PO-' . $now->year . '-' . strtoupper(Str::random(6)),
+                
+                // Generates a random integer between 1000 and 10000
+                'amount' => rand(1000, 10000), 
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
 
-        $samples = [
-            ['amount' => 1500.00, 'purchase_order' => 'PO-2025-001'],
-            ['amount' => 2200.50, 'purchase_order' => 'PO-2025-002'],
-            ['amount' => 1800.00, 'purchase_order' => null],
-        ];
-
-        foreach ($samples as $sample) {
-            DieselExpense::create($sample);
+        // Using chunk to insert for better performance
+        foreach (array_chunk($data, 50) as $chunk) {
+            DB::table('diesel_expenses')->insert($chunk);
         }
-
-        $this->command->info('Diesel expenses seeded: ' . count($samples) . ' rows (amount, purchase_order).');
     }
 }

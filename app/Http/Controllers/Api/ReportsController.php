@@ -12,6 +12,8 @@ use App\Http\Resources\IssuedBudgetResource;
 use App\Http\Resources\TruckTripExpenseResource;
 use App\Http\Resources\PartsExpenseResource;
 use App\Http\Resources\CashAdvanceResource;
+use App\Http\Resources\TransportSummaryResource;
+use App\Http\Resources\TransportDetailedResource;
 
 /**
  * @OA\Tag(
@@ -88,6 +90,38 @@ use App\Http\Resources\CashAdvanceResource;
  * @OA\Property(property="deleted_at", type="string", example=null, nullable=true)
  * )
  * 
+ * @OA\Schema(
+ * schema="TransportSummaryRow",
+ * description="Summary of trips per truck",
+ * @OA\Property(property="truck_plate_number", type="string", example="NAA 1123"),
+ * @OA\Property(property="total_trips", type="integer", example=12),
+ * @OA\Property(property="total_expense", type="number", format="float", example=12000.00)
+ * )
+ * 
+ * @OA\Schema(
+ * schema="TransportDetailedRow",
+ * title="Transport Detailed Row",
+ * description="Detailed waybill and expense information for a specific trip",
+ * @OA\Property(property="id", type="integer", example=101),
+ * @OA\Property(property="transaction_date", type="string", format="date", example="2026-03-10"),
+ * @OA\Property(property="shipping_line", type="string", example="Maersk"),
+ * @OA\Property(property="plate_number", type="string", example="NAE 5234"),
+ * @OA\Property(property="waybill_number", type="string", example="WB-100234"),
+ * @OA\Property(property="container_number", type="string", example="MSKU1234567"),
+ * @OA\Property(property="from", type="string", example="Manila"),
+ * @OA\Property(property="to", type="string", example="Cebu"),
+ * @OA\Property(property="status", type="string", example="Completed"),
+ * @OA\Property(property="size", type="string", example="40ft"),
+ * @OA\Property(property="truck_expenses", type="number", format="float", example=1500.50),
+ * @OA\Property(property="purchase_order", type="string", example="P.O 1001"),
+ * @OA\Property(property="remarks", type="string", nullable=true, example="Delivered on time"),
+ * @OA\Property(property="driver", type="string", example="Dela Cruz"),
+ * @OA\Property(property="helper", type="string", example="Reyes"),
+ * @OA\Property(property="encoded_by", type="string", example="System Admin"),
+ * @OA\Property(property="diesel_consumption", type="number", format="float", example=1500.50),
+ * )
+ *
+ * 
  * // --- RESPONSE SCHEMAS ---
  *
  * @OA\Schema(
@@ -144,6 +178,26 @@ use App\Http\Resources\CashAdvanceResource;
  * @OA\Property(property="to", type="integer", example=10),
  * @OA\Property(property="total", type="integer", example=25)
  * )
+ * 
+ * * @OA\Schema(
+ * schema="TransportSummaryResponse",
+ * description="Full response object for the Transport Summary",
+ * @OA\Property(property="status", type="boolean", example=true),
+ * @OA\Property(property="message", type="string", example="Transport summary retrieved successfully."),
+ * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/TransportSummaryRow")),
+ * @OA\Property(property="meta", ref="#/components/schemas/PaginationMeta")
+ * )
+ * 
+ * @OA\Schema(
+ * schema="TransportDetailedResponse",
+ * title="Transport Detailed Response",
+ * description="Full response object for the Transport Detailed logs with pagination",
+ * @OA\Property(property="status", type="boolean", example=true),
+ * @OA\Property(property="message", type="string", example="Detailed logs retrieved successfully."),
+ * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/TransportDetailedRow")),
+ * @OA\Property(property="meta", ref="#/components/schemas/PaginationMeta")
+ * )
+ * 
  */
 
 class ReportsController extends BaseController
@@ -200,6 +254,48 @@ class ReportsController extends BaseController
      * @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
      */
+    // public function index()
+    // {
+    //     try {
+    //         $reportData = $this->service->getSummaryReport(
+    //             request('start_date'), 
+    //             request('end_date'),
+    //             request('filter_type', 'weekly'),
+    //             request('search')
+    //         );
+
+    //         // 2. Extract the underlying paginator to build custom meta
+    //         $paginator = $reportData->resource;
+
+    //         // 3. Construct the response explicitly
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Daily report summary retrieved successfully.',
+    //             // data is now a sibling to meta
+    //             'data' => $reportData, 
+    //             'meta' => [
+    //                 'current_page' => $paginator->currentPage(),
+    //                 'from'         => $paginator->firstItem(),
+    //                 'last_page'    => $paginator->lastPage(),
+    //                 'path'         => $paginator->path(),
+    //                 'per_page'     => $paginator->perPage(),
+    //                 'to'           => $paginator->lastItem(),
+    //                 'total'        => $paginator->total(),
+    //                 'all'          => $paginator->total(),
+    //                 'trashed'      => 0,
+
+    //             ],
+    //         ], 200);
+            
+
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function index()
     {
         try {
@@ -207,17 +303,16 @@ class ReportsController extends BaseController
                 request('start_date'), 
                 request('end_date'),
                 request('filter_type', 'weekly'),
-                request('search')
+                request('search'),
+                request('order'), // 🌟 New
+                request('sort', 'asc') // 🌟 New
             );
 
-            // 2. Extract the underlying paginator to build custom meta
             $paginator = $reportData->resource;
 
-            // 3. Construct the response explicitly
             return response()->json([
                 'status' => true,
                 'message' => 'Daily report summary retrieved successfully.',
-                // data is now a sibling to meta
                 'data' => $reportData, 
                 'meta' => [
                     'current_page' => $paginator->currentPage(),
@@ -229,10 +324,8 @@ class ReportsController extends BaseController
                     'total'        => $paginator->total(),
                     'all'          => $paginator->total(),
                     'trashed'      => 0,
-
                 ],
             ], 200);
-            
 
         } catch (\Exception $e) {
             return response()->json([
@@ -529,5 +622,123 @@ class ReportsController extends BaseController
         }
     }
 
+    /**
+     * @OA\Get(
+     * path="/api/reports/transport-summary",
+     * operationId="getTransportSummary",
+     * tags={"Reports"},
+     * summary="Get transport summary report",
+     * description="Returns a list of truck plate numbers and their trip counts with pagination metadata.",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="start_date", in="query", required=false,  * @OA\Schema(type="string", format="date", example="2026-02-23")),
+     * @OA\Parameter(name="end_date", in="query", required=false,  * @OA\Schema(type="string", format="date", example="2026-03-01")),
+     * @OA\Parameter(name="filter_type", in="query", required=false, @OA\Schema(type="string", enum={"weekly", "monthly"}, default="weekly")),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
+     * @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=10)),
+     * @OA\Response(
+     * response=200,
+     * description="Successful operation",
+     * @OA\JsonContent(ref="#/components/schemas/TransportSummaryResponse")
+     * ),
+     * @OA\Response(response=400, description="Bad Request"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+
+    public function getTransportSummary()
+    {
+        try {
+            // Validation using global request helper
+            request()->validate([
+                'start_date'  => 'nullable|date',
+                'end_date'    => 'nullable|date|after_or_equal:start_date',
+                'filter_type' => 'nullable|in:weekly,monthly',
+                'per_page'    => 'nullable|integer|min:1|max:100',
+            ]);
+
+            $reportData = $this->service->getTruckSummary(
+                request('start_date'), 
+                request('end_date'),
+                request('filter_type', 'weekly'),
+                request('search'),
+                request('per_page', 10)
+            );
+
+            return TransportSummaryResource::collection($reportData)->additional([
+                'status' => true,
+                'message' => 'Transport summary retrieved successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     * path="/api/reports/transport-details/{plate_number}",
+     * operationId="getTransportDetails",
+     * tags={"Reports"},
+     * summary="Get detailed trip logs for a specific truck",
+     * description="Returns a paginated list of waybill details and expenses for a specific truck plate number.",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(
+     * name="plate_number",
+     * in="path",
+     * required=true,
+     * description="The truck plate number to filter by",
+     * @OA\Schema(type="string", example="NAE 5234")
+     * ),
+     * @OA\Parameter(name="start_date", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-02-23")),
+     * @OA\Parameter(name="end_date", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-03-01")),
+     * @OA\Parameter(name="filter_type", in="query", required=false, @OA\Schema(type="string", enum={"weekly", "monthly"}, default="weekly")),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string", description="Search by Waybill or Container Number")),
+     * @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=15)),
+     * @OA\Response(
+     * response=200, 
+     * description="Success", 
+     * @OA\JsonContent(ref="#/components/schemas/TransportDetailedResponse")
+     * ),
+     * @OA\Response(response=400, description="Bad Request"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function getTransportDetails($plate_number)
+    {
+        try {
+            // 1. --- Validation ---
+            request()->validate([
+                'start_date'  => 'nullable|date',
+                'end_date'    => 'nullable|date|after_or_equal:start_date',
+                'filter_type' => 'nullable|in:weekly,monthly',
+                'per_page'    => 'nullable|integer|min:1|max:500',
+                'search'      => 'nullable|string'
+            ]);
+
+            // 2. --- Service Call ---
+            $data = $this->service->getTruckDetailedReport(
+                request('start_date'),
+                request('end_date'),
+                request('filter_type', 'weekly'),
+                $plate_number,
+                request('per_page', 15)
+            );
+
+            // 3. --- Response ---
+            return TransportDetailedResource::collection($data)->additional([
+                'status' => true,
+                'message' => 'Detailed logs retrieved successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false, 
+                'message' => 'Failed to retrieve details: ' . $e->getMessage()
+            ], 400);
+        }
+    }
 
 }

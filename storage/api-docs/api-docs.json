@@ -13982,6 +13982,187 @@
                 ]
             }
         },
+        "/api/reports/transport-summary": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get transport summary report",
+                "description": "Returns a list of truck plate numbers and their trip counts with pagination metadata.",
+                "operationId": "getTransportSummary",
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-23"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-01"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransportSummaryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/transport-details/{plate_number}": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get detailed trip logs for a specific truck",
+                "description": "Returns a paginated list of waybill details and expenses for a specific truck plate number.",
+                "operationId": "getTransportDetails",
+                "parameters": [
+                    {
+                        "name": "plate_number",
+                        "in": "path",
+                        "description": "The truck plate number to filter by",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "NAE 5234"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-23"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-01"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "description": "Search by Waybill or Container Number",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransportDetailedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/user-management/roles": {
             "get": {
                 "tags": [
@@ -26328,6 +26509,104 @@
                 },
                 "type": "object"
             },
+            "TransportSummaryRow": {
+                "description": "Summary of trips per truck",
+                "properties": {
+                    "truck_plate_number": {
+                        "type": "string",
+                        "example": "NAA 1123"
+                    },
+                    "total_trips": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "total_expense": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 12000
+                    }
+                },
+                "type": "object"
+            },
+            "TransportDetailedRow": {
+                "title": "Transport Detailed Row",
+                "description": "Detailed waybill and expense information for a specific trip",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 101
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-10"
+                    },
+                    "shipping_line": {
+                        "type": "string",
+                        "example": "Maersk"
+                    },
+                    "plate_number": {
+                        "type": "string",
+                        "example": "NAE 5234"
+                    },
+                    "waybill_number": {
+                        "type": "string",
+                        "example": "WB-100234"
+                    },
+                    "container_number": {
+                        "type": "string",
+                        "example": "MSKU1234567"
+                    },
+                    "from": {
+                        "type": "string",
+                        "example": "Manila"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "Cebu"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "Completed"
+                    },
+                    "size": {
+                        "type": "string",
+                        "example": "40ft"
+                    },
+                    "truck_expenses": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 1500.5
+                    },
+                    "purchase_order": {
+                        "type": "string",
+                        "example": "P.O 1001"
+                    },
+                    "remarks": {
+                        "type": "string",
+                        "example": "Delivered on time",
+                        "nullable": true
+                    },
+                    "driver": {
+                        "type": "string",
+                        "example": "Dela Cruz"
+                    },
+                    "helper": {
+                        "type": "string",
+                        "example": "Reyes"
+                    },
+                    "encoded_by": {
+                        "type": "string",
+                        "example": "System Admin"
+                    },
+                    "diesel_consumption": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 1500.5
+                    }
+                },
+                "type": "object"
+            },
             "ReportSummaryResponse": {
                 "properties": {
                     "status": {
@@ -26471,6 +26750,53 @@
                     "total": {
                         "type": "integer",
                         "example": 25
+                    }
+                },
+                "type": "object"
+            },
+            "TransportSummaryResponse": {
+                "description": "Full response object for the Transport Summary",
+                "properties": {
+                    "status": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Transport summary retrieved successfully."
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TransportSummaryRow"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "TransportDetailedResponse": {
+                "title": "Transport Detailed Response",
+                "description": "Full response object for the Transport Detailed logs with pagination",
+                "properties": {
+                    "status": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Detailed logs retrieved successfully."
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TransportDetailedRow"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PaginationMeta"
                     }
                 },
                 "type": "object"

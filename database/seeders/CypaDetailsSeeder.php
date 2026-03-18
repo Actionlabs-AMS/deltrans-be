@@ -16,6 +16,7 @@ class CypaDetailsSeeder extends Seeder
         $cypaDetails = [
             [
                 'name' => 'Manila International Container Terminal (MICT)',
+                'short_name' => 'MICT',
                 'address' => 'North Harbor, Port Area, Manila 1018',
                 'contact_name' => 'Engr. Ricardo Santos',
                 'contact_mobile' => '+63 917 123 4567',
@@ -25,6 +26,7 @@ class CypaDetailsSeeder extends Seeder
             ],
             [
                 'name' => 'South Harbor Container Terminal',
+                'short_name' => 'SHCT',
                 'address' => 'South Harbor, Port Area, Manila 1018',
                 'contact_name' => 'Ms. Lorna Garcia',
                 'contact_mobile' => '+63 918 234 5678',
@@ -34,6 +36,7 @@ class CypaDetailsSeeder extends Seeder
             ],
             [
                 'name' => 'Manila Container Yard – Tondo',
+                'short_name' => 'MCY-Tondo',
                 'address' => 'Tondo, Manila 1012',
                 'contact_name' => 'Carlos Reyes',
                 'contact_mobile' => '+63 919 345 6789',
@@ -43,6 +46,7 @@ class CypaDetailsSeeder extends Seeder
             ],
             [
                 'name' => 'Manila Container Yard – Caloocan',
+                'short_name' => 'MCY-Caloocan',
                 'address' => 'Camarin Road, Caloocan City, Metro Manila',
                 'contact_name' => 'Ana Cruz',
                 'contact_mobile' => '+63 920 456 7890',
@@ -52,6 +56,7 @@ class CypaDetailsSeeder extends Seeder
             ],
             [
                 'name' => 'Batangas Port Container Terminal',
+                'short_name' => 'BPCT',
                 'address' => 'Brgy. Alangilan, Batangas City 4200',
                 'contact_name' => 'Roberto Mendoza',
                 'contact_mobile' => '+63 921 567 8901',
@@ -61,6 +66,7 @@ class CypaDetailsSeeder extends Seeder
             ],
             [
                 'name' => 'Subic Bay Container Terminal',
+                'short_name' => 'SBCT',
                 'address' => 'Subic Bay Freeport Zone, Zambales 2222',
                 'contact_name' => 'Elena Bautista',
                 'contact_mobile' => '+63 922 678 9012',
@@ -70,6 +76,7 @@ class CypaDetailsSeeder extends Seeder
             ],
             [
                 'name' => 'Manila Container Yard – Navotas',
+                'short_name' => 'MCY-Navotas',
                 'address' => 'Navotas, Metro Manila 1480',
                 'contact_name' => 'Roberto Dela Cruz',
                 'contact_mobile' => '+63 923 789 0123',
@@ -79,6 +86,7 @@ class CypaDetailsSeeder extends Seeder
             ],
             [
                 'name' => 'Cavite Port Terminal',
+                'short_name' => 'CPT',
                 'address' => 'Cavite City, Cavite 4100',
                 'contact_name' => 'Luis Fernandez',
                 'contact_mobile' => '+63 924 890 1234',

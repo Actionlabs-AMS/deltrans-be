@@ -841,6 +841,10 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/truck-trip-expense', [ReportsController::class, 'getTruckExpense']);  
 		Route::get('/parts-expense', [ReportsController::class, 'getPartsExpense']);  
 		Route::get('/cash-advances', [ReportsController::class, 'getReportCashAdvances']);  
+		Route::get('/transport-summary', [ReportsController::class, 'getTransportSummary']);  
+		Route::get('/transport-summary', [ReportsController::class, 'getTransportSummary']);  
+		Route::get('/transport-details/{plate_number}', [ReportsController::class, 'getTransportDetails']);  
+		
 
 	});
 

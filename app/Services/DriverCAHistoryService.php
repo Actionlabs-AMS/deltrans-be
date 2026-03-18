@@ -52,6 +52,41 @@ class DriverCAHistoryService extends BaseService
     //     }
     // }
 
+    // public function getDriverHistory($driverId, $perPage = 10, $search = null, $dateFrom = null, $dateTo = null)
+    // {
+    //     try {
+    //         $query = DriverCAHistory::where('driver_id', $driverId);
+
+    //         // Apply Date Range Filter
+    //         if ($dateFrom && $dateTo) {
+    //             $query->whereBetween('transaction_date', [$dateFrom, $dateTo]);
+    //         }
+
+    //         // Apply Search Filter (Shift or general keyword)
+    //         if ($search) {
+    //             $query->where(function ($q) use ($search) {
+    //                 $q->where('shift', 'LIKE', "%{$search}%")
+    //                 ->orWhere('amount', 'LIKE', "%{$search}%");
+                    
+    //                 // If search term looks like a date, check transaction_date directly
+    //                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $search)) {
+    //                     $q->orWhereDate('transaction_date', $search);
+    //                 }
+    //             });
+    //         }
+
+    //         // Always show newest first
+    //         return $query->with(['driver'])
+    //                     ->orderBy('transaction_date', 'desc')
+    //                     ->orderBy('id', 'desc')
+    //                     ->paginate($perPage)
+    //                     ->withQueryString();
+
+    //     } catch (\Exception $e) {
+    //         throw new \Exception('Failed to fetch Cash Advance history: ' . $e->getMessage());
+    //     }
+    // }
+
     public function getDriverHistory($driverId, $perPage = 10, $search = null, $dateFrom = null, $dateTo = null)
     {
         try {
@@ -62,23 +97,28 @@ class DriverCAHistoryService extends BaseService
                 $query->whereBetween('transaction_date', [$dateFrom, $dateTo]);
             }
 
-            // Apply Search Filter (Shift or general keyword)
+            // Apply Search Filter
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('shift', 'LIKE', "%{$search}%")
                     ->orWhere('amount', 'LIKE', "%{$search}%");
                     
-                    // If search term looks like a date, check transaction_date directly
                     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $search)) {
                         $q->orWhereDate('transaction_date', $search);
                     }
                 });
             }
 
-            // Always show newest first
+            // 🌟 APPLY SORTING QUERY
+            if (request('order')) {
+                $query->orderBy(request('order'), request('sort') ?? 'asc');
+            } else {
+                // Default sorting when no header is clicked
+                $query->orderBy('transaction_date', 'desc')
+                    ->orderBy('id', 'desc');
+            }
+
             return $query->with(['driver'])
-                        ->orderBy('transaction_date', 'desc')
-                        ->orderBy('id', 'desc')
                         ->paginate($perPage)
                         ->withQueryString();
 
@@ -86,5 +126,7 @@ class DriverCAHistoryService extends BaseService
             throw new \Exception('Failed to fetch Cash Advance history: ' . $e->getMessage());
         }
     }
+
+    
 
 }
