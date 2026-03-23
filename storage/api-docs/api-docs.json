@@ -2096,6 +2096,24 @@
                         }
                     },
                     {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Alias for transaction_date_from (aligns with GET /api/dashboard)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Alias for transaction_date_to",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
                         "name": "created_at_from",
                         "in": "query",
                         "schema": {
@@ -4616,6 +4634,11 @@
                                                             "type": "integer",
                                                             "example": 32984
                                                         },
+                                                        "waybills_remaining": {
+                                                            "description": "waybills_total minus waybills_completed",
+                                                            "type": "integer",
+                                                            "example": 984
+                                                        },
                                                         "sales": {
                                                             "description": "Sum of invoice total amount due in range (same logic as invoice PDF)",
                                                             "type": "number",
@@ -4649,34 +4672,18 @@
                                                     "type": "object"
                                                 },
                                                 "sales_overview": {
-                                                    "properties": {
-                                                        "months": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "string",
-                                                                "example": "2025-08"
-                                                            }
-                                                        },
-                                                        "income": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "description": "Sales (total amount due) by month from invoice date",
-                                                                "type": "number",
-                                                                "format": "float",
-                                                                "example": 440000
-                                                            }
-                                                        },
-                                                        "waybill_expenses": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "description": "Waybill expenses by month from waybill transaction_date",
-                                                                "type": "number",
-                                                                "format": "float",
-                                                                "example": 245000
-                                                            }
-                                                        }
+                                                    "description": "One entry per month in the filter range (chronological)",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/SalesOverviewMonthRow"
                                                     },
-                                                    "type": "object"
+                                                    "example": [
+                                                        {
+                                                            "month": "2025-08",
+                                                            "income": 440000,
+                                                            "waybill_expenses": 245000
+                                                        }
+                                                    ]
                                                 },
                                                 "overdue_count": {
                                                     "description": "Count of overdue items (billing due_date or SOA+waybill no_of_days before filter end)",
@@ -4713,10 +4720,62 @@
                                                             "statement_of_account_id": {
                                                                 "type": "integer",
                                                                 "example": 10
+                                                            },
+                                                            "due_date": {
+                                                                "description": "Alias of overdue_payment_date",
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "example": "2025-08-15"
+                                                            },
+                                                            "soa_number": {
+                                                                "type": "string",
+                                                                "example": "SOA-0001"
                                                             }
                                                         },
                                                         "type": "object"
                                                     }
+                                                },
+                                                "diesel_by_plate": {
+                                                    "description": "Diesel totals grouped by waybill truck_plate_number (empty/null plates appear as Unassigned).",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/DashboardDieselByPlateRow"
+                                                    },
+                                                    "example": [
+                                                        {
+                                                            "truck_plate_number": "NBB-1234",
+                                                            "amount": 15000
+                                                        },
+                                                        {
+                                                            "truck_plate_number": "XYZ-9999",
+                                                            "amount": 20000
+                                                        }
+                                                    ]
+                                                },
+                                                "receivables_by_entity": {
+                                                    "$ref": "#/components/schemas/DashboardReceivablesByEntity"
+                                                },
+                                                "budget_category_totals": {
+                                                    "$ref": "#/components/schemas/DashboardBudgetCategoryTotals"
+                                                },
+                                                "daily_budget_chart": {
+                                                    "description": "One entry per calendar day from date_from through date_to (inclusive), ordered by date",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/DailyBudgetChartDayRow"
+                                                    },
+                                                    "example": [
+                                                        {
+                                                            "date": "2026-03-01",
+                                                            "income": 320,
+                                                            "expense": 280
+                                                        },
+                                                        {
+                                                            "date": "2026-03-02",
+                                                            "income": 0,
+                                                            "expense": 150
+                                                        }
+                                                    ]
                                                 }
                                             },
                                             "type": "object"
@@ -4816,6 +4875,10 @@
                                                         "waybills_total": {
                                                             "type": "integer",
                                                             "example": 32984
+                                                        },
+                                                        "waybills_remaining": {
+                                                            "type": "integer",
+                                                            "example": 984
                                                         },
                                                         "sales": {
                                                             "type": "number",
@@ -4921,32 +4984,17 @@
                                         "data": {
                                             "properties": {
                                                 "sales_overview": {
-                                                    "properties": {
-                                                        "months": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "string",
-                                                                "example": "2025-08"
-                                                            }
-                                                        },
-                                                        "income": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "number",
-                                                                "format": "float",
-                                                                "example": 440000
-                                                            }
-                                                        },
-                                                        "waybill_expenses": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "number",
-                                                                "format": "float",
-                                                                "example": 245000
-                                                            }
-                                                        }
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/SalesOverviewMonthRow"
                                                     },
-                                                    "type": "object"
+                                                    "example": [
+                                                        {
+                                                            "month": "2025-08",
+                                                            "income": 440000,
+                                                            "waybill_expenses": 245000
+                                                        }
+                                                    ]
                                                 }
                                             },
                                             "type": "object"
@@ -5057,6 +5105,15 @@
                                                             "statement_of_account_id": {
                                                                 "type": "integer",
                                                                 "example": 10
+                                                            },
+                                                            "due_date": {
+                                                                "type": "string",
+                                                                "format": "date",
+                                                                "example": "2025-08-15"
+                                                            },
+                                                            "soa_number": {
+                                                                "type": "string",
+                                                                "example": "SOA-0001"
                                                             }
                                                         },
                                                         "type": "object"
@@ -5149,6 +5206,10 @@
                                                     "type": "integer",
                                                     "example": 32984
                                                 },
+                                                "waybills_remaining": {
+                                                    "type": "integer",
+                                                    "example": 984
+                                                },
                                                 "sales": {
                                                     "type": "number",
                                                     "format": "float",
@@ -5168,6 +5229,10 @@
                                                     "type": "number",
                                                     "format": "float",
                                                     "example": 15000
+                                                },
+                                                "overdue_count": {
+                                                    "type": "integer",
+                                                    "example": 3
                                                 }
                                             },
                                             "type": "object"
@@ -25203,6 +25268,14 @@
             },
             "BudgetSummaryResponse": {
                 "properties": {
+                    "status_code": {
+                        "type": "integer",
+                        "example": 200
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Budget summary retrieved successfully."
+                    },
                     "data": {
                         "type": "array",
                         "items": {
@@ -25210,21 +25283,88 @@
                         }
                     },
                     "total_budget": {
-                        "description": "Sum of income (Budget type) in filtered data",
-                        "type": "number"
+                        "description": "Sum of income (Issued Budget type) in filtered data",
+                        "type": "number",
+                        "format": "float",
+                        "example": 50000
                     },
                     "total_expense": {
                         "description": "Sum of expenses in filtered data",
-                        "type": "number"
+                        "type": "number",
+                        "format": "float",
+                        "example": 30000
                     },
                     "cash_on_hand": {
                         "description": "Total Budget minus Total Expense for filtered data",
-                        "type": "number"
+                        "type": "number",
+                        "format": "float",
+                        "example": 20000
+                    },
+                    "category_totals": {
+                        "$ref": "#/components/schemas/DashboardBudgetCategoryTotals"
+                    },
+                    "daily_budget_chart": {
+                        "description": "Present when transaction_date_from and transaction_date_to are set (or date_from/date_to aliases)",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DailyBudgetChartDayRow"
+                        }
                     },
                     "meta": {
+                        "properties": {
+                            "current_page": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "last_page": {
+                                "type": "integer",
+                                "example": 5
+                            },
+                            "per_page": {
+                                "type": "integer",
+                                "example": 10
+                            },
+                            "total": {
+                                "type": "integer",
+                                "example": 42
+                            },
+                            "from": {
+                                "type": "integer",
+                                "example": 1,
+                                "nullable": true
+                            },
+                            "to": {
+                                "type": "integer",
+                                "example": 10,
+                                "nullable": true
+                            }
+                        },
                         "type": "object"
                     },
                     "links": {
+                        "properties": {
+                            "first": {
+                                "type": "string",
+                                "format": "uri",
+                                "example": "http://localhost/api/budget/summary?page=1"
+                            },
+                            "last": {
+                                "type": "string",
+                                "format": "uri",
+                                "example": "http://localhost/api/budget/summary?page=5"
+                            },
+                            "prev": {
+                                "type": "string",
+                                "format": "uri",
+                                "example": null,
+                                "nullable": true
+                            },
+                            "next": {
+                                "type": "string",
+                                "format": "uri",
+                                "example": "http://localhost/api/budget/summary?page=2"
+                            }
+                        },
                         "type": "object"
                     }
                 },
@@ -25504,6 +25644,138 @@
                     "is_active": {
                         "type": "integer",
                         "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "DashboardDieselByPlateRow": {
+                "title": "Diesel by truck plate",
+                "description": "One row: sum of diesel_expenses.amount for waybills sharing the same truck_plate_number in the dashboard date range.",
+                "properties": {
+                    "truck_plate_number": {
+                        "type": "string",
+                        "example": "NBB-1234"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 17500.25
+                    }
+                },
+                "type": "object"
+            },
+            "DashboardReceivablesByEntity": {
+                "title": "Receivables by shipping line",
+                "description": "Invoice total_amount (same computation as kpis.sales) grouped by SOA shipping line.",
+                "properties": {
+                    "total": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 32984
+                    },
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "shipping_line_name": {
+                                    "type": "string",
+                                    "example": "ONE"
+                                },
+                                "amount": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "example": 32984
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "DashboardBudgetCategoryTotals": {
+                "title": "Budget category totals (warehouse panel)",
+                "description": "All amounts are filtered by transaction_date between the dashboard date range (except income in daily chart, which uses invoice date).",
+                "properties": {
+                    "issued_budget": {
+                        "description": "Sum of issued_budget.amount (transaction_date)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 50000
+                    },
+                    "truck_trip_budget": {
+                        "description": "Sum of truck_trip_expense.issued_cash_amount (transaction_date)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 20000
+                    },
+                    "parts": {
+                        "description": "Sum of parts_expense quantity × amount_per_item (transaction_date)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 8000
+                    },
+                    "others": {
+                        "description": "Sum of funds_for_stack_run.amount (transaction_date)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1000
+                    },
+                    "driver_cash_advance": {
+                        "description": "Sum of driver_cash_advancement_history.amount (transaction_date)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 500
+                    },
+                    "helper_cash_advance": {
+                        "description": "Sum of helper_cash_advancement_history.amount (transaction_date)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 500
+                    }
+                },
+                "type": "object"
+            },
+            "DailyBudgetChartDayRow": {
+                "title": "Daily budget chart — one day",
+                "description": "income = invoice total_amount that day (invoices.date). expense = sum of budget expense rows that day (transaction_date on expense tables).",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-01"
+                    },
+                    "income": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 320
+                    },
+                    "expense": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 280
+                    }
+                },
+                "type": "object"
+            },
+            "SalesOverviewMonthRow": {
+                "title": "Sales overview — one month",
+                "description": "income = invoice total_amount due for that month (invoice date). waybill_expenses = waybill costs + diesel for waybills in that month (transaction_date).",
+                "properties": {
+                    "month": {
+                        "description": "Calendar month key Y-m",
+                        "type": "string",
+                        "example": "2025-08"
+                    },
+                    "income": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 440000
+                    },
+                    "waybill_expenses": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 245000
                     }
                 },
                 "type": "object"

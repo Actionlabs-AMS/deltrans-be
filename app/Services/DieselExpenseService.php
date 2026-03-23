@@ -15,7 +15,21 @@ class DieselExpenseService extends BaseService
     public function list($perPage = 10, $trash = false)
     {
         $query = DieselExpense::query()
-            ->with(['waybillDetail:id,diesel_expense_id,waybill_number']);
+            ->with(['waybillDetail:id,diesel_expense_id,waybill_number,truck_plate_number,transaction_date']);
+
+        if (request()->filled('transaction_date_from')) {
+            $from = request('transaction_date_from');
+            $query->whereHas('waybillDetail', function ($waybillQuery) use ($from) {
+                $waybillQuery->whereDate('transaction_date', '>=', $from);
+            });
+        }
+
+        if (request()->filled('transaction_date_to')) {
+            $to = request('transaction_date_to');
+            $query->whereHas('waybillDetail', function ($waybillQuery) use ($to) {
+                $waybillQuery->whereDate('transaction_date', '<=', $to);
+            });
+        }
 
         if (request('search')) {
             $search = request('search');
@@ -69,7 +83,7 @@ class DieselExpenseService extends BaseService
 
     public function show(int $id)
     {
-        $model = $this->model::with(['waybillDetail:id,diesel_expense_id,waybill_number'])
+        $model = $this->model::with(['waybillDetail:id,diesel_expense_id,waybill_number,truck_plate_number,transaction_date'])
             ->findOrFail($id);
 
         return $this->resource::make($model);

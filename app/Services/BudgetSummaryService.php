@@ -2,37 +2,57 @@
 
 namespace App\Services;
 
-use App\Models\IssuedBudget;
-use App\Models\TruckTripExpense;
-use App\Models\PartsExpense;
-use App\Models\FundsForStackRun;
 use App\Models\DriverCAHistory;
+use App\Models\FundsForStackRun;
 use App\Models\HelperCAHistory;
+use App\Models\Invoice;
+use App\Models\IssuedBudget;
+use App\Models\PartsExpense;
+use App\Models\TruckTripExpense;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-use Illuminate\Support\Facades\Log;
-
 class BudgetSummaryService
 {
-    private const TYPE_BUDGET = 'Issued Budget';
-    private const TYPE_TRUCK_EXPENSE = 'Truck Expense';
-    private const TYPE_PARTS_EXPENSE = 'Parts Expense';
-    private const TYPE_OTHER_EXPENSE = 'Other Expense';
-    private const TYPE_DRIVER_CASH_ADVANCE = 'Driver Cash Advance';
-    private const TYPE_HELPER_CASH_ADVANCE = 'Helper Cash Advance';
+    public function __construct(
+        private readonly InvoiceService $invoiceService
+    ) {
+    }
+
+    public const TYPE_BUDGET = 'Issued Budget';
+
+    public const TYPE_TRUCK_EXPENSE = 'Truck Expense';
+
+    public const TYPE_PARTS_EXPENSE = 'Parts Expense';
+
+    public const TYPE_OTHER_EXPENSE = 'Other Expense';
+
+    public const TYPE_DRIVER_CASH_ADVANCE = 'Driver Cash Advance';
+
+    public const TYPE_HELPER_CASH_ADVANCE = 'Helper Cash Advance';
+
+    /**
+     * @var array<int, string>
+     */
+    private const EXPENSE_TYPES = [
+        self::TYPE_TRUCK_EXPENSE,
+        self::TYPE_PARTS_EXPENSE,
+        self::TYPE_OTHER_EXPENSE,
+        self::TYPE_DRIVER_CASH_ADVANCE,
+        self::TYPE_HELPER_CASH_ADVANCE,
+    ];
 
     /**
      * Build base query with common filters (transaction_date, created_at, shift).
      */
     private function applyFilters($query, string $transactionDateColumn, ?string $shift): void
     {
-        if (request('transaction_date_from')) {
-            $query->where($transactionDateColumn, '>=', request('transaction_date_from'));
-        }
-        if (request('transaction_date_to')) {
-            $query->where($transactionDateColumn, '<=', request('transaction_date_to'));
-        }
+        $this->applyDateRangeFilters($query, $transactionDateColumn, $shift,
+            request('transaction_date_from'),
+            request('transaction_date_to'));
+
         if (request('created_at_from')) {
             $from = strlen(request('created_at_from')) === 10 ? request('created_at_from') . ' 00:00:00' : request('created_at_from');
             $query->where('created_at', '>=', $from);
@@ -41,21 +61,150 @@ class BudgetSummaryService
             $to = strlen(request('created_at_to')) === 10 ? request('created_at_to') . ' 23:59:59' : request('created_at_to');
             $query->where('created_at', '<=', $to);
         }
+    }
+
+    private function applyDateRangeFilters($query, string $transactionDateColumn, ?string $shift, ?string $dateFrom, ?string $dateTo): void
+    {
+        if ($dateFrom) {
+            $query->where($transactionDateColumn, '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->where($transactionDateColumn, '<=', $dateTo);
+        }
         if ($shift && $shift !== 'All') {
             $query->where('shift', $shift);
         }
     }
 
     /**
-     * Collect all rows from the 6 tables, map to unified shape, sort, and compute totals.
+     * Collect all rows for a fixed date range (no created_at filters). Used by warehouse dashboard.
      */
-    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type): array
+    public function collectUnifiedRowsForDateRange(string $dateFrom, string $dateTo, string $shift = 'All'): Collection
     {
+        return $this->collectUnifiedRows($dateFrom, $dateTo, $shift, null, false);
+    }
+
+    /**
+     * Category totals + daily income/expense series for the warehouse budget panel (Figma).
+     *
+     * @return array{category_totals: array{issued_budget: float, truck_trip_budget: float, parts: float, others: float, driver_cash_advance: float, helper_cash_advance: float}, daily_budget_chart: array<int, array{date: string, income: float, expense: float}>}
+     */
+    public function getWarehouseBudgetSnapshot(string $dateFrom, string $dateTo, string $shift = 'All'): array
+    {
+        $sorted = $this->collectUnifiedRowsForDateRange($dateFrom, $dateTo, $shift)
+            ->sortByDesc(function ($item) {
+                return $item['transaction_date'] . ' ' . str_pad((string) $item['id'], 10, '0', STR_PAD_LEFT);
+            })->values();
+
+        return [
+            'category_totals' => $this->computeCategoryTotals($sorted),
+            'daily_budget_chart' => $this->computeDailyBudgetChart($sorted, $dateFrom, $dateTo),
+        ];
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function computeCategoryTotals(Collection $sorted): array
+    {
+        $issued = round((float) $sorted->where('type', self::TYPE_BUDGET)->sum('amount'), 2);
+
+        return [
+            'issued_budget' => $issued,
+            'truck_trip_budget' => round((float) $sorted->where('type', self::TYPE_TRUCK_EXPENSE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
+            'parts' => round((float) $sorted->where('type', self::TYPE_PARTS_EXPENSE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
+            'others' => round((float) $sorted->where('type', self::TYPE_OTHER_EXPENSE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
+            'driver_cash_advance' => round((float) $sorted->where('type', self::TYPE_DRIVER_CASH_ADVANCE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
+            'helper_cash_advance' => round((float) $sorted->where('type', self::TYPE_HELPER_CASH_ADVANCE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
+        ];
+    }
+
+    /**
+     * One object per calendar day in range: invoice income vs budget expenses (by transaction_date).
+     *
+     * @return array<int, array{date: string, income: float, expense: float}>
+     */
+    private function computeDailyBudgetChart(Collection $sorted, string $dateFrom, string $dateTo): array
+    {
+        $start = Carbon::parse($dateFrom)->startOfDay();
+        $end = Carbon::parse($dateTo)->startOfDay();
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        $dates = [];
+        $expensePerDay = [];
+
+        $period = CarbonPeriod::create($start, '1 day', $end);
+        foreach ($period as $day) {
+            $d = $day->format('Y-m-d');
+            $dates[] = $d;
+            $dayRows = $sorted->where('transaction_date', $d);
+            $expenseSum = (float) $dayRows->whereIn('type', self::EXPENSE_TYPES)
+                ->sum(fn ($item) => abs((float) $item['amount']));
+            $expensePerDay[] = round($expenseSum, 2);
+        }
+
+        $incomePerDay = $this->computeDailyInvoiceIncomeSeries($dateFrom, $dateTo, $dates);
+
+        $series = [];
+        foreach ($dates as $i => $d) {
+            $series[] = [
+                'date' => $d,
+                'income' => $incomePerDay[$i],
+                'expense' => $expensePerDay[$i],
+            ];
+        }
+
+        return $series;
+    }
+
+    /**
+     * Sum of invoice total_amount per calendar day (invoices.date), same computation as invoice PDF.
+     *
+     * @param  array<int, string>  $dates
+     * @return array<int, float>
+     */
+    private function computeDailyInvoiceIncomeSeries(string $dateFrom, string $dateTo, array $dates): array
+    {
+        $invoices = Invoice::query()
+            ->whereBetween('date', [$dateFrom, $dateTo])
+            ->get(['id', 'statement_of_account_id', 'date', 'discount']);
+
+        $byDay = [];
+        foreach ($invoices as $invoice) {
+            $totals = $this->invoiceService->getComputedTotals(
+                (int) $invoice->statement_of_account_id,
+                (float) ($invoice->discount ?? 0)
+            );
+            $d = $invoice->date->format('Y-m-d');
+            $byDay[$d] = ($byDay[$d] ?? 0) + (float) ($totals['total_amount'] ?? 0);
+        }
+
+        $out = [];
+        foreach ($dates as $d) {
+            $out[] = round((float) ($byDay[$d] ?? 0), 2);
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  string|null  $typeFilter  When set and not "All", filter by budget row type
+     */
+    private function collectUnifiedRows(?string $dateFrom, ?string $dateTo, string $shift, ?string $typeFilter, bool $useCreatedAtFromRequest): Collection
+    {
+        $dateFrom = $dateFrom ?? request('transaction_date_from');
+        $dateTo = $dateTo ?? request('transaction_date_to');
+
         $all = collect();
 
-        // Issued Budget (income) -> type "Budget"
         $issuedQuery = IssuedBudget::query();
-        $this->applyFilters($issuedQuery, 'transaction_date', $shift);
+        if ($useCreatedAtFromRequest) {
+            $this->applyFilters($issuedQuery, 'transaction_date', $shift);
+        } else {
+            $this->applyDateRangeFilters($issuedQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
+        }
         foreach ($issuedQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $all->push([
                 'id' => $row->id,
@@ -69,9 +218,12 @@ class BudgetSummaryService
             ]);
         }
 
-        // Truck Trip Expense
         $truckQuery = TruckTripExpense::query()->with('helper');
-        $this->applyFilters($truckQuery, 'transaction_date', $shift);
+        if ($useCreatedAtFromRequest) {
+            $this->applyFilters($truckQuery, 'transaction_date', $shift);
+        } else {
+            $this->applyDateRangeFilters($truckQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
+        }
         foreach ($truckQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $desc = $row->helper ? trim($row->helper->first_name . ' ' . $row->helper->last_name) : null;
             $amount = (float) $row->issued_cash_amount;
@@ -90,9 +242,12 @@ class BudgetSummaryService
             ]);
         }
 
-        // Parts Expense
         $partsQuery = PartsExpense::query();
-        $this->applyFilters($partsQuery, 'transaction_date', $shift);
+        if ($useCreatedAtFromRequest) {
+            $this->applyFilters($partsQuery, 'transaction_date', $shift);
+        } else {
+            $this->applyDateRangeFilters($partsQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
+        }
         foreach ($partsQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount_per_item * (int) $row->quantity;
             $desc = $row->article ?: $row->receipt_no;
@@ -113,9 +268,12 @@ class BudgetSummaryService
             ]);
         }
 
-        // Funds For Stack Run
         $fundsQuery = FundsForStackRun::query();
-        $this->applyFilters($fundsQuery, 'transaction_date', $shift);
+        if ($useCreatedAtFromRequest) {
+            $this->applyFilters($fundsQuery, 'transaction_date', $shift);
+        } else {
+            $this->applyDateRangeFilters($fundsQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
+        }
         foreach ($fundsQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount;
             $all->push([
@@ -130,9 +288,12 @@ class BudgetSummaryService
             ]);
         }
 
-        // Driver Cash Advance
         $driverCAQuery = DriverCAHistory::query()->with('driver');
-        $this->applyFilters($driverCAQuery, 'transaction_date', $shift);
+        if ($useCreatedAtFromRequest) {
+            $this->applyFilters($driverCAQuery, 'transaction_date', $shift);
+        } else {
+            $this->applyDateRangeFilters($driverCAQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
+        }
         foreach ($driverCAQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount;
             $desc = $row->driver ? trim($row->driver->first_name . ' ' . $row->driver->last_name) : null;
@@ -149,9 +310,12 @@ class BudgetSummaryService
             ]);
         }
 
-        // Helper Cash Advance
         $helperCAQuery = HelperCAHistory::query()->with('helper');
-        $this->applyFilters($helperCAQuery, 'transaction_date', $shift);
+        if ($useCreatedAtFromRequest) {
+            $this->applyFilters($helperCAQuery, 'transaction_date', $shift);
+        } else {
+            $this->applyDateRangeFilters($helperCAQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
+        }
         foreach ($helperCAQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount;
             $desc = $row->helper ? trim($row->helper->first_name . ' ' . $row->helper->last_name) : null;
@@ -168,25 +332,37 @@ class BudgetSummaryService
             ]);
         }
 
-        // Sort by transaction_date desc, then id desc
-        if ($type && $type !== 'All') {
-           $all = $all->filter(fn($row) => $row['type'] === $type);
+        if ($typeFilter && $typeFilter !== 'All') {
+            $all = $all->filter(fn ($row) => $row['type'] === $typeFilter);
         }
 
-        $sorted = $all->sortByDesc(function ($item) {
-            return $item['transaction_date'] . ' ' . str_pad((string) $item['id'], 10, '0', STR_PAD_LEFT);
-        })->values();
+        return $all;
+    }
+
+    /**
+     * Collect all rows from the 6 tables, map to unified shape, sort, and compute totals.
+     */
+    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type = null): array
+    {
+        $sorted = $this->collectUnifiedRows(null, null, $shift, $type, true)
+            ->sortByDesc(function ($item) {
+                return $item['transaction_date'] . ' ' . str_pad((string) $item['id'], 10, '0', STR_PAD_LEFT);
+            })->values();
 
         $total = $sorted->count();
         $totalBudget = $sorted->where('type', self::TYPE_BUDGET)->sum('amount');
-        $totalExpense = $sorted->whereIn('type', [
-            self::TYPE_TRUCK_EXPENSE,
-            self::TYPE_PARTS_EXPENSE,
-            self::TYPE_OTHER_EXPENSE,
-            self::TYPE_DRIVER_CASH_ADVANCE,
-            self::TYPE_HELPER_CASH_ADVANCE,
-        ])->sum(fn ($item) => abs((float) $item['amount']));
+        $totalExpense = $sorted->whereIn('type', self::EXPENSE_TYPES)
+            ->sum(fn ($item) => abs((float) $item['amount']));
         $cashOnHand = $totalBudget - $totalExpense;
+
+        $categoryTotals = $this->computeCategoryTotals($sorted);
+
+        $dailyChart = null;
+        $from = request('transaction_date_from');
+        $to = request('transaction_date_to');
+        if ($from && $to) {
+            $dailyChart = $this->computeDailyBudgetChart($sorted, $from, $to);
+        }
 
         $page = (int) request('page', 1);
         $slice = $sorted->slice(($page - 1) * $perPage, $perPage)->values();
@@ -199,11 +375,12 @@ class BudgetSummaryService
             ['path' => request()->url(), 'query' => request()->query()]
         );
 
-        return [
+        $response = [
             'data' => $paginator->items(),
             'total_budget' => round($totalBudget, 2),
             'total_expense' => round($totalExpense, 2),
             'cash_on_hand' => round($cashOnHand, 2),
+            'category_totals' => $categoryTotals,
             'meta' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
@@ -219,5 +396,11 @@ class BudgetSummaryService
                 'next' => $paginator->nextPageUrl(),
             ],
         ];
+
+        if ($dailyChart !== null) {
+            $response['daily_budget_chart'] = $dailyChart;
+        }
+
+        return $response;
     }
 }

@@ -11,11 +11,13 @@ use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
     public function __construct(
-        private readonly InvoiceService $invoiceService
+        private readonly InvoiceService $invoiceService,
+        private readonly BudgetSummaryService $budgetSummaryService
     ) {
     }
 
@@ -28,6 +30,12 @@ class DashboardService
 
         $overduePayments = $this->getOverduePayments($filters);
 
+        $warehouseBudget = $this->budgetSummaryService->getWarehouseBudgetSnapshot(
+            $start->toDateString(),
+            $end->toDateString(),
+            'All'
+        );
+
         return [
             'date_from' => $start->toDateString(),
             'date_to' => $end->toDateString(),
@@ -35,6 +43,10 @@ class DashboardService
             'sales_overview' => $this->getSalesOverview($filters),
             'overdue_count' => count($overduePayments),
             'overdue_payments' => $overduePayments,
+            'diesel_by_plate' => $this->getDieselExpenseByPlate($start, $end),
+            'receivables_by_entity' => $this->getReceivablesByEntity($start, $end),
+            'budget_category_totals' => $warehouseBudget['category_totals'],
+            'daily_budget_chart' => $warehouseBudget['daily_budget_chart'],
         ];
     }
 
@@ -53,10 +65,14 @@ class DashboardService
                 $query->where('is_complete', true);
             });
 
+        $waybillsTotal = (clone $waybillQuery)->count();
+        $waybillsCompleted = (clone $completedWaybillQuery)->count();
+
         return [
             'shipping_line_count' => ShippingLine::count(),
-            'waybills_completed' => (clone $completedWaybillQuery)->count(),
-            'waybills_total' => (clone $waybillQuery)->count(),
+            'waybills_completed' => $waybillsCompleted,
+            'waybills_total' => $waybillsTotal,
+            'waybills_remaining' => max(0, $waybillsTotal - $waybillsCompleted),
             'sales' => $this->getSalesTotalAmountDue($start, $end),
             'waybill_expenses' => $this->getWaybillExpensesTotal($start, $end),
             'parts_expense' => $this->getPartsExpenseTotal($start, $end),
@@ -66,7 +82,9 @@ class DashboardService
     }
 
     /**
-     * Get the sales overview payload for the selected range.
+     * Get the sales overview payload for the selected range (one row per month, same order as before).
+     *
+     * @return array<int, array{month: string, income: float, waybill_expenses: float}>
      */
     public function getSalesOverview(array $filters = []): array
     {
@@ -88,11 +106,16 @@ class DashboardService
             }
         }
 
-        return [
-            'months' => array_keys($incomeByMonth),
-            'income' => array_values($incomeByMonth),
-            'waybill_expenses' => array_values($waybillExpensesByMonth),
-        ];
+        $series = [];
+        foreach ($months as $month) {
+            $series[] = [
+                'month' => $month,
+                'income' => $incomeByMonth[$month],
+                'waybill_expenses' => $waybillExpensesByMonth[$month],
+            ];
+        }
+
+        return $series;
     }
 
     /**
@@ -122,13 +145,17 @@ class DashboardService
 
         foreach ($statements as $statement) {
             $statementOfAccountId = (int) $statement->statement_of_account_id;
+            $due = optional($statement->due_date)->toDateString();
+            $soaNumber = $statement->statementOfAccount?->dli_sa_number ?? $statement->billing_statement_no;
             $rows[] = [
                 'shipping_line_name' => $statement->statementOfAccount?->shippingLine?->name ?? '',
                 'transaction_no' => $statement->billing_statement_no,
-                'overdue_payment_date' => optional($statement->due_date)->toDateString(),
+                'overdue_payment_date' => $due,
                 'overdue_payment_amount' => round((float) ($amountsBySoa[$statementOfAccountId] ?? 0), 2),
                 'billing_statement_id' => $statement->id,
                 'statement_of_account_id' => $statementOfAccountId,
+                'due_date' => $due,
+                'soa_number' => $soaNumber,
             ];
         }
 
@@ -181,13 +208,17 @@ class DashboardService
 
             foreach ($overdueIds as $soaId) {
                 $soa = $soas->get($soaId);
+                $due = $earliestDueBySoa[$soaId] ?? '';
+                $soaNo = $soa?->dli_sa_number ?? 'SOA-' . $soaId;
                 $rows[] = [
                     'shipping_line_name' => $soa?->shippingLine?->name ?? '',
-                    'transaction_no' => $soa?->dli_sa_number ?? 'SOA-' . $soaId,
-                    'overdue_payment_date' => $earliestDueBySoa[$soaId] ?? '',
+                    'transaction_no' => $soaNo,
+                    'overdue_payment_date' => $due,
                     'overdue_payment_amount' => round((float) ($amountsBySoaPart2[$soaId] ?? 0), 2),
                     'billing_statement_id' => null,
                     'statement_of_account_id' => $soaId,
+                    'due_date' => $due,
+                    'soa_number' => $soaNo,
                 ];
             }
         }
@@ -434,5 +465,71 @@ class DashboardService
         }
 
         return $amountsBySoa;
+    }
+
+    /**
+     * Diesel amounts grouped by waybill truck plate (transaction_date in range).
+     *
+     * @return array<int, array{truck_plate_number: string, amount: float}>
+     */
+    private function getDieselExpenseByPlate(Carbon $start, Carbon $end): array
+    {
+        $plateExpr = "COALESCE(NULLIF(TRIM(waybill_details.truck_plate_number), ''), 'Unassigned')";
+
+        $rows = DieselExpense::query()
+            ->join('waybill_details', 'waybill_details.diesel_expense_id', '=', 'diesel_expenses.id')
+            ->whereNull('waybill_details.deleted_at')
+            ->whereBetween('waybill_details.transaction_date', [$start->toDateString(), $end->toDateString()])
+            ->groupBy(DB::raw($plateExpr))
+            ->orderBy(DB::raw($plateExpr))
+            ->selectRaw("{$plateExpr} as truck_plate_number, SUM(diesel_expenses.amount) as total_amount")
+            ->get();
+
+        return $rows->map(static function ($row) {
+            return [
+                'truck_plate_number' => (string) $row->truck_plate_number,
+                'amount' => round((float) $row->total_amount, 2),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * Invoice totals (same as sales KPI) grouped by shipping line for receivables widgets.
+     *
+     * @return array{total: float, entities: array<int, array{shipping_line_name: string, amount: float}>}
+     */
+    private function getReceivablesByEntity(Carbon $start, Carbon $end): array
+    {
+        $invoices = Invoice::query()
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->with(['statementOfAccount.shippingLine'])
+            ->get(['id', 'statement_of_account_id', 'date', 'discount']);
+
+        $byName = [];
+
+        foreach ($invoices as $invoice) {
+            $totals = $this->invoiceService->getComputedTotals(
+                (int) $invoice->statement_of_account_id,
+                (float) ($invoice->discount ?? 0)
+            );
+            $name = $invoice->statementOfAccount?->shippingLine?->name;
+            $key = ($name !== null && $name !== '') ? $name : 'Unknown';
+            $byName[$key] = ($byName[$key] ?? 0) + (float) ($totals['total_amount'] ?? 0);
+        }
+
+        $entities = [];
+        foreach ($byName as $name => $amount) {
+            $entities[] = [
+                'shipping_line_name' => $name,
+                'amount' => round((float) $amount, 2),
+            ];
+        }
+
+        usort($entities, static fn ($a, $b) => $b['amount'] <=> $a['amount']);
+
+        return [
+            'total' => round(array_sum($byName), 2),
+            'entities' => $entities,
+        ];
     }
 }

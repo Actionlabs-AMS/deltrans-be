@@ -8,6 +8,54 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
+ * @OA\Schema(
+ *     schema="DashboardDieselByPlateRow",
+ *     title="Diesel by truck plate",
+ *     description="One row: sum of diesel_expenses.amount for waybills sharing the same truck_plate_number in the dashboard date range.",
+ *     @OA\Property(property="truck_plate_number", type="string", example="NBB-1234"),
+ *     @OA\Property(property="amount", type="number", format="float", example=17500.25)
+ * )
+ * @OA\Schema(
+ *     schema="DashboardReceivablesByEntity",
+ *     title="Receivables by shipping line",
+ *     description="Invoice total_amount (same computation as kpis.sales) grouped by SOA shipping line.",
+ *     @OA\Property(property="total", type="number", format="float", example=32984.00),
+ *     @OA\Property(
+ *         property="entities",
+ *         type="array",
+ *         @OA\Items(
+ *             @OA\Property(property="shipping_line_name", type="string", example="ONE"),
+ *             @OA\Property(property="amount", type="number", format="float", example=32984.00)
+ *         )
+ *     )
+ * )
+ * @OA\Schema(
+ *     schema="DashboardBudgetCategoryTotals",
+ *     title="Budget category totals (warehouse panel)",
+ *     description="All amounts are filtered by transaction_date between the dashboard date range (except income in daily chart, which uses invoice date).",
+ *     @OA\Property(property="issued_budget", type="number", format="float", example=50000.00, description="Sum of issued_budget.amount (transaction_date)"),
+ *     @OA\Property(property="truck_trip_budget", type="number", format="float", example=20000.00, description="Sum of truck_trip_expense.issued_cash_amount (transaction_date)"),
+ *     @OA\Property(property="parts", type="number", format="float", example=8000.00, description="Sum of parts_expense quantity × amount_per_item (transaction_date)"),
+ *     @OA\Property(property="others", type="number", format="float", example=1000.00, description="Sum of funds_for_stack_run.amount (transaction_date)"),
+ *     @OA\Property(property="driver_cash_advance", type="number", format="float", example=500.00, description="Sum of driver_cash_advancement_history.amount (transaction_date)"),
+ *     @OA\Property(property="helper_cash_advance", type="number", format="float", example=500.00, description="Sum of helper_cash_advancement_history.amount (transaction_date)")
+ * )
+ * @OA\Schema(
+ *     schema="DailyBudgetChartDayRow",
+ *     title="Daily budget chart — one day",
+ *     description="income = invoice total_amount that day (invoices.date). expense = sum of budget expense rows that day (transaction_date on expense tables).",
+ *     @OA\Property(property="date", type="string", format="date", example="2026-03-01"),
+ *     @OA\Property(property="income", type="number", format="float", example=320),
+ *     @OA\Property(property="expense", type="number", format="float", example=280)
+ * )
+ * @OA\Schema(
+ *     schema="SalesOverviewMonthRow",
+ *     title="Sales overview — one month",
+ *     description="income = invoice total_amount due for that month (invoice date). waybill_expenses = waybill costs + diesel for waybills in that month (transaction_date).",
+ *     @OA\Property(property="month", type="string", example="2025-08", description="Calendar month key Y-m"),
+ *     @OA\Property(property="income", type="number", format="float", example=440000),
+ *     @OA\Property(property="waybill_expenses", type="number", format="float", example=245000)
+ * )
  * @OA\Tag(
  *     name="Dashboard",
  *     description="API endpoints for dashboard statistics"
@@ -68,6 +116,7 @@ class DashboardController extends BaseController
      *                     @OA\Property(property="shipping_line_count", type="integer", example=14, description="Total count of shipping_lines (not filtered by date)"),
      *                     @OA\Property(property="waybills_completed", type="integer", example=30000, description="Waybill details in range where booking.is_complete = true"),
      *                     @OA\Property(property="waybills_total", type="integer", example=32984, description="All waybill details in range"),
+     *                     @OA\Property(property="waybills_remaining", type="integer", example=984, description="waybills_total minus waybills_completed"),
      *                     @OA\Property(property="sales", type="number", format="float", example=20000000, description="Sum of invoice total amount due in range (same logic as invoice PDF)"),
      *                     @OA\Property(property="waybill_expenses", type="number", format="float", example=2000000, description="total_expense + actual_truck_trip_expense_amount + diesel_expense.amount for waybills in range"),
      *                     @OA\Property(property="parts_expense", type="number", format="float", example=50000, description="Sum of quantity * amount_per_item in parts_expense in range"),
@@ -76,22 +125,12 @@ class DashboardController extends BaseController
      *                 ),
      *                 @OA\Property(
      *                     property="sales_overview",
-     *                     type="object",
-     *                     @OA\Property(
-     *                         property="months",
-     *                         type="array",
-     *                         @OA\Items(type="string", example="2025-08")
-     *                     ),
-     *                     @OA\Property(
-     *                         property="income",
-     *                         type="array",
-     *                         @OA\Items(type="number", format="float", example=440000, description="Sales (total amount due) by month from invoice date")
-     *                     ),
-     *                     @OA\Property(
-     *                         property="waybill_expenses",
-     *                         type="array",
-     *                         @OA\Items(type="number", format="float", example=245000, description="Waybill expenses by month from waybill transaction_date")
-     *                     )
+     *                     type="array",
+     *                     description="One entry per month in the filter range (chronological)",
+     *                     @OA\Items(ref="#/components/schemas/SalesOverviewMonthRow"),
+     *                     example={
+     *                         {"month": "2025-08", "income": 440000, "waybill_expenses": 245000}
+     *                     }
      *                 ),
      *                 @OA\Property(property="overdue_count", type="integer", example=3, description="Count of overdue items (billing due_date or SOA+waybill no_of_days before filter end)"),
      *                 @OA\Property(
@@ -104,8 +143,32 @@ class DashboardController extends BaseController
      *                         @OA\Property(property="overdue_payment_date", type="string", format="date", example="2025-08-15"),
      *                         @OA\Property(property="overdue_payment_amount", type="number", format="float", example=1000000),
      *                         @OA\Property(property="billing_statement_id", type="integer", nullable=true, example=1),
-     *                         @OA\Property(property="statement_of_account_id", type="integer", example=10)
+     *                         @OA\Property(property="statement_of_account_id", type="integer", example=10),
+     *                         @OA\Property(property="due_date", type="string", format="date", example="2025-08-15", description="Alias of overdue_payment_date"),
+     *                         @OA\Property(property="soa_number", type="string", example="SOA-0001")
      *                     )
+     *                 ),
+     *                 @OA\Property(
+     *                     property="diesel_by_plate",
+     *                     type="array",
+     *                     description="Diesel totals grouped by waybill truck_plate_number (empty/null plates appear as Unassigned).",
+     *                     @OA\Items(ref="#/components/schemas/DashboardDieselByPlateRow"),
+     *                     example={
+     *                         {"truck_plate_number": "NBB-1234", "amount": 15000},
+     *                         {"truck_plate_number": "XYZ-9999", "amount": 20000}
+     *                     }
+     *                 ),
+     *                 @OA\Property(property="receivables_by_entity", ref="#/components/schemas/DashboardReceivablesByEntity"),
+     *                 @OA\Property(property="budget_category_totals", ref="#/components/schemas/DashboardBudgetCategoryTotals"),
+     *                 @OA\Property(
+     *                     property="daily_budget_chart",
+     *                     type="array",
+     *                     description="One entry per calendar day from date_from through date_to (inclusive), ordered by date",
+     *                     @OA\Items(ref="#/components/schemas/DailyBudgetChartDayRow"),
+     *                     example={
+     *                         {"date": "2026-03-01", "income": 320, "expense": 280},
+     *                         {"date": "2026-03-02", "income": 0, "expense": 150}
+     *                     }
      *                 )
      *             )
      *         )
@@ -155,6 +218,7 @@ class DashboardController extends BaseController
      *                     @OA\Property(property="shipping_line_count", type="integer", example=14),
      *                     @OA\Property(property="waybills_completed", type="integer", example=30000),
      *                     @OA\Property(property="waybills_total", type="integer", example=32984),
+     *                     @OA\Property(property="waybills_remaining", type="integer", example=984),
      *                     @OA\Property(property="sales", type="number", format="float", example=20000000),
      *                     @OA\Property(property="waybill_expenses", type="number", format="float", example=2000000),
      *                     @OA\Property(property="parts_expense", type="number", format="float", example=50000),
@@ -208,22 +272,11 @@ class DashboardController extends BaseController
      *                 type="object",
      *                 @OA\Property(
      *                     property="sales_overview",
-     *                     type="object",
-     *                     @OA\Property(
-     *                         property="months",
-     *                         type="array",
-     *                         @OA\Items(type="string", example="2025-08")
-     *                     ),
-     *                     @OA\Property(
-     *                         property="income",
-     *                         type="array",
-     *                         @OA\Items(type="number", format="float", example=440000)
-     *                     ),
-     *                     @OA\Property(
-     *                         property="waybill_expenses",
-     *                         type="array",
-     *                         @OA\Items(type="number", format="float", example=245000)
-     *                     )
+     *                     type="array",
+     *                     @OA\Items(ref="#/components/schemas/SalesOverviewMonthRow"),
+     *                     example={
+     *                         {"month": "2025-08", "income": 440000, "waybill_expenses": 245000}
+     *                     }
      *                 )
      *             )
      *         )
@@ -276,7 +329,9 @@ class DashboardController extends BaseController
      *                         @OA\Property(property="overdue_payment_date", type="string", format="date", example="2025-08-15"),
      *                         @OA\Property(property="overdue_payment_amount", type="number", format="float", example=1000000),
      *                         @OA\Property(property="billing_statement_id", type="integer", nullable=true, example=1),
-     *                         @OA\Property(property="statement_of_account_id", type="integer", example=10)
+     *                         @OA\Property(property="statement_of_account_id", type="integer", example=10),
+     *                         @OA\Property(property="due_date", type="string", format="date", example="2025-08-15"),
+     *                         @OA\Property(property="soa_number", type="string", example="SOA-0001")
      *                     )
      *                 )
      *             )
@@ -326,10 +381,12 @@ class DashboardController extends BaseController
      *                 @OA\Property(property="shipping_line_count", type="integer", example=14),
      *                 @OA\Property(property="waybills_completed", type="integer", example=30000),
      *                 @OA\Property(property="waybills_total", type="integer", example=32984),
+     *                 @OA\Property(property="waybills_remaining", type="integer", example=984),
      *                 @OA\Property(property="sales", type="number", format="float", example=20000000),
      *                 @OA\Property(property="waybill_expenses", type="number", format="float", example=2000000),
      *                 @OA\Property(property="parts_expense", type="number", format="float", example=50000),
-     *                 @OA\Property(property="diesel_expense", type="number", format="float", example=15000)
+     *                 @OA\Property(property="diesel_expense", type="number", format="float", example=15000),
+     *                 @OA\Property(property="overdue_count", type="integer", example=3)
      *             )
      *         )
      *     ),

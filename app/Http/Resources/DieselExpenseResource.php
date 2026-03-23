@@ -19,6 +19,12 @@ class DieselExpenseResource extends JsonResource
             'waybill_number' => $this->whenLoaded('waybillDetail', function () {
                 return $this->waybillDetail?->waybill_number;
             }),
+            'truck_plate_number' => $this->whenLoaded('waybillDetail', function () {
+                return $this->waybillDetail?->truck_plate_number;
+            }),
+            'waybill_transaction_date' => $this->whenLoaded('waybillDetail', function () {
+                return $this->waybillDetail?->transaction_date?->format('Y-m-d');
+            }),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

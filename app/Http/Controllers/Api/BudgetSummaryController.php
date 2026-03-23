@@ -24,12 +24,32 @@ use App\Services\BudgetSummaryService;
  * )
  * @OA\Schema(
  *     schema="BudgetSummaryResponse",
+ *     @OA\Property(property="status_code", type="integer", example=200),
+ *     @OA\Property(property="message", type="string", example="Budget summary retrieved successfully."),
  *     @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/BudgetSummaryRow")),
- *     @OA\Property(property="total_budget", type="number", description="Sum of income (Budget type) in filtered data"),
- *     @OA\Property(property="total_expense", type="number", description="Sum of expenses in filtered data"),
- *     @OA\Property(property="cash_on_hand", type="number", description="Total Budget minus Total Expense for filtered data"),
- *     @OA\Property(property="meta", type="object"),
- *     @OA\Property(property="links", type="object")
+ *     @OA\Property(property="total_budget", type="number", format="float", example=50000.00, description="Sum of income (Issued Budget type) in filtered data"),
+ *     @OA\Property(property="total_expense", type="number", format="float", example=30000.00, description="Sum of expenses in filtered data"),
+ *     @OA\Property(property="cash_on_hand", type="number", format="float", example=20000.00, description="Total Budget minus Total Expense for filtered data"),
+ *     @OA\Property(property="category_totals", ref="#/components/schemas/DashboardBudgetCategoryTotals"),
+ *     @OA\Property(property="daily_budget_chart", type="array", description="Present when transaction_date_from and transaction_date_to are set (or date_from/date_to aliases)", @OA\Items(ref="#/components/schemas/DailyBudgetChartDayRow")),
+ *     @OA\Property(
+ *         property="meta",
+ *         type="object",
+ *         @OA\Property(property="current_page", type="integer", example=1),
+ *         @OA\Property(property="last_page", type="integer", example=5),
+ *         @OA\Property(property="per_page", type="integer", example=10),
+ *         @OA\Property(property="total", type="integer", example=42),
+ *         @OA\Property(property="from", type="integer", example=1, nullable=true),
+ *         @OA\Property(property="to", type="integer", example=10, nullable=true)
+ *     ),
+ *     @OA\Property(
+ *         property="links",
+ *         type="object",
+ *         @OA\Property(property="first", type="string", format="uri", example="http://localhost/api/budget/summary?page=1"),
+ *         @OA\Property(property="last", type="string", format="uri", example="http://localhost/api/budget/summary?page=5"),
+ *         @OA\Property(property="prev", type="string", format="uri", nullable=true, example=null),
+ *         @OA\Property(property="next", type="string", format="uri", example="http://localhost/api/budget/summary?page=2")
+ *     )
  * )
  */
 class BudgetSummaryController
@@ -47,6 +67,8 @@ class BudgetSummaryController
      *     @OA\Parameter(name="shift", in="query", description="Day, Night, or All", @OA\Schema(type="string", enum={"Day", "Night", "All"})),
      *     @OA\Parameter(name="transaction_date_from", in="query", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="transaction_date_to", in="query", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_from", in="query", description="Alias for transaction_date_from (aligns with GET /api/dashboard)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", description="Alias for transaction_date_to", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="created_at_from", in="query", @OA\Schema(type="string", format="date-time")),
      *     @OA\Parameter(name="created_at_to", in="query", @OA\Schema(type="string", format="date-time")),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer", example=10)),

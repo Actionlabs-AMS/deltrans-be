@@ -19,9 +19,13 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | `date_from` | string (date) | Start of applied date range |
 | `date_to` | string (date) | End of applied date range |
 | `kpis` | object | See [KPIs](#11-kpis) below |
-| `sales_overview` | object | See [Sales overview](#12-sales-overview) below |
+| `sales_overview` | array | See [Sales overview](#12-sales-overview) below |
 | `overdue_count` | integer | Count of overdue items (same filters as overdue_payments) |
 | `overdue_payments` | array | See [Overdue payments](#13-overdue-payments) below |
+| `diesel_by_plate` | array | Diesel totals grouped by `waybill_details.truck_plate_number` (same date range as KPI diesel; see [Diesel by plate](#16-diesel-by-plate-warehouse)) |
+| `receivables_by_entity` | object | `total` + `entities[]` with `shipping_line_name` and `amount` (invoice totals in range; same underlying amounts as `kpis.sales` when summed) |
+| `budget_category_totals` | object | Issued budget + expense buckets from budget tables for the same date range (see [Budget category totals](#17-budget-category-totals--daily-chart)) |
+| `daily_budget_chart` | array | One `{ date, income, expense }` per day in range — see [Budget category totals](#17-budget-category-totals--daily-chart) |
 
 **How we pull/compute:**
 
@@ -34,6 +38,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 - **Sales overview:** `getSalesOverview($filters)` — see below.
 - **Overdue count:** `count(getOverduePayments($filters))`.
 - **Overdue payments:** `getOverduePayments($filters)` — uses filter end date as "as of" for overdue; see below.
+- **Warehouse widgets:** `diesel_by_plate`, `receivables_by_entity`, `budget_category_totals`, `daily_budget_chart` — see sections 1.6–1.7.
 
 ---
 
@@ -46,6 +51,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | `shipping_line_count` | integer | Total count of shipping lines (not filtered by date range) |
 | `waybills_completed` | integer | Waybill details in range where related `booking.is_complete = true` |
 | `waybills_total` | integer | All waybill details in range |
+| `waybills_remaining` | integer | `waybills_total - waybills_completed` (not below zero) |
 | `sales` | number | Total "total amount due" in range (same logic as invoice PDF) |
 | `waybill_expenses` | number | total_expense + actual_truck_trip_expense_amount + diesel_expense.amount for waybills in range |
 | `parts_expense` | number | Sum of `quantity * amount_per_item` in parts_expense in range |
@@ -59,6 +65,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | **shipping_line_count** | **shipping_lines** table **count** (no date filter). |
 | **waybills_completed** | **waybill_details** where `transaction_date` in range + `whereHas('booking', is_complete = true)` → **count**. |
 | **waybills_total** | **waybill_details** where `transaction_date` in range → **count**. |
+| **waybills_remaining** | **waybills_total** − **waybills_completed** (floored at 0). |
 | **sales** | **invoices** where `date` in range → for each invoice, `InvoiceService::getComputedTotals(statement_of_account_id, discount)` (same as invoice PDF); sum **total_amount**. |
 | **waybill_expenses** | **waybill_details** in range: `SUM(total_expense) + SUM(actual_truck_trip_expense_amount)` + **diesel_expense** total (see below). |
 | **parts_expense** | **parts_expense** where `transaction_date` in range → `SUM(quantity * amount_per_item)`. |
@@ -69,19 +76,21 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 
 ### 1.3 Sales overview (`data.sales_overview`)
 
-**Data returned:**
+**Data returned:** An **array of objects**, one per month in the filter range (chronological), each with:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `months` | array of strings | Month keys `"Y-m"` (e.g. `["2025-01","2025-02"]`) |
-| `income` | array of numbers | Sales (total amount due) per month from invoice date (same order as `months`) |
-| `waybill_expenses` | array of numbers | Waybill expenses per month from waybill transaction_date (same order as `months`) |
+| `month` | string | Month key `Y-m` (e.g. `2025-08`) |
+| `income` | number | Sales (total amount due) for that month from **invoice.date** (`InvoiceService::getComputedTotals`) |
+| `waybill_expenses` | number | Waybill expenses for that month from **waybill_details.transaction_date** + diesel tied to those waybills |
 
 **How we pull/compute:**
 
-- **months:** `CarbonPeriod` from range start-of-month to end-of-month, step 1 month → format `Y-m`.
-- **income:** Same as **sales** but grouped by month: for each **invoice** in range, `InvoiceService::getComputedTotals(soa_id, discount)` → **total_amount**; group by `Y-m` of **invoice.date** → fill `income` array.
-- **waybill_expenses:** Per-month from **waybill_details** `transaction_date`: `SUM(total_expense) + SUM(actual_truck_trip_expense_amount)` by `Y-m`, plus **diesel_expenses** by month (join to waybill_details, same date filter); merge by month key; fill array (months with no data = 0).
+- **Month list:** `CarbonPeriod` from range start-of-month to end-of-month, step 1 month → format `Y-m`; one row per month.
+- **income:** For each **invoice** in range, `InvoiceService::getComputedTotals(soa_id, discount)` → **total_amount**; group by `Y-m` of **invoice.date**.
+- **waybill_expenses:** Per month from **waybill_details** `transaction_date`: `SUM(total_expense) + SUM(actual_truck_trip_expense_amount)` by `Y-m`, plus **diesel_expenses** by month (join to waybill_details); merge by month key (months with no data = 0).
+
+`GET /api/dashboard/sales-overview` returns `{ "sales_overview": [ ... ] }` with the same row shape.
 
 ---
 
@@ -97,6 +106,8 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 | `overdue_payment_amount` | number | SOA amount (computed) |
 | `billing_statement_id` | integer \| null | Billing statement PK, or null for SOAs without billing |
 | `statement_of_account_id` | integer | SOA FK |
+| `due_date` | string (date) | Same as `overdue_payment_date` (Figma-friendly alias) |
+| `soa_number` | string | SOA `dli_sa_number` when present; for billing rows may fall back to billing statement number |
 
 **How we pull/compute:**
 
@@ -112,9 +123,36 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 
 **Data returned:** Single object with the same KPIs as above:
 
-- `shipping_line_count`, `waybills_completed`, `waybills_total`, `sales`, `waybill_expenses`, `parts_expense`, `diesel_expense`
+- `shipping_line_count`, `waybills_completed`, `waybills_total`, `waybills_remaining`, `sales`, `waybill_expenses`, `parts_expense`, `diesel_expense`, `overdue_count`
 
 **How we pull/compute:** Same as [KPIs](#12-kpis) (uses same date filters).
+
+---
+
+### 1.6 Diesel by plate (warehouse) — `data.diesel_by_plate`
+
+**Data returned:** Array of `{ truck_plate_number, amount }` where `amount` is the sum of `diesel_expenses.amount` for waybills whose `transaction_date` is in the dashboard range. Plates empty or null are grouped as `Unassigned`.
+
+**How we pull/compute:** `diesel_expenses` joined to `waybill_details` on `diesel_expense_id`, filtered by `waybill_details.transaction_date`, grouped by normalized plate.
+
+---
+
+### 1.7 Budget category totals & daily chart — `data.budget_category_totals`, `data.daily_budget_chart`
+
+**`budget_category_totals`** (all use **`transaction_date`** between `date_from` and `date_to`):
+
+| Key | Source |
+|-----|--------|
+| `issued_budget` | `issued_budget.amount` |
+| `truck_trip_budget` | `truck_trip_expense.issued_cash_amount` |
+| `parts` | `parts_expense`: `quantity × amount_per_item` |
+| `others` | `funds_for_stack_run.amount` |
+| `driver_cash_advance` | `driver_cash_advancement_history.amount` |
+| `helper_cash_advance` | `helper_cash_advancement_history.amount` |
+
+**`daily_budget_chart`:** Array of objects, one per calendar day (in order), each with **`date`** (`Y-m-d`), **`income`** (sum of invoice `total_amount` that day via `invoices.date`), and **`expense`** (sum of the five expense categories that day via each row’s **`transaction_date`**).
+
+**Budget summary list:** `GET /api/budget/summary` also returns `category_totals` for the filtered rows. When `transaction_date_from` and `transaction_date_to` are both set, it also returns `daily_budget_chart` for that range. **`date_from` / `date_to`** query params are accepted as aliases for `transaction_date_from` / `transaction_date_to` so the same range as the dashboard can be used.
 
 ---
 
