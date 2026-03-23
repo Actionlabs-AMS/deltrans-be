@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\DriverCAHistory;
 use App\Models\FundsForStackRun;
 use App\Models\HelperCAHistory;
-use App\Models\Invoice;
 use App\Models\IssuedBudget;
 use App\Models\PartsExpense;
 use App\Models\TruckTripExpense;
@@ -16,11 +15,6 @@ use Illuminate\Support\Collection;
 
 class BudgetSummaryService
 {
-    public function __construct(
-        private readonly InvoiceService $invoiceService
-    ) {
-    }
-
     public const TYPE_BUDGET = 'Issued Budget';
 
     public const TYPE_TRUCK_EXPENSE = 'Truck Expense';
@@ -120,7 +114,7 @@ class BudgetSummaryService
     }
 
     /**
-     * One object per calendar day in range: invoice income vs budget expenses (by transaction_date).
+     * One object per calendar day in range: issued budget income vs budget expenses (by transaction_date).
      *
      * @return array<int, array{date: string, income: float, expense: float}>
      */
@@ -133,6 +127,7 @@ class BudgetSummaryService
         }
 
         $dates = [];
+        $incomePerDay = [];
         $expensePerDay = [];
 
         $period = CarbonPeriod::create($start, '1 day', $end);
@@ -140,12 +135,13 @@ class BudgetSummaryService
             $d = $day->format('Y-m-d');
             $dates[] = $d;
             $dayRows = $sorted->where('transaction_date', $d);
+            $incomePerDay[] = round((float) $dayRows
+                ->where('type', self::TYPE_BUDGET)
+                ->sum('amount'), 2);
             $expenseSum = (float) $dayRows->whereIn('type', self::EXPENSE_TYPES)
                 ->sum(fn ($item) => abs((float) $item['amount']));
             $expensePerDay[] = round($expenseSum, 2);
         }
-
-        $incomePerDay = $this->computeDailyInvoiceIncomeSeries($dateFrom, $dateTo, $dates);
 
         $series = [];
         foreach ($dates as $i => $d) {
@@ -157,36 +153,6 @@ class BudgetSummaryService
         }
 
         return $series;
-    }
-
-    /**
-     * Sum of invoice total_amount per calendar day (invoices.date), same computation as invoice PDF.
-     *
-     * @param  array<int, string>  $dates
-     * @return array<int, float>
-     */
-    private function computeDailyInvoiceIncomeSeries(string $dateFrom, string $dateTo, array $dates): array
-    {
-        $invoices = Invoice::query()
-            ->whereBetween('date', [$dateFrom, $dateTo])
-            ->get(['id', 'statement_of_account_id', 'date', 'discount']);
-
-        $byDay = [];
-        foreach ($invoices as $invoice) {
-            $totals = $this->invoiceService->getComputedTotals(
-                (int) $invoice->statement_of_account_id,
-                (float) ($invoice->discount ?? 0)
-            );
-            $d = $invoice->date->format('Y-m-d');
-            $byDay[$d] = ($byDay[$d] ?? 0) + (float) ($totals['total_amount'] ?? 0);
-        }
-
-        $out = [];
-        foreach ($dates as $d) {
-            $out[] = round((float) ($byDay[$d] ?? 0), 2);
-        }
-
-        return $out;
     }
 
     /**
