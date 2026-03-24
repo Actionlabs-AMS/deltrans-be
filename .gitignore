@@ -17,5 +17,4 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
-mcp-mysql-server/
-/.cursor/rules
+/.cursor
