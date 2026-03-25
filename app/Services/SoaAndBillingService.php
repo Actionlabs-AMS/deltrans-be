@@ -686,7 +686,7 @@ class SoaAndBillingService extends BaseService
     /**
      * Build transaction rows and totals for SOA PDF / API. One row per waybill (or per container when SOA has one row per container).
      * Totals are computed per waybill (not doubled for multiple containers).
-     * Uses waybill_details.rate for AMOUNT (not total_rate_per_client).
+     * Amounts and VAT flags come only from waybill_details (rate, then total_rate_per_client, has_vat); no lookup to rate_per_clients.
      *
      * @param \Illuminate\Support\Collection $waybills Waybills with booking.containers loaded
      * @param \App\Models\StatementOfAccount|object $soa Fallback SOA for work_order when soaPerWaybill not used
@@ -721,20 +721,6 @@ class SoaAndBillingService extends BaseService
 
             $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
             $waybillHasVat = (bool) ($waybill->has_vat ?? false);
-            if ($amount == 0 && $waybill->booking) {
-                $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                    ->where('container_size', $waybill->container_size)
-                    ->where(function ($query) use ($waybill) {
-                        $query->where('cypa_id', $waybill->booking->cypa_id_from)
-                            ->orWhere('cypa_id', 0);
-                    })
-                    ->where('is_active', 1)
-                    ->first();
-                if ($matchingRate) {
-                    $amount = (float) ($matchingRate->rate ?? 0);
-                    $waybillHasVat = (bool) ($matchingRate->has_vat ?? false);
-                }
-            }
             // waybill.rate is per container, so multiply by container count for totals
             $containerCount = count($containerList);
             $waybillTotalAmount = $amount * $containerCount;
@@ -817,15 +803,6 @@ class SoaAndBillingService extends BaseService
                 return $combined !== '' ? $combined : '-';
             case 'amount':
                 $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
-                if ($amount == 0 && $waybill->booking) {
-                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                        ->where('container_size', $waybill->container_size)
-                        ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
-                        ->where('is_active', 1)->first();
-                    if ($matchingRate) {
-                        $amount = (float) ($matchingRate->rate ?? 0);
-                    }
-                }
                 return number_format($amount, 2, '.', ',');
             case 'vessel':
                 return $waybill->booking->vessel ?? '-';
@@ -834,33 +811,11 @@ class SoaAndBillingService extends BaseService
             case '12%vat':
                 $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
                 $hasVat = (bool) ($waybill->has_vat ?? false);
-                if ($amount == 0 && $waybill->booking) {
-                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                        ->where('container_size', $waybill->container_size)
-                        ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
-                        ->where('is_active', 1)
-                        ->first();
-                    if ($matchingRate) {
-                        $amount = (float) ($matchingRate->rate ?? 0);
-                        $hasVat = (bool) ($matchingRate->has_vat ?? false);
-                    }
-                }
                 $vatPercent = $hasVat ? 12.00 : 0.00;
                 return number_format($amount * ($vatPercent / 100), 2, '.', ',');
             case 'total amount':
                 $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
                 $hasVat = (bool) ($waybill->has_vat ?? false);
-                if ($amount == 0 && $waybill->booking) {
-                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                        ->where('container_size', $waybill->container_size)
-                        ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
-                        ->where('is_active', 1)
-                        ->first();
-                    if ($matchingRate) {
-                        $amount = (float) ($matchingRate->rate ?? 0);
-                        $hasVat = (bool) ($matchingRate->has_vat ?? false);
-                    }
-                }
                 $vatPercent = $hasVat ? 12.00 : 0.00;
                 return number_format($amount + ($amount * ($vatPercent / 100)), 2, '.', ',');
             case 'booking number':
@@ -870,15 +825,6 @@ class SoaAndBillingService extends BaseService
                 return $soa->work_order ?? '-';
             case 'stack run':
                 $stackRun = (float) ($waybill->stack_run ?? 0);
-                if ($stackRun == 0 && $waybill->booking) {
-                    $matchingRate = \App\Models\RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                        ->where('container_size', $waybill->container_size)
-                        ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
-                        ->where('is_active', 1)->first();
-                    if ($matchingRate) {
-                        $stackRun = (float) ($matchingRate->stack_run ?? 0);
-                    }
-                }
                 return $stackRun > 0 ? number_format($stackRun, 2, '.', ',') : '-';
             default:
                 return '-';

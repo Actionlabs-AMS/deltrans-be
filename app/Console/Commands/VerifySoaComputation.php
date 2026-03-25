@@ -4,13 +4,12 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\StatementOfAccount;
-use App\Models\RatePerClient;
 
 class VerifySoaComputation extends Command
 {
     protected $signature = 'soa:verify-computation {id=1 : SOA ID to verify}';
 
-    protected $description = 'Verify SOA VAT computation and show DB data for waybills (rate per client data stored on waybill)';
+    protected $description = 'Verify SOA VAT computation from waybill_details only (no rate_per_clients lookup)';
 
     public function handle(): int
     {
@@ -43,7 +42,7 @@ class VerifySoaComputation extends Command
             })->toArray()
         );
 
-        // Run same computation as SoaAndBillingService::generatePdf (using waybill stored fields)
+        // Run same computation as SoaAndBillingService::buildSoaTransactionData (waybill_details only)
         $totalAmount = 0;
         $totalVat = 0;
         $vatPercent = 12.00;
@@ -51,17 +50,6 @@ class VerifySoaComputation extends Command
         foreach ($waybills as $waybill) {
             $amount = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
             $waybillHasVat = (bool) ($waybill->has_vat ?? false);
-            if ($amount == 0 && $waybill->booking) {
-                $matchingRate = RatePerClient::where('shipping_line_id', $waybill->shipping_line_id)
-                    ->where('container_size', $waybill->container_size)
-                    ->where(fn($q) => $q->where('cypa_id', $waybill->booking->cypa_id_from)->orWhere('cypa_id', 0))
-                    ->where('is_active', 1)
-                    ->first();
-                if ($matchingRate) {
-                    $amount = (float) ($matchingRate->rate ?? 0);
-                    $waybillHasVat = (bool) ($matchingRate->has_vat ?? false);
-                }
-            }
 
             // waybill.rate is per container, so multiply by container count
             $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
