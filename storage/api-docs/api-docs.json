@@ -25248,7 +25248,7 @@
                         "nullable": true
                     },
                     "amount": {
-                        "description": "Positive for income (Budget), negative for expenses",
+                        "description": "Same sign as stored in source table (issued budget and expenses are typically positive)",
                         "type": "number"
                     },
                     "description": {

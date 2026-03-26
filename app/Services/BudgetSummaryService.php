@@ -105,11 +105,11 @@ class BudgetSummaryService
 
         return [
             'issued_budget' => $issued,
-            'truck_trip_budget' => round((float) $sorted->where('type', self::TYPE_TRUCK_EXPENSE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
-            'parts' => round((float) $sorted->where('type', self::TYPE_PARTS_EXPENSE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
-            'others' => round((float) $sorted->where('type', self::TYPE_OTHER_EXPENSE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
-            'driver_cash_advance' => round((float) $sorted->where('type', self::TYPE_DRIVER_CASH_ADVANCE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
-            'helper_cash_advance' => round((float) $sorted->where('type', self::TYPE_HELPER_CASH_ADVANCE)->sum(fn ($item) => abs((float) $item['amount'])), 2),
+            'truck_trip_budget' => round((float) $sorted->where('type', self::TYPE_TRUCK_EXPENSE)->sum('amount'), 2),
+            'parts' => round((float) $sorted->where('type', self::TYPE_PARTS_EXPENSE)->sum('amount'), 2),
+            'others' => round((float) $sorted->where('type', self::TYPE_OTHER_EXPENSE)->sum('amount'), 2),
+            'driver_cash_advance' => round((float) $sorted->where('type', self::TYPE_DRIVER_CASH_ADVANCE)->sum('amount'), 2),
+            'helper_cash_advance' => round((float) $sorted->where('type', self::TYPE_HELPER_CASH_ADVANCE)->sum('amount'), 2),
         ];
     }
 
@@ -138,8 +138,7 @@ class BudgetSummaryService
             $incomePerDay[] = round((float) $dayRows
                 ->where('type', self::TYPE_BUDGET)
                 ->sum('amount'), 2);
-            $expenseSum = (float) $dayRows->whereIn('type', self::EXPENSE_TYPES)
-                ->sum(fn ($item) => abs((float) $item['amount']));
+            $expenseSum = (float) $dayRows->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
             $expensePerDay[] = round($expenseSum, 2);
         }
 
@@ -198,7 +197,7 @@ class BudgetSummaryService
                 'type' => self::TYPE_TRUCK_EXPENSE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
-                'amount' => -$amount,
+                'amount' => $amount,
                 'description' => $desc,
                 'source_table' => 'truck_trip_expense',
                 'cash_on_hand' => (float) $row->cash_on_hand,
@@ -222,7 +221,7 @@ class BudgetSummaryService
                 'type' => self::TYPE_PARTS_EXPENSE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
-                'amount' => -$amount,
+                'amount' => $amount,
                 'description' => $desc,
                 'source_table' => 'parts_expense',
                 'plate_number' => $row->plate_number,
@@ -247,7 +246,7 @@ class BudgetSummaryService
                 'type' => self::TYPE_OTHER_EXPENSE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
-                'amount' => -$amount,
+                'amount' => $amount,
                 'description' => $row->remarks,
                 'source_table' => 'funds_for_stack_run',
                 'created_at' => $row->created_at?->format('Y-m-d H:i:s'),
@@ -268,7 +267,7 @@ class BudgetSummaryService
                 'type' => self::TYPE_DRIVER_CASH_ADVANCE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
-                'amount' => -$amount,
+                'amount' => $amount,
                 'description' => $desc,
                 'source_table' => 'driver_cash_advancement_history',
                 'driver_id' => $row->driver_id,
@@ -290,7 +289,7 @@ class BudgetSummaryService
                 'type' => self::TYPE_HELPER_CASH_ADVANCE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
-                'amount' => -$amount,
+                'amount' => $amount,
                 'description' => $desc,
                 'source_table' => 'helper_cash_advancement_history',
                 'helper_id' => $row->helper_id,
@@ -317,8 +316,7 @@ class BudgetSummaryService
 
         $total = $sorted->count();
         $totalBudget = $sorted->where('type', self::TYPE_BUDGET)->sum('amount');
-        $totalExpense = $sorted->whereIn('type', self::EXPENSE_TYPES)
-            ->sum(fn ($item) => abs((float) $item['amount']));
+        $totalExpense = (float) $sorted->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
         $cashOnHand = $totalBudget - $totalExpense;
 
         $categoryTotals = $this->computeCategoryTotals($sorted);

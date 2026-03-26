@@ -17,7 +17,7 @@ use App\Services\BudgetSummaryService;
  *     @OA\Property(property="type", type="string", enum={"Budget", "Truck Expense", "Parts Expense", "Other Expense", "Driver Cash Advance", "Helper Cash Advance"}),
  *     @OA\Property(property="transaction_date", type="string", format="date"),
  *     @OA\Property(property="shift", type="string", nullable=true),
- *     @OA\Property(property="amount", type="number", description="Positive for income (Budget), negative for expenses"),
+ *     @OA\Property(property="amount", type="number", description="Same sign as stored in source table (issued budget and expenses are typically positive)"),
  *     @OA\Property(property="description", type="string", nullable=true),
  *     @OA\Property(property="source_table", type="string"),
  *     @OA\Property(property="created_at", type="string", format="date-time", nullable=true)
