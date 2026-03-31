@@ -54,9 +54,20 @@ class RatePerClientService extends BaseService
                 $query->where('shipping_line_id', request('shipping_line_id'));
             }
 
-            // Filter by cypa_id
-            if (request('cypa_id') !== null) {
-                $query->where('cypa_id', request('cypa_id'));
+            // Filter by CYPA from/to: rows where cypa_id is generic (0), or matches from, or matches to
+            if (request()->has('cypa_from_id') || request()->has('cypa_to_id')) {
+                $cypaFromId = request('cypa_from_id');
+                $cypaToId = request('cypa_to_id');
+
+                $query->where(function ($q) use ($cypaFromId, $cypaToId) {
+                    $q->where('cypa_id', 0);
+                    if ($cypaFromId !== null && $cypaFromId !== '') {
+                        $q->orWhere('cypa_id', $cypaFromId);
+                    }
+                    if ($cypaToId !== null && $cypaToId !== '') {
+                        $q->orWhere('cypa_id', $cypaToId);
+                    }
+                });
             }
 
             // Filter by container_size

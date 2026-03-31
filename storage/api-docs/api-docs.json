@@ -2130,6 +2130,14 @@
                         }
                     },
                     {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Filter rows by substring (case-insensitive) against type, description, source_table, transaction_date, shift, amount, plate/receipt/article where present",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
                         "name": "per_page",
                         "in": "query",
                         "schema": {
@@ -12809,12 +12817,21 @@
                         }
                     },
                     {
-                        "name": "cypa_id",
+                        "name": "cypa_from_id",
                         "in": "query",
-                        "description": "Filter by CYPA ID (0 = all)",
+                        "description": "CYPA origin ID for filter; results include rows where cypa_id equals this, cypa_to_id, or 0 (all CYPA)",
                         "schema": {
                             "type": "integer",
-                            "example": 0
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "cypa_to_id",
+                        "in": "query",
+                        "description": "CYPA destination ID for filter; results include rows where cypa_id equals cypa_from_id, this value, or 0 (all CYPA)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2
                         }
                     },
                     {
@@ -25311,58 +25328,68 @@
                         }
                     },
                     "meta": {
+                        "description": "Laravel-style pagination metadata (aligned with Resource collection responses)",
                         "properties": {
                             "current_page": {
                                 "type": "integer",
                                 "example": 1
-                            },
-                            "last_page": {
-                                "type": "integer",
-                                "example": 5
-                            },
-                            "per_page": {
-                                "type": "integer",
-                                "example": 10
-                            },
-                            "total": {
-                                "type": "integer",
-                                "example": 42
                             },
                             "from": {
                                 "type": "integer",
                                 "example": 1,
                                 "nullable": true
                             },
+                            "last_page": {
+                                "type": "integer",
+                                "example": 5
+                            },
+                            "links": {
+                                "type": "array",
+                                "items": {
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "format": "uri",
+                                            "nullable": true
+                                        },
+                                        "label": {
+                                            "type": "string",
+                                            "example": "1"
+                                        },
+                                        "active": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "path": {
+                                "type": "string",
+                                "format": "uri",
+                                "example": "http://localhost/api/budget/summary"
+                            },
+                            "per_page": {
+                                "type": "integer",
+                                "example": 10
+                            },
                             "to": {
                                 "type": "integer",
                                 "example": 10,
                                 "nullable": true
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "links": {
-                        "properties": {
-                            "first": {
-                                "type": "string",
-                                "format": "uri",
-                                "example": "http://localhost/api/budget/summary?page=1"
                             },
-                            "last": {
-                                "type": "string",
-                                "format": "uri",
-                                "example": "http://localhost/api/budget/summary?page=5"
+                            "total": {
+                                "type": "integer",
+                                "example": 42
                             },
-                            "prev": {
-                                "type": "string",
-                                "format": "uri",
-                                "example": null,
-                                "nullable": true
+                            "all": {
+                                "description": "Total filtered rows (same as total for this endpoint)",
+                                "type": "integer",
+                                "example": 42
                             },
-                            "next": {
-                                "type": "string",
-                                "format": "uri",
-                                "example": "http://localhost/api/budget/summary?page=2"
+                            "trashed": {
+                                "description": "Always 0; reserved for parity with other list APIs",
+                                "type": "integer",
+                                "example": 0
                             }
                         },
                         "type": "object"

@@ -71,6 +71,28 @@ class BudgetSummaryService
     }
 
     /**
+     * Newest first: latest transaction_date, then latest created_at, then highest id (cross-table safe).
+     *
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function sortUnifiedRowsNewestFirst(Collection $rows): Collection
+    {
+        return $rows->sort(function ($a, $b) {
+            $dCmp = strcmp($b['transaction_date'] ?? '', $a['transaction_date'] ?? '');
+            if ($dCmp !== 0) {
+                return $dCmp;
+            }
+            $cCmp = strcmp((string) ($b['created_at'] ?? ''), (string) ($a['created_at'] ?? ''));
+            if ($cCmp !== 0) {
+                return $cCmp;
+            }
+
+            return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+        })->values();
+    }
+
+    /**
      * Collect all rows for a fixed date range (no created_at filters). Used by warehouse dashboard.
      */
     public function collectUnifiedRowsForDateRange(string $dateFrom, string $dateTo, string $shift = 'All'): Collection
@@ -85,10 +107,9 @@ class BudgetSummaryService
      */
     public function getWarehouseBudgetSnapshot(string $dateFrom, string $dateTo, string $shift = 'All'): array
     {
-        $sorted = $this->collectUnifiedRowsForDateRange($dateFrom, $dateTo, $shift)
-            ->sortByDesc(function ($item) {
-                return $item['transaction_date'] . ' ' . str_pad((string) $item['id'], 10, '0', STR_PAD_LEFT);
-            })->values();
+        $sorted = $this->sortUnifiedRowsNewestFirst(
+            $this->collectUnifiedRowsForDateRange($dateFrom, $dateTo, $shift)
+        );
 
         return [
             'category_totals' => $this->computeCategoryTotals($sorted),
@@ -170,7 +191,7 @@ class BudgetSummaryService
         } else {
             $this->applyDateRangeFilters($issuedQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
         }
-        foreach ($issuedQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
+        foreach ($issuedQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $all->push([
                 'id' => $row->id,
                 'type' => self::TYPE_BUDGET,
@@ -189,7 +210,7 @@ class BudgetSummaryService
         } else {
             $this->applyDateRangeFilters($truckQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
         }
-        foreach ($truckQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
+        foreach ($truckQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $desc = $row->helper ? trim($row->helper->first_name . ' ' . $row->helper->last_name) : null;
             $amount = (float) $row->issued_cash_amount;
             $all->push([
@@ -213,7 +234,7 @@ class BudgetSummaryService
         } else {
             $this->applyDateRangeFilters($partsQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
         }
-        foreach ($partsQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
+        foreach ($partsQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount_per_item * (int) $row->quantity;
             $desc = $row->article ?: $row->receipt_no;
             $all->push([
@@ -239,7 +260,7 @@ class BudgetSummaryService
         } else {
             $this->applyDateRangeFilters($fundsQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
         }
-        foreach ($fundsQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
+        foreach ($fundsQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount;
             $all->push([
                 'id' => $row->id,
@@ -259,7 +280,7 @@ class BudgetSummaryService
         } else {
             $this->applyDateRangeFilters($driverCAQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
         }
-        foreach ($driverCAQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
+        foreach ($driverCAQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount;
             $desc = $row->driver ? trim($row->driver->first_name . ' ' . $row->driver->last_name) : null;
             $all->push([
@@ -281,7 +302,7 @@ class BudgetSummaryService
         } else {
             $this->applyDateRangeFilters($helperCAQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
         }
-        foreach ($helperCAQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get() as $row) {
+        foreach ($helperCAQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount;
             $desc = $row->helper ? trim($row->helper->first_name . ' ' . $row->helper->last_name) : null;
             $all->push([
@@ -305,14 +326,54 @@ class BudgetSummaryService
     }
 
     /**
+     * Case-insensitive substring match across type, description, source_table, dates, amounts, and common extra fields.
+     *
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function filterUnifiedRowsBySearch(Collection $rows, string $search): Collection
+    {
+        $needle = mb_strtolower(trim($search));
+        if ($needle === '') {
+            return $rows;
+        }
+
+        return $rows->filter(function (array $row) use ($needle) {
+            $parts = [
+                $row['type'] ?? '',
+                $row['description'] ?? '',
+                $row['source_table'] ?? '',
+                $row['transaction_date'] ?? '',
+                $row['shift'] ?? '',
+                isset($row['amount']) ? (string) $row['amount'] : '',
+                isset($row['created_at']) ? (string) $row['created_at'] : '',
+                $row['plate_number'] ?? '',
+                $row['receipt_no'] ?? '',
+                $row['article'] ?? '',
+            ];
+            foreach ($parts as $part) {
+                if ($part !== '' && str_contains(mb_strtolower((string) $part), $needle)) {
+                    return true;
+                }
+            }
+
+            return false;
+        })->values();
+    }
+
+    /**
      * Collect all rows from the 6 tables, map to unified shape, sort, and compute totals.
      */
     public function list(int $perPage = 10, ?string $shift = 'All', ?string $type = null): array
     {
-        $sorted = $this->collectUnifiedRows(null, null, $shift, $type, true)
-            ->sortByDesc(function ($item) {
-                return $item['transaction_date'] . ' ' . str_pad((string) $item['id'], 10, '0', STR_PAD_LEFT);
-            })->values();
+        $sorted = $this->sortUnifiedRowsNewestFirst(
+            $this->collectUnifiedRows(null, null, $shift, $type, true)
+        );
+
+        $search = request('search');
+        if (is_string($search) && trim($search) !== '') {
+            $sorted = $this->filterUnifiedRowsBySearch($sorted, $search);
+        }
 
         $total = $sorted->count();
         $totalBudget = $sorted->where('type', self::TYPE_BUDGET)->sum('amount');
@@ -336,8 +397,16 @@ class BudgetSummaryService
             $total,
             $perPage,
             $page,
-            ['path' => request()->url(), 'query' => request()->query()]
+            ['path' => request()->url(), 'pageName' => 'page']
         );
+        $paginator->withQueryString();
+
+        $meta = collect($paginator->toArray())
+            ->except('data')
+            ->except(['first_page_url', 'last_page_url', 'next_page_url', 'prev_page_url'])
+            ->all();
+        $meta['all'] = $total;
+        $meta['trashed'] = 0;
 
         $response = [
             'data' => $paginator->items(),
@@ -345,20 +414,7 @@ class BudgetSummaryService
             'total_expense' => round($totalExpense, 2),
             'cash_on_hand' => round($cashOnHand, 2),
             'category_totals' => $categoryTotals,
-            'meta' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'from' => $paginator->firstItem(),
-                'to' => $paginator->lastItem(),
-            ],
-            'links' => [
-                'first' => $paginator->url(1),
-                'last' => $paginator->url($paginator->lastPage()),
-                'prev' => $paginator->previousPageUrl(),
-                'next' => $paginator->nextPageUrl(),
-            ],
+            'meta' => $meta,
         ];
 
         if ($dailyChart !== null) {

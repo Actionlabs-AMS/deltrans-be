@@ -75,6 +75,8 @@ class HelperCAHistoryService extends BaseService
 
             return $query->with(['helper'])
                         ->orderBy('transaction_date', 'desc')
+                        ->orderBy('created_at', 'desc')
+                        ->orderBy('id', 'desc')
                         ->paginate($perPage)
                         ->withQueryString();
 

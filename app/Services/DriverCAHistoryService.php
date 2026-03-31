@@ -115,6 +115,7 @@ class DriverCAHistoryService extends BaseService
             } else {
                 // Default sorting when no header is clicked
                 $query->orderBy('transaction_date', 'desc')
+                    ->orderBy('created_at', 'desc')
                     ->orderBy('id', 'desc');
             }
 

@@ -23,6 +23,7 @@ class BudgetSummaryRequest extends FormRequest
             'date_to' => 'nullable|date',
             'created_at_from' => 'nullable|date',
             'created_at_to' => 'nullable|date',
+            'search' => 'nullable|string|max:255',
             'per_page' => 'nullable|integer|min:1|max:100',
         ];
     }

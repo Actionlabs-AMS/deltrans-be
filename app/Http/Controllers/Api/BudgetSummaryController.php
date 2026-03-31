@@ -35,20 +35,26 @@ use App\Services\BudgetSummaryService;
  *     @OA\Property(
  *         property="meta",
  *         type="object",
+ *         description="Laravel-style pagination metadata (aligned with Resource collection responses)",
  *         @OA\Property(property="current_page", type="integer", example=1),
- *         @OA\Property(property="last_page", type="integer", example=5),
- *         @OA\Property(property="per_page", type="integer", example=10),
- *         @OA\Property(property="total", type="integer", example=42),
  *         @OA\Property(property="from", type="integer", example=1, nullable=true),
- *         @OA\Property(property="to", type="integer", example=10, nullable=true)
- *     ),
- *     @OA\Property(
- *         property="links",
- *         type="object",
- *         @OA\Property(property="first", type="string", format="uri", example="http://localhost/api/budget/summary?page=1"),
- *         @OA\Property(property="last", type="string", format="uri", example="http://localhost/api/budget/summary?page=5"),
- *         @OA\Property(property="prev", type="string", format="uri", nullable=true, example=null),
- *         @OA\Property(property="next", type="string", format="uri", example="http://localhost/api/budget/summary?page=2")
+ *         @OA\Property(property="last_page", type="integer", example=5),
+ *         @OA\Property(
+ *             property="links",
+ *             type="array",
+ *             @OA\Items(
+ *                 type="object",
+ *                 @OA\Property(property="url", type="string", format="uri", nullable=true),
+ *                 @OA\Property(property="label", type="string", example="1"),
+ *                 @OA\Property(property="active", type="boolean")
+ *             )
+ *         ),
+ *         @OA\Property(property="path", type="string", format="uri", example="http://localhost/api/budget/summary"),
+ *         @OA\Property(property="per_page", type="integer", example=10),
+ *         @OA\Property(property="to", type="integer", example=10, nullable=true),
+ *         @OA\Property(property="total", type="integer", example=42),
+ *         @OA\Property(property="all", type="integer", example=42, description="Total filtered rows (same as total for this endpoint)"),
+ *         @OA\Property(property="trashed", type="integer", example=0, description="Always 0; reserved for parity with other list APIs")
  *     )
  * )
  */
@@ -71,6 +77,12 @@ class BudgetSummaryController
      *     @OA\Parameter(name="date_to", in="query", description="Alias for transaction_date_to", @OA\Schema(type="string", format="date")),
      *     @OA\Parameter(name="created_at_from", in="query", @OA\Schema(type="string", format="date-time")),
      *     @OA\Parameter(name="created_at_to", in="query", @OA\Schema(type="string", format="date-time")),
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Filter rows by substring (case-insensitive) against type, description, source_table, transaction_date, shift, amount, plate/receipt/article where present",
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer", example=10)),
      *     @OA\Response(response=200, description="Success", @OA\JsonContent(ref="#/components/schemas/BudgetSummaryResponse"))
      * )

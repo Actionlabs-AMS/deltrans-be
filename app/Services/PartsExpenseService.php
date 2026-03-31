@@ -46,7 +46,9 @@ class PartsExpenseService extends BaseService
             $to = strlen(request('created_at_to')) === 10 ? request('created_at_to') . ' 23:59:59' : request('created_at_to');
             $query->where('created_at', '<=', $to);
         }
-        $query->orderBy('transaction_date', 'desc')->orderBy('id', 'desc');
+        $query->orderBy('transaction_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
 
         return PartsExpenseResource::collection($query->paginate($perPage)->withQueryString());
     }

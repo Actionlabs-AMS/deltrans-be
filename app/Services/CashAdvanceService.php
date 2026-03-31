@@ -41,7 +41,9 @@ class CashAdvanceService
     ): LengthAwarePaginator {
         $query = DriverCAHistory::query()->with('driver');
         $this->applyFilters($query, $search, $dateFrom, $dateTo, 'transaction_date', $createdAtFrom, $createdAtTo);
-        $query->orderBy('transaction_date', 'desc')->orderBy('id', 'desc');
+        $query->orderBy('transaction_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
         return $query->paginate($perPage)->withQueryString();
     }
 
@@ -55,7 +57,9 @@ class CashAdvanceService
     ): LengthAwarePaginator {
         $query = HelperCAHistory::query()->with('helper');
         $this->applyFilters($query, $search, $dateFrom, $dateTo, 'transaction_date', $createdAtFrom, $createdAtTo);
-        $query->orderBy('transaction_date', 'desc')->orderBy('id', 'desc');
+        $query->orderBy('transaction_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
         return $query->paginate($perPage)->withQueryString();
     }
 
@@ -72,10 +76,25 @@ class CashAdvanceService
         $helperQuery = HelperCAHistory::query()->with('helper');
         $this->applyFilters($helperQuery, $search, $dateFrom, $dateTo, 'transaction_date', $createdAtFrom, $createdAtTo);
 
-        $driverItems = $driverQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get();
-        $helperItems = $helperQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get();
+        $driverItems = $driverQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get();
+        $helperItems = $helperQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get();
 
-        $merged = $driverItems->concat($helperItems)->sortByDesc('transaction_date')->values();
+        $merged = $driverItems->concat($helperItems)->sort(function ($a, $b) {
+            $da = $a->transaction_date?->format('Y-m-d') ?? '';
+            $db = $b->transaction_date?->format('Y-m-d') ?? '';
+            $dCmp = strcmp($db, $da);
+            if ($dCmp !== 0) {
+                return $dCmp;
+            }
+            $ca = $a->created_at?->format('Y-m-d H:i:s') ?? '';
+            $cb = $b->created_at?->format('Y-m-d H:i:s') ?? '';
+            $cCmp = strcmp($cb, $ca);
+            if ($cCmp !== 0) {
+                return $cCmp;
+            }
+
+            return $b->id <=> $a->id;
+        })->values();
 
         $total = $merged->count();
         $page = (int) request('page', 1);

@@ -239,10 +239,14 @@ class ReportsService
                 });
             }
 
-            // 4. --- Ordering ---
-            $sortColumn = request('order', 'created_at'); // Default to entry order
-            $sortDirection = request('sort', 'desc');
-            $query->orderBy($sortColumn, $sortDirection);
+            // 4. --- Ordering: same date → newest created first; optional order/sort override
+            if (request()->filled('order')) {
+                $query->orderBy(request('order'), request('sort', 'desc'));
+            } else {
+                $query->orderBy('transaction_date', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->orderBy('id', 'desc');
+            }
 
             // 5. Return paginated results
             return $query->paginate($perPage)->withQueryString();
@@ -282,10 +286,14 @@ class ReportsService
                 });
             }
 
-            // 4. --- Ordering ---
-            $sortColumn = request('order', 'created_at'); // Default to entry order
-            $sortDirection = request('sort', 'desc');
-            $query->orderBy($sortColumn, $sortDirection);
+            // 4. --- Ordering: same date → newest created first; optional order/sort override
+            if (request()->filled('order')) {
+                $query->orderBy(request('order'), request('sort', 'desc'));
+            } else {
+                $query->orderBy('transaction_date', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->orderBy('id', 'desc');
+            }
 
             // 5. Return paginated results
             return $query->paginate($perPage)->withQueryString();
@@ -316,10 +324,14 @@ class ReportsService
                 });
             }
 
-            // 4. --- Ordering ---
-            $sortColumn = request('order', 'created_at'); // Default to entry order
-            $sortDirection = request('sort', 'desc');
-            $query->orderBy($sortColumn, $sortDirection);
+            // 4. --- Ordering: same date → newest created first; optional order/sort override
+            if (request()->filled('order')) {
+                $query->orderBy(request('order'), request('sort', 'desc'));
+            } else {
+                $query->orderBy('transaction_date', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->orderBy('id', 'desc');
+            }
 
             // 5. Return paginated results
             return $query->paginate($perPage)->withQueryString();

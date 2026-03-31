@@ -96,10 +96,16 @@ class RatePerClientController extends BaseController
      *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
-     *         name="cypa_id",
+     *         name="cypa_from_id",
      *         in="query",
-     *         description="Filter by CYPA ID (0 = all)",
-     *         @OA\Schema(type="integer", example=0)
+     *         description="CYPA origin ID for filter; results include rows where cypa_id equals this, cypa_to_id, or 0 (all CYPA)",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="cypa_to_id",
+     *         in="query",
+     *         description="CYPA destination ID for filter; results include rows where cypa_id equals cypa_from_id, this value, or 0 (all CYPA)",
+     *         @OA\Schema(type="integer", example=2)
      *     ),
      *     @OA\Parameter(
      *         name="container_size",
