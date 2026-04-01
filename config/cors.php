@@ -38,6 +38,8 @@ return [
     'allowed_origins_patterns' => [
         '/^http:\/\/localhost:\d+$/',
         '/^http:\/\/127\.0\.0\.1:\d+$/',
+        // Allow Deltrans subdomains (staging/prod), optional port.
+        '/^https?:\/\/([a-z0-9-]+\.)*deltranslogistics\.com(:\d+)?$/i',
     ],
     
     'allowed_headers' => env('CORS_ALLOWED_HEADERS')
