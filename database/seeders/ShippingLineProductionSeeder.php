@@ -61,6 +61,11 @@ class ShippingLineProductionSeeder extends Seeder
                 'name' => 'HMM (Philippines), Inc.',
                 'address' => 'UNITS 703B and 704B, 7th Floor, East Tower of 8912 Asean Ave., BLDG Asean City, Parañaque City',
             ],
+            [
+                'short_name' => 'CMA CGM',
+                'name' => 'CMA CGM',
+                'address' => null,
+            ],
             // Additional shipping lines referenced by fixed expenses (no extra details in attachments)
             [
                 'short_name' => 'IAL',
