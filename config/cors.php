@@ -15,7 +15,8 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'storage/app/public/*', 'docs/*', 'api/documentation'],
+    // Include Sanctum CSRF cookie endpoint for SPA auth flows.
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'sanctum/*', 'storage/app/public/*', 'docs/*', 'api/documentation'],
     
     'allowed_methods' => env('CORS_ALLOWED_METHODS') 
         ? array_values(array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_METHODS')))))
