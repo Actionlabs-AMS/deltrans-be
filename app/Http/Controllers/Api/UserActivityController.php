@@ -299,6 +299,12 @@ class UserActivityController extends Controller
      *         description="End date (YYYY-MM-DD)",
      *         @OA\Schema(type="string", example="2024-01-31")
      *     ),
+     *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Limit results (default 200)",
+     *         @OA\Schema(type="integer", example=50)
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Activity timeline retrieved successfully",

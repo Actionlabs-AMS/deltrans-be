@@ -22426,6 +22426,15 @@
                             "type": "string",
                             "example": "2024-01-31"
                         }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Limit results (default 200)",
+                        "schema": {
+                            "type": "integer",
+                            "example": 50
+                        }
                     }
                 ],
                 "responses": {
