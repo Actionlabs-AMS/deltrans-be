@@ -94,6 +94,17 @@ class UserActivityService
                 }
                 
                 $activities[] = $log;
+
+                // Optimization: when no date range is provided, we only need "latest N".
+                // Stop immediately once we have enough, even mid-file (important for very large files).
+                if (
+                    !$hasDateFilter
+                    && is_int($limit)
+                    && $limit > 0
+                    && count($activities) >= $limit
+                ) {
+                    break;
+                }
             }
 
             Log::debug('UserActivityService: Parsed log file', [
