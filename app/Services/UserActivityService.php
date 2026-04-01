@@ -7,6 +7,7 @@ use App\Models\UserMeta;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use SplFileObject;
 
 class UserActivityService
 {
@@ -41,15 +42,11 @@ class UserActivityService
         
         // Parse each log file
         foreach ($logFiles as $file) {
-            $logs = $this->parseLogFile($file);
-            
-            Log::debug('UserActivityService: Parsed log file', [
-                'file' => $file,
-                'total_logs' => count($logs),
-            ]);
-            
+            $parsedCount = 0;
+
             // Filter by user_id
-            foreach ($logs as $log) {
+            foreach ($this->iterateAuditLogs($file) as $log) {
+                $parsedCount++;
                 // Check if user_id exists and matches
                 // user_id can be at root level or in data array
                 $logUserId = $log['user_id'] ?? $log['data']['user_id'] ?? null;
@@ -98,6 +95,11 @@ class UserActivityService
                 
                 $activities[] = $log;
             }
+
+            Log::debug('UserActivityService: Parsed log file', [
+                'file' => $file,
+                'total_logs' => $parsedCount,
+            ]);
 
             // Optimization: when no date range is provided, we only need "latest N".
             // Since log files are processed newest-first, we can stop once we have enough.
@@ -306,9 +308,7 @@ class UserActivityService
         $allFailedLoginActivities = [];
         
         foreach ($logFiles as $file) {
-            $logs = $this->parseLogFile($file);
-            
-            foreach ($logs as $log) {
+            foreach ($this->iterateAuditLogs($file) as $log) {
                 $logModule = $log['module'] ?? 'UNKNOWN';
                 $logAction = $log['action'] ?? 'UNKNOWN';
                 
@@ -559,63 +559,58 @@ class UserActivityService
      */
     private function parseLogFile(string $filePath): array
     {
-        $logs = [];
-        
+        // Backward-compatible wrapper; prefer iterateAuditLogs() for streaming.
+        return iterator_to_array($this->iterateAuditLogs($filePath), false);
+    }
+
+    /**
+     * Stream audit logs from a file without loading it into memory.
+     *
+     * @return \Generator<array>
+     */
+    private function iterateAuditLogs(string $filePath): \Generator
+    {
         if (!File::exists($filePath)) {
-            return $logs;
+            return;
         }
-        
-        $content = File::get($filePath);
-        $lines = explode("\n", $content);
-        
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if (empty($line)) {
+
+        $file = new SplFileObject($filePath, 'r');
+        $file->setFlags(SplFileObject::DROP_NEW_LINE);
+
+        foreach ($file as $line) {
+            if (!is_string($line)) {
                 continue;
             }
-            
-            // Laravel log format: [YYYY-MM-DD HH:MM:SS] local.INFO: Audit Trail {...JSON...}
-            // Or: [YYYY-MM-DD HH:MM:SS] local.INFO: message {...JSON...}
-            // Extract JSON from the line
+
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            // Laravel log format: [YYYY-MM-DD HH:MM:SS] local.INFO: ... {...JSON...}
             $jsonStart = strpos($line, '{');
             if ($jsonStart === false) {
-                // Try to parse entire line as JSON (in case it's pure JSON)
                 $log = json_decode($line, true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($log)) {
-                    $logs[] = $log;
+                    yield $log;
                 }
                 continue;
             }
-            
-            // Extract JSON portion
+
             $jsonString = substr($line, $jsonStart);
-            
-            // Try to parse the JSON
             $log = json_decode($jsonString, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($log)) {
-                // Verify this is an audit trail log (has module and action)
-                if (isset($log['module']) && isset($log['action'])) {
-                    $logs[] = $log;
-                } else {
-                    // Log for debugging if structure is unexpected
-                    \Log::debug('UserActivityService: Skipped log entry (missing module/action)', [
-                        'file' => $filePath,
-                        'has_module' => isset($log['module']),
-                        'has_action' => isset($log['action']),
-                        'keys' => array_keys($log),
-                    ]);
-                }
-            } else {
-                // Log JSON parsing errors for debugging
-                \Log::debug('UserActivityService: Failed to parse JSON', [
-                    'file' => $filePath,
-                    'json_error' => json_last_error_msg(),
-                    'line_preview' => substr($line, 0, 200),
-                ]);
+
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($log)) {
+                continue;
             }
+
+            // Only yield audit trail entries.
+            if (!isset($log['module'], $log['action'])) {
+                continue;
+            }
+
+            yield $log;
         }
-        
-        return $logs;
     }
     
     /**
