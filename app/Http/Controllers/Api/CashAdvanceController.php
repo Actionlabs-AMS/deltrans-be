@@ -140,6 +140,7 @@ class CashAdvanceController
      *     @OA\Parameter(name="type", in="query", required=true, @OA\Schema(type="integer", enum={1, 2})),
      *     @OA\RequestBody(required=true, @OA\JsonContent(
      *         @OA\Property(property="type", type="integer", enum={1, 2}),
+     *         @OA\Property(property="requestor_id", type="integer", description="Optional. New driver ID when type=1, or helper ID when type=2 (reassigns the record)"),
      *         @OA\Property(property="amount", type="number"),
      *         @OA\Property(property="transaction_date", type="string", format="date"),
      *         @OA\Property(property="shift", type="string", enum={"Day", "Night", "1st", "2nd"})

@@ -2441,6 +2441,10 @@
                                             2
                                         ]
                                     },
+                                    "requestor_id": {
+                                        "description": "Optional. New driver ID when type=1, or helper ID when type=2 (reassigns the record)",
+                                        "type": "integer"
+                                    },
                                     "amount": {
                                         "type": "number"
                                     },

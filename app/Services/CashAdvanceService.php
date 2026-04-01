@@ -175,15 +175,32 @@ class CashAdvanceService
     {
         $type = (int) $data['type'];
         unset($data['type']);
+
+        $requestorId = null;
+        if (array_key_exists('requestor_id', $data)) {
+            $requestorId = (int) $data['requestor_id'];
+            unset($data['requestor_id']);
+        }
+
         if ($type === 1) {
             $model = DriverCAHistory::findOrFail($id);
-            $this->ensureOnePerShiftPerDate($model->driver_id, null, $model->transaction_date, $model->shift, $data, $id, 1);
-            $model->update(array_intersect_key($data, array_flip(['amount', 'transaction_date', 'shift'])));
+            $driverIdForRule = $requestorId ?? $model->driver_id;
+            $this->ensureOnePerShiftPerDate($driverIdForRule, null, $model->transaction_date, $model->shift, $data, $id, 1);
+            $payload = array_intersect_key($data, array_flip(['amount', 'transaction_date', 'shift']));
+            if ($requestorId !== null) {
+                $payload['driver_id'] = $requestorId;
+            }
+            $model->update($payload);
             $model->load('driver');
         } else {
             $model = HelperCAHistory::findOrFail($id);
-            $this->ensureOnePerShiftPerDate(null, $model->helper_id, $model->transaction_date, $model->shift, $data, $id, 2);
-            $model->update(array_intersect_key($data, array_flip(['amount', 'transaction_date', 'shift'])));
+            $helperIdForRule = $requestorId ?? $model->helper_id;
+            $this->ensureOnePerShiftPerDate(null, $helperIdForRule, $model->transaction_date, $model->shift, $data, $id, 2);
+            $payload = array_intersect_key($data, array_flip(['amount', 'transaction_date', 'shift']));
+            if ($requestorId !== null) {
+                $payload['helper_id'] = $requestorId;
+            }
+            $model->update($payload);
             $model->load('helper');
         }
         return (new CashAdvanceResource($model))->toArray(request());

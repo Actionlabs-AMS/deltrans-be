@@ -45,10 +45,11 @@ class CashAdvanceRequest extends FormRequest
             return $rules;
         }
 
-        // PATCH: type required (1 or 2)
+        // PATCH: type required (1 or 2); requestor_id optional (reassign driver or helper)
         if ($this->isMethod('PATCH')) {
             return [
                 'type' => 'required|integer|in:1,2',
+                'requestor_id' => 'sometimes|integer|min:1',
                 'amount' => 'sometimes|required|numeric|min:0|max:999999.99',
                 'transaction_date' => 'sometimes|required|date|before_or_equal:today',
                 'shift' => ['sometimes', 'required', 'string', Rule::in(['Day', 'Night', '1st', '2nd'])],
@@ -86,6 +87,17 @@ class CashAdvanceRequest extends FormRequest
             }
         }
 
+        // PATCH: same aliases for reassigning driver/helper
+        if ($this->isMethod('PATCH') && !$this->has('requestor_id')) {
+            $type = $this->has('type') ? (int) $this->type : null;
+            if ($type === 1 && $this->has('driver_id')) {
+                $this->merge(['requestor_id' => (int) $this->driver_id]);
+            }
+            if ($type === 2 && $this->has('helper_id')) {
+                $this->merge(['requestor_id' => (int) $this->helper_id]);
+            }
+        }
+
         // Allow type in query for GET show and DELETE (e.g. /cash-advances/{id}?type=1)
         if (($this->isMethod('GET') || $this->isMethod('DELETE')) && $this->query('type') && !$this->has('type')) {
             $this->merge(['type' => (int) $this->query('type')]);
@@ -95,6 +107,17 @@ class CashAdvanceRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            if ($this->isMethod('PATCH') && $this->has('requestor_id') && $this->has('type')) {
+                $type = (int) $this->type;
+                $requestorId = (int) $this->requestor_id;
+                if ($type === 1 && !\App\Models\Driver::where('id', $requestorId)->exists()) {
+                    $validator->errors()->add('requestor_id', 'The selected requestor_id does not exist in drivers.');
+                }
+                if ($type === 2 && !\App\Models\Helper::where('id', $requestorId)->exists()) {
+                    $validator->errors()->add('requestor_id', 'The selected requestor_id does not exist in helpers.');
+                }
+            }
+
             if (!$this->isMethod('POST') || !$this->has('type') || !$this->has('requestor_id')) {
                 return;
             }
