@@ -19,7 +19,16 @@ class CoreAppSeeders extends Seeder
             RolePermissionSeeder::class,
             LanguageSeeder::class,
             OptionSeeder::class,
+            SuperAdminUserSeeder::class,
+            ShippingLineProductionSeeder::class,
+            CypaDetailsProductionSeeder::class,
+            RatePerClientProductionSeeder::class,
+            FixedExpenseProductionSeeder::class,
+            HelperProductionSeeder::class,
+            FleetTruckProductionSeeder::class,
+            DriverProductionSeeder::class,
         ]);
     }
 }
+//php artisan migrate:fresh
 //php artisan db:seed --class=CoreAppSeeders
