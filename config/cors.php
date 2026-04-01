@@ -18,11 +18,11 @@ return [
     'paths' => ['api/*', 'storage/app/public/*', 'docs/*', 'api/documentation'],
     
     'allowed_methods' => env('CORS_ALLOWED_METHODS') 
-        ? explode(',', env('CORS_ALLOWED_METHODS'))
+        ? array_values(array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_METHODS')))))
         : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     
     'allowed_origins' => env('CORS_ALLOWED_ORIGINS')
-        ? explode(',', env('CORS_ALLOWED_ORIGINS'))
+        ? array_values(array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS')))))
         : [
             'http://localhost:3000',
             'http://localhost:3001',
@@ -40,7 +40,7 @@ return [
     ],
     
     'allowed_headers' => env('CORS_ALLOWED_HEADERS')
-        ? explode(',', env('CORS_ALLOWED_HEADERS'))
+        ? array_values(array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_HEADERS')))))
         : [
             'Accept',
             'Authorization',
