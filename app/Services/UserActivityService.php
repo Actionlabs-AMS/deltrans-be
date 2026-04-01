@@ -27,6 +27,7 @@ class UserActivityService
         $module = $filters['module'] ?? null;
         $action = $filters['action'] ?? null;
         $limit = $filters['limit'] ?? 100;
+        $hasDateFilter = !empty($startDate) || !empty($endDate);
         
         // Get audit log files
         $logFiles = $this->getAuditLogFiles($startDate, $endDate);
@@ -96,6 +97,12 @@ class UserActivityService
                 }
                 
                 $activities[] = $log;
+            }
+
+            // Optimization: when no date range is provided, we only need "latest N".
+            // Since log files are processed newest-first, we can stop once we have enough.
+            if (!$hasDateFilter && is_int($limit) && $limit > 0 && count($activities) >= $limit) {
+                break;
             }
         }
         
@@ -505,12 +512,11 @@ class UserActivityService
     {
         $logPath = storage_path('logs');
         $files = [];
+        $dailyFiles = [];
         
         // Get main audit log file
         $mainLog = $logPath . '/audit.log';
-        if (File::exists($mainLog)) {
-            $files[] = $mainLog;
-        }
+        $hasMainLog = File::exists($mainLog);
         
         // Get daily log files if they exist
         $allFiles = File::files($logPath);
@@ -527,10 +533,21 @@ class UserActivityService
                     continue;
                 }
                 
-                $files[] = $file->getPathname();
+                $dailyFiles[$fileDate] = $file->getPathname();
             }
         }
-        
+
+        // Process newest daily files first (important for early-stop optimization).
+        if (!empty($dailyFiles)) {
+            krsort($dailyFiles);
+            $files = array_values($dailyFiles);
+        }
+
+        // Keep main rolling log last (it may include mixed dates).
+        if ($hasMainLog) {
+            $files[] = $mainLog;
+        }
+
         return $files;
     }
     
