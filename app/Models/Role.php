@@ -9,6 +9,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Role extends Model
 {
   use HasFactory, SoftDeletes;
+
+	/**
+	 * Per-request in-memory cache for permissions formatting.
+	 *
+	 * This prevents repeated DB joins + repeated log spam when:
+	 * - AuthResource calls getPermissionsFormatted() directly
+	 * - getUserRoutes() accesses the appended/accessor `permissions` attribute
+	 */
+	protected ?array $permissionsFormattedCache = null;
   /**
 	 * The attributes that are mass assignable.
 	 *
@@ -48,11 +57,15 @@ class Role extends Model
 	// Method to get the permissions in the required format
 	public function getPermissionsFormatted()
 	{
+		if (is_array($this->permissionsFormattedCache)) {
+			return $this->permissionsFormattedCache;
+		}
+
 		// Initialize the array to store the structured permissions
 		$permissions_data = [];
 
 		// Fetch permissions from role_permissions table
-		\Log::info('Role::getPermissionsFormatted - Fetching from role_permissions', [
+		\Log::debug('Role::getPermissionsFormatted - Fetching from role_permissions', [
 			'role_id' => $this->id,
 			'role_name' => $this->name,
 		]);
@@ -91,13 +104,14 @@ class Role extends Model
 			$permissions_data[$parent_navigation_id][$navigation_id][$permission_name] = (bool) $allowed;
 		}
 
-		\Log::info('Role::getPermissionsFormatted - Permissions fetched', [
+		\Log::debug('Role::getPermissionsFormatted - Permissions fetched', [
 			'role_id' => $this->id,
 			'permissions_count' => count($permissions_data),
 			'permissions_structure_keys' => array_keys($permissions_data),
 		]);
 
-		return $permissions_data;
+		$this->permissionsFormattedCache = $permissions_data;
+		return $this->permissionsFormattedCache;
 	}
 
 	private function getNavigations($parentId=null) 
