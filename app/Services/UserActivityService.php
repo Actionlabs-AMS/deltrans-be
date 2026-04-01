@@ -32,17 +32,17 @@ class UserActivityService
         $logFiles = $this->getAuditLogFiles($startDate, $endDate);
         
         // Log for debugging
-        \Log::info('UserActivityService: Looking for activities', [
+        Log::debug('UserActivityService: Looking for activities', [
             'user_id' => $userId,
             'log_files_found' => count($logFiles),
-            'log_files' => $logFiles,
+            // Avoid logging full file lists at INFO/DEBUG; it can be huge and noisy.
         ]);
         
         // Parse each log file
         foreach ($logFiles as $file) {
             $logs = $this->parseLogFile($file);
             
-            \Log::info('UserActivityService: Parsed log file', [
+            Log::debug('UserActivityService: Parsed log file', [
                 'file' => $file,
                 'total_logs' => count($logs),
             ]);
@@ -99,7 +99,7 @@ class UserActivityService
             }
         }
         
-        \Log::info('UserActivityService: Found activities', [
+        Log::debug('UserActivityService: Found activities', [
             'user_id' => $userId,
             'total_activities' => count($activities),
         ]);
@@ -274,7 +274,7 @@ class UserActivityService
         $startDate = $filters['start_date'] ?? Carbon::now()->subDays(30)->toDateString();
         $endDate = $filters['end_date'] ?? Carbon::now()->toDateString();
         
-        \Log::info('UserActivityService: Getting statistics', [
+        Log::debug('UserActivityService: Getting statistics', [
             'user_id' => $userId,
             'start_date' => $startDate,
             'end_date' => $endDate,
@@ -289,7 +289,7 @@ class UserActivityService
         // Get audit log files
         $logFiles = $this->getAuditLogFiles($startDateFilter, $endDateFilter);
         
-        \Log::info('UserActivityService: Processing log files for statistics', [
+        Log::debug('UserActivityService: Processing log files for statistics', [
             'user_id' => $userId,
             'log_files_found' => count($logFiles),
         ]);
@@ -312,7 +312,6 @@ class UserActivityService
                             'user_id' => $log['user_id'] ?? $log['data']['user_id'] ?? null,
                             'timestamp' => $log['timestamp'] ?? null,
                             'file' => basename($file),
-                            'full_log' => $log,
                         ];
                     } elseif ($logAction === 'LOGIN_FAILED' || $logAction === 'LOGIN_BLOCKED') {
                         $allFailedLoginActivities[] = [
@@ -320,7 +319,6 @@ class UserActivityService
                             'timestamp' => $log['timestamp'] ?? null,
                             'file' => basename($file),
                             'action' => $logAction,
-                            'full_log' => $log,
                         ];
                     }
                 }
@@ -331,7 +329,7 @@ class UserActivityService
                 
                 // Debug logging for LOGOUT actions
                 if ($logAction === 'LOGOUT') {
-                    \Log::info('UserActivityService: Found LOGOUT activity in statistics', [
+                    Log::debug('UserActivityService: Found LOGOUT activity in statistics', [
                         'target_user_id' => $userId,
                         'log_user_id' => $logUserId,
                         'log_user_id_type' => gettype($logUserId),
@@ -383,7 +381,7 @@ class UserActivityService
             return in_array($activity['action'] ?? '', ['LOGIN_FAILED', 'LOGIN_BLOCKED']);
         }));
         
-        \Log::info('UserActivityService: Activities for statistics', [
+        Log::debug('UserActivityService: Activities for statistics', [
             'user_id' => $userId,
             'activities_count' => count($activities),
             'auth_activities_count' => count($authActivities),
@@ -425,18 +423,7 @@ class UserActivityService
                 ? Carbon::parse($activity['timestamp'])->format('Y-m-d')
                 : 'unknown';
             
-            // Debug logging for AUTHENTICATION actions
-            if ($module === 'AUTHENTICATION' && in_array($action, ['LOGOUT', 'LOGIN_FAILED', 'LOGIN_BLOCKED', 'LOGIN_SUCCESS'])) {
-                \Log::info('UserActivityService: Processing authentication activity in statistics', [
-                    'user_id' => $userId,
-                    'module' => $module,
-                    'action' => $action,
-                    'activity_user_id' => $activity['user_id'] ?? 'not set',
-                    'activity_data_user_id' => $activity['data']['user_id'] ?? 'not set',
-                    'will_count_logout' => ($module === 'AUTHENTICATION' && $action === 'LOGOUT'),
-                    'will_count_failed' => ($module === 'AUTHENTICATION' && ($action === 'LOGIN_FAILED' || $action === 'LOGIN_BLOCKED')),
-                ]);
-            }
+            // Per-activity logging is intentionally omitted here to avoid log spam.
             
             // Count by action
             if (!isset($stats['by_action'][$action])) {
@@ -490,7 +477,7 @@ class UserActivityService
             }
         }
         
-        \Log::info('UserActivityService: Statistics calculated', [
+        Log::debug('UserActivityService: Statistics calculated', [
             'user_id' => $userId,
             'total_activities' => $stats['total_activities'],
             'login_count' => $stats['login_count'],
