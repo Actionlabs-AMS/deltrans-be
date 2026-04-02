@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\ShippingLine;
 
 class BookingRequest extends FormRequest
 {
@@ -25,7 +26,37 @@ class BookingRequest extends FormRequest
         $rules = [
             'reference_number' => 'nullable|string|max:255|unique:bookings,reference_number',
             'vessel' => 'nullable|string|max:255',
-            'shipping_line_id' => 'required|integer|exists:shipping_lines,id',
+            'shipping_line_id' => [
+                'required',
+                'integer',
+                'exists:shipping_lines,id',
+                function ($attribute, $value, $fail) {
+                    // This validation is specifically for creating bookings.
+                    if (!$this->isMethod('POST')) {
+                        return;
+                    }
+
+                    $shippingLine = ShippingLine::query()
+                        ->select(['shipping_lines_template', 'transaction_information_template'])
+                        ->find($value);
+
+                    if (!$shippingLine) {
+                        return; // exists rule already covers this
+                    }
+
+                    $hasShippingLinesTemplate = is_array($shippingLine->shipping_lines_template)
+                        ? !empty($shippingLine->shipping_lines_template)
+                        : !empty($shippingLine->shipping_lines_template);
+
+                    $hasTransactionInformationTemplate = is_array($shippingLine->transaction_information_template)
+                        ? !empty($shippingLine->transaction_information_template)
+                        : !empty($shippingLine->transaction_information_template);
+
+                    if (!$hasShippingLinesTemplate || !$hasTransactionInformationTemplate) {
+                        $fail('Not allowed to create booking. Please setup the required templates for the selected shipping line (Shipping Lines Template and Transaction Information Template).');
+                    }
+                },
+            ],
             'cypa_id_from' => 'required|integer|exists:cypa_details,id',
             'cypa_id_to' => 'required|integer|exists:cypa_details,id',
             'expected_date' => 'nullable|date',
@@ -39,7 +70,38 @@ class BookingRequest extends FormRequest
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $rules['reference_number'] = 'sometimes|nullable|string|max:255|unique:bookings,reference_number,' . $this->route('id');
             $rules['vessel'] = 'sometimes|nullable|string|max:255';
-            $rules['shipping_line_id'] = 'sometimes|required|integer|exists:shipping_lines,id';
+            $rules['shipping_line_id'] = [
+                'sometimes',
+                'required',
+                'integer',
+                'exists:shipping_lines,id',
+                function ($attribute, $value, $fail) {
+                    // This validation is specifically for creating bookings.
+                    if (!$this->isMethod('POST')) {
+                        return;
+                    }
+
+                    $shippingLine = ShippingLine::query()
+                        ->select(['shipping_lines_template', 'transaction_information_template'])
+                        ->find($value);
+
+                    if (!$shippingLine) {
+                        return; // exists rule already covers this
+                    }
+
+                    $hasShippingLinesTemplate = is_array($shippingLine->shipping_lines_template)
+                        ? !empty($shippingLine->shipping_lines_template)
+                        : !empty($shippingLine->shipping_lines_template);
+
+                    $hasTransactionInformationTemplate = is_array($shippingLine->transaction_information_template)
+                        ? !empty($shippingLine->transaction_information_template)
+                        : !empty($shippingLine->transaction_information_template);
+
+                    if (!$hasShippingLinesTemplate || !$hasTransactionInformationTemplate) {
+                        $fail('Not allowed to create booking. Please setup the required templates for the selected shipping line (Shipping Lines Template and Transaction Information Template).');
+                    }
+                },
+            ];
             $rules['cypa_id_from'] = 'sometimes|required|integer|exists:cypa_details,id';
             $rules['cypa_id_to'] = 'sometimes|required|integer|exists:cypa_details,id';
             $rules['expected_date'] = 'sometimes|nullable|date';
