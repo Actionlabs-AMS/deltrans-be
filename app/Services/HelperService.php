@@ -94,10 +94,22 @@ class HelperService extends BaseService
                 $query->where('helpers.is_active', request('is_active'));
             }
 
-            // 4. Ordering (Prefix with table name to be safe)
-            $order = request('order', 'helpers.id');
+            // 4. Ordering: newest/most recently updated first.
+            // The Helpers UI sometimes sends order by `id` (static), which prevents updates from moving to the top.
+            $order = request('order');
             $sort = request('sort', 'desc');
-            $query->orderBy($order, $sort);
+
+            $isDefaultOrIdOrdering = empty($order) || in_array($order, ['id', 'helpers.id'], true);
+
+            if ($isDefaultOrIdOrdering) {
+                // Prefer updated_at so recently edited records move to the top.
+                $query->orderBy('helpers.updated_at', 'desc')
+                    ->orderBy('helpers.created_at', 'desc')
+                    ->orderBy('helpers.id', 'desc');
+            } else {
+                // Honor explicit ordering requested by the UI for other columns.
+                $query->orderBy($order, $sort);
+            }
 
             return HelperResource::collection(
                 $query->paginate($perPage)->withQueryString()
