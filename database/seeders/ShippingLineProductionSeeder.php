@@ -10,6 +10,17 @@ class ShippingLineProductionSeeder extends Seeder
 {
     public function run(): void
     {
+        // Template option IDs from `soa_data_options`:
+        // Shipping Line children (parent_id=1): 3..10
+        // Transaction Information children (parent_id=2): 11..25
+        // These are used to populate:
+        // - shipping_lines.shipping_lines_template
+        // - shipping_lines.transaction_information_template
+        //
+        // Note: we only fill templates when missing/empty so users can adjust existing templates later.
+        $shippingLineTemplateIds = [3, 4, 5, 6, 7, 8, 9, 10];
+        $transactionInformationTemplateIds = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
+
         $shippingLines = [
             [
                 'short_name' => 'ONE',
@@ -86,16 +97,59 @@ class ShippingLineProductionSeeder extends Seeder
 
         foreach ($shippingLines as $shippingLine) {
             $name = $shippingLine['name'];
-            ShippingLine::updateOrCreate(
-                ['short_name' => $shippingLine['short_name']],
-                [
-                    // email_address is required (non-nullable); use deterministic placeholder.
-                    'email_address' => 'shipping-line+'.Str::slug($name).'+placeholder@deltrans.local',
-                    'name' => $name,
-                    'short_name' => $shippingLine['short_name'],
-                    'address' => $shippingLine['address'],
-                ]
-            );
+            $shortName = $shippingLine['short_name'];
+
+            $record = ShippingLine::where('short_name', $shortName)->first();
+            $isNew = $record === null;
+
+            if ($isNew) {
+                $record = new ShippingLine();
+                $record->short_name = $shortName;
+                // email_address is required (non-nullable); use deterministic placeholder.
+                $record->email_address = 'shipping-line+' . Str::slug($name) . '+placeholder@deltrans.local';
+            }
+
+            $record->name = $name;
+            $record->address = $shippingLine['address'];
+
+            // Only set templates if missing/empty OR if it doesn't contain the full set of IDs.
+            $needsShippingTemplates = $isNew
+                || empty($record->shipping_lines_template)
+                || (is_array($record->shipping_lines_template) && count($record->shipping_lines_template) !== count($shippingLineTemplateIds));
+
+            $needsTransactionTemplates = $isNew
+                || empty($record->transaction_information_template)
+                || (is_array($record->transaction_information_template) && count($record->transaction_information_template) !== count($transactionInformationTemplateIds));
+
+            if ($needsShippingTemplates) {
+                $record->shipping_lines_template = $shippingLineTemplateIds;
+            }
+
+            if ($needsTransactionTemplates) {
+                $record->transaction_information_template = $transactionInformationTemplateIds;
+            }
+
+            $record->save();
+        }
+
+        // Also make sure any existing shipping lines in the DB (beyond the ones listed above)
+        // get templates populated if missing.
+        $shippingLineQuery = ShippingLine::query();
+        foreach ($shippingLineQuery->get() as $record) {
+            $needsShippingTemplates = empty($record->shipping_lines_template)
+                || (is_array($record->shipping_lines_template) && count($record->shipping_lines_template) !== count($shippingLineTemplateIds));
+
+            $needsTransactionTemplates = empty($record->transaction_information_template)
+                || (is_array($record->transaction_information_template) && count($record->transaction_information_template) !== count($transactionInformationTemplateIds));
+
+            if ($needsShippingTemplates) {
+                $record->shipping_lines_template = $shippingLineTemplateIds;
+            }
+            if ($needsTransactionTemplates) {
+                $record->transaction_information_template = $transactionInformationTemplateIds;
+            }
+
+            $record->save();
         }
     }
 }

@@ -20,6 +20,7 @@ class CoreAppSeeders extends Seeder
             LanguageSeeder::class,
             OptionSeeder::class,
             SuperAdminUserSeeder::class,
+            SoaDataOptionSeeder::class,
             ShippingLineProductionSeeder::class,
             CypaDetailsProductionSeeder::class,
             RatePerClientProductionSeeder::class,
@@ -27,6 +28,7 @@ class CoreAppSeeders extends Seeder
             HelperProductionSeeder::class,
             FleetTruckProductionSeeder::class,
             DriverProductionSeeder::class,
+
         ]);
     }
 }
