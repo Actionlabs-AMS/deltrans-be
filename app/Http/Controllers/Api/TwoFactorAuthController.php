@@ -119,7 +119,7 @@ class TwoFactorAuthController extends Controller
      *         @OA\JsonContent(
      *             required={"email", "code"},
      *             @OA\Property(property="email", type="string", format="email", example="john@example.com", description="User email address"),
-     *             @OA\Property(property="code", type="string", example="123456", description="6-digit verification code")
+     *             @OA\Property(property="code", type="string", example="123456", description="6-digit email code or 8-character backup code (hex, case-insensitive)")
      *         )
      *     ),
      *     @OA\Response(
@@ -163,9 +163,14 @@ class TwoFactorAuthController extends Controller
      */
     public function verifyCode(Request $request): JsonResponse
     {
+        $request->merge([
+            'code' => trim((string) $request->input('code', '')),
+        ]);
+
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,user_email',
-            'code' => 'required|string|size:6',
+            // Email codes are 6 digits; backup codes are 8 hex chars (see TwoFactorAuth::generateBackupCodes)
+            'code' => ['required', 'string', 'regex:/^(\d{6}|[A-Fa-f0-9]{8})$/'],
             'remember_me' => 'sometimes|boolean',
         ]);
 

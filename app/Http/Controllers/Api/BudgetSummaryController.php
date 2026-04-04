@@ -13,7 +13,9 @@ use App\Services\BudgetSummaryService;
  * @OA\Schema(
  *     schema="BudgetSummaryRow",
  *     description="Unified row from any budget table",
- *     @OA\Property(property="id", type="integer"),
+ *     @OA\Property(property="id", type="integer", description="Unique index in the current filtered result set (1..N); safe for list keys across source tables"),
+ *     @OA\Property(property="source_id", type="integer", description="Primary key in the source_table this row came from"),
+ *     @OA\Property(property="row_key", type="string", description="Stable unique key: source_table + ':' + source_id (for dedupe / deep links)"),
  *     @OA\Property(property="type", type="string", enum={"Budget", "Truck Expense", "Parts Expense", "Other Expense", "Driver Cash Advance", "Helper Cash Advance"}),
  *     @OA\Property(property="transaction_date", type="string", format="date"),
  *     @OA\Property(property="shift", type="string", nullable=true),
@@ -62,7 +64,8 @@ class BudgetSummaryController
 {
     public function __construct(
         protected BudgetSummaryService $service
-    ) {}
+    ) {
+    }
 
     /**
      * @OA\Get(

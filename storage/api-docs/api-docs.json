@@ -25256,7 +25256,17 @@
                 "description": "Unified row from any budget table",
                 "properties": {
                     "id": {
+                        "description": "Unique index in the current filtered result set (1..N); safe for list keys across source tables",
                         "type": "integer"
+                    },
+                    "source_id": {
+                        "description": "Primary key in the source_table this row came from",
+                        "type": "integer"
+                    },
+                    "row_key": {
+                        "description": "Stable unique key: source_table + ':' + source_id (for dedupe / deep links)",
+                        "type": "string",
+                        "example": "driver_cash_advancement_history:32"
                     },
                     "type": {
                         "type": "string",

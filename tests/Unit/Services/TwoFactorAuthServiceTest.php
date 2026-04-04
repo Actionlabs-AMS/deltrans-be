@@ -109,6 +109,25 @@ class TwoFactorAuthServiceTest extends TestCase
         $this->assertFalse($result['success']);
     }
 
+    public function test_verify_code_with_valid_backup_code()
+    {
+        $backupCode = 'A1B2C3D4';
+        TwoFactorAuth::create([
+            'user_id' => $this->user->id,
+            'email_code' => null,
+            'email_code_expires_at' => null,
+            'is_enabled' => true,
+            'backup_codes' => [strtoupper($backupCode)],
+            'last_used_at' => null,
+        ]);
+
+        $result = $this->service->verifyCode($this->user, strtolower($backupCode));
+
+        $this->assertTrue($result['success']);
+        $this->assertTrue($result['backup_code_used'] ?? false);
+        $this->assertSame(0, TwoFactorAuth::where('user_id', $this->user->id)->first()->getRemainingBackupCodesCount());
+    }
+
     public function test_enable_two_factor()
     {
         $backupCodes = ['backup1', 'backup2', 'backup3'];

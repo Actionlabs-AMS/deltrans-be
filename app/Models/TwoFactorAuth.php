@@ -77,13 +77,17 @@ class TwoFactorAuth extends Model
             return false;
         }
 
-        $index = array_search($code, $this->backup_codes);
-        if ($index !== false) {
-            // Remove used backup code
-            unset($this->backup_codes[$index]);
-            $this->backup_codes = array_values($this->backup_codes);
-            $this->save();
-            return true;
+        $normalizedInput = strtoupper(trim($code));
+        $codes = $this->backup_codes;
+
+        foreach ($codes as $index => $stored) {
+            if (hash_equals(strtoupper((string) $stored), $normalizedInput)) {
+                unset($codes[$index]);
+                $this->backup_codes = array_values($codes);
+                $this->save();
+
+                return true;
+            }
         }
 
         return false;

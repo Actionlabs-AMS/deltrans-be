@@ -43,9 +43,13 @@ class BudgetSummaryService
      */
     private function applyFilters($query, string $transactionDateColumn, ?string $shift): void
     {
-        $this->applyDateRangeFilters($query, $transactionDateColumn, $shift,
+        $this->applyDateRangeFilters(
+            $query,
+            $transactionDateColumn,
+            $shift,
             request('transaction_date_from'),
-            request('transaction_date_to'));
+            request('transaction_date_to')
+        );
 
         if (request('created_at_from')) {
             $from = strlen(request('created_at_from')) === 10 ? request('created_at_from') . ' 00:00:00' : request('created_at_from');
@@ -88,8 +92,24 @@ class BudgetSummaryService
                 return $cCmp;
             }
 
-            return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+            return ($b['source_id'] ?? 0) <=> ($a['source_id'] ?? 0);
         })->values();
+    }
+
+    /**
+     * Replace cross-table-colliding PKs with a single 1-based id across the full filtered list (stable for pagination).
+     * Preserves the original row id in source_id.
+     *
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function assignUniqueUnifiedRowIds(Collection $rows): Collection
+    {
+        return $rows->values()->map(function (array $row, int $index) {
+            $row['id'] = $index + 1;
+
+            return $row;
+        });
     }
 
     /**
@@ -193,7 +213,8 @@ class BudgetSummaryService
         }
         foreach ($issuedQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $all->push([
-                'id' => $row->id,
+                'source_id' => $row->id,
+                'row_key' => 'issued_budget:' . $row->id,
                 'type' => self::TYPE_BUDGET,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
@@ -214,7 +235,8 @@ class BudgetSummaryService
             $desc = $row->helper ? trim($row->helper->first_name . ' ' . $row->helper->last_name) : null;
             $amount = (float) $row->issued_cash_amount;
             $all->push([
-                'id' => $row->id,
+                'source_id' => $row->id,
+                'row_key' => 'truck_trip_expense:' . $row->id,
                 'type' => self::TYPE_TRUCK_EXPENSE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
@@ -238,7 +260,8 @@ class BudgetSummaryService
             $amount = (float) $row->amount_per_item * (int) $row->quantity;
             $desc = $row->article ?: $row->receipt_no;
             $all->push([
-                'id' => $row->id,
+                'source_id' => $row->id,
+                'row_key' => 'parts_expense:' . $row->id,
                 'type' => self::TYPE_PARTS_EXPENSE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
@@ -263,7 +286,8 @@ class BudgetSummaryService
         foreach ($fundsQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
             $amount = (float) $row->amount;
             $all->push([
-                'id' => $row->id,
+                'source_id' => $row->id,
+                'row_key' => 'funds_for_stack_run:' . $row->id,
                 'type' => self::TYPE_OTHER_EXPENSE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
@@ -284,7 +308,8 @@ class BudgetSummaryService
             $amount = (float) $row->amount;
             $desc = $row->driver ? trim($row->driver->first_name . ' ' . $row->driver->last_name) : null;
             $all->push([
-                'id' => $row->id,
+                'source_id' => $row->id,
+                'row_key' => 'driver_cash_advancement_history:' . $row->id,
                 'type' => self::TYPE_DRIVER_CASH_ADVANCE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
@@ -306,7 +331,8 @@ class BudgetSummaryService
             $amount = (float) $row->amount;
             $desc = $row->helper ? trim($row->helper->first_name . ' ' . $row->helper->last_name) : null;
             $all->push([
-                'id' => $row->id,
+                'source_id' => $row->id,
+                'row_key' => 'helper_cash_advancement_history:' . $row->id,
                 'type' => self::TYPE_HELPER_CASH_ADVANCE,
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
@@ -319,7 +345,7 @@ class BudgetSummaryService
         }
 
         if ($typeFilter && $typeFilter !== 'All') {
-            $all = $all->filter(fn ($row) => $row['type'] === $typeFilter);
+            $all = $all->filter(fn($row) => $row['type'] === $typeFilter);
         }
 
         return $all;
@@ -374,6 +400,8 @@ class BudgetSummaryService
         if (is_string($search) && trim($search) !== '') {
             $sorted = $this->filterUnifiedRowsBySearch($sorted, $search);
         }
+
+        $sorted = $this->assignUniqueUnifiedRowIds($sorted);
 
         $total = $sorted->count();
         $totalBudget = $sorted->where('type', self::TYPE_BUDGET)->sum('amount');

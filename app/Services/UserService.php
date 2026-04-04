@@ -148,53 +148,77 @@ class UserService extends BaseService
   }
 
   /**
-  * Send verify email using configured email settings from database.
+  * Send welcome or verification email using configured email settings from database.
+  *
+  * Admin-provisioned users are created with user_status = 1 (active); they must not receive
+  * an activation link, since activateUser() only applies to user_status = 0.
   */
   public function sendVerifyEmail($user, $user_key)
   {
     try {
-      $verify_url = env('ADMIN_APP_URL')."/login/activate/".$user_key;
       $password = request('user_pass') ?? '';
-      
-      // Build email body
       $userName = $user->user_login;
-      $emailBody = "<h2>Welcome to Deltrans / Deltrans Logistics Inc.</h2>"
-          . "<p>Hello {$userName},</p>"
-          . "<p>Your account has been created successfully. Please use the following credentials to log in:</p>"
-          . "<p><strong>Username:</strong> {$user->user_login}</p>"
-          . "<p><strong>Email:</strong> {$user->user_email}</p>";
-      
-      if ($password) {
-        $emailBody .= "<p><strong>Password:</strong> {$password}</p>";
-      }
-      
-      $emailBody .= "<p>Please click the link below to verify and activate your account:</p>"
-          . "<p><a href='{$verify_url}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Verify Email Address</a></p>"
-          . "<p>If the button doesn't work, you can copy and paste this link into your browser:</p>"
-          . "<p>{$verify_url}</p>"
-          . "<p>Best regards,<br>The Deltrans Team</p>";
 
-      // Send email using configured mailer from database settings
+      if ((int) $user->user_status === 1) {
+        $login_url = rtrim((string) env('ADMIN_APP_URL'), '/').'/login';
+        $emailBody = "<h2>Welcome to Deltrans / Deltrans Logistics Inc.</h2>"
+            . "<p>Hello {$userName},</p>"
+            . "<p>Your account has been created and is <strong>active</strong>. Use the credentials below to sign in:</p>"
+            . "<p><strong>Username:</strong> {$user->user_login}</p>"
+            . "<p><strong>Email:</strong> {$user->user_email}</p>";
+
+        if ($password) {
+          $emailBody .= "<p><strong>Password:</strong> {$password}</p>";
+        }
+
+        $emailBody .= "<p>Click the button below to open the sign-in page:</p>"
+            . "<p><a href='{$login_url}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Sign in</a></p>"
+            . "<p>If the button does not work, copy and paste this link into your browser:</p>"
+            . "<p>{$login_url}</p>"
+            . "<p><strong>Security:</strong> Please change your password after signing in if you were given a temporary password.</p>"
+            . "<p>Best regards,<br>The Deltrans Team</p>";
+
+        $subject = 'Welcome to Deltrans - Your account is ready';
+      } else {
+        $verify_url = rtrim((string) env('ADMIN_APP_URL'), '/').'/login/activate/'.$user_key;
+        $emailBody = "<h2>Welcome to Deltrans / Deltrans Logistics Inc.</h2>"
+            . "<p>Hello {$userName},</p>"
+            . "<p>Your account has been created successfully. Please use the following credentials to log in:</p>"
+            . "<p><strong>Username:</strong> {$user->user_login}</p>"
+            . "<p><strong>Email:</strong> {$user->user_email}</p>";
+
+        if ($password) {
+          $emailBody .= "<p><strong>Password:</strong> {$password}</p>";
+        }
+
+        $emailBody .= "<p>Please click the link below to verify and activate your account:</p>"
+            . "<p><a href='{$verify_url}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Verify Email Address</a></p>"
+            . "<p>If the button doesn't work, you can copy and paste this link into your browser:</p>"
+            . "<p>{$verify_url}</p>"
+            . "<p>Best regards,<br>The Deltrans Team</p>";
+
+        $subject = 'Welcome to Deltrans - Verify Your Email';
+      }
+
       $this->emailService->sendEmail(
         $user->user_email,
-        "Welcome to Deltrans - Verify Your Email",
+        $subject,
         $emailBody
       );
-      
-      Log::info('[UserService] Verification email sent successfully', [
+
+      Log::info('[UserService] New-user email sent successfully', [
         'user_id' => $user->id,
         'user_email' => $user->user_email,
-        'mailer' => $this->emailService->getMailer()
+        'user_status' => $user->user_status,
+        'mailer' => $this->emailService->getMailer(),
       ]);
     } catch (\Exception $e) {
-      // Log error but don't throw - allow user creation to succeed even if email fails
-      Log::error('[UserService] Failed to send verification email', [
+      Log::error('[UserService] Failed to send new-user email', [
         'user_id' => $user->id,
         'user_email' => $user->user_email,
         'mailer' => $this->emailService->getMailer(),
-        'error' => $e->getMessage()
+        'error' => $e->getMessage(),
       ]);
-      // Don't throw exception - user creation should succeed even if email fails
     }
   }
 
