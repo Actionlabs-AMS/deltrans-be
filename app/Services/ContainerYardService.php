@@ -68,11 +68,11 @@ class ContainerYardService extends BaseService
                 $query->where('is_active', request('is_active'));
             }
 
-            // Apply ordering (default: newest first)
+            // Default: most recently modified first (latest() alone uses created_at only)
             if (request('order')) {
                 $query->orderBy(request('order'), request('sort') ?? 'asc');
             } else {
-                $query->latest();
+                $query->latest('updated_at');
             }
 
             // FIX: Use ContainerYardResource instead of TruckResource

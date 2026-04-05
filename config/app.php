@@ -57,6 +57,19 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Admin frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | Base URL for the admin web app (sign-in, email verification links).
+    | Must be a full URL (https://...) so links in emails work. Falls back to
+    | APP_URL when unset or invalid. Override via ADMIN_APP_URL in .env.
+    |
+    */
+
+    'admin_app_url' => env('ADMIN_APP_URL'),
+
     'asset_url' => env('ASSET_URL'),
 
     /*

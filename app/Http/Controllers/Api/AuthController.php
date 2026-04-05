@@ -16,6 +16,7 @@ use App\Services\EmailService;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\AuthResource;
 use App\Traits\AuditTrailTrait;
+use App\Support\AdminAppUrl;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
@@ -127,7 +128,7 @@ class AuthController extends Controller
 		]);
 
 		$user_key = $user->user_activation_key;
-		$verify_url = env('ADMIN_APP_URL') . "/login/activate/" . $user_key;
+		$verify_url = AdminAppUrl::to('login/activate/'.$user_key);
 
 		$emailSubject = 'Verify Your Deltrans Account';
 		$emailBody = $this->buildEmailTemplate(
@@ -284,7 +285,7 @@ class AuthController extends Controller
 
 			$user->update(['user_pass' => $password]);
 
-			$login_url = env('ADMIN_APP_URL') . "/login";
+			$login_url = AdminAppUrl::to('login');
 
 			$emailSubject = 'Your Deltrans Temporary Password';
 			$emailBody = $this->buildEmailTemplate(

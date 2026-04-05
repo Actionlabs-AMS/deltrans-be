@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Http\Resources\UserResource;
 use App\Services\EmailService;
 use App\Helpers\PasswordHelper;
+use App\Support\AdminAppUrl;
 use Illuminate\Support\Facades\Log;
 
 class UserService extends BaseService
@@ -160,7 +161,7 @@ class UserService extends BaseService
       $userName = $user->user_login;
 
       if ((int) $user->user_status === 1) {
-        $login_url = rtrim((string) env('ADMIN_APP_URL'), '/').'/login';
+        $login_url = AdminAppUrl::to('login');
         $emailBody = "<h2>Welcome to Deltrans / Deltrans Logistics Inc.</h2>"
             . "<p>Hello {$userName},</p>"
             . "<p>Your account has been created and is <strong>active</strong>. Use the credentials below to sign in:</p>"
@@ -180,7 +181,7 @@ class UserService extends BaseService
 
         $subject = 'Welcome to Deltrans - Your account is ready';
       } else {
-        $verify_url = rtrim((string) env('ADMIN_APP_URL'), '/').'/login/activate/'.$user_key;
+        $verify_url = AdminAppUrl::to('login/activate/'.$user_key);
         $emailBody = "<h2>Welcome to Deltrans / Deltrans Logistics Inc.</h2>"
             . "<p>Hello {$userName},</p>"
             . "<p>Your account has been created successfully. Please use the following credentials to log in:</p>"
@@ -237,7 +238,7 @@ class UserService extends BaseService
         return;
       }
 
-      $login_url = env('ADMIN_APP_URL')."/login";
+      $login_url = AdminAppUrl::to('login');
       $userName = $user->user_login;
       
       $emailBody = "<h2>Password Reset</h2>"
