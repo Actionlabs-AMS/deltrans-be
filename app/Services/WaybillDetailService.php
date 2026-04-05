@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Http\Resources\WaybillDetailResource;
+use App\Models\Container;
 use App\Models\DieselExpense;
 use App\Models\WaybillDetail;
 use Illuminate\Support\Facades\DB;
@@ -215,6 +216,7 @@ class WaybillDetailService extends BaseService
         return DB::transaction(function () use ($id) {
             $model = $this->model::withTrashed()->onlyTrashed()->lockForUpdate()->findOrFail($id);
             $this->deleteDieselExpenseIfOrphaned($model);
+            Container::query()->where('waybill_id', $model->id)->delete();
             $model->forceDelete();
 
             return $model;

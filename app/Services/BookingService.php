@@ -31,7 +31,7 @@ class BookingService extends BaseService
     public function show(int $id)
     {
         $model = $this->model::with(['shippingLine', 'cypaFrom', 'cypaTo', 'containers', 'preparedByUser.getUserMetas'])
-            ->withCount('containers')
+            ->withCount(['activeBookingContainers as containers_count'])
             ->findOrFail($id);
 
         // Count waybills for this booking
@@ -56,7 +56,7 @@ class BookingService extends BaseService
         return $this->resource::make(
             $model->fresh()
                 ->load(['shippingLine', 'cypaFrom', 'cypaTo', 'containers', 'preparedByUser.getUserMetas'])
-                ->loadCount('containers')
+                ->loadCount(['activeBookingContainers as containers_count'])
         );
     }
 
@@ -71,7 +71,7 @@ class BookingService extends BaseService
 
             $query = Booking::query()
                 ->with(['shippingLine', 'cypaFrom', 'cypaTo', 'preparedByUser.getUserMetas'])
-                ->withCount('containers');
+                ->withCount(['activeBookingContainers as containers_count']);
 
             // Apply onlyTrashed() first if we're in trash view
             if ($trash) {
@@ -172,7 +172,7 @@ class BookingService extends BaseService
 
         $query = (clone $baseQuery)
             ->with(['shippingLine', 'cypaFrom', 'cypaTo', 'preparedByUser.getUserMetas'])
-            ->withCount('containers')
+            ->withCount(['activeBookingContainers as containers_count'])
             ->orderBy('expected_date', 'asc')
             ->orderBy('id', 'desc');
 
@@ -191,7 +191,7 @@ class BookingService extends BaseService
     public function remainingContainer(int $id): array
     {
         $booking = Booking::query()
-            ->withCount('containers')
+            ->withCount(['activeBookingContainers as containers_count'])
             ->findOrFail($id);
 
         $expectedContainer = (int) ($booking->expected_container ?? 0);

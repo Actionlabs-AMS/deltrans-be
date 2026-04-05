@@ -17,7 +17,7 @@ class BookingResource extends JsonResource
         $expectedContainer = (int) ($this->expected_container ?? 0);
         $containersCount = isset($this->containers_count)
             ? (int) $this->containers_count
-            : ($this->relationLoaded('containers') ? (int) $this->containers->count() : 0);
+            : (int) $this->resource->activeBookingContainers()->count();
 
         return [
             // Identity
