@@ -89,14 +89,18 @@ class UserService extends BaseService
 
   /**
   * Update the specified resource in storage.
+  *
+  * @param  bool  $passwordChangedViaProfile  When true and user_pass was updated, send the self-service "password updated" email; otherwise use reset/temporary-password copy (e.g. admin user edit).
   */
-  public function updateWithMeta(array $data, array $metaData, User $user)
+  public function updateWithMeta(array $data, array $metaData, User $user, bool $passwordChangedViaProfile = false)
   {
     $user->update($data);
     if(count($metaData))
       $user->saveUserMeta($metaData);
 
-    $this->sendForgotPasswordEmail($user);
+    if (array_key_exists('user_pass', $data)) {
+      $this->sendForgotPasswordEmail($user, '', $passwordChangedViaProfile);
+    }
 
     return new UserResource($user);
   }
@@ -123,7 +127,7 @@ class UserService extends BaseService
 
 			$user->update(['user_pass' => $password]);
 
-			$this->sendForgotPasswordEmail($user, $new_password);
+			$this->sendForgotPasswordEmail($user, $new_password, false);
 		}
 	}
 
@@ -224,9 +228,12 @@ class UserService extends BaseService
   }
 
   /**
-  * Send temporary password using configured email settings from database.
+  * Send password notification using configured email settings from database.
+  *
+  * @param  string  $new_password  Plain password when generated server-side (e.g. bulk reset); otherwise uses request('user_pass') when the user/admin just set it.
+  * @param  bool  $passwordChosenByUser  True when the user updated their own password (profile); adjusts copy and subject.
   */
-  public function sendForgotPasswordEmail($user, $new_password = '') 
+  public function sendForgotPasswordEmail($user, $new_password = '', $passwordChosenByUser = false)
   {
     try {
       $user_pass = ($new_password) ? $new_password : request('user_pass');
@@ -239,26 +246,46 @@ class UserService extends BaseService
       }
 
       $login_url = AdminAppUrl::to('login');
-      $userName = $user->user_login;
-      
-      $emailBody = "<h2>Password Reset</h2>"
-          . "<p>Hello {$userName},</p>"
-          . "<p>Your temporary password has been generated. Please use the following credentials to log in:</p>"
-          . "<p><strong>Username:</strong> {$user->user_login}</p>"
-          . "<p><strong>Email:</strong> {$user->user_email}</p>"
-          . "<p><strong>Temporary Password:</strong> {$user_pass}</p>"
-          . "<p>Please click the link below to log in:</p>"
-          . "<p><a href='{$login_url}' style='background-color: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Log In</a></p>"
+      $safeUrl = e($login_url);
+      $safeLogin = e($user->user_login);
+      $safeEmail = e($user->user_email);
+      $safePass = e($user_pass);
+
+      if ($passwordChosenByUser) {
+        $subject = 'Deltrans - Your password was updated';
+        $emailBody = '<h2>Password updated</h2>'
+          . "<p>Hello {$safeLogin},</p>"
+          . '<p>Your account password was changed. Use the credentials below to sign in:</p>'
+          . "<p><strong>Username:</strong> {$safeLogin}</p>"
+          . "<p><strong>Email:</strong> {$safeEmail}</p>"
+          . "<p><strong>Password:</strong> {$safePass}</p>"
+          . '<p>Please click the link below to open the sign-in page:</p>'
+          . "<p><a href=\"{$safeUrl}\" style=\"background-color: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;\">Log In</a></p>"
+          . "<p>If the button does not work, copy and paste this address into your browser:</p>"
+          . "<p style=\"word-break:break-all;\">{$safeUrl}</p>"
+          . '<p><strong>Important:</strong> If you did not make this change, contact support immediately.</p>'
+          . '<p>Best regards,<br>The Deltrans Team</p>';
+      } else {
+        $subject = 'Deltrans - Temporary Password';
+        $emailBody = '<h2>Password Reset</h2>'
+          . "<p>Hello {$safeLogin},</p>"
+          . '<p>Your temporary password has been generated. Please use the following credentials to log in:</p>'
+          . "<p><strong>Username:</strong> {$safeLogin}</p>"
+          . "<p><strong>Email:</strong> {$safeEmail}</p>"
+          . "<p><strong>Temporary Password:</strong> {$safePass}</p>"
+          . '<p>Please click the link below to log in:</p>'
+          . "<p><a href=\"{$safeUrl}\" style=\"background-color: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;\">Log In</a></p>"
           . "<p>If the button doesn't work, you can copy and paste this link into your browser:</p>"
-          . "<p>{$login_url}</p>"
-          . "<p><strong>Important:</strong> Please change your password after logging in for security reasons.</p>"
+          . "<p style=\"word-break:break-all;\">{$safeUrl}</p>"
+          . '<p><strong>Important:</strong> Please change your password after logging in for security reasons.</p>'
           . "<p>If you didn't request this password reset, please contact support immediately.</p>"
-          . "<p>Best regards,<br>The Deltrans Team</p>";
+          . '<p>Best regards,<br>The Deltrans Team</p>';
+      }
 
       // Send email using configured mailer from database settings
       $this->emailService->sendEmail(
         $user->user_email,
-        "Deltrans - Temporary Password",
+        $subject,
         $emailBody
       );
       

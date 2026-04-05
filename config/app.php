@@ -49,9 +49,9 @@ return [
     | Application URL
     |--------------------------------------------------------------------------
     |
-    | This URL is used by the console to properly generate URLs when using
-    | the Artisan command line tool. You should set this to the root of
-    | your application so that it is used when running Artisan tasks.
+    | Public base URL of this Laravel API (e.g. https://api.example.com). Used
+    | by Artisan, URL generation, and as the fallback when admin_app_url is
+    | missing. This is not the browser SPA host unless API and SPA share one origin.
     |
     */
 
@@ -62,9 +62,9 @@ return [
     | Admin frontend URL
     |--------------------------------------------------------------------------
     |
-    | Base URL for the admin web app (sign-in, email verification links).
-    | Must be a full URL (https://...) so links in emails work. Falls back to
-    | APP_URL when unset or invalid. Override via ADMIN_APP_URL in .env.
+    | Base URL of the admin / SPA in the browser (e.g. https://example.com).
+    | Outbound email links (login, activation) use this first. Must be a full
+    | URL (https://...). If unset or invalid, falls back to APP_URL.
     |
     */
 

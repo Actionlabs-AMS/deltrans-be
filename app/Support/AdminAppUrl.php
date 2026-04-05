@@ -4,8 +4,9 @@ namespace App\Support;
 
 /**
  * Builds absolute URLs for the admin SPA (sign-in, activation, etc.).
- * Email clients require a full scheme + host; empty or invalid ADMIN_APP_URL
- * would otherwise produce relative paths like "/login" and broken redirects.
+ *
+ * Uses ADMIN_APP_URL (frontend) when set and valid; otherwise APP_URL (API base).
+ * Email clients need a full scheme + host — never rely on a path-only value.
  */
 class AdminAppUrl
 {

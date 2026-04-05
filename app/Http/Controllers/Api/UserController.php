@@ -867,7 +867,8 @@ class UserController extends BaseController
         $meta_details['user_role'] = json_encode($user_role);
       }
 
-      $user = $this->service->updateWithMeta($upData, $meta_details, $user);
+      $passwordChanged = isset($data['user_pass']);
+      $user = $this->service->updateWithMeta($upData, $meta_details, $user, $passwordChanged);
 
       return response($user, 201);
     } catch (\Exception $e) {
