@@ -1050,11 +1050,10 @@ class AuthController extends Controller
 	): string {
 		$actionButton = '';
 		if ($actionText && $actionUrl) {
-			$actionButton = sprintf(
-				'<p style="text-align:center;margin:30px 0;"><a href="%s" style="background-color:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">%s</a></p>',
-				htmlspecialchars($actionUrl, ENT_QUOTES, 'UTF-8'),
-				htmlspecialchars($actionText, ENT_QUOTES, 'UTF-8')
-			);
+			$href = htmlspecialchars($actionUrl, ENT_QUOTES, 'UTF-8');
+			$label = htmlspecialchars($actionText, ENT_QUOTES, 'UTF-8');
+			$actionButton = '<p style="text-align:center;margin:30px 0;"><a href="'.$href.'" style="background-color:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">'.$label.'</a></p>'
+				.'<p style="font-size:13px;color:#6b7280;line-height:1.5;text-align:center;word-break:break-all;">If the button does not work, copy and paste this address into your browser:<br><a href="'.$href.'" style="color:#2563eb;">'.$href.'</a></p>';
 		}
 
 		$footerHtml = $footer
