@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Container;
 use App\Models\Booking;
+use App\Models\Container;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ContainerService
@@ -20,7 +21,13 @@ class ContainerService
         // Validate request data
         $validator = Validator::make($data, [
             'container_number' => 'required|string|max:255',
-            'waybill_id' => 'nullable|integer|exists:waybill_details,id',
+            'waybill_id' => [
+                'required',
+                'integer',
+                Rule::exists('waybill_details', 'id')
+                    ->where('booking_id', $bookingId)
+                    ->whereNull('deleted_at'),
+            ],
         ]);
 
         if ($validator->fails()) {
@@ -30,7 +37,7 @@ class ContainerService
         $container = Container::create([
             'container_number' => $data['container_number'],
             'booking_id' => $bookingId,
-            'waybill_id' => $data['waybill_id'] ?? null,
+            'waybill_id' => (int) $data['waybill_id'],
         ]);
 
         return $container;
@@ -52,7 +59,14 @@ class ContainerService
         // Validate request data
         $validator = Validator::make($data, [
             'container_number' => 'sometimes|required|string|max:255',
-            'waybill_id' => 'nullable|integer|exists:waybill_details,id',
+            'waybill_id' => [
+                'sometimes',
+                'required',
+                'integer',
+                Rule::exists('waybill_details', 'id')
+                    ->where('booking_id', $bookingId)
+                    ->whereNull('deleted_at'),
+            ],
         ]);
 
         if ($validator->fails()) {

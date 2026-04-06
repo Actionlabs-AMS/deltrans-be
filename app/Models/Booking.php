@@ -97,15 +97,17 @@ class Booking extends Model
     /**
      * Containers that count toward expected vs remaining capacity.
      *
-     * Excludes rows tied only to a soft-deleted waybill so trashing a waybill restores remaining count;
-     * unassigned (waybill_id null) and active-waybill rows are included.
+     * Rows must reference a waybill (containers.waybill_id is required). Count includes only rows
+     * whose waybill exists and is not soft-deleted (waybill_details.deleted_at IS NULL).
      */
     public function activeBookingContainers()
     {
         return $this->hasMany(Container::class, 'booking_id')
-            ->where(function ($q) {
-                $q->whereNull('waybill_id')
-                    ->orWhereHas('waybill');
+            ->whereExists(function ($sub) {
+                $sub->selectRaw('1')
+                    ->from('waybill_details')
+                    ->whereColumn('waybill_details.id', 'containers.waybill_id')
+                    ->whereNull('waybill_details.deleted_at');
             });
     }
 

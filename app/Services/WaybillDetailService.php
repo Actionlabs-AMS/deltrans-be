@@ -216,7 +216,10 @@ class WaybillDetailService extends BaseService
         return DB::transaction(function () use ($id) {
             $model = $this->model::withTrashed()->onlyTrashed()->lockForUpdate()->findOrFail($id);
             $this->deleteDieselExpenseIfOrphaned($model);
-            Container::query()->where('waybill_id', $model->id)->delete();
+            Container::query()
+                ->where('booking_id', $model->booking_id)
+                ->where('waybill_id', $model->id)
+                ->delete();
             $model->forceDelete();
 
             return $model;

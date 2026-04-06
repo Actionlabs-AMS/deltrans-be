@@ -54,35 +54,6 @@ class ContainerSeeder extends Seeder
             }
         }
 
-        // Also create containers for bookings that don't have waybills yet
-        $bookingsWithoutContainers = DB::table('bookings')
-            ->leftJoin('containers', 'bookings.id', '=', 'containers.booking_id')
-            ->whereNull('containers.id')
-            ->select('bookings.id')
-            ->get();
-
-        foreach ($bookingsWithoutContainers as $booking) {
-            $containersToCreate = 2;
-            for ($i = 0; $i < $containersToCreate; $i++) {
-                $prefix = $prefixes[($containerCounter - 1) % count($prefixes)];
-                $containerNumber = $prefix . str_pad((string) $containerCounter, 7, '0', STR_PAD_LEFT);
-
-                DB::table('containers')->updateOrInsert(
-                    [
-                        'booking_id' => $booking->id,
-                        'container_number' => $containerNumber,
-                    ],
-                    [
-                        'waybill_id' => null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]
-                );
-
-                $containerCounter++;
-            }
-        }
-
         $this->command->info('Containers seeded successfully.');
     }
 }
