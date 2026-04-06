@@ -21928,7 +21928,7 @@
                                         "example": "john@example.com"
                                     },
                                     "code": {
-                                        "description": "6-digit verification code",
+                                        "description": "6-digit email code or 8-character backup code (hex, case-insensitive)",
                                         "type": "string",
                                         "example": "123456"
                                     }
@@ -25265,8 +25265,7 @@
                     },
                     "row_key": {
                         "description": "Stable unique key: source_table + ':' + source_id (for dedupe / deep links)",
-                        "type": "string",
-                        "example": "driver_cash_advancement_history:32"
+                        "type": "string"
                     },
                     "type": {
                         "type": "string",

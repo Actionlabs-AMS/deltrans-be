@@ -832,6 +832,30 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
+     * Date for billing PDF "DATE" column: same source as SOA table (waybill transaction_date, d-M). Falls back to billing ci_date.
+     *
+     * @param iterable<int, \App\Models\WaybillDetail> $waybillsInGroup
+     */
+    private function billingPdfDetailLineDate(iterable $waybillsInGroup, BillingStatement $billingStatement): string
+    {
+        $minDate = null;
+        foreach ($waybillsInGroup as $waybill) {
+            $td = $waybill->transaction_date ?? null;
+            if ($td && ($minDate === null || $td->lt($minDate))) {
+                $minDate = $td;
+            }
+        }
+        if ($minDate !== null) {
+            return $minDate->format('d-M');
+        }
+        if ($billingStatement->ci_date) {
+            return $billingStatement->ci_date->format('d-M');
+        }
+
+        return '';
+    }
+
+    /**
      * Retrieve all billing statements with paginate.
      */
     public function listBillingStatements($perPage = 10, $trash = false)
@@ -1045,7 +1069,7 @@ class SoaAndBillingService extends BaseService
                     $description = $quantity . 'X' . $group['size_numeric'] . $group['type_code'] . ' UNIT';
 
                     $detailsData[] = [
-                        'date' => null,
+                        'date' => $this->billingPdfDetailLineDate($waybillsInGroup, $billingStatement),
                         'description' => $description,
                         'size' => $group['size_numeric'],
                         'rate_per_trip' => $rateWithTax,
@@ -1068,7 +1092,7 @@ class SoaAndBillingService extends BaseService
                     $descriptionLines[] = 'Booking ' . $workOrder;
                 }
                 $detailsData[] = [
-                    'date' => '',
+                    'date' => $this->billingPdfDetailLineDate($waybills, $billingStatement),
                     'description' => implode("\n", $descriptionLines),
                     'description_lines' => $descriptionLines,
                     'size' => '',
@@ -1205,8 +1229,9 @@ class SoaAndBillingService extends BaseService
                         $totalAmount += (bool) ($waybill->has_vat ?? false) ? $waybillTotal * 1.12 : $waybillTotal;
                     }
                     $quantity = $group['quantity'];
+                    $waybillsInGroup = $group['waybills'] ?? [];
                     $detailsData[] = [
-                        'date' => null,
+                        'date' => $this->billingPdfDetailLineDate($waybillsInGroup, $billingStatement),
                         'description' => $quantity . 'X' . $group['size_numeric'] . $group['type_code'] . ' UNIT',
                         'size' => $group['size_numeric'],
                         'rate_per_trip' => $quantity > 0 ? $totalAmount / $quantity : 0,
@@ -1223,7 +1248,7 @@ class SoaAndBillingService extends BaseService
                     $descriptionLines[] = 'Booking ' . $workOrder;
                 }
                 $detailsData[] = [
-                    'date' => '',
+                    'date' => $this->billingPdfDetailLineDate($waybills, $billingStatement),
                     'description' => implode("\n", $descriptionLines),
                     'description_lines' => $descriptionLines,
                     'size' => '',
