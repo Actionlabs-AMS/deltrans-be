@@ -3594,7 +3594,8 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "container_number"
+                                    "container_number",
+                                    "waybill_id"
                                 ],
                                 "properties": {
                                     "booking_id": {
@@ -3603,10 +3604,9 @@
                                         "example": 1
                                     },
                                     "waybill_id": {
-                                        "description": "Waybill ID (optional client input)",
+                                        "description": "Waybill ID (must belong to this booking)",
                                         "type": "integer",
-                                        "example": 1,
-                                        "nullable": true
+                                        "example": 1
                                     },
                                     "container_number": {
                                         "description": "Container number",
@@ -3731,10 +3731,9 @@
                             "schema": {
                                 "properties": {
                                     "waybill_id": {
-                                        "description": "Waybill ID (optional client input)",
+                                        "description": "Waybill ID (when sent, must belong to this booking)",
                                         "type": "integer",
-                                        "example": 1,
-                                        "nullable": true
+                                        "example": 1
                                     },
                                     "container_number": {
                                         "description": "Container number",
@@ -25524,10 +25523,9 @@
                         "example": 1
                     },
                     "waybill_id": {
-                        "description": "Waybill ID (client input, optional)",
+                        "description": "Waybill ID for this booking (required)",
                         "type": "integer",
-                        "example": 1,
-                        "nullable": true
+                        "example": 1
                     },
                     "container_number": {
                         "type": "string",
@@ -25550,7 +25548,8 @@
                 "title": "Container Create Input",
                 "description": "Client input for adding a container",
                 "required": [
-                    "container_number"
+                    "container_number",
+                    "waybill_id"
                 ],
                 "properties": {
                     "booking_id": {
@@ -25559,10 +25558,9 @@
                         "example": 1
                     },
                     "waybill_id": {
-                        "description": "Waybill ID (optional client input)",
+                        "description": "Waybill ID (must belong to this booking)",
                         "type": "integer",
-                        "example": 1,
-                        "nullable": true
+                        "example": 1
                     },
                     "container_number": {
                         "description": "Container number",
@@ -25577,10 +25575,9 @@
                 "description": "Client input for updating a container",
                 "properties": {
                     "waybill_id": {
-                        "description": "Waybill ID (optional client input)",
+                        "description": "Waybill ID (required when updating linkage; must belong to this booking)",
                         "type": "integer",
-                        "example": 1,
-                        "nullable": true
+                        "example": 1
                     },
                     "container_number": {
                         "description": "Container number",

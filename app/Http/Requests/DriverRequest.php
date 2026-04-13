@@ -7,6 +7,9 @@ use Illuminate\Validation\Rule;
 
 class DriverRequest extends FormRequest
 {
+  /** Unicode letters (e.g. ñ, é), marks, spaces, hyphen, apostrophe — for person names */
+  private const NAME_CHAR_REGEX = 'regex:/^[\p{L}\p{M}\s\-\'.]+$/u';
+
   /**
    * Determine if the user is authorized to make this request.
    */
@@ -30,7 +33,7 @@ class DriverRequest extends FormRequest
         'required',
         'string',
         'max:255',
-        'regex:/^[a-zA-Z\s]+$/',
+        self::NAME_CHAR_REGEX,
         Rule::unique('drivers')
           ->where(function ($query) {
             return $query->where('last_name', $this->last_name)
@@ -38,7 +41,7 @@ class DriverRequest extends FormRequest
           })
           ->ignore($driverId),
       ],
-      "last_name" => "required|string|max:191|regex:/^[a-zA-Z\s]+$/",
+      'last_name' => 'required|string|max:191|' . self::NAME_CHAR_REGEX,
       //"contact_number" => "required|string|max:191|unique:drivers,contact_number,".$this->id,
       "contact_number" => [
         "required",
@@ -61,9 +64,9 @@ class DriverRequest extends FormRequest
   {
     return [
       "first_name.required" => "The first name field is required.",
-      "first_name.regex" => "The first name field must only contain letters and spaces.",
-      "last_name.required" => "The last name field is required.",
-      "last_name.regex" => "The last name field must only contain letters and spaces.",
+      'first_name.regex' => 'The first name may only contain letters, spaces, hyphens, and apostrophes.',
+      'last_name.required' => 'The last name field is required.',
+      'last_name.regex' => 'The last name may only contain letters, spaces, hyphens, and apostrophes.',
       "contact_number.required" => "The contact number field is required.",
       "contact_number.unique" => "This contact number is already registered.",
       "is_active.integer" => "The is_active field must be an integer.",
