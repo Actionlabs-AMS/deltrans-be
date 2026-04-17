@@ -8,7 +8,20 @@ use App\Models\SoaDataOption;
 class SoaDataOptionSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Seeds `soa_data_options` (SOA field definitions). Other tables store **arrays of these row IDs**.
+     *
+     * `shipping_lines` JSON columns reference child option IDs only (not parent rows):
+     * - `shipping_lines_template` — IDs of options whose parent is "Shipping Line"
+     * - `transaction_information_template` — IDs of options whose parent is "Transaction Information"
+     *
+     * When this seeder runs against an empty `soa_data_options` table, auto-increment IDs are typically:
+     * - 1 — Shipping Line (parent, `parent_id` null)
+     * - 2 — Transaction Information (parent, `parent_id` null)
+     * - 3–10 — Name, Email Address, Address, Contact Name, Contact Mobile, Landlines, Fax No, TIN
+     * - 11–25 — Date, Booking Number, Origin, Destination, Waybill, Remarks, Plate Number, Container Number,
+     *           Size, Vessel, Work Order, Stack Run, 12% VAT, Amount, Total Amount
+     *
+     * @see \Database\Seeders\ShippingLineSeeder
      */
     public function run(): void
     {

@@ -121,6 +121,10 @@ class FixedExpenseProductionSeeder extends Seeder
 
             // CMA CGM
             ['line' => 'CMA CGM', 'from' => 'MNHPI', 'to' => 'MILT', 'size' => '1X40', 'docs' => 850, 'online' => 0, 'stack' => 0, 'expenses' => 700, 'total' => 1550],
+
+            // HMM (HYUNDAI in DB)
+            ['line' => 'HMM', 'from' => 'OCEANBOX', 'to' => 'MIP', 'size' => '2X20', 'docs' => 1400, 'online' => 0, 'stack' => 0, 'expenses' => 270, 'total' => 1670],
+            ['line' => 'HMM', 'from' => 'OCEANBOX', 'to' => 'MIP', 'size' => '1X40', 'docs' => 700, 'online' => 0, 'stack' => 0, 'expenses' => 220, 'total' => 920],
         ];
 
         foreach ($rows as $row) {
@@ -151,6 +155,17 @@ class FixedExpenseProductionSeeder extends Seeder
             $expenses = array_key_exists('expenses', $row) && $row['expenses'] !== null
                 ? $this->toDecimal($row['expenses'])
                 : max(0.00, $total - ($docsFee + $online + $stack));
+
+            // Spreadsheet rule:
+            // - 2X20 maps to 20ft and each component is split per container.
+            // - Total fixed expenses is the sum of the adjusted components.
+            if ($this->isTwoByTwenty((string) ($row['size'] ?? ''))) {
+                $docsFee /= 2;
+                $online /= 2;
+                $stack /= 2;
+                $expenses /= 2;
+                $total = $docsFee + $online + $stack + $expenses;
+            }
 
             $payload = [
                 'shipping_line_id' => $shippingLineId,
@@ -184,7 +199,22 @@ class FixedExpenseProductionSeeder extends Seeder
             return (int) $idByShortName[$key];
         }
 
+        $aliasToShortName = [
+            'HMM' => 'HYUNDAI',
+        ];
+        $shortNameAlias = $aliasToShortName[$key] ?? null;
+        if ($shortNameAlias && isset($idByShortName[$shortNameAlias])) {
+            return (int) $idByShortName[$shortNameAlias];
+        }
+
         return isset($idByName[$key]) ? (int) $idByName[$key] : null;
+    }
+
+    private function isTwoByTwenty(string $size): bool
+    {
+        $s = strtoupper(str_replace(' ', '', trim($size)));
+
+        return $s === '2X20';
     }
 
     private function normalizeContainerSize(string $size): ?string

@@ -3,23 +3,66 @@
 namespace Database\Seeders;
 
 use App\Models\ShippingLine;
+use App\Models\SoaDataOption;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class ShippingLineProductionSeeder extends Seeder
 {
+    /** Default matrix row (TS LINE, SEA LEAD, HMM, CMA CGM, IAL, AMC, SINO TRANS, INTERASIA, RO ILAGAN, NCT, …). */
+    private const TXN_STANDARD = ['Date', 'Origin', 'Destination', 'Waybill', 'Remarks', 'Plate Number', 'Container Number', 'Size', 'Amount'];
+
+    /** KMTC — per Excel: includes Plate Number + Vessel */
+    private const TXN_KMTC = ['Date', 'Origin', 'Destination', 'Waybill', 'Remarks', 'Plate Number', 'Container Number', 'Size', 'Vessel', 'Amount'];
+
+    private const TXN_ONE = ['Booking Number', 'Origin', 'Destination', 'Container Number', 'Size', 'Work Order', 'Amount'];
+
+    private const TXN_OOCL = ['Date', 'Booking Number', 'Origin', 'Destination', 'Waybill', 'Remarks', 'Plate Number', 'Container Number', 'Size', 'Stack Run', 'Amount'];
+
+    /** MSC & MEDLOG — per Excel: includes 12% VAT + Amount + Total Amount. */
+    private const TXN_MSC_MEDLOG = ['Date', 'Origin', 'Destination', 'Waybill', 'Remarks', 'Plate Number', 'Container Number', 'Size', '12% VAT', 'Amount', 'Total Amount'];
+
     public function run(): void
     {
-        // Template option IDs from `soa_data_options`:
-        // Shipping Line children (parent_id=1): 3..10
-        // Transaction Information children (parent_id=2): 11..25
-        // These are used to populate:
-        // - shipping_lines.shipping_lines_template
-        // - shipping_lines.transaction_information_template
-        //
-        // Note: we only fill templates when missing/empty so users can adjust existing templates later.
-        $shippingLineTemplateIds = [3, 4, 5, 6, 7, 8, 9, 10];
-        $transactionInformationTemplateIds = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
+        $shippingLineParentId = SoaDataOption::whereNull('parent_id')->where('name', 'Shipping Line')->value('id');
+        $transactionParentId = SoaDataOption::whereNull('parent_id')->where('name', 'Transaction Information')->value('id');
+
+        if (! $shippingLineParentId || ! $transactionParentId) {
+            $this->command?->warn('SoaDataOption parents missing. Run SoaDataOptionSeeder first.');
+
+            return;
+        }
+
+        $shippingLineTemplateIds = SoaDataOption::where('parent_id', $shippingLineParentId)
+            ->orderBy('id')
+            ->pluck('id')
+            ->values()
+            ->all();
+
+        // Full Transaction Information (all 15 columns) for any shipping line NOT present in the Excel matrix.
+        $txnAll15Ids = SoaDataOption::where('parent_id', $transactionParentId)
+            ->orderBy('id')
+            ->pluck('id')
+            ->values()
+            ->all();
+
+        $matrixByShortName = [
+            'KMTC' => self::TXN_KMTC,
+            'ONE' => self::TXN_ONE,
+            'OOCL' => self::TXN_OOCL,
+            'RO ILAGAN' => self::TXN_STANDARD,
+            'INTERASIA' => self::TXN_STANDARD,
+            'MSC' => self::TXN_MSC_MEDLOG,
+            'MEDLOG' => self::TXN_MSC_MEDLOG,
+            'TS LINE' => self::TXN_STANDARD,
+            'SEA LEAD' => self::TXN_STANDARD,
+            // Excel row is "HMM" but DB short_name is "HYUNDAI".
+            'HYUNDAI' => self::TXN_STANDARD,
+            'CMA CGM' => self::TXN_STANDARD,
+            'IAL' => self::TXN_STANDARD,
+            'AMC' => self::TXN_STANDARD,
+            'SINO TRANS' => self::TXN_STANDARD,
+        ];
 
         $shippingLines = [
             [
@@ -36,6 +79,11 @@ class ShippingLineProductionSeeder extends Seeder
                 'short_name' => 'OOCL',
                 'name' => 'ORIENT OVERSEAS CONTAINER LINE, LTD',
                 'address' => '11TH FLOOR TWO ECOM CENTER TOWER B BAY SHORE AVE MALL OF ASIA COMPLEX PASAY CITY',
+            ],
+            [
+                'short_name' => 'RO ILAGAN',
+                'name' => 'RO ILAGAN',
+                'address' => null,
             ],
             [
                 'short_name' => 'INTERASIA',
@@ -55,7 +103,7 @@ class ShippingLineProductionSeeder extends Seeder
             [
                 'short_name' => 'NCT',
                 'name' => 'NCT TRANS NATIONAL CORP',
-                'address' => 'UNIT707 17TH FLR EACH BLDG INC BIDSDAO MACAPAGAL BLVD MOA COMPLEX PASAY CITY',
+                'address' => null,
             ],
             [
                 'short_name' => 'TS LINE',
@@ -77,7 +125,6 @@ class ShippingLineProductionSeeder extends Seeder
                 'name' => 'CMA CGM',
                 'address' => null,
             ],
-            // Additional shipping lines referenced by fixed expenses (no extra details in attachments)
             [
                 'short_name' => 'IAL',
                 'name' => 'IAL',
@@ -112,45 +159,66 @@ class ShippingLineProductionSeeder extends Seeder
             $record->name = $name;
             $record->address = $shippingLine['address'];
 
-            // Only set templates if missing/empty OR if it doesn't contain the full set of IDs.
             $needsShippingTemplates = $isNew
                 || empty($record->shipping_lines_template)
                 || (is_array($record->shipping_lines_template) && count($record->shipping_lines_template) !== count($shippingLineTemplateIds));
 
-            $needsTransactionTemplates = $isNew
-                || empty($record->transaction_information_template)
-                || (is_array($record->transaction_information_template) && count($record->transaction_information_template) !== count($transactionInformationTemplateIds));
-
             if ($needsShippingTemplates) {
                 $record->shipping_lines_template = $shippingLineTemplateIds;
             }
 
-            if ($needsTransactionTemplates) {
-                $record->transaction_information_template = $transactionInformationTemplateIds;
-            }
+            $fieldNames = $matrixByShortName[$shortName] ?? self::TXN_STANDARD;
+            $record->transaction_information_template = $this->transactionFieldIds($transactionParentId, $fieldNames);
 
             $record->save();
         }
 
-        // Also make sure any existing shipping lines in the DB (beyond the ones listed above)
-        // get templates populated if missing.
-        $shippingLineQuery = ShippingLine::query();
-        foreach ($shippingLineQuery->get() as $record) {
+        // All shipping lines in DB:
+        // - ensure shipping template is present
+        // - set transaction template to:
+        //   - Excel matrix subset if short_name is in the matrix
+        //   - otherwise ALL 15 columns
+        foreach (ShippingLine::query()->cursor() as $record) {
             $needsShippingTemplates = empty($record->shipping_lines_template)
                 || (is_array($record->shipping_lines_template) && count($record->shipping_lines_template) !== count($shippingLineTemplateIds));
-
-            $needsTransactionTemplates = empty($record->transaction_information_template)
-                || (is_array($record->transaction_information_template) && count($record->transaction_information_template) !== count($transactionInformationTemplateIds));
 
             if ($needsShippingTemplates) {
                 $record->shipping_lines_template = $shippingLineTemplateIds;
             }
-            if ($needsTransactionTemplates) {
-                $record->transaction_information_template = $transactionInformationTemplateIds;
+
+            $shortName = (string) ($record->short_name ?? '');
+            if (array_key_exists($shortName, $matrixByShortName)) {
+                $record->transaction_information_template = $this->transactionFieldIds($transactionParentId, $matrixByShortName[$shortName]);
+            } else {
+                $record->transaction_information_template = $txnAll15Ids;
             }
 
             $record->save();
         }
     }
-}
 
+    /**
+     * @param  array<int, string>  $namesInOrder
+     * @return array<int, int>
+     */
+    private function transactionFieldIds(int $transactionParentId, array $namesInOrder): array
+    {
+        if ($namesInOrder === []) {
+            return [];
+        }
+
+        $byName = SoaDataOption::where('parent_id', $transactionParentId)
+            ->whereIn('name', $namesInOrder)
+            ->get(['id', 'name'])
+            ->keyBy('name');
+
+        $ordered = [];
+        foreach ($namesInOrder as $name) {
+            if ($byName->has($name)) {
+                $ordered[] = (int) $byName[$name]->id;
+            }
+        }
+
+        return $ordered;
+    }
+}

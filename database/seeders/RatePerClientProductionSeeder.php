@@ -163,6 +163,19 @@ class RatePerClientProductionSeeder extends Seeder
                 'tax_percent' => 12,
                 'has_vat' => true,
             ],
+            // HMM / Hyundai
+            [
+                'client_short_name' => 'HMM',
+                'no_of_days' => 30,
+                'requirements' => null,
+                'remarks' => null,
+                'cypa_short_name' => 'OCEANBOX',
+                'stack_run' => 0,
+                'rates' => [
+                    '20ft' => 7300,
+                    '40ft' => 7300,
+                ],
+            ],
         ];
 
         foreach ($rows as $row) {
@@ -223,6 +236,15 @@ class RatePerClientProductionSeeder extends Seeder
             return (int) $idByShortName[$clientShortName];
         }
 
+        $mapToShortName = [
+            'HMM' => 'HYUNDAI',
+        ];
+
+        $shortNameAlias = $mapToShortName[$clientShortName] ?? null;
+        if ($shortNameAlias && isset($idByShortName[$shortNameAlias])) {
+            return (int) $idByShortName[$shortNameAlias];
+        }
+
         $mapToName = [
             'ONE' => 'OCEAN NETWORK EXPRESS PTE LTD',
             'KMTC' => 'KOREA MARINE TRANSPORT CO LTD',
@@ -232,6 +254,7 @@ class RatePerClientProductionSeeder extends Seeder
             'SEA LEAD' => 'SEALEAD SHIPPING PTE. LTD.',
             'MEDLOG' => 'MEDLOG PHILIPPINES INC',
             'MSC' => 'MEDITERRANEAN SHIPPING COMPANY PHILIPPINES',
+            'HMM' => 'HMM (Philippines), Inc.',
         ];
 
         $name = $mapToName[$clientShortName] ?? null;
