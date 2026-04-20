@@ -832,6 +832,68 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
+     * Billing statement itemized rows (has_details): one row per waybill so description, rate, and total
+     * match that waybill only (no aggregation across waybills with the same container size/type).
+     *
+     * @param \Illuminate\Support\Collection<int, \App\Models\WaybillDetail>|\Illuminate\Database\Eloquent\Collection<int, \App\Models\WaybillDetail> $waybills
+     * @return array<int, array{date: string, description: string, size: string, rate_per_trip: float, total_amount: float}>
+     */
+    private function buildBillingStatementDetailsRows($waybills, BillingStatement $billingStatement): array
+    {
+        $detailsData = [];
+        foreach ($waybills as $waybill) {
+            $rawSize = $waybill->container_size ?? '';
+            $rawType = $waybill->container_type ?? '';
+
+            $sizeNormalized = trim(str_ireplace(['offhire', 'ft'], '', $rawSize));
+            $sizeNumeric = preg_replace('/[^0-9]/', '', $sizeNormalized) ?: preg_replace('/[^0-9]/', '', $rawSize);
+
+            $typeCode = 'HC';
+            if (stripos($rawSize, 'offhire') !== false) {
+                $typeCode = 'AC';
+            } elseif ($rawType) {
+                $typeUpper = strtoupper(trim($rawType));
+                if ($typeUpper === 'REEFER') {
+                    $typeCode = 'R';
+                } elseif ($typeUpper === 'DRY' || $typeUpper === '') {
+                    $typeCode = 'HC';
+                } else {
+                    $typeCode = $typeUpper;
+                }
+            }
+
+            $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
+                ->where('waybill_id', $waybill->id)
+                ->count();
+            if ($containerCount == 0) {
+                $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
+                if ($containerCount == 0) {
+                    $containerCount = 1;
+                }
+            }
+
+            // Match buildSoaTransactionData: rate is per container (use first); total_rate_per_client when rate unset.
+            // Using total_rate_per_client before rate caused double multiplication when both were set (e.g. offhire 102 = 51×2).
+            $unitBeforeVat = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
+            $hasVat = (bool) ($waybill->has_vat ?? false);
+            $waybillTotal = $unitBeforeVat * $containerCount;
+            $totalAmount = $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
+            $ratePerTrip = $containerCount > 0 ? $totalAmount / $containerCount : 0;
+            $description = $containerCount . 'X' . $sizeNumeric . $typeCode . ' UNIT';
+
+            $detailsData[] = [
+                'date' => $this->billingPdfDetailLineDate([$waybill], $billingStatement),
+                'description' => $description,
+                'size' => $sizeNumeric,
+                'rate_per_trip' => $ratePerTrip,
+                'total_amount' => $totalAmount,
+            ];
+        }
+
+        return $detailsData;
+    }
+
+    /**
      * Date for billing PDF "DATE" column: same source as SOA table (waybill transaction_date, d-M). Falls back to billing ci_date.
      *
      * @param iterable<int, \App\Models\WaybillDetail> $waybillsInGroup
@@ -991,10 +1053,9 @@ class SoaAndBillingService extends BaseService
             $grandTotal = 0;
             $hasDetails = (bool) $billingStatement->has_details;
 
-            // Same computation for grand total: sum over waybills of (base * container_count * 1.12 if has_vat else base * container_count)
-            // waybill.rate is per container, so multiply by container count
+            // Same as buildSoaTransactionData: unit = rate ?? total_rate_per_client; line = unit × container_count; then VAT if applicable.
             foreach ($waybills as $waybill) {
-                $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $unitBeforeVat = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
                 $hasVat = (bool) ($waybill->has_vat ?? false);
                 // Count containers for this waybill
                 $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
@@ -1005,77 +1066,12 @@ class SoaAndBillingService extends BaseService
                     if ($containerCount == 0)
                         $containerCount = 1;
                 }
-                $waybillTotal = $base * $containerCount;
+                $waybillTotal = $unitBeforeVat * $containerCount;
                 $grandTotal += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
             }
 
             if ($hasDetails && $waybills->isNotEmpty()) {
-                // Template with itemized rows: group waybills by size + type, one row per group
-                $grouped = [];
-                foreach ($waybills as $waybill) {
-                    $rawSize = $waybill->container_size ?? '';
-                    $rawType = $waybill->container_type ?? '';
-
-                    $sizeNormalized = trim(str_ireplace(['offhire', 'ft'], '', $rawSize));
-                    $sizeNumeric = preg_replace('/[^0-9]/', '', $sizeNormalized) ?: preg_replace('/[^0-9]/', '', $rawSize);
-
-                    $typeCode = 'HC';
-                    if (stripos($rawSize, 'offhire') !== false) {
-                        $typeCode = 'AC';
-                    } elseif ($rawType) {
-                        $typeUpper = strtoupper(trim($rawType));
-                        if ($typeUpper === 'REEFER') {
-                            $typeCode = 'R';
-                        } elseif ($typeUpper === 'DRY' || $typeUpper === '') {
-                            $typeCode = 'HC';
-                        } else {
-                            $typeCode = $typeUpper;
-                        }
-                    }
-
-                    $key = $sizeNumeric . '|' . $typeCode;
-                    if (!isset($grouped[$key])) {
-                        $grouped[$key] = [
-                            'size_numeric' => $sizeNumeric,
-                            'type_code' => $typeCode,
-                            'quantity' => 0,
-                            'waybills' => [],
-                        ];
-                    }
-                    $grouped[$key]['quantity']++;
-                    $grouped[$key]['waybills'][] = $waybill;
-                }
-
-                foreach ($grouped as $group) {
-                    $totalAmount = 0;
-                    $waybillsInGroup = $group['waybills'] ?? [];
-                    foreach ($waybillsInGroup as $waybill) {
-                        $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
-                        $hasVat = (bool) ($waybill->has_vat ?? false);
-                        // waybill.rate is per container, so multiply by container count
-                        $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
-                            ->where('waybill_id', $waybill->id)
-                            ->count();
-                        if ($containerCount == 0) {
-                            $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
-                            if ($containerCount == 0)
-                                $containerCount = 1;
-                        }
-                        $waybillTotal = $base * $containerCount;
-                        $totalAmount += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
-                    }
-                    $quantity = $group['quantity'];
-                    $rateWithTax = $quantity > 0 ? $totalAmount / $quantity : 0;
-                    $description = $quantity . 'X' . $group['size_numeric'] . $group['type_code'] . ' UNIT';
-
-                    $detailsData[] = [
-                        'date' => $this->billingPdfDetailLineDate($waybillsInGroup, $billingStatement),
-                        'description' => $description,
-                        'size' => $group['size_numeric'],
-                        'rate_per_trip' => $rateWithTax,
-                        'total_amount' => $totalAmount,
-                    ];
-                }
+                $detailsData = $this->buildBillingStatementDetailsRows($waybills, $billingStatement);
             } else {
                 // Template has_details = false: single row — Reference, Billing #, Booking (from SOA work_order when present); Size and Rate of Trip blank; total = grandTotal
                 $firstBooking = $billingStatement->statementOfAccount && !empty($billingStatement->statementOfAccount->booking_ids)
@@ -1176,7 +1172,7 @@ class SoaAndBillingService extends BaseService
 
             // waybill.rate is per container, so multiply by container count
             foreach ($waybills as $waybill) {
-                $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
+                $unitBeforeVat = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
                 $hasVat = (bool) ($waybill->has_vat ?? false);
                 // Count containers for this waybill
                 $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
@@ -1187,57 +1183,12 @@ class SoaAndBillingService extends BaseService
                     if ($containerCount == 0)
                         $containerCount = 1;
                 }
-                $waybillTotal = $base * $containerCount;
+                $waybillTotal = $unitBeforeVat * $containerCount;
                 $billingGrandTotal += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
             }
 
             if ($hasDetails && $waybills->isNotEmpty()) {
-                $grouped = [];
-                foreach ($waybills as $waybill) {
-                    $rawSize = $waybill->container_size ?? '';
-                    $rawType = $waybill->container_type ?? '';
-                    $sizeNormalized = trim(str_ireplace(['offhire', 'ft'], '', $rawSize));
-                    $sizeNumeric = preg_replace('/[^0-9]/', '', $sizeNormalized) ?: preg_replace('/[^0-9]/', '', $rawSize);
-                    $typeCode = 'HC';
-                    if (stripos($rawSize, 'offhire') !== false) {
-                        $typeCode = 'AC';
-                    } elseif ($rawType) {
-                        $typeUpper = strtoupper(trim($rawType));
-                        $typeCode = ($typeUpper === 'REEFER') ? 'R' : (($typeUpper === 'DRY' || $typeUpper === '') ? 'HC' : $typeUpper);
-                    }
-                    $key = $sizeNumeric . '|' . $typeCode;
-                    if (!isset($grouped[$key])) {
-                        $grouped[$key] = ['size_numeric' => $sizeNumeric, 'type_code' => $typeCode, 'quantity' => 0, 'waybills' => []];
-                    }
-                    $grouped[$key]['quantity']++;
-                    $grouped[$key]['waybills'][] = $waybill;
-                }
-                foreach ($grouped as $group) {
-                    $totalAmount = 0;
-                    foreach ($group['waybills'] ?? [] as $waybill) {
-                        $base = (float) ($waybill->total_rate_per_client ?? $waybill->rate ?? 0);
-                        // waybill.rate is per container, so multiply by container count
-                        $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
-                            ->where('waybill_id', $waybill->id)
-                            ->count();
-                        if ($containerCount == 0) {
-                            $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
-                            if ($containerCount == 0)
-                                $containerCount = 1;
-                        }
-                        $waybillTotal = $base * $containerCount;
-                        $totalAmount += (bool) ($waybill->has_vat ?? false) ? $waybillTotal * 1.12 : $waybillTotal;
-                    }
-                    $quantity = $group['quantity'];
-                    $waybillsInGroup = $group['waybills'] ?? [];
-                    $detailsData[] = [
-                        'date' => $this->billingPdfDetailLineDate($waybillsInGroup, $billingStatement),
-                        'description' => $quantity . 'X' . $group['size_numeric'] . $group['type_code'] . ' UNIT',
-                        'size' => $group['size_numeric'],
-                        'rate_per_trip' => $quantity > 0 ? $totalAmount / $quantity : 0,
-                        'total_amount' => $totalAmount,
-                    ];
-                }
+                $detailsData = $this->buildBillingStatementDetailsRows($waybills, $billingStatement);
             } else {
                 $firstBooking = !empty($bookingIds) ? \App\Models\Booking::find($bookingIds[0]) : null;
                 $reference = $firstBooking ? $firstBooking->reference_number : '';
