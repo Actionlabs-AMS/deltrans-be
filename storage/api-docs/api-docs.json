@@ -16294,6 +16294,178 @@
                 ]
             }
         },
+        "/api/budget/shift-balances": {
+            "get": {
+                "tags": [
+                    "Shift Budget Balance"
+                ],
+                "summary": "List recorded shift budget balances",
+                "operationId": "63c6e6d192a71d9534ec8d3de5a50c19",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "transaction_date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "shift",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Day",
+                                "Night",
+                                "1st",
+                                "2nd"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/shift-balances/show": {
+            "get": {
+                "tags": [
+                    "Shift Budget Balance"
+                ],
+                "summary": "Get (and refresh) balance for one shift",
+                "operationId": "4ac7520ade0e2a9e963b9efa67302a91",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "shift",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Day",
+                                "Night",
+                                "1st",
+                                "2nd"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/ShiftBudgetBalance"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/budget/shift-balances/recalculate": {
+            "post": {
+                "tags": [
+                    "Shift Budget Balance"
+                ],
+                "summary": "Recalculate shift balances from a shift forward, or rebuild all",
+                "operationId": "4223420f5f8f763ee63d30584774f86e",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "transaction_date": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "shift": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Day",
+                                            "Night",
+                                            "1st",
+                                            "2nd"
+                                        ]
+                                    },
+                                    "recalculate_all": {
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/shipping-lines": {
             "get": {
                 "tags": [
@@ -27935,6 +28107,71 @@
                 },
                 "type": "object"
             },
+            "ShiftBudgetBalance": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "transaction_date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "shift": {
+                        "type": "string",
+                        "enum": [
+                            "Day",
+                            "Night",
+                            "1st",
+                            "2nd"
+                        ]
+                    },
+                    "issued_budget": {
+                        "description": "Sum of issued_budget for this shift",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "carried_from_previous": {
+                        "description": "Previous shift remaining_coh",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "total_budget": {
+                        "description": "issued_budget + carried_from_previous",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "total_expense": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "remaining_coh": {
+                        "description": "total_budget - total_expense; carried to next shift",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "cash_on_hand": {
+                        "description": "Alias of remaining_coh",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "previous_shift_date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "previous_shift": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "computed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "ShippingLine": {
                 "title": "Shipping Line Model",
                 "description": "A shipping line resource",
@@ -29086,6 +29323,10 @@
         {
             "name": "Settings Management",
             "description": "API endpoints for application settings management"
+        },
+        {
+            "name": "Shift Budget Balance",
+            "description": "Recorded remaining cash on hand (COH) per transaction_date and shift, with carryover from the previous shift"
         },
         {
             "name": "Shipping Line Management",
