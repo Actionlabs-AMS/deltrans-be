@@ -115,6 +115,31 @@ class SoaAndBillingController extends BaseController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/soa/export",
+     *     summary="Export statement of accounts as CSV",
+     *     description="Download all matching SOA records as a CSV file (no pagination). Uses the same filters as the list endpoint.",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="shipping_line_id", in="query", description="Filter by shipping line ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="date_from", in="query", description="Filter SOA created from date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", description="Filter SOA created to date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="search", in="query", description="Search by DLI SA number, work order, or shipping line name", @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function exportSoa()
+    {
+        try {
+            return $this->service->exportSoaCsv();
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
+        }
+    }
+
+    /**
      * @OA\Post(
      *     path="/api/soa/generate",
      *     summary="Generate a new statement of account",
@@ -389,6 +414,31 @@ class SoaAndBillingController extends BaseController
         try {
             $perPage = request()->get('per_page', 10);
             return $this->service->listBillingStatements($perPage, false);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/billing-statements/export",
+     *     summary="Export billing statements as CSV",
+     *     description="Download all matching billing statements as a CSV file (no pagination). Uses the same filters as the list endpoint.",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="search", in="query", description="Search by billing statement number, payment term, bus style, or shipping line name", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="shipping_line_id", in="query", description="Filter by shipping line ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="date_from", in="query", description="Filter billing statements created from date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", description="Filter billing statements created to date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function exportBillingStatements()
+    {
+        try {
+            return $this->service->exportBillingStatementsCsv();
         } catch (\Exception $e) {
             return $this->messageService->responseError();
         }

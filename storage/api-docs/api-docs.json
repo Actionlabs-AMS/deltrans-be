@@ -10001,6 +10001,76 @@
                 ]
             }
         },
+        "/api/invoices/export": {
+            "get": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Export invoices as CSV",
+                "description": "Download all matching invoices as a CSV file (no pagination). Uses the same filters as the list endpoint.",
+                "operationId": "1258698ee9bea9d26c1d2aeb61430891",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by invoice number or shipping line name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID (via statement of account)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter invoices by invoice date from (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter invoices to date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/invoices/attachments": {
             "post": {
                 "tags": [
@@ -13863,6 +13933,60 @@
                 ]
             }
         },
+        "/api/reports/issued-budget/export": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Export issued budget report as CSV",
+                "description": "Downloads issued budget records for a specific transaction date as a CSV file (no pagination).",
+                "operationId": "exportIssuedBudget",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-28"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/reports/truck-trip-expense": {
             "get": {
                 "tags": [
@@ -13922,6 +14046,60 @@
                     },
                     "500": {
                         "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/truck-trip-expense/export": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Export truck trip expense report as CSV",
+                "description": "Downloads truck trip expense records for a specific transaction date as a CSV file (no pagination).",
+                "operationId": "exportTruckExpense",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
                 },
                 "security": [
@@ -13999,6 +14177,60 @@
                 ]
             }
         },
+        "/api/reports/parts-expense/export": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Export parts expense report as CSV",
+                "description": "Downloads parts expense records for a specific transaction date as a CSV file (no pagination).",
+                "operationId": "exportPartsExpense",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/reports/cash-advances": {
             "get": {
                 "tags": [
@@ -14058,6 +14290,60 @@
                     },
                     "500": {
                         "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/cash-advances/export": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Export cash advances report as CSV",
+                "description": "Downloads unified driver and helper cash advance records for a specific transaction date as a CSV file (no pagination).",
+                "operationId": "exportReportCashAdvances",
+                "parameters": [
+                    {
+                        "name": "transaction_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
                 },
                 "security": [
@@ -14134,6 +14420,83 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/TransportSummaryResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/transport-summary/export": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Export transport summary report as CSV",
+                "description": "Downloads the transport summary report as a CSV file (no pagination).",
+                "operationId": "exportTransportSummary",
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-23"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-01"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         }
@@ -14230,6 +14593,94 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/TransportDetailedResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/reports/transport-details/{plate_number}/export": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Export transport detailed report as CSV",
+                "description": "Downloads the detailed transport report for a specific truck plate number as a CSV file (no pagination).",
+                "operationId": "exportTransportDetails",
+                "parameters": [
+                    {
+                        "name": "plate_number",
+                        "in": "path",
+                        "description": "The truck plate number to filter by",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "NAE 5234"
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-23"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-01"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "weekly",
+                            "enum": [
+                                "weekly",
+                                "monthly"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "description": "Search by Waybill or Container Number",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         }
@@ -16903,6 +17354,76 @@
                 ]
             }
         },
+        "/api/soa/export": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Export statement of accounts as CSV",
+                "description": "Download all matching SOA records as a CSV file (no pagination). Uses the same filters as the list endpoint.",
+                "operationId": "ad2c321e29f368347d5da9fc59f31355",
+                "parameters": [
+                    {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter SOA created from date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter SOA created to date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by DLI SA number, work order, or shipping line name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/soa/generate": {
             "post": {
                 "tags": [
@@ -17408,6 +17929,76 @@
                                         }
                                     },
                                     "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/billing-statements/export": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Export billing statements as CSV",
+                "description": "Download all matching billing statements as a CSV file (no pagination). Uses the same filters as the list endpoint.",
+                "operationId": "b33042f4f3121102fe8926a76eed8f1c",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by billing statement number, payment term, bus style, or shipping line name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "shipping_line_id",
+                        "in": "query",
+                        "description": "Filter by shipping line ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter billing statements created from date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter billing statements created to date (Y-m-d)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
                                 }
                             }
                         }

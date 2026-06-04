@@ -330,6 +330,31 @@ class InvoiceController extends BaseController
 
     /**
      * @OA\Get(
+     *     path="/api/invoices/export",
+     *     summary="Export invoices as CSV",
+     *     description="Download all matching invoices as a CSV file (no pagination). Uses the same filters as the list endpoint.",
+     *     tags={"Invoice Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="search", in="query", description="Search by invoice number or shipping line name", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="shipping_line_id", in="query", description="Filter by shipping line ID (via statement of account)", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="date_from", in="query", description="Filter invoices by invoice date from (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="date_to", in="query", description="Filter invoices to date (Y-m-d)", @OA\Schema(type="string", format="date")),
+     *     @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function export()
+    {
+        try {
+            return $this->service->exportInvoicesCsv();
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
+        }
+    }
+
+    /**
+     * @OA\Get(
      *     path="/api/invoices/{id}",
      *     summary="Get a specific invoice",
      *     tags={"Invoice Management"},

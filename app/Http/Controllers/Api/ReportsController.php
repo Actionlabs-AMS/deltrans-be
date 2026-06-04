@@ -392,6 +392,43 @@ class ReportsController extends BaseController
         }
     }
 
+    /**
+     * @OA\Get(
+     * path="/api/reports/issued-budget/export",
+     * operationId="exportIssuedBudget",
+     * tags={"Reports"},
+     * summary="Export issued budget report as CSV",
+     * description="Downloads issued budget records for a specific transaction date as a CSV file (no pagination).",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="transaction_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-02-28")),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
+     * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     * @OA\Response(response=400, description="Bad Request"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function exportIssuedBudget()
+    {
+        try {
+            request()->validate([
+                'transaction_date' => 'required|date',
+            ]);
+
+            $transactionDate = request('transaction_date');
+            if (!$transactionDate) {
+                throw new \Exception('Transaction date is required to export issued budget.');
+            }
+
+            $formattedDate = \Carbon\Carbon::parse($transactionDate)->toDateString();
+
+            return $this->service->exportIssuedBudgetCsv($formattedDate, request('search'));
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 400,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
 
     /**
      * @OA\Get(
@@ -471,6 +508,44 @@ class ReportsController extends BaseController
 
     /**
      * @OA\Get(
+     * path="/api/reports/truck-trip-expense/export",
+     * operationId="exportTruckExpense",
+     * tags={"Reports"},
+     * summary="Export truck trip expense report as CSV",
+     * description="Downloads truck trip expense records for a specific transaction date as a CSV file (no pagination).",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="transaction_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
+     * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     * @OA\Response(response=400, description="Bad Request"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function exportTruckExpense()
+    {
+        try {
+            request()->validate([
+                'transaction_date' => 'required|date',
+            ]);
+
+            $transactionDate = request('transaction_date');
+            if (!$transactionDate) {
+                throw new \Exception('Transaction date is required to export truck trip expense.');
+            }
+
+            $formattedDate = \Carbon\Carbon::parse($transactionDate)->toDateString();
+
+            return $this->service->exportTruckExpenseCsv($formattedDate, request('search'));
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 400,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * @OA\Get(
      * path="/api/reports/parts-expense",
      * operationId="getPartsExpense",
      * tags={"Reports"},
@@ -537,6 +612,44 @@ class ReportsController extends BaseController
 
             return PartsExpenseResource::collection($partsExpense);
 
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 400,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     * path="/api/reports/parts-expense/export",
+     * operationId="exportPartsExpense",
+     * tags={"Reports"},
+     * summary="Export parts expense report as CSV",
+     * description="Downloads parts expense records for a specific transaction date as a CSV file (no pagination).",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="transaction_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
+     * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     * @OA\Response(response=400, description="Bad Request"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function exportPartsExpense()
+    {
+        try {
+            request()->validate([
+                'transaction_date' => 'required|date',
+            ]);
+
+            $transactionDate = request('transaction_date');
+            if (!$transactionDate) {
+                throw new \Exception('Transaction date is required to export parts expense.');
+            }
+
+            $formattedDate = \Carbon\Carbon::parse($transactionDate)->toDateString();
+
+            return $this->service->exportPartsExpenseCsv($formattedDate, request('search'));
         } catch (\Exception $e) {
             return response()->json([
                 'status_code' => 400,
@@ -624,6 +737,44 @@ class ReportsController extends BaseController
 
     /**
      * @OA\Get(
+     * path="/api/reports/cash-advances/export",
+     * operationId="exportReportCashAdvances",
+     * tags={"Reports"},
+     * summary="Export cash advances report as CSV",
+     * description="Downloads unified driver and helper cash advance records for a specific transaction date as a CSV file (no pagination).",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="transaction_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
+     * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     * @OA\Response(response=400, description="Bad Request"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function exportReportCashAdvances()
+    {
+        try {
+            request()->validate([
+                'transaction_date' => 'required|date',
+            ]);
+
+            $transactionDate = request('transaction_date');
+            if (!$transactionDate) {
+                throw new \Exception('Transaction date is required to export cash advances.');
+            }
+
+            $formattedDate = \Carbon\Carbon::parse($transactionDate)->toDateString();
+
+            return $this->service->exportCashAdvancesCsv($formattedDate, request('search'));
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 400,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * @OA\Get(
      * path="/api/reports/transport-summary",
      * operationId="getTransportSummary",
      * tags={"Reports"},
@@ -669,6 +820,46 @@ class ReportsController extends BaseController
                 'message' => 'Transport summary retrieved successfully.'
             ]);
 
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     * path="/api/reports/transport-summary/export",
+     * operationId="exportTransportSummary",
+     * tags={"Reports"},
+     * summary="Export transport summary report as CSV",
+     * description="Downloads the transport summary report as a CSV file (no pagination).",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="start_date", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-02-23")),
+     * @OA\Parameter(name="end_date", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-03-01")),
+     * @OA\Parameter(name="filter_type", in="query", required=false, @OA\Schema(type="string", enum={"weekly", "monthly"}, default="weekly")),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
+     * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     * @OA\Response(response=400, description="Bad Request"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function exportTransportSummary()
+    {
+        try {
+            request()->validate([
+                'start_date'  => 'nullable|date',
+                'end_date'    => 'nullable|date|after_or_equal:start_date',
+                'filter_type' => 'nullable|in:weekly,monthly',
+            ]);
+
+            return $this->service->exportTruckSummaryCsv(
+                request('start_date'),
+                request('end_date'),
+                request('filter_type', 'weekly'),
+                request('search')
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -737,6 +928,55 @@ class ReportsController extends BaseController
             return response()->json([
                 'status' => false, 
                 'message' => 'Failed to retrieve details: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     * path="/api/reports/transport-details/{plate_number}/export",
+     * operationId="exportTransportDetails",
+     * tags={"Reports"},
+     * summary="Export transport detailed report as CSV",
+     * description="Downloads the detailed transport report for a specific truck plate number as a CSV file (no pagination).",
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(
+     * name="plate_number",
+     * in="path",
+     * required=true,
+     * description="The truck plate number to filter by",
+     * @OA\Schema(type="string", example="NAE 5234")
+     * ),
+     * @OA\Parameter(name="start_date", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-02-23")),
+     * @OA\Parameter(name="end_date", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-03-01")),
+     * @OA\Parameter(name="filter_type", in="query", required=false, @OA\Schema(type="string", enum={"weekly", "monthly"}, default="weekly")),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string", description="Search by Waybill or Container Number")),
+     * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     * @OA\Response(response=400, description="Bad Request"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function exportTransportDetails($plate_number)
+    {
+        try {
+            request()->validate([
+                'start_date'  => 'nullable|date',
+                'end_date'    => 'nullable|date|after_or_equal:start_date',
+                'filter_type' => 'nullable|in:weekly,monthly',
+                'search'      => 'nullable|string'
+            ]);
+
+            return $this->service->exportTruckDetailedCsv(
+                request('start_date'),
+                request('end_date'),
+                request('filter_type', 'weekly'),
+                $plate_number,
+                request('search')
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to export details: ' . $e->getMessage()
             ], 400);
         }
     }

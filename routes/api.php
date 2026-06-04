@@ -299,6 +299,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Line items by booking ID(s) (transaction table data, same as SOA PDF)
 		Route::get('/line-items', [SoaAndBillingController::class, 'lineItems']);  // Get line items by booking_ids[] and shipping_line_id (query)
 
+		// CSV export (must be before /{id} route)
+		Route::get('/export', [SoaAndBillingController::class, 'exportSoa']);
+
 		// Standard CRUD operations
 		Route::get('/', [SoaAndBillingController::class, 'index']);  // Retrieve all statement of accounts
 		Route::get('/{id}', [SoaAndBillingController::class, 'show']);  // Retrieve a single statement of account
@@ -322,6 +325,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 		// Send email with PDF attachment
 		Route::post('/{id}/send-email', [SoaAndBillingController::class, 'sendBillingStatementEmail']);  // Send Billing Statement PDF via email
+
+		// CSV export (must be before /{id} route)
+		Route::get('/export', [SoaAndBillingController::class, 'exportBillingStatements']);
 
 		// Standard CRUD operations
 		Route::get('/', [SoaAndBillingController::class, 'billingStatementsIndex']);  // Retrieve all billing statements
@@ -368,6 +374,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 		// Upload temp attachments for PDF
 		Route::post('/attachments', [InvoiceController::class, 'storeAttachments']);  // Upload temp images for PDF attachments
+
+		// CSV export (must be before /{id} route)
+		Route::get('/export', [InvoiceController::class, 'export']);
 
 		// Standard CRUD operations
 		Route::get('/', [InvoiceController::class, 'index']);  // Retrieve all invoices
@@ -841,6 +850,15 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/truck-trip-expense', [ReportsController::class, 'getTruckExpense']);  
 		Route::get('/parts-expense', [ReportsController::class, 'getPartsExpense']);  
 		Route::get('/cash-advances', [ReportsController::class, 'getReportCashAdvances']);  
+
+		// CSV exports (must be before non-export routes)
+		Route::get('/issued-budget/export', [ReportsController::class, 'exportIssuedBudget']);
+		Route::get('/truck-trip-expense/export', [ReportsController::class, 'exportTruckExpense']);
+		Route::get('/parts-expense/export', [ReportsController::class, 'exportPartsExpense']);
+		Route::get('/cash-advances/export', [ReportsController::class, 'exportReportCashAdvances']);
+		Route::get('/transport-summary/export', [ReportsController::class, 'exportTransportSummary']);
+		Route::get('/transport-details/{plate_number}/export', [ReportsController::class, 'exportTransportDetails']);
+
 		Route::get('/transport-summary', [ReportsController::class, 'getTransportSummary']);  
 		Route::get('/transport-summary', [ReportsController::class, 'getTransportSummary']);  
 		Route::get('/transport-details/{plate_number}', [ReportsController::class, 'getTransportDetails']);  

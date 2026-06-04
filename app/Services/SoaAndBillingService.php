@@ -7,10 +7,13 @@ use App\Models\BillingStatement;
 use App\Models\SoaDataOption;
 use App\Http\Resources\SoaAndBillingResource;
 use App\Http\Resources\BillingStatementResource;
+use App\Helpers\CsvExportHelper;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SoaAndBillingService extends BaseService
 {
@@ -28,39 +31,7 @@ class SoaAndBillingService extends BaseService
             $allSoa = $this->getTotalCount();
             $trashedSoa = $this->getTrashedCount();
 
-            $query = StatementOfAccount::query();
-
-            if ($trash) {
-                $query->onlyTrashed();
-            }
-
-            if (request('shipping_line_id')) {
-                $query->where('shipping_line_id', request('shipping_line_id'));
-            }
-
-            if (request('date_from')) {
-                $query->whereDate('created_at', '>=', request('date_from'));
-            }
-
-            if (request('date_to')) {
-                $query->whereDate('created_at', '<=', request('date_to'));
-            }
-
-            if (request('search')) {
-                $query->where(function ($q) {
-                    $q->where('dli_sa_number', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('work_order', 'LIKE', '%' . request('search') . '%')
-                        ->orWhereHas('shippingLine', function ($query) {
-                            $query->where('name', 'LIKE', '%' . request('search') . '%');
-                        });
-                });
-            }
-
-            if (request('order')) {
-                $query->orderBy(request('order'), request('sort') ?? 'asc');
-            } else {
-                $query->orderBy('id', 'desc');
-            }
+            $query = $this->buildSoaQuery($trash);
 
             return SoaAndBillingResource::collection(
                 $query->with('shippingLine')->paginate($perPage)->withQueryString()
@@ -73,6 +44,92 @@ class SoaAndBillingService extends BaseService
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch statement of accounts: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Export filtered SOA records as CSV (no pagination).
+     */
+    public function exportSoaCsv(): StreamedResponse
+    {
+        $headers = [
+            'id',
+            'dli_sa_number',
+            'work_order',
+            'shipping_line_id',
+            'shipping_line_name',
+            'vessel',
+            'booking_ids',
+            'total_amount',
+            'created_at',
+        ];
+
+        $rows = function () {
+            $query = $this->buildSoaQuery(false)->with('shippingLine');
+
+            foreach ($query->cursor() as $soa) {
+                $data = (new SoaAndBillingResource($soa))->toArray(request());
+
+                yield [
+                    $data['id'],
+                    $data['dli_sa_number'],
+                    $data['work_order'],
+                    $data['shipping_line_id'],
+                    $data['shipping_line']['name'] ?? '',
+                    $data['vessel'],
+                    CsvExportHelper::formatIds($data['booking_ids'] ?? []),
+                    $data['total_amount'],
+                    $data['created_at'],
+                ];
+            }
+        };
+
+        return CsvExportHelper::streamDownload(
+            CsvExportHelper::datedFilename('soa-export'),
+            $headers,
+            $rows()
+        );
+    }
+
+    /**
+     * Build SOA list/export query with shared filters.
+     */
+    private function buildSoaQuery(bool $trash = false): Builder
+    {
+        $query = StatementOfAccount::query();
+
+        if ($trash) {
+            $query->onlyTrashed();
+        }
+
+        if (request('shipping_line_id')) {
+            $query->where('shipping_line_id', request('shipping_line_id'));
+        }
+
+        if (request('date_from')) {
+            $query->whereDate('created_at', '>=', request('date_from'));
+        }
+
+        if (request('date_to')) {
+            $query->whereDate('created_at', '<=', request('date_to'));
+        }
+
+        if (request('search')) {
+            $query->where(function ($q) {
+                $q->where('dli_sa_number', 'LIKE', '%' . request('search') . '%')
+                    ->orWhere('work_order', 'LIKE', '%' . request('search') . '%')
+                    ->orWhereHas('shippingLine', function ($query) {
+                        $query->where('name', 'LIKE', '%' . request('search') . '%');
+                    });
+            });
+        }
+
+        if (request('order')) {
+            $query->orderBy(request('order'), request('sort') ?? 'asc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        return $query;
     }
 
     /**
@@ -926,54 +983,7 @@ class SoaAndBillingService extends BaseService
             $allBillingStatements = BillingStatement::count();
             $trashedBillingStatements = BillingStatement::onlyTrashed()->count();
 
-            $query = BillingStatement::query();
-
-            if ($trash) {
-                $query->onlyTrashed();
-            }
-
-            if (request('search')) {
-                $query->where(function ($q) {
-                    $q->where('billing_statement_no', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('payment_term', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('bus_style', 'LIKE', '%' . request('search') . '%')
-                        ->orWhereHas('shippingLine', function ($query) {
-                            $query->where('name', 'LIKE', '%' . request('search') . '%');
-                        });
-                });
-            }
-
-            if (request('shipping_line_id')) {
-                $query->whereHas('statementOfAccount', fn($q) => $q->where('shipping_line_id', request('shipping_line_id')));
-            }
-
-            if (request('booking_id')) {
-                $query->whereHas('statementOfAccount', function ($q) {
-                    $q->whereJsonContains('booking_ids', (int) request('booking_id'));
-                });
-            }
-
-            if (request()->has('is_paid')) {
-                $query->where('is_paid', request('is_paid'));
-            }
-
-            if (request('order')) {
-                $query->orderBy(request('order'), request('sort') ?? 'asc');
-            } else {
-                $query->orderBy('id', 'desc');
-            }
-
-            if (request('statement_of_account_id')) {
-                $query->where('statement_of_account_id', request('statement_of_account_id'));
-            }
-
-            if (request('date_from')) {
-                $query->whereDate('billing_statements.created_at', '>=', request('date_from'));
-            }
-
-            if (request('date_to')) {
-                $query->whereDate('billing_statements.created_at', '<=', request('date_to'));
-            }
+            $query = $this->buildBillingStatementsQuery($trash);
 
             return BillingStatementResource::collection(
                 $query->with(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas'])->paginate($perPage)->withQueryString()
@@ -986,6 +996,123 @@ class SoaAndBillingService extends BaseService
         } catch (\Exception $e) {
             throw new \Exception('Failed to fetch billing statements: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Export filtered billing statements as CSV (no pagination).
+     */
+    public function exportBillingStatementsCsv(): StreamedResponse
+    {
+        $headers = [
+            'id',
+            'billing_statement_no',
+            'statement_of_account_id',
+            'dli_sa_number',
+            'work_order',
+            'shipping_line_id',
+            'shipping_line_name',
+            'payment_term',
+            'ci_date',
+            'due_date',
+            'bus_style',
+            'has_details',
+            'is_paid',
+            'prepared_by',
+            'booking_ids',
+            'created_at',
+        ];
+
+        $rows = function () {
+            $query = $this->buildBillingStatementsQuery(false)
+                ->with(['statementOfAccount', 'shippingLine', 'preparedByUser.getUserMetas']);
+
+            foreach ($query->cursor() as $billingStatement) {
+                $data = (new BillingStatementResource($billingStatement))->toArray(request());
+                $soa = $data['statement_of_account'] ?? [];
+
+                yield [
+                    $data['id'],
+                    $data['billing_statement_no'],
+                    $data['statement_of_account_id'],
+                    $soa['dli_sa_number'] ?? '',
+                    $soa['work_order'] ?? '',
+                    $data['shipping_line_id'],
+                    $data['shipping_line']['name'] ?? '',
+                    $data['payment_term'],
+                    $data['ci_date'],
+                    $data['due_date'],
+                    $data['bus_style'],
+                    CsvExportHelper::formatBool($data['has_details']),
+                    CsvExportHelper::formatBool($data['is_paid']),
+                    $data['prepared_by'] ?? '',
+                    CsvExportHelper::formatIds($data['booking_ids'] ?? []),
+                    $data['created_at'],
+                ];
+            }
+        };
+
+        return CsvExportHelper::streamDownload(
+            CsvExportHelper::datedFilename('billing-statements-export'),
+            $headers,
+            $rows()
+        );
+    }
+
+    /**
+     * Build billing statement list/export query with shared filters.
+     */
+    private function buildBillingStatementsQuery(bool $trash = false): Builder
+    {
+        $query = BillingStatement::query();
+
+        if ($trash) {
+            $query->onlyTrashed();
+        }
+
+        if (request('search')) {
+            $query->where(function ($q) {
+                $q->where('billing_statement_no', 'LIKE', '%' . request('search') . '%')
+                    ->orWhere('payment_term', 'LIKE', '%' . request('search') . '%')
+                    ->orWhere('bus_style', 'LIKE', '%' . request('search') . '%')
+                    ->orWhereHas('shippingLine', function ($query) {
+                        $query->where('name', 'LIKE', '%' . request('search') . '%');
+                    });
+            });
+        }
+
+        if (request('shipping_line_id')) {
+            $query->whereHas('statementOfAccount', fn($q) => $q->where('shipping_line_id', request('shipping_line_id')));
+        }
+
+        if (request('booking_id')) {
+            $query->whereHas('statementOfAccount', function ($q) {
+                $q->whereJsonContains('booking_ids', (int) request('booking_id'));
+            });
+        }
+
+        if (request()->has('is_paid')) {
+            $query->where('is_paid', request('is_paid'));
+        }
+
+        if (request('order')) {
+            $query->orderBy(request('order'), request('sort') ?? 'asc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        if (request('statement_of_account_id')) {
+            $query->where('statement_of_account_id', request('statement_of_account_id'));
+        }
+
+        if (request('date_from')) {
+            $query->whereDate('billing_statements.created_at', '>=', request('date_from'));
+        }
+
+        if (request('date_to')) {
+            $query->whereDate('billing_statements.created_at', '<=', request('date_to'));
+        }
+
+        return $query;
     }
 
     /**

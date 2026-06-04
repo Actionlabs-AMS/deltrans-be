@@ -8,10 +8,13 @@ use App\Models\Invoice;
 use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
 use App\Models\Container;
+use App\Helpers\CsvExportHelper;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvoiceService
 {
@@ -427,36 +430,7 @@ class InvoiceService
             $allInvoices = Invoice::count();
             $trashedInvoices = Invoice::onlyTrashed()->count();
 
-            $query = Invoice::with(['statementOfAccount.shippingLine']);
-
-            if (request('search')) {
-                $query->where(function ($q) {
-                    $q->where('invoice_number', 'LIKE', '%' . request('search') . '%')
-                        ->orWhereHas('statementOfAccount.shippingLine', function ($query) {
-                            $query->where('name', 'LIKE', '%' . request('search') . '%');
-                        });
-                });
-            }
-
-            if (request('shipping_line_id')) {
-                $query->whereHas('statementOfAccount', function ($q) {
-                    $q->where('shipping_line_id', request('shipping_line_id'));
-                });
-            }
-
-            if (request('statement_of_account_id')) {
-                $query->where('statement_of_account_id', request('statement_of_account_id'));
-            }
-
-            if (request('date_from')) {
-                $query->where('date', '>=', request('date_from'));
-            }
-
-            if (request('date_to')) {
-                $query->where('date', '<=', request('date_to'));
-            }
-
-            $query->orderBy('id', 'desc');
+            $query = $this->buildInvoicesQuery()->with(['statementOfAccount.shippingLine']);
 
             $paginator = $query->paginate($perPage)->withQueryString();
 
@@ -470,6 +444,150 @@ class InvoiceService
         } catch (\Exception $e) {
             throw new \Exception('Failed to list invoices: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Export filtered invoices as CSV (no pagination).
+     */
+    public function exportInvoicesCsv(): StreamedResponse
+    {
+        $headers = [
+            'id',
+            'statement_of_account_id',
+            'invoice_number',
+            'date',
+            'discount',
+            'discount_id',
+            'dli_sa_number',
+            'shipping_line_id',
+            'shipping_line_name',
+            'vatable_sales',
+            'vat',
+            'total_sales',
+            'less_vat',
+            'net_of_vat',
+            'total_sales_inclusive',
+            'less_withholding_tax',
+            'total_amount',
+            'created_at',
+            'updated_at',
+            'deleted_at',
+        ];
+
+        $rows = function () {
+            $query = $this->buildInvoicesQuery()->with(['statementOfAccount.shippingLine']);
+
+            foreach ($query->cursor() as $invoice) {
+                $data = array_merge(
+                    $invoice->toArray(),
+                    $this->getComputedTotals(
+                        (int) $invoice->statement_of_account_id,
+                        (float) ($invoice->discount ?? 0)
+                    )
+                );
+
+                $soa = $data['statement_of_account'] ?? [];
+                $shippingLine = $soa['shipping_line'] ?? [];
+
+                yield [
+                    $data['id'],
+                    $data['statement_of_account_id'],
+                    $data['invoice_number'],
+                    $this->formatExportDate($data['date'] ?? null),
+                    $data['discount'],
+                    $data['discount_id'],
+                    $soa['dli_sa_number'] ?? '',
+                    $soa['shipping_line_id'] ?? '',
+                    $shippingLine['name'] ?? '',
+                    $data['vatable_sales'],
+                    $data['vat'],
+                    $data['total_sales'],
+                    $data['less_vat'],
+                    $data['net_of_vat'],
+                    $data['total_sales_inclusive'],
+                    $data['less_withholding_tax'],
+                    $data['total_amount'],
+                    $this->formatExportDateTime($data['created_at'] ?? null),
+                    $this->formatExportDateTime($data['updated_at'] ?? null),
+                    $this->formatExportDateTime($data['deleted_at'] ?? null),
+                ];
+            }
+        };
+
+        return CsvExportHelper::streamDownload(
+            CsvExportHelper::datedFilename('invoices-export'),
+            $headers,
+            $rows()
+        );
+    }
+
+    /**
+     * Build invoice list/export query with shared filters.
+     */
+    private function buildInvoicesQuery(): Builder
+    {
+        $query = Invoice::query();
+
+        if (request('search')) {
+            $query->where(function ($q) {
+                $q->where('invoice_number', 'LIKE', '%' . request('search') . '%')
+                    ->orWhereHas('statementOfAccount.shippingLine', function ($query) {
+                        $query->where('name', 'LIKE', '%' . request('search') . '%');
+                    });
+            });
+        }
+
+        if (request('shipping_line_id')) {
+            $query->whereHas('statementOfAccount', function ($q) {
+                $q->where('shipping_line_id', request('shipping_line_id'));
+            });
+        }
+
+        if (request('statement_of_account_id')) {
+            $query->where('statement_of_account_id', request('statement_of_account_id'));
+        }
+
+        if (request('date_from')) {
+            $query->where('date', '>=', request('date_from'));
+        }
+
+        if (request('date_to')) {
+            $query->where('date', '<=', request('date_to'));
+        }
+
+        return $query->orderBy('id', 'desc');
+    }
+
+    /**
+     * Format a date value for CSV export.
+     */
+    private function formatExportDate(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        return substr((string) $value, 0, 10);
+    }
+
+    /**
+     * Format a datetime value for CSV export.
+     */
+    private function formatExportDateTime(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        return (string) $value;
     }
 
     /**
