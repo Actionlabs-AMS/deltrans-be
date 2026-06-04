@@ -9,6 +9,7 @@ use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
 use App\Models\Container;
 use App\Helpers\CsvExportHelper;
+use App\Helpers\FinancialDocumentCsvHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -304,6 +305,114 @@ class InvoiceService
     }
 
     /**
+     * Build Invoice PDF/CSV document data (same content as invoice PDF).
+     */
+    public function prepareInvoicePdfData(int $id): array
+    {
+        $invoice = Invoice::with(['statementOfAccount.shippingLine'])->findOrFail($id);
+        $invoiceItems = $this->calculateInvoiceItems($invoice->statement_of_account_id);
+        $totals = $this->getComputedTotals(
+            (int) $invoice->statement_of_account_id,
+            (float) ($invoice->discount ?? 0)
+        );
+
+        return [
+            'invoice' => $invoice,
+            'totals' => $totals,
+            'invoiceItems' => $invoiceItems,
+            'companyInfo' => [
+                'name' => 'DELTRANS LOGISTICS INC.',
+                'address' => 'Blk 8 Lot 11 North Harbor Center Vitas St Barangay 101 Zone 08, 1013 Tondo I/II NCR, City of Manila, First District Philippines',
+                'phone' => 'Tel. No. (02) 8291-4477',
+                'tin' => 'VAT Reg. TIN.: 010-392-323-00000',
+            ],
+            'logoPath' => public_path('images/deltrans-logo.png'),
+            'issueDate' => $invoice->date ? $invoice->date->format('F d, Y') : now()->format('F d, Y'),
+            'attachment_paths' => [],
+        ];
+    }
+
+    /**
+     * Export Invoice document as CSV (same content as invoice PDF).
+     */
+    public function exportInvoiceDocumentCsv(int $id): StreamedResponse
+    {
+        $data = $this->prepareInvoicePdfData($id);
+        $invoice = $data['invoice'];
+        $filename = FinancialDocumentCsvHelper::sanitizeFilename($invoice->invoice_number ?? '', 'invoice-' . $id) . '.csv';
+
+        return FinancialDocumentCsvHelper::streamDownload($filename, function ($handle) use ($data) {
+            $this->writeInvoiceDocumentCsv($handle, $data);
+        });
+    }
+
+    /**
+     * Export Invoice document as CSV by SOA ID.
+     */
+    public function exportInvoiceDocumentCsvBySoaId(int $soaId): StreamedResponse
+    {
+        $invoice = Invoice::where('statement_of_account_id', $soaId)->firstOrFail();
+
+        return $this->exportInvoiceDocumentCsv($invoice->id);
+    }
+
+    /**
+     * @param resource $handle
+     */
+    private function writeInvoiceDocumentCsv($handle, array $data): void
+    {
+        $invoice = $data['invoice'];
+        $shippingLine = $invoice->statementOfAccount->shippingLine;
+        $totals = $data['totals'];
+
+        FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Service Invoice');
+        FinancialDocumentCsvHelper::writeKeyValueRows($handle, [
+            ['Date', $data['issueDate']],
+            ['Invoice No.', $invoice->invoice_number],
+            ['Service To', $shippingLine->name ?? ''],
+            ['Registered Name', $shippingLine->name ?? ''],
+            ['Business Address', $shippingLine->address ?? ''],
+            ['TIN', $shippingLine->tin ?? ''],
+        ]);
+
+        FinancialDocumentCsvHelper::writeBlankRow($handle);
+        FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Item Description / Nature of Service');
+
+        $itemRows = [];
+        foreach ($data['invoiceItems'] as $index => $item) {
+            $desc = ($index === 0 ? 'Trucking Charges - ' : '') . ($item['description'] ?? '');
+            $itemRows[] = [
+                $desc,
+                $item['quantity'] ?? 0,
+                number_format((float) ($item['unit_price'] ?? 0), 2, '.', ','),
+                number_format((float) ($item['amount'] ?? 0), 2, '.', ','),
+            ];
+        }
+        FinancialDocumentCsvHelper::writeTable(
+            $handle,
+            ['Item Description / Nature of Service', 'Quantity', 'Unit Price', 'Amount'],
+            $itemRows
+        );
+
+        FinancialDocumentCsvHelper::writeBlankRow($handle);
+        FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Financial Summary');
+        $summaryRows = [
+            ['VATable Sales', number_format($totals['vatable_sales'], 2, '.', ',')],
+            ['VAT', number_format($totals['vat'], 2, '.', ',')],
+            ['Total Sales (VAT Inclusive)', number_format($totals['total_sales_inclusive'], 2, '.', ',')],
+            ['Less: VAT', number_format($totals['less_vat'], 2, '.', ',')],
+            ['Amount: Net of VAT', number_format($totals['net_of_vat'], 2, '.', ',')],
+        ];
+        if (($invoice->discount ?? 0) > 0) {
+            $summaryRows[] = ['Less: Discount (SC/PWD/NAAC/MOV/SP)', number_format((float) $invoice->discount, 2, '.', ',')];
+        }
+        $summaryRows[] = ['Add: VAT', number_format($totals['vat'], 2, '.', ',')];
+        $summaryRows[] = ['Withholding Tax (2% of Net of VAT)', number_format($totals['less_withdrawing_tax'], 2, '.', ',')];
+        $summaryRows[] = ['TOTAL AMOUNT DUE', number_format($totals['total_amount'], 2, '.', ',')];
+        FinancialDocumentCsvHelper::writeKeyValueRows($handle, $summaryRows);
+    }
+
+    /**
      * Generate PDF for Invoice. Returns PDF binary (not saved to disk).
      *
      * @param int $id Invoice ID
@@ -314,39 +423,11 @@ class InvoiceService
     public function generatePdf($id, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
-            $invoice = Invoice::with(['statementOfAccount.shippingLine'])->findOrFail($id);
+            $data = $this->prepareInvoicePdfData((int) $id);
 
-            // Calculate invoice items dynamically from SOA/Booking/Waybill data
-            $invoiceItems = $this->calculateInvoiceItems($invoice->statement_of_account_id);
-
-            $companyInfo = [
-                'name' => 'DELTRANS LOGISTICS INC.',
-                'address' => 'Blk 8 Lot 11 North Harbor Center Vitas St Barangay 101 Zone 08, 1013 Tondo I/II NCR, City of Manila, First District Philippines',
-                'phone' => 'Tel. No. (02) 8291-4477',
-                'tin' => 'VAT Reg. TIN.: 010-392-323-00000',
-            ];
-
-            $logoPath = public_path('images/deltrans-logo.png');
-
-            $attachmentPaths = [];
             if ($includeAttachments && $attachmentUserId !== null) {
-                $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
+                $data['attachment_paths'] = $this->getTempAttachmentPathsByUser($attachmentUserId);
             }
-
-            $totals = $this->getComputedTotals(
-                (int) $invoice->statement_of_account_id,
-                (float) ($invoice->discount ?? 0)
-            );
-
-            $data = [
-                'invoice' => $invoice,
-                'totals' => $totals,
-                'invoiceItems' => $invoiceItems,
-                'companyInfo' => $companyInfo,
-                'logoPath' => $logoPath,
-                'issueDate' => $invoice->date ? $invoice->date->format('F d, Y') : now()->format('F d, Y'),
-                'attachment_paths' => $attachmentPaths,
-            ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice.pdf', $data);
             $pdf->setPaper('a4', 'portrait');

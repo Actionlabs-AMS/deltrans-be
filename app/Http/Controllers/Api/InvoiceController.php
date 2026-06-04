@@ -173,6 +173,36 @@ class InvoiceController extends BaseController
 
     /**
      * @OA\Get(
+     *     path="/api/soa/{soaId}/invoice/download-csv",
+     *     summary="Download Invoice CSV by SOA ID (document content)",
+     *     description="CSV export with the same content as the Invoice PDF for the given statement of account.",
+     *     tags={"Invoice Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="soaId", in="path", required=true, description="Statement of account (SOA) ID", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function downloadCsvBySoaId($soaId)
+    {
+        try {
+            return $this->service->exportInvoiceDocumentCsvBySoaId((int) $soaId);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No invoice found for this statement of account.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
      *     path="/api/invoices/{id}/download",
      *     summary="Download Invoice PDF by Invoice ID",
      *     tags={"Invoice Management"},
@@ -198,6 +228,36 @@ class InvoiceController extends BaseController
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="' . $downloadName . '"',
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invoice not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/invoices/{id}/download-csv",
+     *     summary="Download Invoice CSV by Invoice ID (document content)",
+     *     description="CSV export with the same content as the Invoice PDF download.",
+     *     tags={"Invoice Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="Invoice ID", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function downloadCsv($id)
+    {
+        try {
+            return $this->service->exportInvoiceDocumentCsv((int) $id);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,

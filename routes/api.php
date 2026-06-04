@@ -287,10 +287,13 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Generate SOA
 		Route::post('/generate', [SoaAndBillingController::class, 'generate']);  // Generate a new statement of account
 
-		// Download PDFs (must be before /{id} route)
+		// Download PDFs / document CSV (must be before /{id} route)
 		Route::get('/{id}/download', [SoaAndBillingController::class, 'download']);  // Download SOA PDF only
+		Route::get('/{id}/download-csv', [SoaAndBillingController::class, 'downloadCsv']);  // Download SOA CSV (same content as PDF)
 		Route::get('/{id}/download-billing-and-soa', [SoaAndBillingController::class, 'downloadBillingAndSoa']);  // Download 2-page PDF (Billing then SOA), {id} = SOA ID
+		Route::get('/{id}/download-billing-and-soa-csv', [SoaAndBillingController::class, 'downloadBillingAndSoaCsv']);  // Download combined Billing + SOA CSV
 		Route::get('/{id}/invoice/download', [InvoiceController::class, 'downloadBySoaId']);  // Download Invoice PDF for this SOA, {id} = SOA ID
+		Route::get('/{id}/invoice/download-csv', [InvoiceController::class, 'downloadCsvBySoaId']);  // Download Invoice CSV for this SOA
 
 		// Send email with PDF attachment
 		Route::post('/{id}/send-email', [SoaAndBillingController::class, 'sendSoaEmail']);  // Send SOA PDF via email
@@ -320,8 +323,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Generate Billing Statement
 		Route::post('/generate', [SoaAndBillingController::class, 'billingStatementsGenerate']);  // Generate a new billing statement
 
-		// Download PDF (must be before /{id} route)
+		// Download PDF / document CSV (must be before /{id} route)
 		Route::get('/{id}/download', [SoaAndBillingController::class, 'billingStatementsDownload']);  // Download Billing Statement PDF
+		Route::get('/{id}/download-csv', [SoaAndBillingController::class, 'billingStatementsDownloadCsv']);  // Download Billing Statement CSV
 
 		// Send email with PDF attachment
 		Route::post('/{id}/send-email', [SoaAndBillingController::class, 'sendBillingStatementEmail']);  // Send Billing Statement PDF via email
@@ -366,8 +370,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Generate Invoice
 		Route::post('/generate', [InvoiceController::class, 'generate']);  // Generate a new invoice
 
-		// Download PDF (must be before /{id} route)
+		// Download PDF / document CSV (must be before /{id} route)
 		Route::get('/{id}/download', [InvoiceController::class, 'download']);  // Download Invoice PDF
+		Route::get('/{id}/download-csv', [InvoiceController::class, 'downloadCsv']);  // Download Invoice CSV
 
 		// Send email with PDF attachment
 		Route::post('/{id}/send-email', [InvoiceController::class, 'sendEmail']);  // Send Invoice PDF via email

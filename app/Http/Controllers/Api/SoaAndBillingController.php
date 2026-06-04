@@ -384,6 +384,36 @@ class SoaAndBillingController extends BaseController
 
     /**
      * @OA\Get(
+     *     path="/api/soa/{id}/download-csv",
+     *     summary="Download Statement of Account CSV (document content)",
+     *     description="CSV export with the same content as the SOA PDF download (header, transaction lines, totals).",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function downloadCsv($id)
+    {
+        try {
+            return $this->service->exportSoaDocumentCsv((int) $id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Statement of account not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
      *     path="/api/billing-statements",
      *     summary="Get list of billing statements",
      *     tags={"SOA and Billing Management"},
@@ -580,6 +610,36 @@ class SoaAndBillingController extends BaseController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/billing-statements/{id}/download-csv",
+     *     summary="Download Billing Statement CSV (document content)",
+     *     description="CSV export with the same content as the Billing Statement PDF download.",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function billingStatementsDownloadCsv($id)
+    {
+        try {
+            return $this->service->exportBillingStatementDocumentCsv((int) $id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Billing statement not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * @OA\Post(
      *     path="/api/soa-and-billing/generate",
      *     summary="Generate SOA and Billing Statement in one request",
@@ -676,6 +736,38 @@ class SoaAndBillingController extends BaseController
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/soa/{id}/download-billing-and-soa-csv",
+     *     summary="Download Billing + SOA combined CSV (document content)",
+     *     description="CSV export with the same content as the combined Billing + SOA PDF: billing section then SOA section. Uses SOA ID.",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function downloadBillingAndSoaCsv($id)
+    {
+        try {
+            return $this->service->exportBillingAndSoaDocumentCsvBySoaId((int) $id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Statement of account not found.',
+            ], 404);
+        } catch (\Exception $e) {
+            $status = str_contains($e->getMessage(), 'No billing statement found') ? 404 : 500;
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $status);
         }
     }
 

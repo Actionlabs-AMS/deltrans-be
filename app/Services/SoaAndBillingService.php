@@ -8,6 +8,7 @@ use App\Models\SoaDataOption;
 use App\Http\Resources\SoaAndBillingResource;
 use App\Http\Resources\BillingStatementResource;
 use App\Helpers\CsvExportHelper;
+use App\Helpers\FinancialDocumentCsvHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -587,6 +588,132 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
+     * Build SOA PDF/CSV document data (same content as SOA PDF).
+     */
+    public function prepareSoaPdfData(int $id): array
+    {
+        $soa = StatementOfAccount::with('shippingLine')->findOrFail($id);
+        $bookingIds = $soa->booking_ids ?? [];
+        $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
+            ->with([
+                'shippingLine',
+                'driver',
+                'fleetTruck',
+                'fixedExpense',
+                'booking' => function ($q) {
+                    $q->with(['cypaFrom', 'cypaTo', 'containers']);
+                },
+            ])
+            ->orderBy('booking_id')
+            ->orderBy('id')
+            ->get();
+
+        $shippingLineTemplateIds = $soa->shippingLine->shipping_lines_template ?? [];
+        $shippingLineColumns = collect();
+        if (!empty($shippingLineTemplateIds)) {
+            $shippingLineColumns = SoaDataOption::whereIn('id', $shippingLineTemplateIds)
+                ->orderByRaw('FIELD(id, ' . implode(',', $shippingLineTemplateIds) . ')')
+                ->get(['id', 'name', 'description']);
+        }
+
+        $transactionTemplateIds = $soa->shippingLine->transaction_information_template ?? [];
+        $transactionColumns = collect();
+        if (!empty($transactionTemplateIds)) {
+            $transactionColumns = SoaDataOption::whereIn('id', $transactionTemplateIds)
+                ->orderByRaw('FIELD(id, ' . implode(',', $transactionTemplateIds) . ')')
+                ->get(['id', 'name', 'description']);
+
+            $columnNames = $transactionColumns->pluck('name')->map('strtolower')->toArray();
+            $amountIndex = array_search('amount', $columnNames);
+            $vatIndex = array_search('vat', $columnNames);
+            if ($vatIndex === false) {
+                $vatIndex = array_search('12% vat', $columnNames);
+            }
+            if ($vatIndex === false) {
+                $vatIndex = array_search('12%vat', $columnNames);
+            }
+
+            if ($amountIndex !== false && $vatIndex !== false && $amountIndex > $vatIndex) {
+                $columnsArray = $transactionColumns->all();
+                $amountColumn = $columnsArray[$amountIndex];
+                $vatColumn = $columnsArray[$vatIndex];
+                $columnsArray[$vatIndex] = $amountColumn;
+                $columnsArray[$amountIndex] = $vatColumn;
+                $transactionColumns = collect($columnsArray);
+            }
+        }
+
+        $transactionColumns = $this->orderTransactionColumnsForPdf($transactionColumns);
+
+        $vatPercent = 12.00;
+        $built = $this->buildSoaTransactionData($waybills, $soa, $transactionColumns);
+
+        return [
+            'soa' => $soa,
+            'companyInfo' => [
+                'name' => 'DELTRANS LOGISTICS INC.',
+                'address' => 'BLK 18 LOT 11, MANILA HARBOUR CENTRE, VITAS TONDO MANILA',
+                'phone' => 'Tel# 02-8291-4477',
+            ],
+            'shippingLineColumns' => $shippingLineColumns,
+            'transactionColumns' => $transactionColumns,
+            'transactionData' => $built['transactionData'],
+            'totalAmount' => $built['totalAmount'],
+            'vatRate' => $vatPercent / 100,
+            'taxPercent' => $vatPercent,
+            'totalVat' => $built['totalVat'],
+            'grandTotal' => $built['grandTotal'],
+            'issueDate' => now()->format('F d, Y'),
+            'logoPath' => public_path('images/deltrans-logo.png'),
+            'attachment_paths' => [],
+        ];
+    }
+
+    /**
+     * Export SOA document as CSV (same content as SOA PDF).
+     */
+    public function exportSoaDocumentCsv(int $id): StreamedResponse
+    {
+        $data = $this->prepareSoaPdfData($id);
+        $soa = $data['soa'];
+        $shippingLine = $soa->shippingLine;
+        $filename = FinancialDocumentCsvHelper::sanitizeFilename($soa->dli_sa_number ?? '', 'soa-' . $id) . '.csv';
+
+        return FinancialDocumentCsvHelper::streamDownload($filename, function ($handle) use ($data, $soa, $shippingLine) {
+            FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Statement of Account');
+            FinancialDocumentCsvHelper::writeKeyValueRows($handle, [
+                ['Date', $data['issueDate']],
+                ['DLI-SA#', str_replace('SA-', '', (string) $soa->dli_sa_number)],
+                ['Billed To', $shippingLine->name ?? ''],
+                ['Address', $shippingLine->address ?? ''],
+                ['Attn', $shippingLine->contact_name ?? ''],
+            ]);
+
+            FinancialDocumentCsvHelper::writeBlankRow($handle);
+            FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Transactions');
+
+            $headers = $data['transactionColumns']->pluck('name')->map(fn ($c) => $c->name)->all();
+            $rows = [];
+            foreach ($data['transactionData'] as $row) {
+                $line = [];
+                foreach ($headers as $header) {
+                    $line[] = $row[$header] ?? '';
+                }
+                $rows[] = $line;
+            }
+            FinancialDocumentCsvHelper::writeTable($handle, $headers, $rows);
+
+            FinancialDocumentCsvHelper::writeBlankRow($handle);
+            FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Totals');
+            FinancialDocumentCsvHelper::writeKeyValueRows($handle, [
+                ['SUBTOTAL', 'PHP ' . number_format($data['totalAmount'], 2, '.', ',')],
+                ['VAT (12%)', $data['totalVat'] > 0 ? 'PHP ' . number_format($data['totalVat'], 2, '.', ',') : ''],
+                ['TOTAL', 'PHP ' . number_format($data['grandTotal'], 2, '.', ',')],
+            ]);
+        });
+    }
+
+    /**
      * Generate PDF for Statement of Account. Returns PDF binary (not saved to disk).
      *
      * @param int $id SOA ID
@@ -597,99 +724,13 @@ class SoaAndBillingService extends BaseService
     public function generatePdf($id, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
-            $soa = StatementOfAccount::with('shippingLine')->findOrFail($id);
-            $bookingIds = $soa->booking_ids ?? [];
-            $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
-                ->with([
-                    'shippingLine',
-                    'driver',
-                    'fleetTruck',
-                    'fixedExpense',
-                    'booking' => function ($q) {
-                        $q->with(['cypaFrom', 'cypaTo', 'containers']);
-                    }
-                ])
-                ->orderBy('booking_id')
-                ->orderBy('id')
-                ->get();
-
-            $shippingLineTemplateIds = $soa->shippingLine->shipping_lines_template ?? [];
-            $shippingLineColumns = collect();
-            if (!empty($shippingLineTemplateIds)) {
-                $shippingLineColumns = SoaDataOption::whereIn('id', $shippingLineTemplateIds)
-                    ->orderByRaw('FIELD(id, ' . implode(',', $shippingLineTemplateIds) . ')')
-                    ->get(['id', 'name', 'description']);
-            }
-
-            $transactionTemplateIds = $soa->shippingLine->transaction_information_template ?? [];
-            $transactionColumns = collect();
-            if (!empty($transactionTemplateIds)) {
-                $transactionColumns = SoaDataOption::whereIn('id', $transactionTemplateIds)
-                    ->orderByRaw('FIELD(id, ' . implode(',', $transactionTemplateIds) . ')')
-                    ->get(['id', 'name', 'description']);
-
-                // Reorder columns: put AMOUNT before VAT
-                $columnNames = $transactionColumns->pluck('name')->map('strtolower')->toArray();
-                $amountIndex = array_search('amount', $columnNames);
-
-                // Find VAT column (try different variations)
-                $vatIndex = array_search('vat', $columnNames);
-                if ($vatIndex === false) {
-                    $vatIndex = array_search('12% vat', $columnNames);
-                }
-                if ($vatIndex === false) {
-                    $vatIndex = array_search('12%vat', $columnNames);
-                }
-
-                if ($amountIndex !== false && $vatIndex !== false && $amountIndex > $vatIndex) {
-                    // Swap positions: move AMOUNT before VAT (preserve model objects)
-                    $columnsArray = $transactionColumns->all();
-                    $amountColumn = $columnsArray[$amountIndex];
-                    $vatColumn = $columnsArray[$vatIndex];
-                    $columnsArray[$vatIndex] = $amountColumn;
-                    $columnsArray[$amountIndex] = $vatColumn;
-                    $transactionColumns = collect($columnsArray);
-                }
-            }
-
-            $transactionColumns = $this->orderTransactionColumnsForPdf($transactionColumns);
-
-            $vatPercent = 12.00;
-            $built = $this->buildSoaTransactionData($waybills, $soa, $transactionColumns);
-            $transactionData = $built['transactionData'];
-            $totalAmount = $built['totalAmount'];
-            $totalVat = $built['totalVat'];
-            $grandTotal = $built['grandTotal'];
-            $vatRate = $vatPercent / 100;
-
-            $companyInfo = [
-                'name' => 'DELTRANS LOGISTICS INC.',
-                'address' => 'BLK 18 LOT 11, MANILA HARBOUR CENTRE, VITAS TONDO MANILA',
-                'phone' => 'Tel# 02-8291-4477',
-            ];
-
-            $logoPath = public_path('images/deltrans-logo.png');
+            $data = $this->prepareSoaPdfData((int) $id);
 
             $attachmentPaths = [];
             if ($includeAttachments && $attachmentUserId !== null) {
                 $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
             }
-
-            $data = [
-                'soa' => $soa,
-                'companyInfo' => $companyInfo,
-                'shippingLineColumns' => $shippingLineColumns,
-                'transactionColumns' => $transactionColumns,
-                'transactionData' => $transactionData,
-                'totalAmount' => $totalAmount,
-                'vatRate' => $vatRate,
-                'taxPercent' => $vatPercent,
-                'totalVat' => $totalVat,
-                'grandTotal' => $grandTotal,
-                'issueDate' => now()->format('F d, Y'),
-                'logoPath' => $logoPath,
-                'attachment_paths' => $attachmentPaths,
-            ];
+            $data['attachment_paths'] = $attachmentPaths;
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('soa.pdf', $data);
             $pdf->setPaper('a4', 'portrait');
@@ -1154,6 +1195,207 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
+     * Build Billing Statement PDF/CSV document data (same content as billing PDF).
+     */
+    public function prepareBillingStatementPdfData(int $id): array
+    {
+        $billingStatement = BillingStatement::with([
+            'statementOfAccount',
+            'shippingLine',
+            'preparedByUser.getUserMetas',
+        ])->findOrFail($id);
+
+        $bookingIds = $billingStatement->statementOfAccount->booking_ids ?? [];
+        $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
+            ->orderBy('booking_id')
+            ->orderBy('id')
+            ->get();
+
+        $detailsData = [];
+        $grandTotal = 0;
+        $hasDetails = (bool) $billingStatement->has_details;
+
+        foreach ($waybills as $waybill) {
+            $unitBeforeVat = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
+            $hasVat = (bool) ($waybill->has_vat ?? false);
+            $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
+                ->where('waybill_id', $waybill->id)
+                ->count();
+            if ($containerCount == 0) {
+                $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
+                if ($containerCount == 0) {
+                    $containerCount = 1;
+                }
+            }
+            $waybillTotal = $unitBeforeVat * $containerCount;
+            $grandTotal += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
+        }
+
+        if ($hasDetails && $waybills->isNotEmpty()) {
+            $detailsData = $this->buildBillingStatementDetailsRows($waybills, $billingStatement);
+        } else {
+            $firstBooking = $billingStatement->statementOfAccount && !empty($billingStatement->statementOfAccount->booking_ids)
+                ? \App\Models\Booking::find($billingStatement->statementOfAccount->booking_ids[0])
+                : null;
+            $reference = $firstBooking ? $firstBooking->reference_number : '';
+            $billingNo = $billingStatement->billing_statement_no ?? '';
+            $descriptionLines = [
+                'Reference ' . ($reference ?: '-'),
+                'Billing # ' . ($billingNo ?: '-'),
+            ];
+            $workOrder = $billingStatement->statementOfAccount?->work_order;
+            if ($workOrder !== null && $workOrder !== '') {
+                $descriptionLines[] = 'Booking ' . $workOrder;
+            }
+            $detailsData[] = [
+                'date' => $this->billingPdfDetailLineDate($waybills, $billingStatement),
+                'description' => implode("\n", $descriptionLines),
+                'description_lines' => $descriptionLines,
+                'size' => '',
+                'rate_per_trip' => null,
+                'total_amount' => $grandTotal,
+            ];
+        }
+
+        return [
+            'billingStatement' => $billingStatement,
+            'companyInfo' => [
+                'name' => 'DELTRANS LOGISTICS INC.',
+                'address' => 'Blk 8 Lot 11 North Harbor Center Vitas St Barangay 101 Zone 08, 1013 Tondo I/II NCR, City of Manila, First District Philippines',
+                'phone' => 'Tel. No. (02) 8291-4477',
+                'tin' => 'VAT Reg. TIN.: 010-392-323-00000',
+            ],
+            'detailsData' => $detailsData,
+            'grandTotal' => $grandTotal,
+            'hasDetails' => $hasDetails,
+            'issueDate' => $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y'),
+            'logoPath' => public_path('images/deltrans-logo.png'),
+            'attachment_paths' => [],
+        ];
+    }
+
+    /**
+     * Export Billing Statement document as CSV (same content as billing PDF).
+     */
+    public function exportBillingStatementDocumentCsv(int $id): StreamedResponse
+    {
+        $data = $this->prepareBillingStatementPdfData($id);
+        $bs = $data['billingStatement'];
+        $sl = $bs->shippingLine;
+        $filename = FinancialDocumentCsvHelper::sanitizeFilename($bs->billing_statement_no ?? '', 'billing-' . $id) . '.csv';
+
+        return FinancialDocumentCsvHelper::streamDownload($filename, function ($handle) use ($data, $bs, $sl) {
+            $this->writeBillingStatementDocumentCsv($handle, $data, $bs, $sl);
+        });
+    }
+
+    /**
+     * Export combined Billing + SOA document as CSV by SOA ID (same content as combined PDF).
+     */
+    public function exportBillingAndSoaDocumentCsvBySoaId(int $soaId): StreamedResponse
+    {
+        $soa = StatementOfAccount::findOrFail($soaId);
+        $billingStatement = BillingStatement::where('statement_of_account_id', $soa->id)->orderBy('id')->first();
+        if (!$billingStatement) {
+            throw new \Exception('No billing statement found for this statement of account.');
+        }
+
+        $billingData = $this->prepareBillingStatementPdfData($billingStatement->id);
+        $soaData = $this->prepareSoaPdfData($soaId);
+        $filename = FinancialDocumentCsvHelper::sanitizeFilename(
+            ($billingStatement->billing_statement_no ?? 'billing') . '_' . ($soa->dli_sa_number ?? 'soa'),
+            'billing-soa-' . $soaId
+        ) . '.csv';
+
+        return FinancialDocumentCsvHelper::streamDownload($filename, function ($handle) use ($billingData, $soaData) {
+            $bs = $billingData['billingStatement'];
+            $sl = $bs->shippingLine;
+            $this->writeBillingStatementDocumentCsv($handle, $billingData, $bs, $sl);
+
+            FinancialDocumentCsvHelper::writeBlankRow($handle);
+            FinancialDocumentCsvHelper::writeBlankRow($handle);
+
+            $soa = $soaData['soa'];
+            $shippingLine = $soa->shippingLine;
+            FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Statement of Account');
+            FinancialDocumentCsvHelper::writeKeyValueRows($handle, [
+                ['Date', $soaData['issueDate']],
+                ['DLI-SA#', str_replace('SA-', '', (string) $soa->dli_sa_number)],
+                ['Billed To', $shippingLine->name ?? ''],
+                ['Address', $shippingLine->address ?? ''],
+                ['Attn', $shippingLine->contact_name ?? ''],
+            ]);
+            FinancialDocumentCsvHelper::writeBlankRow($handle);
+            FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Transactions');
+            $headers = $soaData['transactionColumns']->pluck('name')->map(fn ($c) => $c->name)->all();
+            $rows = [];
+            foreach ($soaData['transactionData'] as $row) {
+                $line = [];
+                foreach ($headers as $header) {
+                    $line[] = $row[$header] ?? '';
+                }
+                $rows[] = $line;
+            }
+            FinancialDocumentCsvHelper::writeTable($handle, $headers, $rows);
+            FinancialDocumentCsvHelper::writeBlankRow($handle);
+            FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Totals');
+            FinancialDocumentCsvHelper::writeKeyValueRows($handle, [
+                ['SUBTOTAL', 'PHP ' . number_format($soaData['totalAmount'], 2, '.', ',')],
+                ['VAT (12%)', $soaData['totalVat'] > 0 ? 'PHP ' . number_format($soaData['totalVat'], 2, '.', ',') : ''],
+                ['TOTAL', 'PHP ' . number_format($soaData['grandTotal'], 2, '.', ',')],
+            ]);
+        });
+    }
+
+    /**
+     * @param resource $handle
+     */
+    private function writeBillingStatementDocumentCsv($handle, array $data, BillingStatement $bs, $sl): void
+    {
+        FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Billing Statement');
+        FinancialDocumentCsvHelper::writeKeyValueRows($handle, [
+            ['Billing statement No', str_replace('BS-', '', (string) $bs->billing_statement_no)],
+            ['Billed To', $sl->name ?? ''],
+            ['Address', $sl->address ?? ''],
+            ['TIN', $sl->tin ?? ''],
+            ['CI Date', $data['issueDate']],
+            ['Pay Term', $bs->payment_term ?? ''],
+            ['Due Date', $bs->due_date ? $bs->due_date->format('F d, Y') : ''],
+            ['Bus. Style', $bs->bus_style ?? ''],
+        ]);
+
+        FinancialDocumentCsvHelper::writeBlankRow($handle);
+        FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Charges');
+
+        $tableRows = [];
+        foreach ($data['detailsData'] as $detail) {
+            $description = !empty($detail['description_lines'])
+                ? implode(' | ', $detail['description_lines'])
+                : ($detail['description'] ?? '');
+            $rate = isset($detail['rate_per_trip']) && $detail['rate_per_trip'] !== null
+                ? number_format((float) $detail['rate_per_trip'], 2, '.', ',')
+                : '';
+            $tableRows[] = [
+                $detail['date'] ?? '',
+                $description,
+                $detail['size'] ?? '',
+                $rate,
+                number_format((float) ($detail['total_amount'] ?? 0), 2, '.', ','),
+            ];
+        }
+        FinancialDocumentCsvHelper::writeTable(
+            $handle,
+            ['DATE', 'DESCRIPTION OF CHARGES', 'SIZE', 'RATE OF TRIP', 'TOTAL AMOUNT'],
+            $tableRows
+        );
+
+        FinancialDocumentCsvHelper::writeBlankRow($handle);
+        FinancialDocumentCsvHelper::writeKeyValueRows($handle, [
+            ['GRAND TOTAL', 'PHP ' . number_format($data['grandTotal'], 2, '.', ',')],
+        ]);
+    }
+
+    /**
      * Generate PDF for Billing Statement. Returns PDF binary (not saved to disk).
      *
      * @param int $id Billing Statement ID
@@ -1164,90 +1406,11 @@ class SoaAndBillingService extends BaseService
     public function generateBillingStatementPdf($id, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
-            $billingStatement = BillingStatement::with([
-                'statementOfAccount',
-                'shippingLine',
-                'preparedByUser.getUserMetas'
-            ])->findOrFail($id);
+            $data = $this->prepareBillingStatementPdfData((int) $id);
 
-            $bookingIds = $billingStatement->statementOfAccount->booking_ids ?? [];
-            $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
-                ->orderBy('booking_id')
-                ->orderBy('id')
-                ->get();
-
-            $detailsData = [];
-            $grandTotal = 0;
-            $hasDetails = (bool) $billingStatement->has_details;
-
-            // Same as buildSoaTransactionData: unit = rate ?? total_rate_per_client; line = unit × container_count; then VAT if applicable.
-            foreach ($waybills as $waybill) {
-                $unitBeforeVat = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
-                $hasVat = (bool) ($waybill->has_vat ?? false);
-                // Count containers for this waybill
-                $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
-                    ->where('waybill_id', $waybill->id)
-                    ->count();
-                if ($containerCount == 0) {
-                    $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
-                    if ($containerCount == 0)
-                        $containerCount = 1;
-                }
-                $waybillTotal = $unitBeforeVat * $containerCount;
-                $grandTotal += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
-            }
-
-            if ($hasDetails && $waybills->isNotEmpty()) {
-                $detailsData = $this->buildBillingStatementDetailsRows($waybills, $billingStatement);
-            } else {
-                // Template has_details = false: single row — Reference, Billing #, Booking (from SOA work_order when present); Size and Rate of Trip blank; total = grandTotal
-                $firstBooking = $billingStatement->statementOfAccount && !empty($billingStatement->statementOfAccount->booking_ids)
-                    ? \App\Models\Booking::find($billingStatement->statementOfAccount->booking_ids[0])
-                    : null;
-                $reference = $firstBooking ? $firstBooking->reference_number : '';
-                $billingNo = $billingStatement->billing_statement_no ?? '';
-                $descriptionLines = [
-                    'Reference ' . ($reference ?: '-'),
-                    'Billing # ' . ($billingNo ?: '-'),
-                ];
-                $workOrder = $billingStatement->statementOfAccount?->work_order;
-                if ($workOrder !== null && $workOrder !== '') {
-                    $descriptionLines[] = 'Booking ' . $workOrder;
-                }
-                $detailsData[] = [
-                    'date' => $this->billingPdfDetailLineDate($waybills, $billingStatement),
-                    'description' => implode("\n", $descriptionLines),
-                    'description_lines' => $descriptionLines,
-                    'size' => '',
-                    'rate_per_trip' => null,
-                    'total_amount' => $grandTotal,
-                ];
-            }
-
-            $companyInfo = [
-                'name' => 'DELTRANS LOGISTICS INC.',
-                'address' => 'Blk 8 Lot 11 North Harbor Center Vitas St Barangay 101 Zone 08, 1013 Tondo I/II NCR, City of Manila, First District Philippines',
-                'phone' => 'Tel. No. (02) 8291-4477',
-                'tin' => 'VAT Reg. TIN.: 010-392-323-00000',
-            ];
-
-            $logoPath = public_path('images/deltrans-logo.png');
-
-            $attachmentPaths = [];
             if ($includeAttachments && $attachmentUserId !== null) {
-                $attachmentPaths = $this->getTempAttachmentPathsByUser($attachmentUserId);
+                $data['attachment_paths'] = $this->getTempAttachmentPathsByUser($attachmentUserId);
             }
-
-            $data = [
-                'billingStatement' => $billingStatement,
-                'companyInfo' => $companyInfo,
-                'detailsData' => $detailsData,
-                'grandTotal' => $grandTotal,
-                'hasDetails' => $hasDetails,
-                'issueDate' => $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y'),
-                'logoPath' => $logoPath,
-                'attachment_paths' => $attachmentPaths,
-            ];
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing-statement.pdf', $data);
             $pdf->setPaper('a4', 'portrait');
@@ -1276,126 +1439,14 @@ class SoaAndBillingService extends BaseService
     public function generateBillingAndSoaCombinedPdf($billingStatementId, ?int $attachmentUserId = null, bool $includeAttachments = false)
     {
         try {
-            $billingStatement = BillingStatement::with([
-                'statementOfAccount',
-                'shippingLine',
-                'preparedByUser.getUserMetas'
-            ])->findOrFail($billingStatementId);
-
+            $billingData = $this->prepareBillingStatementPdfData((int) $billingStatementId);
+            $billingStatement = $billingData['billingStatement'];
             $soa = $billingStatement->statementOfAccount;
             if (!$soa) {
                 throw new \Exception('Billing statement has no linked statement of account.');
             }
 
-            // Build billing page data (same logic as generateBillingStatementPdf)
-            $bookingIds = $soa->booking_ids ?? [];
-            $waybills = \App\Models\WaybillDetail::whereIn('booking_id', $bookingIds)
-                ->orderBy('booking_id')
-                ->orderBy('id')
-                ->get();
-            $detailsData = [];
-            $billingGrandTotal = 0;
-            $hasDetails = (bool) $billingStatement->has_details;
-
-            // waybill.rate is per container, so multiply by container count
-            foreach ($waybills as $waybill) {
-                $unitBeforeVat = (float) ($waybill->rate ?? $waybill->total_rate_per_client ?? 0);
-                $hasVat = (bool) ($waybill->has_vat ?? false);
-                // Count containers for this waybill
-                $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)
-                    ->where('waybill_id', $waybill->id)
-                    ->count();
-                if ($containerCount == 0) {
-                    $containerCount = \App\Models\Container::where('booking_id', $waybill->booking_id)->count();
-                    if ($containerCount == 0)
-                        $containerCount = 1;
-                }
-                $waybillTotal = $unitBeforeVat * $containerCount;
-                $billingGrandTotal += $hasVat ? $waybillTotal * 1.12 : $waybillTotal;
-            }
-
-            if ($hasDetails && $waybills->isNotEmpty()) {
-                $detailsData = $this->buildBillingStatementDetailsRows($waybills, $billingStatement);
-            } else {
-                $firstBooking = !empty($bookingIds) ? \App\Models\Booking::find($bookingIds[0]) : null;
-                $reference = $firstBooking ? $firstBooking->reference_number : '';
-                $billingNo = $billingStatement->billing_statement_no ?? '';
-                $descriptionLines = ['Reference ' . ($reference ?: '-'), 'Billing # ' . ($billingNo ?: '-')];
-                $workOrder = $soa->work_order;
-                if ($workOrder !== null && $workOrder !== '') {
-                    $descriptionLines[] = 'Booking ' . $workOrder;
-                }
-                $detailsData[] = [
-                    'date' => $this->billingPdfDetailLineDate($waybills, $billingStatement),
-                    'description' => implode("\n", $descriptionLines),
-                    'description_lines' => $descriptionLines,
-                    'size' => '',
-                    'rate_per_trip' => null,
-                    'total_amount' => $billingGrandTotal,
-                ];
-            }
-
-            $companyInfo = [
-                'name' => 'DELTRANS LOGISTICS INC.',
-                'address' => 'Blk 8 Lot 11 North Harbor Center Vitas St Barangay 101 Zone 08, 1013 Tondo I/II NCR, City of Manila, First District Philippines',
-                'phone' => 'Tel. No. (02) 8291-4477',
-                'tin' => 'VAT Reg. TIN.: 010-392-323-00000',
-            ];
-            $soaCompanyInfo = [
-                'name' => 'DELTRANS LOGISTICS INC.',
-                'address' => 'BLK 18 LOT 11, MANILA HARBOUR CENTRE, VITAS TONDO MANILA',
-                'phone' => 'Tel# 02-8291-4477',
-            ];
-            $logoPath = public_path('images/deltrans-logo.png');
-            $billingIssueDate = $billingStatement->ci_date ? $billingStatement->ci_date->format('F d, Y') : now()->format('F d, Y');
-
-            // Load SOA with full relations and build SOA page data (same logic as generatePdf)
-            $soaFull = StatementOfAccount::with('shippingLine')->findOrFail($soa->id);
-            $soaBookingIds = $soaFull->booking_ids ?? [];
-            $waybillsSoa = \App\Models\WaybillDetail::whereIn('booking_id', $soaBookingIds)
-                ->with([
-                    'shippingLine',
-                    'driver',
-                    'fleetTruck',
-                    'fixedExpense',
-                    'booking' => function ($qb) {
-                        $qb->with(['cypaFrom', 'cypaTo', 'containers']);
-                    }
-                ])
-                ->orderBy('booking_id')
-                ->orderBy('id')
-                ->get();
-
-            $transactionTemplateIds = $soaFull->shippingLine->transaction_information_template ?? [];
-            $transactionColumns = collect();
-            if (!empty($transactionTemplateIds)) {
-                $transactionColumns = SoaDataOption::whereIn('id', $transactionTemplateIds)
-                    ->orderByRaw('FIELD(id, ' . implode(',', $transactionTemplateIds) . ')')
-                    ->get(['id', 'name', 'description']);
-                $columnNames = $transactionColumns->pluck('name')->map('strtolower')->toArray();
-                $amountIndex = array_search('amount', $columnNames);
-                $vatIndex = array_search('vat', $columnNames);
-                if ($vatIndex === false) {
-                    $vatIndex = array_search('12% vat', $columnNames);
-                }
-                if ($vatIndex === false) {
-                    $vatIndex = array_search('12%vat', $columnNames);
-                }
-                if ($amountIndex !== false && $vatIndex !== false && $amountIndex > $vatIndex) {
-                    $arr = $transactionColumns->all();
-                    [$arr[$vatIndex], $arr[$amountIndex]] = [$arr[$amountIndex], $arr[$vatIndex]];
-                    $transactionColumns = collect($arr);
-                }
-            }
-
-            $transactionColumns = $this->orderTransactionColumnsForPdf($transactionColumns);
-
-            $soaBuilt = $this->buildSoaTransactionData($waybillsSoa, $soaFull, $transactionColumns);
-            $transactionData = $soaBuilt['transactionData'];
-            $soaTotalAmount = $soaBuilt['totalAmount'];
-            $soaTotalVat = $soaBuilt['totalVat'];
-            $soaGrandTotal = $soaBuilt['grandTotal'];
-            $soaIssueDate = now()->format('F d, Y');
+            $soaData = $this->prepareSoaPdfData((int) $soa->id);
 
             $attachmentPaths = [];
             if ($includeAttachments && $attachmentUserId !== null) {
@@ -1404,20 +1455,20 @@ class SoaAndBillingService extends BaseService
 
             $data = [
                 'billingStatement' => $billingStatement,
-                'companyInfo' => $companyInfo,
-                'logoPath' => $logoPath,
-                'billingIssueDate' => $billingIssueDate,
-                'detailsData' => $detailsData,
-                'billingGrandTotal' => $billingGrandTotal,
-                'hasDetails' => $hasDetails,
-                'soa' => $soaFull,
-                'soaCompanyInfo' => $soaCompanyInfo,
-                'soaIssueDate' => $soaIssueDate,
-                'transactionColumns' => $transactionColumns,
-                'transactionData' => $transactionData,
-                'soaTotalAmount' => $soaTotalAmount,
-                'soaTotalVat' => $soaTotalVat,
-                'soaGrandTotal' => $soaGrandTotal,
+                'companyInfo' => $billingData['companyInfo'],
+                'logoPath' => $billingData['logoPath'],
+                'billingIssueDate' => $billingData['issueDate'],
+                'detailsData' => $billingData['detailsData'],
+                'billingGrandTotal' => $billingData['grandTotal'],
+                'hasDetails' => $billingData['hasDetails'],
+                'soa' => $soaData['soa'],
+                'soaCompanyInfo' => $soaData['companyInfo'],
+                'soaIssueDate' => $soaData['issueDate'],
+                'transactionColumns' => $soaData['transactionColumns'],
+                'transactionData' => $soaData['transactionData'],
+                'soaTotalAmount' => $soaData['totalAmount'],
+                'soaTotalVat' => $soaData['totalVat'],
+                'soaGrandTotal' => $soaData['grandTotal'],
                 'attachment_paths' => $attachmentPaths,
             ];
 

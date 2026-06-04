@@ -9691,6 +9691,51 @@
                 ]
             }
         },
+        "/api/soa/{soaId}/invoice/download-csv": {
+            "get": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Download Invoice CSV by SOA ID (document content)",
+                "description": "CSV export with the same content as the Invoice PDF for the given statement of account.",
+                "operationId": "3f9ddaaa26e3cbd7d63bd5c8df18ec3b",
+                "parameters": [
+                    {
+                        "name": "soaId",
+                        "in": "path",
+                        "description": "Statement of account (SOA) ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/invoices/{id}/download": {
             "get": {
                 "tags": [
@@ -9724,6 +9769,51 @@
                         "description": "PDF file download",
                         "content": {
                             "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/invoices/{id}/download-csv": {
+            "get": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Download Invoice CSV by Invoice ID (document content)",
+                "description": "CSV export with the same content as the Invoice PDF download.",
+                "operationId": "c7278fb08d4f2cb8b4c9ab66e846dbde",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
                                 "schema": {
                                     "type": "string",
                                     "format": "binary"
@@ -17817,6 +17907,51 @@
                 ]
             }
         },
+        "/api/soa/{id}/download-csv": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Download Statement of Account CSV (document content)",
+                "description": "CSV export with the same content as the SOA PDF download (header, transaction lines, totals).",
+                "operationId": "4bf7f0d390946cea1b83d0ff36eec04e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "SOA ID (Statement of Account ID)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/billing-statements": {
             "get": {
                 "tags": [
@@ -18262,6 +18397,51 @@
                 ]
             }
         },
+        "/api/billing-statements/{id}/download-csv": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Download Billing Statement CSV (document content)",
+                "description": "CSV export with the same content as the Billing Statement PDF download.",
+                "operationId": "b5f3bdd823f7bc8b984a01d80e8baa7d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Billing Statement ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/soa-and-billing/generate": {
             "post": {
                 "tags": [
@@ -18413,6 +18593,51 @@
                         "description": "PDF file download (2 pages: Billing then SOA)",
                         "content": {
                             "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/soa/{id}/download-billing-and-soa-csv": {
+            "get": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Download Billing + SOA combined CSV (document content)",
+                "description": "CSV export with the same content as the combined Billing + SOA PDF: billing section then SOA section. Uses SOA ID.",
+                "operationId": "b354be6b2754d47302abb0d59a5ab8d0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "SOA ID (Statement of Account ID)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CSV file download",
+                        "content": {
+                            "text/csv": {
                                 "schema": {
                                     "type": "string",
                                     "format": "binary"
