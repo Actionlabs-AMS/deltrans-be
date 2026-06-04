@@ -19,6 +19,7 @@ class WaybillDetailService extends BaseService
         'fixedExpense',
         'truckTripExpense',
         'dieselExpense',
+        'containers',
         'preparedByUser.getUserMetas',
     ];
 
@@ -55,7 +56,10 @@ class WaybillDetailService extends BaseService
                         ->orWhereHas('driver', function ($q) {
                             $q->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . request('search') . '%']);
                         })
-                        ->orWhere('truck_plate_number', 'LIKE', '%' . request('search') . '%');
+                        ->orWhere('truck_plate_number', 'LIKE', '%' . request('search') . '%')
+                        ->orWhereHas('containers', function ($q) {
+                            $q->where('container_number', 'LIKE', '%' . request('search') . '%');
+                        });
                 });
             }
 

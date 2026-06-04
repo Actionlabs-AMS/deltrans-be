@@ -38,6 +38,17 @@ class WaybillDetailResource extends JsonResource
             // Container & truck
             'container_size' => $this->container_size,
             'container_type' => $this->container_type,
+            'container_numbers' => $this->whenLoaded(
+                'containers',
+                fn () => $this->containers->pluck('container_number')->values()->all(),
+                []
+            ),
+            'containers' => $this->whenLoaded('containers', function () {
+                return $this->containers->map(fn ($container) => [
+                    'id' => $container->id,
+                    'container_number' => $container->container_number,
+                ])->values()->all();
+            }),
             'truck_plate_number' => $this->truck_plate_number,
 
             // Trip dates

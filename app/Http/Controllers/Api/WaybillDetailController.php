@@ -30,6 +30,22 @@ use Illuminate\Validation\ValidationException;
  *     @OA\Property(property="diesel_expense_id", type="integer", example=1, nullable=true),
  *     @OA\Property(property="container_size", type="string", example="20ft", nullable=true),
  *     @OA\Property(property="container_type", type="string", example="DRY", nullable=true),
+ *     @OA\Property(
+ *         property="container_numbers",
+ *         type="array",
+ *         @OA\Items(type="string", example="MSKU1234567"),
+ *         description="Container numbers linked to this waybill via containers.waybill_id"
+ *     ),
+ *     @OA\Property(
+ *         property="containers",
+ *         type="array",
+ *         @OA\Items(
+ *             type="object",
+ *             @OA\Property(property="id", type="integer", example=1),
+ *             @OA\Property(property="container_number", type="string", example="MSKU1234567")
+ *         ),
+ *         description="Linked container records (id and container_number)"
+ *     ),
  *     @OA\Property(property="truck_plate_number", type="string", example="NCK-6498", nullable=true),
  *     @OA\Property(property="pickup_date", type="string", format="date", example="2025-12-22", nullable=true),
  *     @OA\Property(property="delivered_date", type="string", format="date", example="2025-12-23", nullable=true),
@@ -119,7 +135,7 @@ class WaybillDetailController extends BaseController
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
-     *         description="Search by waybill number, container size, container type, shipping line name, driver name, helper name, or truck plate number",
+     *         description="Search by waybill number, container number, container size, container type, shipping line name, driver name, helper name, or truck plate number",
      *         @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(

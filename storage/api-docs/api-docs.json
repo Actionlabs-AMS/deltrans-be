@@ -24932,7 +24932,7 @@
                     {
                         "name": "search",
                         "in": "query",
-                        "description": "Search by waybill number, container size, container type, shipping line name, driver name, helper name, or truck plate number",
+                        "description": "Search by waybill number, container number, container size, container type, shipping line name, driver name, helper name, or truck plate number",
                         "schema": {
                             "type": "string"
                         }
@@ -28597,6 +28597,31 @@
                         "type": "string",
                         "example": "DRY",
                         "nullable": true
+                    },
+                    "container_numbers": {
+                        "description": "Container numbers linked to this waybill via containers.waybill_id",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "MSKU1234567"
+                        }
+                    },
+                    "containers": {
+                        "description": "Linked container records (id and container_number)",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "example": 1
+                                },
+                                "container_number": {
+                                    "type": "string",
+                                    "example": "MSKU1234567"
+                                }
+                            },
+                            "type": "object"
+                        }
                     },
                     "truck_plate_number": {
                         "type": "string",
