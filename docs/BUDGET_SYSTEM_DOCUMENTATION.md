@@ -83,6 +83,32 @@ All tables: `id` (bigint PK), `timestamps`, `softDeletes`. Amounts are `decimal(
 
 ---
 
+## Shift budget balance (remaining COH per shift)
+
+Recorded closing balance per **`transaction_date` + `shift`**, stored in **`shift_budget_balances`**. Source rows remain in the six budget tables; balances are aggregated and chained across shifts.
+
+**Shift order (carryover):** `Day` → `Night` on the same calendar day, then next calendar `Day` (e.g. May 27 Night → May 28 Day). Rows labeled `1st` / `2nd` use the same slots as `Day` / `Night` for carryover only.
+
+**Computation (per shift):**
+
+- `issued_budget` = sum of `issued_budget.amount` for that date + shift  
+- `carried_from_previous` = previous shift’s `remaining_coh` (0 if none)  
+- `total_budget` = `issued_budget` + `carried_from_previous`  
+- `total_expense` = sum of truck trip `issued_cash_amount`, parts `quantity × amount_per_item`, stack run, driver/helper cash advances (same rules as budget summary)  
+- `remaining_coh` = `total_budget` − `total_expense` (= `cash_on_hand` in API responses)
+
+Balances are recalculated automatically when any of the six source tables change (create/update/delete/restore), cascading forward to later shifts. Use **POST** recalculate for backfill.
+
+### API
+
+| Method | Route | Description |
+|--------|--------|-------------|
+| GET | `/api/budget/shift-balances` | Paginated list (`transaction_date`, `transaction_date_from`/`_to`, `shift`) |
+| GET | `/api/budget/shift-balances/show` | Query: `transaction_date`, `shift` — refresh and return one balance |
+| POST | `/api/budget/shift-balances/recalculate` | Body: `transaction_date` + `shift`, or `recalculate_all: true` |
+
+---
+
 ## Budget Summary API
 
 **GET** `/api/budget/summary` – Consolidated list from all six budget tables plus totals.
@@ -104,5 +130,5 @@ All tables: `id` (bigint PK), `timestamps`, `softDeletes`. Amounts are `decimal(
 ## Reference
 
 - **Relationships:** Driver → driver_cash_advancement_history; Helper → helper_cash_advancement_history, truck_trip_expense; Fleet truck (plate_number) → parts_expense.
-- **Migrations:** Run with `php artisan migrate` (or `migrate:refresh`). Budget tables: `issued_budget`, `truck_trip_expense`, `parts_expense`, `funds_for_stack_run`, `driver_cash_advancement_history`, `helper_cash_advancement_history`. The `budget_history` migration is present but disabled (no table created).
+- **Migrations:** Run with `php artisan migrate` (or `migrate:refresh`). Budget tables: `issued_budget`, `truck_trip_expense`, `parts_expense`, `funds_for_stack_run`, `driver_cash_advancement_history`, `helper_cash_advancement_history`, `shift_budget_balances`. The `budget_history` migration is present but disabled (no table created).
 - **Conventions:** Amounts use `decimal(15,2)`; all budget tables use soft deletes and include `shift` where applicable. **Date columns:** All tables use `transaction_date`.

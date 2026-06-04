@@ -19,3 +19,4 @@ yarn-error.log
 /.vscode
 /.cursor
 /app/graphify-out
+/graphify-out

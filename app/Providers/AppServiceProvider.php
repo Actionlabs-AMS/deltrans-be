@@ -4,9 +4,16 @@ namespace App\Providers;
 
 use App\Models\Booking;
 use App\Models\Container;
+use App\Models\DriverCAHistory;
+use App\Models\FundsForStackRun;
+use App\Models\HelperCAHistory;
+use App\Models\IssuedBudget;
+use App\Models\PartsExpense;
 use App\Models\StatementOfAccount;
+use App\Models\TruckTripExpense;
 use App\Models\WaybillDetail;
 use App\Observers\BookingObserver;
+use App\Observers\BudgetShiftBalanceObserver;
 use App\Observers\ContainerObserver;
 use App\Observers\StatementOfAccountObserver;
 use App\Observers\WaybillDetailObserver;
@@ -44,6 +51,14 @@ class AppServiceProvider extends ServiceProvider
         Booking::observe(BookingObserver::class);
         WaybillDetail::observe(WaybillDetailObserver::class);
         Container::observe(ContainerObserver::class);
+
+        $budgetShiftObserver = BudgetShiftBalanceObserver::class;
+        IssuedBudget::observe($budgetShiftObserver);
+        TruckTripExpense::observe($budgetShiftObserver);
+        PartsExpense::observe($budgetShiftObserver);
+        FundsForStackRun::observe($budgetShiftObserver);
+        DriverCAHistory::observe($budgetShiftObserver);
+        HelperCAHistory::observe($budgetShiftObserver);
     }
 
     /**

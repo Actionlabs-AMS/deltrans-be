@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\PartsExpenseController;
 use App\Http\Controllers\Api\FundsForStackRunController;
 use App\Http\Controllers\Api\CashAdvanceController;
 use App\Http\Controllers\Api\BudgetSummaryController;
+use App\Http\Controllers\Api\ShiftBudgetBalanceController;
 use App\Http\Controllers\Api\ReportsController;
 use App\Http\Controllers\Api\DieselExpenseController;
 
@@ -620,6 +621,9 @@ Route::middleware('auth:sanctum')->group(function () {
 	*/
 	Route::prefix('budget')->group(function () {
 		Route::get('/summary', [BudgetSummaryController::class, 'index']);
+		Route::get('/shift-balances', [ShiftBudgetBalanceController::class, 'index']);
+		Route::get('/shift-balances/show', [ShiftBudgetBalanceController::class, 'show']);
+		Route::post('/shift-balances/recalculate', [ShiftBudgetBalanceController::class, 'recalculate']);
 		Route::get('/issued-budget', [IssuedBudgetController::class, 'index']);
 		Route::get('/issued-budget/{id}', [IssuedBudgetController::class, 'show']);
 		Route::post('/issued-budget', [IssuedBudgetController::class, 'store']);
