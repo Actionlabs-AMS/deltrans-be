@@ -20,6 +20,8 @@ class DriverService extends BaseService
   public function list($perPage = 10, $trash = false)
   {
     try {
+      $perPage = (int) (request('per_page') ?? $perPage);
+
       $allDrivers = $this->getTotalCount();
       $trashedDrivers = $this->getTrashedCount();
 
