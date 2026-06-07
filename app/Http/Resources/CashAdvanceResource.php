@@ -33,16 +33,12 @@ class CashAdvanceResource extends JsonResource
             // 'driver_name' => $this->when(isset($this->driver_id) && $this->relationLoaded('drivers'), function () {
             //     return $this->driver ? trim($this->driver->first_name . ' ' . $this->driver->last_name) : null;
             // }),
-            'driver_name' => $this->whenLoaded('driver', function () {
-                return $this->driver ? trim($this->driver->first_name . ' ' . $this->driver->last_name) : null;
-            }),
+            'driver_name' => $this->driver ? trim(($this->driver->first_name ?? '') . ' ' . ($this->driver->last_name ?? '')) : null,
             'helper_id' => $this->helper_id ?? null,
             // 'helper_name' => $this->when(isset($this->helper_id) && $this->relationLoaded('helpers'), function () {
             //     return $this->helper ? trim($this->helper->first_name . ' ' . $this->helper->last_name) : null;
             // }),
-            'helper_name' => $this->whenLoaded('helper', function () {
-                return $this->helper ? trim($this->helper->first_name . ' ' . $this->helper->last_name) : null;
-            }),
+            'helper_name' => $this->helper ? trim(($this->helper->first_name ?? '') . ' ' . ($this->helper->last_name ?? '')) : null,
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),
