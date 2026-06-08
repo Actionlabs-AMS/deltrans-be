@@ -228,7 +228,7 @@ class ReportsService
     public function get_issued_budget($perPage = 10, $formattedDate, $searchTerm = null)
     {
         try {
-            $query = $this->buildIssuedBudgetQuery($formattedDate, $searchTerm);
+            $query = $this->buildIssuedBudgetQuery($formattedDate, null, 'weekly', $searchTerm);
 
             return $query->paginate($perPage)->withQueryString();
         } catch (\Exception $e) {
@@ -239,15 +239,15 @@ class ReportsService
     /**
      * Export issued budget report as CSV (no pagination).
      */
-    public function exportIssuedBudgetCsv(string $formattedDate, ?string $searchTerm = null): StreamedResponse
+    public function exportIssuedBudgetCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $searchTerm = null): StreamedResponse
     {
         $headers = [
             'id', 'shift', 'transaction_date', 'amount', 'source',
             'created_at', 'updated_at', 'deleted_at',
         ];
 
-        $rows = function () use ($formattedDate, $searchTerm) {
-            $query = $this->buildIssuedBudgetQuery($formattedDate, $searchTerm);
+        $rows = function () use ($startDate, $endDate, $filterType, $searchTerm, $headers) {
+            $query = $this->buildIssuedBudgetQuery($startDate, $endDate, $filterType, $searchTerm);
 
             foreach ($query->cursor() as $row) {
                 $data = (new IssuedBudgetResource($row))->toArray(request());
@@ -262,12 +262,18 @@ class ReportsService
         );
     }
 
-    private function buildIssuedBudgetQuery(?string $formattedDate, ?string $searchTerm = null): Builder
+    private function buildIssuedBudgetQuery(?string $startDate, ?string $endDate = null, string $filterType = 'weekly', ?string $searchTerm = null): Builder
     {
         $query = IssuedBudget::query();
 
-        if ($formattedDate) {
-            $query->whereDate('transaction_date', $formattedDate);
+        if ($filterType === 'monthly' && $startDate) {
+            $date = Carbon::parse($startDate);
+            $query->whereMonth('transaction_date', $date->month)
+                ->whereYear('transaction_date', $date->year);
+        } elseif ($startDate && $endDate) {
+            $query->whereBetween('transaction_date', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            $query->whereDate('transaction_date', $startDate);
         }
 
         $searchTerm = $searchTerm ?? request('search');
@@ -293,7 +299,7 @@ class ReportsService
     public function get_truck_expense($perPage = 10, $formattedDate, $searchTerm = null)
     {
         try {
-            $query = $this->buildTruckExpenseQuery($formattedDate, $searchTerm);
+            $query = $this->buildTruckExpenseQuery($formattedDate, null, 'weekly', $searchTerm);
 
             return $query->paginate($perPage)->withQueryString();
         } catch (\Exception $e) {
@@ -304,7 +310,7 @@ class ReportsService
     /**
      * Export truck trip expense report as CSV (no pagination).
      */
-    public function exportTruckExpenseCsv(string $formattedDate, ?string $searchTerm = null): StreamedResponse
+    public function exportTruckExpenseCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $searchTerm = null): StreamedResponse
     {
         $headers = [
             'id', 'shift', 'plate_number', 'helper_id', 'helper_name',
@@ -312,10 +318,10 @@ class ReportsService
             'transaction_date', 'created_at', 'updated_at', 'deleted_at',
         ];
 
-        $rows = function () use ($formattedDate, $searchTerm) {
-            $query = $this->buildTruckExpenseQuery($formattedDate, $searchTerm);
+        $rows = function () use ($startDate, $endDate, $filterType, $searchTerm, $headers) {
+            $query = $this->buildTruckExpenseQuery($startDate, $endDate, $filterType, $searchTerm);
 
-            foreach ($query->cursor() as $row) {
+            foreach ($query->get() as $row) {
                 $data = (new TruckTripExpenseResource($row))->toArray(request());
                 yield $this->resourceRowToCsv($data, $headers);
             }
@@ -328,12 +334,18 @@ class ReportsService
         );
     }
 
-    private function buildTruckExpenseQuery(?string $formattedDate, ?string $searchTerm = null): Builder
+    private function buildTruckExpenseQuery(?string $startDate, ?string $endDate = null, string $filterType = 'weekly', ?string $searchTerm = null): Builder
     {
         $query = TruckTripExpense::with('helper');
 
-        if ($formattedDate) {
-            $query->whereDate('transaction_date', $formattedDate);
+        if ($filterType === 'monthly' && $startDate) {
+            $date = Carbon::parse($startDate);
+            $query->whereMonth('transaction_date', $date->month)
+                ->whereYear('transaction_date', $date->year);
+        } elseif ($startDate && $endDate) {
+            $query->whereBetween('transaction_date', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            $query->whereDate('transaction_date', $startDate);
         }
 
         $searchTerm = $searchTerm ?? request('search');
@@ -362,7 +374,7 @@ class ReportsService
     public function get_parts_expense($perPage = 10, $formattedDate, $searchTerm = null)
     {
         try {
-            $query = $this->buildPartsExpenseQuery($formattedDate, $searchTerm);
+            $query = $this->buildPartsExpenseQuery($formattedDate, null, 'weekly', $searchTerm);
 
             return $query->paginate($perPage)->withQueryString();
         } catch (\Exception $e) {
@@ -373,7 +385,7 @@ class ReportsService
     /**
      * Export parts expense report as CSV (no pagination).
      */
-    public function exportPartsExpenseCsv(string $formattedDate, ?string $searchTerm = null): StreamedResponse
+    public function exportPartsExpenseCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $searchTerm = null): StreamedResponse
     {
         $headers = [
             'id', 'shift', 'plate_number', 'receipt_no', 'quantity', 'article',
@@ -381,8 +393,8 @@ class ReportsService
             'created_at', 'updated_at', 'deleted_at',
         ];
 
-        $rows = function () use ($formattedDate, $searchTerm) {
-            $query = $this->buildPartsExpenseQuery($formattedDate, $searchTerm);
+        $rows = function () use ($startDate, $endDate, $filterType, $searchTerm, $headers) {
+            $query = $this->buildPartsExpenseQuery($startDate, $endDate, $filterType, $searchTerm);
 
             foreach ($query->cursor() as $row) {
                 $data = (new PartsExpenseResource($row))->toArray(request());
@@ -397,12 +409,18 @@ class ReportsService
         );
     }
 
-    private function buildPartsExpenseQuery(?string $formattedDate, ?string $searchTerm = null): Builder
+    private function buildPartsExpenseQuery(?string $startDate, ?string $endDate = null, string $filterType = 'weekly', ?string $searchTerm = null): Builder
     {
         $query = PartsExpense::query();
 
-        if ($formattedDate) {
-            $query->whereDate('transaction_date', $formattedDate);
+        if ($filterType === 'monthly' && $startDate) {
+            $date = Carbon::parse($startDate);
+            $query->whereMonth('transaction_date', $date->month)
+                ->whereYear('transaction_date', $date->year);
+        } elseif ($startDate && $endDate) {
+            $query->whereBetween('transaction_date', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            $query->whereDate('transaction_date', $startDate);
         }
 
         $searchTerm = $searchTerm ?? request('search');
@@ -427,7 +445,7 @@ class ReportsService
 
     public function get_cash_advances($perPage, $date, $search = null)
     {
-        $query = $this->buildCashAdvancesQuery($date, $search);
+        $query = $this->buildCashAdvancesQuery($date, null, 'weekly', $search);
         $paginated = $query->paginate($perPage);
 
         $paginated->getCollection()->transform(function ($item) {
@@ -440,7 +458,7 @@ class ReportsService
     /**
      * Export cash advances report as CSV (no pagination).
      */
-    public function exportCashAdvancesCsv(string $date, ?string $search = null): StreamedResponse
+    public function exportCashAdvancesCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $search = null): StreamedResponse
     {
         $headers = [
             'type', 'id', 'amount', 'transaction_date', 'shift',
@@ -448,8 +466,8 @@ class ReportsService
             'created_at', 'updated_at', 'deleted_at',
         ];
 
-        $rows = function () use ($date, $search) {
-            $items = $this->buildCashAdvancesQuery($date, $search)->get();
+        $rows = function () use ($startDate, $endDate, $filterType, $search, $headers) {
+            $items = $this->buildCashAdvancesQuery($startDate, $endDate, $filterType, $search)->get();
 
             foreach ($items as $item) {
                 $model = $this->transformCashAdvanceRow($item);
@@ -482,7 +500,7 @@ class ReportsService
     /**
      * Build unified cash advances query (drivers + helpers).
      */
-    private function buildCashAdvancesQuery(string $date, ?string $search = null)
+    private function buildCashAdvancesQuery(?string $startDate = null, ?string $endDate = null, string $filterType = 'weekly', ?string $search = null)
     {
         $sortColumn = request('order', 'created_at');
         $sortDirection = request('sort', 'desc');
@@ -500,9 +518,19 @@ class ReportsService
                 'dca.created_at',
                 'dca.updated_at',
                 DB::raw('NULL as deleted_at')
-            )
-            ->whereDate('dca.transaction_date', $date)
-            ->whereNull('dca.deleted_at');
+            );
+
+        if ($filterType === 'monthly' && $startDate) {
+            $date = Carbon::parse($startDate);
+            $drivers->whereMonth('dca.transaction_date', $date->month)
+                ->whereYear('dca.transaction_date', $date->year);
+        } elseif ($startDate && $endDate) {
+            $drivers->whereBetween('dca.transaction_date', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            $drivers->whereDate('dca.transaction_date', $startDate);
+        }
+
+        $drivers->whereNull('dca.deleted_at');
 
         $helpers = DB::table('helper_cash_advancement_history as hca')
             ->join('helpers as h', 'h.id', '=', 'hca.helper_id')
@@ -517,9 +545,19 @@ class ReportsService
                 'hca.created_at',
                 'hca.updated_at',
                 DB::raw('NULL as deleted_at')
-            )
-            ->whereDate('hca.transaction_date', $date)
-            ->whereNull('hca.deleted_at');
+            );
+
+        if ($filterType === 'monthly' && $startDate) {
+            $date = Carbon::parse($startDate);
+            $helpers->whereMonth('hca.transaction_date', $date->month)
+                ->whereYear('hca.transaction_date', $date->year);
+        } elseif ($startDate && $endDate) {
+            $helpers->whereBetween('hca.transaction_date', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            $helpers->whereDate('hca.transaction_date', $startDate);
+        }
+
+        $helpers->whereNull('hca.deleted_at');
 
         $combined = $drivers->union($helpers);
 

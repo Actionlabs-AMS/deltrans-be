@@ -398,9 +398,11 @@ class ReportsController extends BaseController
      * operationId="exportIssuedBudget",
      * tags={"Reports"},
      * summary="Export issued budget report as CSV",
-     * description="Downloads issued budget records for a specific transaction date as a CSV file (no pagination).",
+     * description="Downloads issued budget records for a transaction date range as a CSV file (no pagination).",
      * security={{"sanctum": {}}},
-     * @OA\Parameter(name="transaction_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-02-28")),
+     * @OA\Parameter(name="start_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-02-22")),
+     * @OA\Parameter(name="end_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-02-28")),
+     * @OA\Parameter(name="filter_type", in="query", required=false, @OA\Schema(type="string", example="weekly")),
      * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
      * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
      * @OA\Response(response=400, description="Bad Request"),
@@ -411,17 +413,21 @@ class ReportsController extends BaseController
     {
         try {
             request()->validate([
-                'transaction_date' => 'required|date',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date',
+                'filter_type' => 'nullable|in:weekly,monthly',
             ]);
 
-            $transactionDate = request('transaction_date');
-            if (!$transactionDate) {
-                throw new \Exception('Transaction date is required to export issued budget.');
-            }
+            $startDate = request('start_date');
+            $endDate = request('end_date');
+            $filterType = request('filter_type', 'weekly');
 
-            $formattedDate = \Carbon\Carbon::parse($transactionDate)->toDateString();
-
-            return $this->service->exportIssuedBudgetCsv($formattedDate, request('search'));
+            return $this->service->exportIssuedBudgetCsv(
+                \Carbon\Carbon::parse($startDate)->toDateString(),
+                \Carbon\Carbon::parse($endDate)->toDateString(),
+                $filterType,
+                request('search')
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'status_code' => 400,
@@ -512,9 +518,11 @@ class ReportsController extends BaseController
      * operationId="exportTruckExpense",
      * tags={"Reports"},
      * summary="Export truck trip expense report as CSV",
-     * description="Downloads truck trip expense records for a specific transaction date as a CSV file (no pagination).",
+     * description="Downloads truck trip expense records for a transaction date range as a CSV file (no pagination).",
      * security={{"sanctum": {}}},
-     * @OA\Parameter(name="transaction_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="start_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-01")),
+     * @OA\Parameter(name="end_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="filter_type", in="query", required=false, @OA\Schema(type="string", example="weekly")),
      * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
      * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
      * @OA\Response(response=400, description="Bad Request"),
@@ -525,17 +533,21 @@ class ReportsController extends BaseController
     {
         try {
             request()->validate([
-                'transaction_date' => 'required|date',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date',
+                'filter_type' => 'nullable|in:weekly,monthly',
             ]);
 
-            $transactionDate = request('transaction_date');
-            if (!$transactionDate) {
-                throw new \Exception('Transaction date is required to export truck trip expense.');
-            }
+            $startDate = request('start_date');
+            $endDate = request('end_date');
+            $filterType = request('filter_type', 'weekly');
 
-            $formattedDate = \Carbon\Carbon::parse($transactionDate)->toDateString();
-
-            return $this->service->exportTruckExpenseCsv($formattedDate, request('search'));
+            return $this->service->exportTruckExpenseCsv(
+                \Carbon\Carbon::parse($startDate)->toDateString(),
+                \Carbon\Carbon::parse($endDate)->toDateString(),
+                $filterType,
+                request('search')
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'status_code' => 400,
@@ -626,9 +638,11 @@ class ReportsController extends BaseController
      * operationId="exportPartsExpense",
      * tags={"Reports"},
      * summary="Export parts expense report as CSV",
-     * description="Downloads parts expense records for a specific transaction date as a CSV file (no pagination).",
+     * description="Downloads parts expense records for a transaction date range as a CSV file (no pagination).",
      * security={{"sanctum": {}}},
-     * @OA\Parameter(name="transaction_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="start_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-01")),
+     * @OA\Parameter(name="end_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="filter_type", in="query", required=false, @OA\Schema(type="string", example="weekly")),
      * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
      * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
      * @OA\Response(response=400, description="Bad Request"),
@@ -639,17 +653,21 @@ class ReportsController extends BaseController
     {
         try {
             request()->validate([
-                'transaction_date' => 'required|date',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date',
+                'filter_type' => 'nullable|in:weekly,monthly',
             ]);
 
-            $transactionDate = request('transaction_date');
-            if (!$transactionDate) {
-                throw new \Exception('Transaction date is required to export parts expense.');
-            }
+            $startDate = request('start_date');
+            $endDate = request('end_date');
+            $filterType = request('filter_type', 'weekly');
 
-            $formattedDate = \Carbon\Carbon::parse($transactionDate)->toDateString();
-
-            return $this->service->exportPartsExpenseCsv($formattedDate, request('search'));
+            return $this->service->exportPartsExpenseCsv(
+                \Carbon\Carbon::parse($startDate)->toDateString(),
+                \Carbon\Carbon::parse($endDate)->toDateString(),
+                $filterType,
+                request('search')
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'status_code' => 400,
@@ -741,9 +759,11 @@ class ReportsController extends BaseController
      * operationId="exportReportCashAdvances",
      * tags={"Reports"},
      * summary="Export cash advances report as CSV",
-     * description="Downloads unified driver and helper cash advance records for a specific transaction date as a CSV file (no pagination).",
+     * description="Downloads unified driver and helper cash advance records for a transaction date range as a CSV file (no pagination).",
      * security={{"sanctum": {}}},
-     * @OA\Parameter(name="transaction_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="start_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-01")),
+     * @OA\Parameter(name="end_date", in="query", required=true, @OA\Schema(type="string", format="date", example="2026-03-03")),
+     * @OA\Parameter(name="filter_type", in="query", required=false, @OA\Schema(type="string", example="weekly")),
      * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string")),
      * @OA\Response(response=200, description="CSV file download", @OA\MediaType(mediaType="text/csv", @OA\Schema(type="string", format="binary"))),
      * @OA\Response(response=400, description="Bad Request"),
@@ -754,17 +774,21 @@ class ReportsController extends BaseController
     {
         try {
             request()->validate([
-                'transaction_date' => 'required|date',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date',
+                'filter_type' => 'nullable|in:weekly,monthly',
             ]);
 
-            $transactionDate = request('transaction_date');
-            if (!$transactionDate) {
-                throw new \Exception('Transaction date is required to export cash advances.');
-            }
+            $startDate = request('start_date');
+            $endDate = request('end_date');
+            $filterType = request('filter_type', 'weekly');
 
-            $formattedDate = \Carbon\Carbon::parse($transactionDate)->toDateString();
-
-            return $this->service->exportCashAdvancesCsv($formattedDate, request('search'));
+            return $this->service->exportCashAdvancesCsv(
+                \Carbon\Carbon::parse($startDate)->toDateString(),
+                \Carbon\Carbon::parse($endDate)->toDateString(),
+                $filterType,
+                request('search')
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'status_code' => 400,
