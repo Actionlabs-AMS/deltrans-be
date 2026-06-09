@@ -32,6 +32,7 @@ use App\Services\BudgetSummaryService;
  *     @OA\Property(property="total_budget", type="number", format="float", example=50000.00, description="Sum of income (Issued Budget type) in filtered data"),
  *     @OA\Property(property="total_expense", type="number", format="float", example=30000.00, description="Sum of expenses in filtered data"),
  *     @OA\Property(property="cash_on_hand", type="number", format="float", example=20000.00, description="Total Budget minus Total Expense for filtered data"),
+ *     @OA\Property(property="total_carry_over_coh", type="number", format="float", example=2000.00, description="Remaining COH from the shift immediately before the filtered period anchor (same as carried_from_previous on the first shift in range)"),
  *     @OA\Property(property="category_totals", ref="#/components/schemas/DashboardBudgetCategoryTotals"),
  *     @OA\Property(property="daily_budget_chart", type="array", description="Present when transaction_date_from and transaction_date_to are set (or date_from/date_to aliases)", @OA\Items(ref="#/components/schemas/DailyBudgetChartDayRow")),
  *     @OA\Property(

@@ -692,7 +692,7 @@ class SoaAndBillingService extends BaseService
             FinancialDocumentCsvHelper::writeBlankRow($handle);
             FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Transactions');
 
-            $headers = $data['transactionColumns']->pluck('name')->map(fn ($c) => $c->name)->all();
+            $headers = $data['transactionColumns']->pluck('name')->all();
             $rows = [];
             foreach ($data['transactionData'] as $row) {
                 $line = [];
@@ -1327,7 +1327,7 @@ class SoaAndBillingService extends BaseService
             ]);
             FinancialDocumentCsvHelper::writeBlankRow($handle);
             FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Transactions');
-            $headers = $soaData['transactionColumns']->pluck('name')->map(fn ($c) => $c->name)->all();
+            $headers = $soaData['transactionColumns']->pluck('name')->all();
             $rows = [];
             foreach ($soaData['transactionData'] as $row) {
                 $line = [];

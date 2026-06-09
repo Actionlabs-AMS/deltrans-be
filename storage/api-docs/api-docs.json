@@ -14029,17 +14029,36 @@
                     "Reports"
                 ],
                 "summary": "Export issued budget report as CSV",
-                "description": "Downloads issued budget records for a specific transaction date as a CSV file (no pagination).",
+                "description": "Downloads issued budget records for a transaction date range as a CSV file (no pagination).",
                 "operationId": "exportIssuedBudget",
                 "parameters": [
                     {
-                        "name": "transaction_date",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-22"
+                        }
+                    },
+                    {
+                        "name": "end_date",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "format": "date",
                             "example": "2026-02-28"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "weekly"
                         }
                     },
                     {
@@ -14151,17 +14170,36 @@
                     "Reports"
                 ],
                 "summary": "Export truck trip expense report as CSV",
-                "description": "Downloads truck trip expense records for a specific transaction date as a CSV file (no pagination).",
+                "description": "Downloads truck trip expense records for a transaction date range as a CSV file (no pagination).",
                 "operationId": "exportTruckExpense",
                 "parameters": [
                     {
-                        "name": "transaction_date",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "format": "date",
                             "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "weekly"
                         }
                     },
                     {
@@ -14273,17 +14311,36 @@
                     "Reports"
                 ],
                 "summary": "Export parts expense report as CSV",
-                "description": "Downloads parts expense records for a specific transaction date as a CSV file (no pagination).",
+                "description": "Downloads parts expense records for a transaction date range as a CSV file (no pagination).",
                 "operationId": "exportPartsExpense",
                 "parameters": [
                     {
-                        "name": "transaction_date",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "format": "date",
                             "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "weekly"
                         }
                     },
                     {
@@ -14395,17 +14452,36 @@
                     "Reports"
                 ],
                 "summary": "Export cash advances report as CSV",
-                "description": "Downloads unified driver and helper cash advance records for a specific transaction date as a CSV file (no pagination).",
+                "description": "Downloads unified driver and helper cash advance records for a transaction date range as a CSV file (no pagination).",
                 "operationId": "exportReportCashAdvances",
                 "parameters": [
                     {
-                        "name": "transaction_date",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-03-01"
+                        }
+                    },
+                    {
+                        "name": "end_date",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "format": "date",
                             "example": "2026-03-03"
+                        }
+                    },
+                    {
+                        "name": "filter_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "weekly"
                         }
                     },
                     {
@@ -26325,6 +26401,12 @@
                         "type": "number",
                         "format": "float",
                         "example": 20000
+                    },
+                    "total_carry_over_coh": {
+                        "description": "Remaining COH from the shift immediately before the filtered period anchor (same as carried_from_previous on the first shift in range)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 2000
                     },
                     "category_totals": {
                         "$ref": "#/components/schemas/DashboardBudgetCategoryTotals"
