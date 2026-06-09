@@ -7,7 +7,9 @@ use App\Models\FundsForStackRun;
 use App\Models\HelperCAHistory;
 use App\Models\IssuedBudget;
 use App\Models\PartsExpense;
+use App\Models\ShiftBudgetBalance;
 use App\Models\TruckTripExpense;
+use App\Support\ShiftChronology;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -15,6 +17,11 @@ use Illuminate\Support\Collection;
 
 class BudgetSummaryService
 {
+    public function __construct(
+        private readonly ShiftBudgetBalanceService $shiftBudgetBalanceService
+    ) {
+    }
+
     public const TYPE_BUDGET = 'Issued Budget';
 
     public const TYPE_TRUCK_EXPENSE = 'Truck Expense';
@@ -407,6 +414,7 @@ class BudgetSummaryService
         $totalBudget = $sorted->where('type', self::TYPE_BUDGET)->sum('amount');
         $totalExpense = (float) $sorted->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
         $cashOnHand = $totalBudget - $totalExpense;
+        $totalCarryOverCoh = $this->computeTotalCarryOverCoh($shift, $sorted);
 
         $categoryTotals = $this->computeCategoryTotals($sorted);
 
@@ -441,6 +449,7 @@ class BudgetSummaryService
             'total_budget' => round($totalBudget, 2),
             'total_expense' => round($totalExpense, 2),
             'cash_on_hand' => round($cashOnHand, 2),
+            'total_carry_over_coh' => $totalCarryOverCoh,
             'category_totals' => $categoryTotals,
             'meta' => $meta,
         ];
@@ -450,5 +459,64 @@ class BudgetSummaryService
         }
 
         return $response;
+    }
+
+    /**
+     * COH carried into the filtered summary period from the shift immediately before
+     * the anchor shift (same rules as shift_budget_balances.carried_from_previous).
+     */
+    private function computeTotalCarryOverCoh(?string $shiftFilter, Collection $sorted): float
+    {
+        $anchor = $this->resolveSummaryAnchorShift($shiftFilter, $sorted);
+        if ($anchor === null) {
+            return 0.0;
+        }
+
+        [$anchorDate, $anchorShift] = $anchor;
+        $previous = ShiftChronology::previous($anchorDate, $anchorShift);
+        if ($previous === null) {
+            return 0.0;
+        }
+
+        $prevBalance = ShiftBudgetBalance::query()
+            ->whereDate('transaction_date', $previous['date'])
+            ->where('shift', $previous['shift'])
+            ->first();
+
+        if ($prevBalance) {
+            return round((float) $prevBalance->remaining_coh, 2);
+        }
+
+        $preview = $this->shiftBudgetBalanceService->showForShift(
+            $previous['date'],
+            $previous['shift'],
+            false
+        );
+
+        return round((float) ($preview['remaining_coh'] ?? 0), 2);
+    }
+
+    /**
+     * @return array{0: string, 1: string}|null [transaction_date, shift]
+     */
+    private function resolveSummaryAnchorShift(?string $shiftFilter, Collection $sorted): ?array
+    {
+        $dateFrom = request('transaction_date_from');
+
+        if ($dateFrom) {
+            $anchorDate = Carbon::parse($dateFrom)->format('Y-m-d');
+        } elseif ($sorted->isNotEmpty()) {
+            $anchorDate = $sorted->min('transaction_date');
+        } else {
+            return null;
+        }
+
+        if ($shiftFilter && $shiftFilter !== 'All' && ShiftChronology::isValidShift($shiftFilter)) {
+            $anchorShift = $shiftFilter;
+        } else {
+            $anchorShift = 'Day';
+        }
+
+        return [$anchorDate, $anchorShift];
     }
 }
