@@ -100,9 +100,21 @@ class ReportsService
             $period = CarbonPeriod::create($startDate, $endDate);
             $report = [];
             $i = 0;
+            $previousCashOnHand = 0;
             
             foreach ($period as $date) {
                 $currentDate = $date->format('Y-m-d');
+
+                $accountingDay = $accountingMap[$currentDate]['day'] ?? 0;
+                $accountingNight = $accountingMap[$currentDate]['night'] ?? 0;
+                $truckExpense = $truckMap[$currentDate] ?? 0;
+                $partsExpense = $partsMap[$currentDate] ?? 0;
+                $baleDay = $baleMap[$currentDate]['day'] ?? 0;
+                $baleNight = $baleMap[$currentDate]['night'] ?? 0;
+
+                $total = $accountingDay + $accountingNight + $previousCashOnHand;
+                $cashOnHand = $total - ($truckExpense + $partsExpense + $baleDay + $baleNight);
+                $previousCashOnHand = $cashOnHand;
                 
                 // 🌟 LOGIC: If search exists, only include if the date matches the search string
                 // This allows searching for "2026-03" or "04" or "Friday" depending on format
@@ -113,12 +125,14 @@ class ReportsService
                 $report[] = (object) [
                     'id'                => $i++,
                     'date'              => $currentDate,
-                    'accounting_day'    => $accountingMap[$currentDate]['day'] ?? 0,
-                    'accounting_night'  => $accountingMap[$currentDate]['night'] ?? 0,
-                    'truck_expense'     => $truckMap[$currentDate] ?? 0,
-                    'parts_expense'     => $partsMap[$currentDate] ?? 0,
-                    'bale_day'          => $baleMap[$currentDate]['day'] ?? 0,
-                    'bale_night'        => $baleMap[$currentDate]['night'] ?? 0,
+                    'accounting_day'    => $accountingDay,
+                    'accounting_night'  => $accountingNight,
+                    'truck_expense'     => $truckExpense,
+                    'parts_expense'     => $partsExpense,
+                    'bale_day'          => $baleDay,
+                    'bale_night'        => $baleNight,
+                    'total'             => $total,
+                    'cash_on_hand'      => $cashOnHand,
                     'created_at'        => null,
                     'updated_at'        => null,
                     'deleted_at'        => null,
@@ -134,70 +148,9 @@ class ReportsService
                     $items = $items->sortBy($order);
                 }
             } else {
-                $items = $items->sortByDesc('date');
+                $items = $items->sortBy('date');
             }
             
-            $totalCount = $items->count();
-
-            // Determine perPage based on type
-            // $perPage = ($type === 'monthly') ? $totalCount : 7;
-            // $perPage = max($perPage, 1);
-
-            // $currentPage = LengthAwarePaginator::resolveCurrentPage();
-            // $currentPageItems = $items->slice(($currentPage - 1) * $perPage, $perPage)->values();
-            
-            // $paginatedResults = new LengthAwarePaginator(
-            //     $currentPageItems, 
-            //     $totalCount, 
-            //     $perPage, 
-            //     $currentPage, 
-            //     [
-            //         'path' => Request::url(), 
-            //         'query' => Request::query()
-            //     ]
-            // );
-
-            // return ReportsResource::collection($paginatedResults);
-            $period = CarbonPeriod::create($startDate, $endDate);
-            $report = [];
-            $i = 0;
-            
-            foreach ($period as $date) {
-                $currentDate = $date->format('Y-m-d');
-                
-                if ($search && !str_contains($currentDate, $search)) {
-                    continue;
-                }
-
-                $report[] = (object) [
-                    'id'                => $i++,
-                    'date'              => $currentDate,
-                    'accounting_day'    => $accountingMap[$currentDate]['day'] ?? 0,
-                    'accounting_night'  => $accountingMap[$currentDate]['night'] ?? 0,
-                    'truck_expense'     => $truckMap[$currentDate] ?? 0,
-                    'parts_expense'     => $partsMap[$currentDate] ?? 0,
-                    'bale_day'          => $baleMap[$currentDate]['day'] ?? 0,
-                    'bale_night'        => $baleMap[$currentDate]['night'] ?? 0,
-                    'created_at'        => null,
-                    'updated_at'        => null,
-                    'deleted_at'        => null,
-                ];
-            }
-
-            $items = collect($report);
-
-            // 🌟 APPLY SORTING TO COLLECTION
-            if ($order) {
-                if (strtolower($sort) === 'desc') {
-                    $items = $items->sortByDesc($order);
-                } else {
-                    $items = $items->sortBy($order);
-                }
-            } else {
-                // Default sort by date descending if no order is provided
-                $items = $items->sortByDesc('date');
-            }
-
             $totalCount = $items->count();
             $perPage = ($type === 'monthly') ? $totalCount : 7;
             $perPage = max($perPage, 1);
@@ -224,6 +177,131 @@ class ReportsService
             throw new \Exception('Failed to fetch report summary: ' . $e->getMessage());
         }
     }
+
+    public function getSummaryReportTotal($startDate, $endDate, $type = 'weekly', $search = null, $order = null, $sort = 'asc')
+    {
+        try {
+            $perPage = ($type === 'monthly') ? 10 : 7;
+
+            // 1. Accounting Totals Map
+            $accountingData = DB::table('issued_budget')
+                ->select('transaction_date')
+                ->selectRaw("SUM(CASE WHEN shift = 'day' THEN amount ELSE 0 END) as day_total")
+                ->selectRaw("SUM(CASE WHEN shift = 'night' THEN amount ELSE 0 END) as night_total")
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->groupBy('transaction_date')
+                ->get();
+
+            $accountingMap = [];
+            foreach ($accountingData as $row) {
+                $accountingMap[trim($row->transaction_date)] = [
+                    'day' => (float)$row->day_total,
+                    'night' => (float)$row->night_total
+                ];
+            }
+
+            // 2. Truck Expenses Map
+            $truckData = DB::table('truck_trip_expense')
+                ->select('transaction_date')
+                ->selectRaw("SUM(issued_cash_amount) as total")
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->groupBy('transaction_date')
+                ->get();
+
+            $truckMap = [];
+            foreach ($truckData as $row) {
+                $truckMap[trim($row->transaction_date)] = (float)$row->total;
+            }
+
+            // 3. Parts Expenses Map (Quantity * Amount)
+            $partsData = DB::table('parts_expense')
+                ->select('transaction_date')
+                ->selectRaw("SUM(quantity * amount_per_item) as total")
+                ->whereBetween('transaction_date', [$startDate, $endDate])
+                ->groupBy('transaction_date')
+                ->get();
+
+            $partsMap = [];
+            foreach ($partsData as $row) {
+                $partsMap[trim($row->transaction_date)] = (float)$row->total;
+            }
+
+            // 4. Bale / Cash Advances Map
+            // We merge Helper and Driver history into one shift-based map
+            $baleMap = [];
+            $caTables = ['driver_cash_advancement_history', 'helper_cash_advancement_history'];
+
+            foreach ($caTables as $table) {
+                $caData = DB::table($table)
+                    ->select('transaction_date', 'shift')
+                    ->selectRaw("SUM(amount) as total")
+                    ->whereBetween('transaction_date', [$startDate, $endDate])
+                    ->groupBy('transaction_date', 'shift')
+                    ->get();
+
+                foreach ($caData as $row) {
+                    $dateKey = trim($row->transaction_date);
+                    $shiftKey = strtolower(trim($row->shift)); // Ensures 'day' matches 'day'
+                    
+                    $baleMap[$dateKey][$shiftKey] = ($baleMap[$dateKey][$shiftKey] ?? 0) + (float)$row->total;
+                }
+            }
+
+            $period = CarbonPeriod::create($startDate, $endDate);
+            $previousCashOnHand = 0;
+
+            $sumAccountingDay = 0;
+            $sumAccountingNight = 0;
+            $sumTruckExpense = 0;
+            $sumPartsExpense = 0;
+            $sumBaleDay = 0;
+            $sumBaleNight = 0;
+            $sumTotal = 0;
+            
+            foreach ($period as $date) {
+                $currentDate = $date->format('Y-m-d');
+                // 🌟 LOGIC: If search exists, only include if the date matches the search string
+                // This allows searching for "2026-03" or "04" or "Friday" depending on format
+                if ($search && !str_contains($currentDate, $search)) {
+                    continue;
+                }
+
+                $accountingDay = $accountingMap[$currentDate]['day'] ?? 0;
+                $accountingNight = $accountingMap[$currentDate]['night'] ?? 0;
+                $truckExpense = $truckMap[$currentDate] ?? 0;
+                $partsExpense = $partsMap[$currentDate] ?? 0;
+                $baleDay = $baleMap[$currentDate]['day'] ?? 0;
+                $baleNight = $baleMap[$currentDate]['night'] ?? 0;
+
+                $total = $accountingDay + $accountingNight + $previousCashOnHand;
+                $cashOnHand = $total - ($truckExpense + $partsExpense + $baleDay + $baleNight);
+                $previousCashOnHand = $cashOnHand;
+                
+                $sumAccountingDay += $accountingDay;
+                $sumAccountingNight += $accountingNight;
+                $sumTruckExpense += $truckExpense;
+                $sumPartsExpense += $partsExpense;
+                $sumBaleDay += $baleDay;
+                $sumBaleNight += $baleNight;
+                $sumTotal += $total;
+
+            }
+
+            return (object) [
+                'accounting_day'    => $sumAccountingDay,
+                'accounting_night'  => $sumAccountingNight,
+                'truck_expense'     => $sumTruckExpense,
+                'parts_expense'     => $sumPartsExpense,
+                'bale_day'          => $sumBaleDay,
+                'bale_night'        => $sumBaleNight,
+                'total'             => $sumTotal,
+            ];
+
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to fetch report summary: ' . $e->getMessage());
+        }
+    }
+
 
     public function get_issued_budget($perPage = 10, $formattedDate, $searchTerm = null)
     {
