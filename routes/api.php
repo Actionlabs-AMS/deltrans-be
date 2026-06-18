@@ -855,6 +855,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::prefix('reports')->group(function () {
 		// Standard CRUD operations
 		Route::get('/summary', [ReportsController::class, 'index']);  // Retrieve all reports data
+		Route::get('/summary-total', [ReportsController::class, 'getSummaryTotal']);  // Retrieve all reports data
 		Route::get('/issued-budget', [ReportsController::class, 'getIssuedBudget']); 
 		Route::get('/truck-trip-expense', [ReportsController::class, 'getTruckExpense']);  
 		Route::get('/parts-expense', [ReportsController::class, 'getPartsExpense']);  

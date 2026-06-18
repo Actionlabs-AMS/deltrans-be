@@ -1005,4 +1005,29 @@ class ReportsController extends BaseController
         }
     }
 
+    public function getSummaryTotal()
+    {
+        try {
+            $reportData = $this->service->getSummaryReportTotal(
+                request('start_date'),
+                request('end_date'),
+                request('filter_type', 'weekly'),
+                request('search'),
+                request('order'),
+                request('sort', 'asc')
+            );
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Daily report summary totals retrieved successfully.',
+                'summary_totals' => $reportData,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -24,6 +24,8 @@ class ReportsResource extends JsonResource
             'parts_expense'    => (float) ($this->parts_expense ?? 0),
             'bale_day'         => (float) ($this->bale_day ?? 0),
             'bale_night'       => (float) ($this->bale_night ?? 0),
+            'total'            => (float) ($this->total ?? 0),
+            'cash_on_hand'     => (float) ($this->cash_on_hand ?? 0),
 
             // Timestamps
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
