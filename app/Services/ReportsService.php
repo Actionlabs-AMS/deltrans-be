@@ -283,9 +283,10 @@ class ReportsService
                 $sumPartsExpense += $partsExpense;
                 $sumBaleDay += $baleDay;
                 $sumBaleNight += $baleNight;
-                $sumTotal += $total;
-
+                $lastCashOnHand = $cashOnHand; // Keep track of the last cash on hand for total calculation
             }
+
+            $sumTotal = $sumAccountingDay + $sumAccountingNight - abs($lastCashOnHand);
 
             return (object) [
                 'accounting_day'    => $sumAccountingDay,
@@ -320,8 +321,7 @@ class ReportsService
     public function exportIssuedBudgetCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $searchTerm = null): StreamedResponse
     {
         $headers = [
-            'id', 'shift', 'transaction_date', 'amount', 'source',
-            'created_at', 'updated_at', 'deleted_at',
+            'transaction_date', 'shift', 'amount', 'source'
         ];
 
         $rows = function () use ($startDate, $endDate, $filterType, $searchTerm, $headers) {
@@ -391,9 +391,8 @@ class ReportsService
     public function exportTruckExpenseCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $searchTerm = null): StreamedResponse
     {
         $headers = [
-            'id', 'shift', 'plate_number', 'helper_id', 'helper_name',
-            'cash_on_hand', 'issued_cash_amount', 'remaining_amount',
-            'transaction_date', 'created_at', 'updated_at', 'deleted_at',
+            'transaction_date', 'shift', 'helper_name',
+            'cash_on_hand', 'issued_cash_amount',
         ];
 
         $rows = function () use ($startDate, $endDate, $filterType, $searchTerm, $headers) {
@@ -466,9 +465,8 @@ class ReportsService
     public function exportPartsExpenseCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $searchTerm = null): StreamedResponse
     {
         $headers = [
-            'id', 'shift', 'plate_number', 'receipt_no', 'quantity', 'article',
-            'amount_per_item', 'total_amount', 'transaction_date',
-            'created_at', 'updated_at', 'deleted_at',
+            'transaction_date', 'shift', 'plate_number', 'receipt_no', 'article', 'quantity',
+            'amount_per_item', 'total_amount',
         ];
 
         $rows = function () use ($startDate, $endDate, $filterType, $searchTerm, $headers) {
@@ -539,9 +537,8 @@ class ReportsService
     public function exportCashAdvancesCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $search = null): StreamedResponse
     {
         $headers = [
-            'type', 'id', 'amount', 'transaction_date', 'shift',
-            'driver_id', 'driver_name', 'helper_id', 'helper_name',
-            'created_at', 'updated_at', 'deleted_at',
+            'transaction_date', 'shift',
+            'driver_name', 'helper_name', 'amount', 
         ];
 
         $rows = function () use ($startDate, $endDate, $filterType, $search, $headers) {
