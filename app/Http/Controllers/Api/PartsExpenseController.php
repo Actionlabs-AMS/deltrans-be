@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\PartsExpenseRequest;
 use App\Services\PartsExpenseService;
 use App\Services\MessageService;
+use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
@@ -144,5 +145,35 @@ class PartsExpenseController extends BaseController
     public function destroy($id)
     {
         return parent::destroy($id);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        return parent::bulkDelete($request);
+    }
+
+    public function getTrashed()
+    {
+        return parent::getTrashed();
+    }
+
+    public function restore($id)
+    {
+        return parent::restore($id);
+    }
+
+    public function bulkRestore(Request $request)
+    {
+        return parent::bulkRestore($request);
+    }
+
+    public function forceDelete($id)
+    {
+        return parent::forceDelete($id);
+    }
+
+    public function bulkForceDelete(Request $request)
+    {
+        return parent::bulkForceDelete($request);
     }
 }

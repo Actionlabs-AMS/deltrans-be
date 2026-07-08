@@ -14,6 +14,9 @@ class IssuedBudgetService extends BaseService
 
     public function list($perPage = 10, $trash = false)
     {
+        $all = $this->getTotalCount();
+        $trashed = $this->getTrashedCount();
+
         $query = IssuedBudget::query();
 
         if ($trash) {
@@ -46,7 +49,9 @@ class IssuedBudgetService extends BaseService
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc');
 
-        return IssuedBudgetResource::collection($query->paginate($perPage)->withQueryString());
+        return IssuedBudgetResource::collection(
+            $query->paginate($perPage)->withQueryString()
+        )->additional(['meta' => ['all' => $all, 'trashed' => $trashed]]);
     }
 
     public function show(int $id)

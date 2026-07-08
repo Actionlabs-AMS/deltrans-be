@@ -203,16 +203,192 @@ class BudgetSummaryService
     }
 
     /**
+     * @var array<string, class-string<\Illuminate\Database\Eloquent\Model>>
+     */
+    private const SOURCE_MODELS = [
+        'issued_budget' => IssuedBudget::class,
+        'truck_trip_expense' => TruckTripExpense::class,
+        'parts_expense' => PartsExpense::class,
+        'funds_for_stack_run' => FundsForStackRun::class,
+        'driver_cash_advancement_history' => DriverCAHistory::class,
+        'helper_cash_advancement_history' => HelperCAHistory::class,
+    ];
+
+    public function getActiveCount(): int
+    {
+        return IssuedBudget::count()
+            + TruckTripExpense::count()
+            + PartsExpense::count()
+            + FundsForStackRun::count()
+            + DriverCAHistory::count()
+            + HelperCAHistory::count();
+    }
+
+    public function getTrashedCount(): int
+    {
+        return IssuedBudget::onlyTrashed()->count()
+            + TruckTripExpense::onlyTrashed()->count()
+            + PartsExpense::onlyTrashed()->count()
+            + FundsForStackRun::onlyTrashed()->count()
+            + DriverCAHistory::onlyTrashed()->count()
+            + HelperCAHistory::onlyTrashed()->count();
+    }
+
+    public function destroyBySource(string $sourceTable, int $sourceId): void
+    {
+        $model = $this->resolveSourceModel($sourceTable, $sourceId);
+        $model->delete();
+    }
+
+    public function restoreBySource(string $sourceTable, int $sourceId): array
+    {
+        $modelClass = $this->resolveSourceModelClass($sourceTable);
+        $model = $modelClass::withTrashed()->findOrFail($sourceId);
+        $model->restore();
+
+        if (in_array($sourceTable, ['truck_trip_expense', 'driver_cash_advancement_history', 'helper_cash_advancement_history'], true)) {
+            $model->load($sourceTable === 'truck_trip_expense' ? 'helper' : ($sourceTable === 'driver_cash_advancement_history' ? 'driver' : 'helper'));
+        }
+
+        return $this->mapSourceModelToRow($model, $sourceTable);
+    }
+
+    public function forceDeleteBySource(string $sourceTable, int $sourceId): void
+    {
+        $modelClass = $this->resolveSourceModelClass($sourceTable);
+        $model = $modelClass::withTrashed()->findOrFail($sourceId);
+        $model->forceDelete();
+    }
+
+    private function resolveSourceModelClass(string $sourceTable): string
+    {
+        $modelClass = self::SOURCE_MODELS[$sourceTable] ?? null;
+        if ($modelClass === null) {
+            throw new \InvalidArgumentException('Unsupported budget source table.');
+        }
+
+        return $modelClass;
+    }
+
+    private function resolveSourceModel(string $sourceTable, int $sourceId)
+    {
+        $modelClass = $this->resolveSourceModelClass($sourceTable);
+
+        return $modelClass::findOrFail($sourceId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapSourceModelToRow($model, string $sourceTable): array
+    {
+        return match ($sourceTable) {
+            'issued_budget' => [
+                'source_id' => $model->id,
+                'row_key' => 'issued_budget:' . $model->id,
+                'type' => self::TYPE_BUDGET,
+                'transaction_date' => $model->transaction_date?->format('Y-m-d'),
+                'shift' => $model->shift,
+                'amount' => (float) $model->amount,
+                'description' => $model->source,
+                'source_table' => 'issued_budget',
+                'created_at' => $model->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $model->deleted_at?->format('Y-m-d H:i:s'),
+            ],
+            'truck_trip_expense' => [
+                'source_id' => $model->id,
+                'row_key' => 'truck_trip_expense:' . $model->id,
+                'type' => self::TYPE_TRUCK_EXPENSE,
+                'transaction_date' => $model->transaction_date?->format('Y-m-d'),
+                'shift' => $model->shift,
+                'amount' => (float) $model->issued_cash_amount,
+                'description' => $model->helper ? trim($model->helper->first_name . ' ' . $model->helper->last_name) : null,
+                'source_table' => 'truck_trip_expense',
+                'cash_on_hand' => (float) $model->cash_on_hand,
+                'issued_cash_amount' => (float) $model->issued_cash_amount,
+                'helper_id' => $model->helper_id,
+                'created_at' => $model->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $model->deleted_at?->format('Y-m-d H:i:s'),
+            ],
+            'parts_expense' => [
+                'source_id' => $model->id,
+                'row_key' => 'parts_expense:' . $model->id,
+                'type' => self::TYPE_PARTS_EXPENSE,
+                'transaction_date' => $model->transaction_date?->format('Y-m-d'),
+                'shift' => $model->shift,
+                'amount' => (float) $model->amount_per_item * (int) $model->quantity,
+                'description' => $model->article ?: $model->receipt_no,
+                'source_table' => 'parts_expense',
+                'plate_number' => $model->plate_number,
+                'receipt_no' => $model->receipt_no,
+                'quantity' => $model->quantity,
+                'article' => $model->article,
+                'amount_per_item' => (float) $model->amount_per_item,
+                'created_at' => $model->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $model->deleted_at?->format('Y-m-d H:i:s'),
+            ],
+            'funds_for_stack_run' => [
+                'source_id' => $model->id,
+                'row_key' => 'funds_for_stack_run:' . $model->id,
+                'type' => self::TYPE_OTHER_EXPENSE,
+                'transaction_date' => $model->transaction_date?->format('Y-m-d'),
+                'shift' => $model->shift,
+                'amount' => (float) $model->amount,
+                'description' => $model->remarks,
+                'source_table' => 'funds_for_stack_run',
+                'created_at' => $model->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $model->deleted_at?->format('Y-m-d H:i:s'),
+            ],
+            'driver_cash_advancement_history' => [
+                'source_id' => $model->id,
+                'row_key' => 'driver_cash_advancement_history:' . $model->id,
+                'type' => self::TYPE_DRIVER_CASH_ADVANCE,
+                'transaction_date' => $model->transaction_date?->format('Y-m-d'),
+                'shift' => $model->shift,
+                'amount' => (float) $model->amount,
+                'description' => $model->driver ? trim($model->driver->first_name . ' ' . $model->driver->last_name) : null,
+                'source_table' => 'driver_cash_advancement_history',
+                'driver_id' => $model->driver_id,
+                'created_at' => $model->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $model->deleted_at?->format('Y-m-d H:i:s'),
+            ],
+            'helper_cash_advancement_history' => [
+                'source_id' => $model->id,
+                'row_key' => 'helper_cash_advancement_history:' . $model->id,
+                'type' => self::TYPE_HELPER_CASH_ADVANCE,
+                'transaction_date' => $model->transaction_date?->format('Y-m-d'),
+                'shift' => $model->shift,
+                'amount' => (float) $model->amount,
+                'description' => $model->helper ? trim($model->helper->first_name . ' ' . $model->helper->last_name) : null,
+                'source_table' => 'helper_cash_advancement_history',
+                'helper_id' => $model->helper_id,
+                'created_at' => $model->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $model->deleted_at?->format('Y-m-d H:i:s'),
+            ],
+            default => throw new \InvalidArgumentException('Unsupported budget source table.'),
+        };
+    }
+
+    /**
      * @param  string|null  $typeFilter  When set and not "All", filter by budget row type
      */
-    private function collectUnifiedRows(?string $dateFrom, ?string $dateTo, string $shift, ?string $typeFilter, bool $useCreatedAtFromRequest): Collection
-    {
+    private function collectUnifiedRows(
+        ?string $dateFrom,
+        ?string $dateTo,
+        string $shift,
+        ?string $typeFilter,
+        bool $useCreatedAtFromRequest,
+        bool $onlyTrashed = false
+    ): Collection {
         $dateFrom = $dateFrom ?? request('transaction_date_from');
         $dateTo = $dateTo ?? request('transaction_date_to');
 
         $all = collect();
 
         $issuedQuery = IssuedBudget::query();
+        if ($onlyTrashed) {
+            $issuedQuery->onlyTrashed();
+        }
         if ($useCreatedAtFromRequest) {
             $this->applyFilters($issuedQuery, 'transaction_date', $shift);
         } else {
@@ -229,10 +405,14 @@ class BudgetSummaryService
                 'description' => $row->source,
                 'source_table' => 'issued_budget',
                 'created_at' => $row->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $row->deleted_at?->format('Y-m-d H:i:s'),
             ]);
         }
 
         $truckQuery = TruckTripExpense::query()->with('helper');
+        if ($onlyTrashed) {
+            $truckQuery->onlyTrashed();
+        }
         if ($useCreatedAtFromRequest) {
             $this->applyFilters($truckQuery, 'transaction_date', $shift);
         } else {
@@ -254,10 +434,14 @@ class BudgetSummaryService
                 'issued_cash_amount' => $amount,
                 'helper_id' => $row->helper_id,
                 'created_at' => $row->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $row->deleted_at?->format('Y-m-d H:i:s'),
             ]);
         }
 
         $partsQuery = PartsExpense::query();
+        if ($onlyTrashed) {
+            $partsQuery->onlyTrashed();
+        }
         if ($useCreatedAtFromRequest) {
             $this->applyFilters($partsQuery, 'transaction_date', $shift);
         } else {
@@ -281,10 +465,14 @@ class BudgetSummaryService
                 'article' => $row->article,
                 'amount_per_item' => (float) $row->amount_per_item,
                 'created_at' => $row->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $row->deleted_at?->format('Y-m-d H:i:s'),
             ]);
         }
 
         $fundsQuery = FundsForStackRun::query();
+        if ($onlyTrashed) {
+            $fundsQuery->onlyTrashed();
+        }
         if ($useCreatedAtFromRequest) {
             $this->applyFilters($fundsQuery, 'transaction_date', $shift);
         } else {
@@ -302,10 +490,14 @@ class BudgetSummaryService
                 'description' => $row->remarks,
                 'source_table' => 'funds_for_stack_run',
                 'created_at' => $row->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $row->deleted_at?->format('Y-m-d H:i:s'),
             ]);
         }
 
         $driverCAQuery = DriverCAHistory::query()->with('driver');
+        if ($onlyTrashed) {
+            $driverCAQuery->onlyTrashed();
+        }
         if ($useCreatedAtFromRequest) {
             $this->applyFilters($driverCAQuery, 'transaction_date', $shift);
         } else {
@@ -325,10 +517,14 @@ class BudgetSummaryService
                 'source_table' => 'driver_cash_advancement_history',
                 'driver_id' => $row->driver_id,
                 'created_at' => $row->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $row->deleted_at?->format('Y-m-d H:i:s'),
             ]);
         }
 
         $helperCAQuery = HelperCAHistory::query()->with('helper');
+        if ($onlyTrashed) {
+            $helperCAQuery->onlyTrashed();
+        }
         if ($useCreatedAtFromRequest) {
             $this->applyFilters($helperCAQuery, 'transaction_date', $shift);
         } else {
@@ -348,6 +544,7 @@ class BudgetSummaryService
                 'source_table' => 'helper_cash_advancement_history',
                 'helper_id' => $row->helper_id,
                 'created_at' => $row->created_at?->format('Y-m-d H:i:s'),
+                'deleted_at' => $row->deleted_at?->format('Y-m-d H:i:s'),
             ]);
         }
 
@@ -397,10 +594,10 @@ class BudgetSummaryService
     /**
      * Collect all rows from the 6 tables, map to unified shape, sort, and compute totals.
      */
-    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type = null): array
+    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type = null, bool $trash = false): array
     {
         $sorted = $this->sortUnifiedRowsNewestFirst(
-            $this->collectUnifiedRows(null, null, $shift, $type, true)
+            $this->collectUnifiedRows(null, null, $shift, $type, true, $trash)
         );
 
         $search = request('search');
@@ -441,8 +638,8 @@ class BudgetSummaryService
             ->except('data')
             ->except(['first_page_url', 'last_page_url', 'next_page_url', 'prev_page_url'])
             ->all();
-        $meta['all'] = $total;
-        $meta['trashed'] = 0;
+        $meta['all'] = $this->getActiveCount();
+        $meta['trashed'] = $this->getTrashedCount();
 
         $response = [
             'data' => $paginator->items(),

@@ -34,6 +34,9 @@ class TruckTripExpenseService extends BaseService
 
     public function list($perPage = 10, $trash = false)
     {
+        $all = $this->getTotalCount();
+        $trashed = $this->getTrashedCount();
+
         $query = TruckTripExpense::query()->with('helper');
 
         if ($trash) {
@@ -75,7 +78,9 @@ class TruckTripExpenseService extends BaseService
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc');
 
-        return TruckTripExpenseResource::collection($query->paginate($perPage)->withQueryString());
+        return TruckTripExpenseResource::collection(
+            $query->paginate($perPage)->withQueryString()
+        )->additional(['meta' => ['all' => $all, 'trashed' => $trashed]]);
     }
 
     public function show(int $id)
