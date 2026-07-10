@@ -280,6 +280,20 @@ class BudgetSummaryService
     /**
      * @return array<string, mixed>
      */
+    private function formatTruckExpenseDescription($model): ?string
+    {
+        $helperName = $model->helper
+            ? trim($model->helper->first_name . ' ' . $model->helper->last_name)
+            : null;
+        $plateNumber = $model->plate_number ?: ($model->truck?->plate_number ?? null);
+
+        if ($helperName && $plateNumber) {
+            return trim($helperName . ' (' . $plateNumber . ')');
+        }
+
+        return $helperName ?: $plateNumber;
+    }
+
     private function mapSourceModelToRow($model, string $sourceTable): array
     {
         return match ($sourceTable) {
@@ -302,10 +316,10 @@ class BudgetSummaryService
                 'transaction_date' => $model->transaction_date?->format('Y-m-d'),
                 'shift' => $model->shift,
                 'amount' => (float) $model->issued_cash_amount,
-                'description' => $model->helper ? trim($model->helper->first_name . ' ' . $model->helper->last_name) : null,
+                'description' => $this->formatTruckExpenseDescription($model),
                 'source_table' => 'truck_trip_expense',
                 'cash_on_hand' => (float) $model->cash_on_hand,
-                'issued_cash_amount' => (float) $model->issued_cash_amount,
+                'issued_cash_amount' => (float) $model->issued_cash_amount, 
                 'helper_id' => $model->helper_id,
                 'created_at' => $model->created_at?->format('Y-m-d H:i:s'),
                 'deleted_at' => $model->deleted_at?->format('Y-m-d H:i:s'),
@@ -419,7 +433,7 @@ class BudgetSummaryService
             $this->applyDateRangeFilters($truckQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
         }
         foreach ($truckQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
-            $desc = $row->helper ? trim($row->helper->first_name . ' ' . $row->helper->last_name) : null;
+            $desc = $this->formatTruckExpenseDescription($row);
             $amount = (float) $row->issued_cash_amount;
             $all->push([
                 'source_id' => $row->id,
@@ -428,6 +442,7 @@ class BudgetSummaryService
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
                 'amount' => $amount,
+                'plate_number' => $row->plate_number,
                 'description' => $desc,
                 'source_table' => 'truck_trip_expense',
                 'cash_on_hand' => (float) $row->cash_on_hand,
