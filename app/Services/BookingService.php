@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
 use App\Http\Resources\BookingResource;
+use Illuminate\Support\Collection;
 
 class BookingService extends BaseService
 {
@@ -178,11 +180,90 @@ class BookingService extends BaseService
 
         $paginator = $query->paginate($perPage)->withQueryString();
 
+        $this->attachSoaTagsToBookings($paginator->getCollection(), $shippingLineId);
+
         return BookingResource::collection($paginator)->additional([
             'total_cost' => round($totalCost, 2),
             'remaining_balance' => round($remainingBalance, 2),
             'total_paid' => round($totalPaid, 2),
         ]);
+    }
+
+    /**
+     * Attach SOA badge/tag fields for bookings on the current page only.
+     *
+     * Avoids FE scanning every paginated SOA page. One query scoped to page booking IDs.
+     *
+     * @param  Collection<int, Booking>  $bookings
+     */
+    private function attachSoaTagsToBookings(Collection $bookings, int $shippingLineId): void
+    {
+        if ($bookings->isEmpty()) {
+            return;
+        }
+
+        $bookingIds = $bookings->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $soaByBookingId = $this->buildSoaTagMapForBookingIds($bookingIds, $shippingLineId);
+
+        foreach ($bookings as $booking) {
+            $tag = $soaByBookingId[(int) $booking->id] ?? null;
+
+            $booking->setAttribute('has_soa', $tag !== null);
+            $booking->setAttribute('soa_id', $tag['soa_id'] ?? null);
+            $booking->setAttribute('soa_dli_sa_number', $tag['soa_dli_sa_number'] ?? null);
+        }
+    }
+
+    /**
+     * Map booking_id => SOA tag for IDs that appear in active SOAs of the shipping line.
+     * If a booking appears in more than one SOA, the newest SOA (highest id) wins.
+     *
+     * @param  array<int, int>  $bookingIds
+     * @return array<int, array{soa_id: int, soa_dli_sa_number: string|null}>
+     */
+    private function buildSoaTagMapForBookingIds(array $bookingIds, int $shippingLineId): array
+    {
+        if ($bookingIds === []) {
+            return [];
+        }
+
+        $soas = StatementOfAccount::query()
+            ->select(['id', 'dli_sa_number', 'booking_ids'])
+            ->where('shipping_line_id', $shippingLineId)
+            ->where(function ($query) use ($bookingIds) {
+                foreach ($bookingIds as $bookingId) {
+                    $query->orWhereRaw(
+                        "JSON_CONTAINS(booking_ids, ?, '$')",
+                        [json_encode((int) $bookingId)]
+                    );
+                }
+            })
+            ->orderByDesc('id')
+            ->get();
+
+        $map = [];
+
+        foreach ($soas as $soa) {
+            foreach ($soa->booking_ids ?? [] as $bookingId) {
+                $bookingId = (int) $bookingId;
+
+                if ($bookingId <= 0 || !in_array($bookingId, $bookingIds, true)) {
+                    continue;
+                }
+
+                // First match wins because SOAs are ordered by id DESC (newest first).
+                if (isset($map[$bookingId])) {
+                    continue;
+                }
+
+                $map[$bookingId] = [
+                    'soa_id' => (int) $soa->id,
+                    'soa_dli_sa_number' => $soa->dli_sa_number,
+                ];
+            }
+        }
+
+        return $map;
     }
 
     /**

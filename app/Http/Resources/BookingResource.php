@@ -39,6 +39,20 @@ class BookingResource extends JsonResource
             'is_ship_in' => (bool) $this->is_ship_in,
             'actual_no_of_waybill' => isset($this->actual_no_of_waybill) ? (int) $this->actual_no_of_waybill : 0,
 
+            // SOA tagging (present on bookings/by-shipping-line when resolved server-side)
+            'has_soa' => $this->when(
+                array_key_exists('has_soa', $this->resource->getAttributes()),
+                (bool) $this->has_soa
+            ),
+            'soa_id' => $this->when(
+                array_key_exists('has_soa', $this->resource->getAttributes()),
+                $this->soa_id !== null ? (int) $this->soa_id : null
+            ),
+            'soa_dli_sa_number' => $this->when(
+                array_key_exists('has_soa', $this->resource->getAttributes()),
+                $this->soa_dli_sa_number
+            ),
+
             // Prepared by: display name from users / user_meta (GET returns name; POST/PUT use ID)
             'prepared_by' => $this->when($this->prepared_by, function () {
                 $user = $this->preparedByUser;

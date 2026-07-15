@@ -30,6 +30,9 @@ use App\Services\MessageService;
  *     @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
  *     @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (true=Ship In, false=Ship Out)"),
  *     @OA\Property(property="actual_no_of_waybill", type="integer", example=5, description="Actual number of waybills created for this booking"),
+ *     @OA\Property(property="has_soa", type="boolean", example=true, description="Present on by-shipping-line: whether this booking is tagged in an active SOA"),
+ *     @OA\Property(property="soa_id", type="integer", example=12, nullable=true, description="Present on by-shipping-line: linked SOA id when has_soa is true"),
+ *     @OA\Property(property="soa_dli_sa_number", type="string", example="001-A", nullable=true, description="Present on by-shipping-line: SOA DLI SA number for badge display"),
  *     @OA\Property(property="prepared_by", type="string", example="John Doe", nullable=true, description="Display name of user who prepared (from users/user_meta; POST/PUT accept user ID)"),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2023-10-27T10:00:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2023-10-27T10:00:00Z")
@@ -191,7 +194,7 @@ class BookingController extends BaseController
      *         response=200,
      *         description="Bookings retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Booking")),
+     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Booking"), description="Bookings include has_soa, soa_id, soa_dli_sa_number for badge display"),
      *             @OA\Property(property="meta", type="object"),
      *             @OA\Property(property="links", type="object"),
      *             @OA\Property(property="total_cost", type="number", format="float", example=125000.00, description="Sum of total_rate_per_client for all waybills in the filtered bookings"),
