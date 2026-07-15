@@ -17,6 +17,7 @@ class BudgetSummaryRequest extends FormRequest
         return [
             'shift' => ['nullable', 'string', Rule::in(['Day', 'Night', 'All'])],
             'type' => ['nullable', 'string'],
+            'dateFilter' => ['nullable', 'string', Rule::in(['daily', 'weekly'])],
             'transaction_date_from' => 'nullable|date',
             'transaction_date_to' => 'nullable|date',
             'date_from' => 'nullable|date',

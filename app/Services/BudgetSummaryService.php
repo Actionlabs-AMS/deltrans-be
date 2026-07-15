@@ -609,9 +609,11 @@ class BudgetSummaryService
     /**
      * Collect all rows from the 6 tables, map to unified shape, sort, and compute totals.
      */
-    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type = null, bool $trash = false): array
+    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type = null, bool $trash = false, ?string $dateFilter = 'daily'): array
     {
         $sorted = $this->sortUnifiedRowsNewestFirst(
+            //private function collectUnifiedRows( ?string $dateFrom, ?string $dateTo, string $shift,
+            //                                     ?string $typeFilter, bool $useCreatedAtFromRequest, bool $onlyTrashed = false)
             $this->collectUnifiedRows(null, null, $shift, $type, true, $trash)
         );
 
@@ -626,7 +628,7 @@ class BudgetSummaryService
         $totalBudget = $sorted->where('type', self::TYPE_BUDGET)->sum('amount');
         $totalExpense = (float) $sorted->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
         $cashOnHand = $totalBudget - $totalExpense;
-        $totalCarryOverCoh = $this->computeTotalCarryOverCoh($shift, $sorted);
+        $previousCashOnHand = $this->computeTotalCarryOverCoh($shift, $sorted, $dateFilter);
 
         $categoryTotals = $this->computeCategoryTotals($sorted);
 
@@ -661,7 +663,7 @@ class BudgetSummaryService
             'total_budget' => round($totalBudget, 2),
             'total_expense' => round($totalExpense, 2),
             'cash_on_hand' => round($cashOnHand, 2),
-            'total_carry_over_coh' => $totalCarryOverCoh,
+            'previous_cash_on_hand' => $previousCashOnHand,
             'category_totals' => $categoryTotals,
             'meta' => $meta,
         ];
@@ -677,8 +679,38 @@ class BudgetSummaryService
      * COH carried into the filtered summary period from the shift immediately before
      * the anchor shift (same rules as shift_budget_balances.carried_from_previous).
      */
-    private function computeTotalCarryOverCoh(?string $shiftFilter, Collection $sorted): float
+    private function computeTotalCarryOverCoh(?string $shiftFilter, Collection $sorted, string $dateFilter = 'daily'): float
     {
+        $dateFilter = strtolower($dateFilter ?? 'daily');
+
+        // Weekly: reset the COH counter at a new Monday week boundary.
+        if ($dateFilter === 'weekly') {
+            $from = request('transaction_date_from');
+            $to = request('transaction_date_to');
+            if (!$from || !$to) {
+                return 0.0;
+            }
+
+            $selectedWeekStart = Carbon::parse($from)->startOfWeek(Carbon::MONDAY);
+            $selectedWeekEnd = Carbon::parse($from)->endOfWeek(Carbon::SUNDAY);
+
+            // If this is a fresh weekly period starting on Monday, the counter resets to zero.
+            if (Carbon::parse($from)->format('Y-m-d') === $selectedWeekStart->format('Y-m-d')) {
+                return 0.0;
+            }
+
+            $prevFrom = $selectedWeekStart->copy()->subWeek()->format('Y-m-d');
+            $prevTo = $selectedWeekEnd->copy()->subWeek()->format('Y-m-d');
+
+            $prevRows = $this->collectUnifiedRowsForDateRange($prevFrom, $prevTo, $shiftFilter ?? 'All');
+
+            $totalBudget = (float) $prevRows->where('type', self::TYPE_BUDGET)->sum('amount');
+            $totalExpense = (float) $prevRows->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
+
+            return round($totalBudget - $totalExpense, 2);
+        }
+
+        // Daily (default): previous shift COH
         $anchor = $this->resolveSummaryAnchorShift($shiftFilter, $sorted);
         if ($anchor === null) {
             return 0.0;
