@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\BudgetSummaryRequest;
 use App\Services\BudgetSummaryService;
+use App\Services\MessageService;
 
 /**
  * @OA\Tag(
@@ -64,8 +65,26 @@ use App\Services\BudgetSummaryService;
 class BudgetSummaryController
 {
     public function __construct(
-        protected BudgetSummaryService $service
+        protected BudgetSummaryService $service,
+        protected MessageService $messageService
     ) {
+    }
+
+    private function buildSummaryResponse(BudgetSummaryRequest $request, bool $trash = false)
+    {
+        $request->validated();
+        $shift = $request->get('shift', 'All');
+        $type = $request->get('type', 'All');
+        $perPage = (int) $request->get('per_page', 10);
+
+        $result = $this->service->list($perPage, $shift, $type, $trash);
+
+        return response()->json(array_merge($result, [
+            'status_code' => 200,
+            'message' => $trash
+                ? 'Trashed budget summary retrieved successfully.'
+                : 'Budget summary retrieved successfully.',
+        ]));
     }
 
     /**
@@ -93,16 +112,48 @@ class BudgetSummaryController
      */
     public function index(BudgetSummaryRequest $request)
     {
-        $request->validated();
-        $shift = $request->get('shift', 'All');
-        $type = $request->get('type', 'All');
-        $perPage = (int) $request->get('per_page', 10);
+        return $this->buildSummaryResponse($request);
+    }
 
-        $result = $this->service->list($perPage, $shift, $type);
+    public function getTrashed(BudgetSummaryRequest $request)
+    {
+        try {
+            return $this->buildSummaryResponse($request, true);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
+        }
+    }
 
-        return response()->json(array_merge($result, [
-            'status_code' => 200,
-            'message' => 'Budget summary retrieved successfully.',
-        ]));
+    public function destroy(string $sourceTable, int $sourceId)
+    {
+        try {
+            $this->service->destroyBySource($sourceTable, $sourceId);
+            return response(['message' => 'Resource has been moved to trash.'], 200);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
+        }
+    }
+
+    public function restore(string $sourceTable, int $sourceId)
+    {
+        try {
+            $item = $this->service->restoreBySource($sourceTable, $sourceId);
+            return response([
+                'message' => 'Resource has been restored.',
+                'resource' => $item,
+            ], 200);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
+        }
+    }
+
+    public function forceDelete(string $sourceTable, int $sourceId)
+    {
+        try {
+            $this->service->forceDeleteBySource($sourceTable, $sourceId);
+            return response(['message' => 'Resource has been permanently deleted.'], 200);
+        } catch (\Exception $e) {
+            return $this->messageService->responseError();
+        }
     }
 }

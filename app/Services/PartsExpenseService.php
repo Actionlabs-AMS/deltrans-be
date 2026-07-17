@@ -14,6 +14,9 @@ class PartsExpenseService extends BaseService
 
     public function list($perPage = 10, $trash = false)
     {
+        $all = $this->getTotalCount();
+        $trashed = $this->getTrashedCount();
+
         $query = PartsExpense::query();
 
         if ($trash) {
@@ -50,7 +53,9 @@ class PartsExpenseService extends BaseService
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc');
 
-        return PartsExpenseResource::collection($query->paginate($perPage)->withQueryString());
+        return PartsExpenseResource::collection(
+            $query->paginate($perPage)->withQueryString()
+        )->additional(['meta' => ['all' => $all, 'trashed' => $trashed]]);
     }
 
     public function show(int $id)

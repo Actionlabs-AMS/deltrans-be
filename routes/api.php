@@ -621,6 +621,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	*/
 	Route::prefix('budget')->group(function () {
 		Route::get('/summary', [BudgetSummaryController::class, 'index']);
+		Route::delete('/summary/{sourceTable}/{sourceId}', [BudgetSummaryController::class, 'destroy']);
 		Route::get('/shift-balances', [ShiftBudgetBalanceController::class, 'index']);
 		Route::get('/shift-balances/show', [ShiftBudgetBalanceController::class, 'show']);
 		Route::post('/shift-balances/recalculate', [ShiftBudgetBalanceController::class, 'recalculate']);
@@ -629,6 +630,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/issued-budget', [IssuedBudgetController::class, 'store']);
 		Route::patch('/issued-budget/{id}', [IssuedBudgetController::class, 'update']);
 		Route::delete('/issued-budget/{id}', [IssuedBudgetController::class, 'destroy']);
+		Route::post('/issued-budget/bulk/delete', [IssuedBudgetController::class, 'bulkDelete']);
+		Route::post('/issued-budget/bulk/restore', [IssuedBudgetController::class, 'bulkRestore']);
+		Route::post('/issued-budget/bulk/force-delete', [IssuedBudgetController::class, 'bulkForceDelete']);
 
 		Route::get('/truck-trip-expense', [TruckTripExpenseController::class, 'index']);
 		Route::get('/truck-trip-expense/latest', [TruckTripExpenseController::class, 'latest']);
@@ -636,21 +640,60 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::post('/truck-trip-expense', [TruckTripExpenseController::class, 'store']);
 		Route::patch('/truck-trip-expense/{id}', [TruckTripExpenseController::class, 'update']);
 		Route::delete('/truck-trip-expense/{id}', [TruckTripExpenseController::class, 'destroy']);
+		Route::post('/truck-trip-expense/bulk/delete', [TruckTripExpenseController::class, 'bulkDelete']);
+		Route::post('/truck-trip-expense/bulk/restore', [TruckTripExpenseController::class, 'bulkRestore']);
+		Route::post('/truck-trip-expense/bulk/force-delete', [TruckTripExpenseController::class, 'bulkForceDelete']);
 
 		Route::get('/parts-expense', [PartsExpenseController::class, 'index']);
 		Route::get('/parts-expense/{id}', [PartsExpenseController::class, 'show']);
 		Route::post('/parts-expense', [PartsExpenseController::class, 'store']);
 		Route::patch('/parts-expense/{id}', [PartsExpenseController::class, 'update']);
 		Route::delete('/parts-expense/{id}', [PartsExpenseController::class, 'destroy']);
+		Route::post('/parts-expense/bulk/delete', [PartsExpenseController::class, 'bulkDelete']);
+		Route::post('/parts-expense/bulk/restore', [PartsExpenseController::class, 'bulkRestore']);
+		Route::post('/parts-expense/bulk/force-delete', [PartsExpenseController::class, 'bulkForceDelete']);
 
 		Route::get('/funds-for-stack-run', [FundsForStackRunController::class, 'index']);
 		Route::get('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'show']);
 		Route::post('/funds-for-stack-run', [FundsForStackRunController::class, 'store']);
 		Route::patch('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'update']);
 		Route::delete('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'destroy']);
+		Route::post('/funds-for-stack-run/bulk/delete', [FundsForStackRunController::class, 'bulkDelete']);
+		Route::post('/funds-for-stack-run/bulk/restore', [FundsForStackRunController::class, 'bulkRestore']);
+		Route::post('/funds-for-stack-run/bulk/force-delete', [FundsForStackRunController::class, 'bulkForceDelete']);
 
 		Route::get('/diesel-expense', [DieselExpenseController::class, 'index']);
 		Route::get('/diesel-expense/{id}', [DieselExpenseController::class, 'show']);
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Archived Budget Management Routes
+	|--------------------------------------------------------------------------
+	|
+	| Trash/Archive Management for Budget records
+	|
+	*/
+	Route::prefix('archived/budget')->group(function () {
+		Route::get('/summary', [BudgetSummaryController::class, 'getTrashed']);
+		Route::patch('/summary/restore/{sourceTable}/{sourceId}', [BudgetSummaryController::class, 'restore']);
+		Route::delete('/summary/{sourceTable}/{sourceId}', [BudgetSummaryController::class, 'forceDelete']);
+
+		Route::get('/issued-budget', [IssuedBudgetController::class, 'getTrashed']);
+		Route::patch('/issued-budget/restore/{id}', [IssuedBudgetController::class, 'restore']);
+		Route::delete('/issued-budget/{id}', [IssuedBudgetController::class, 'forceDelete']);
+
+		Route::get('/truck-trip-expense', [TruckTripExpenseController::class, 'getTrashed']);
+		Route::patch('/truck-trip-expense/restore/{id}', [TruckTripExpenseController::class, 'restore']);
+		Route::delete('/truck-trip-expense/{id}', [TruckTripExpenseController::class, 'forceDelete']);
+
+		Route::get('/parts-expense', [PartsExpenseController::class, 'getTrashed']);
+		Route::patch('/parts-expense/restore/{id}', [PartsExpenseController::class, 'restore']);
+		Route::delete('/parts-expense/{id}', [PartsExpenseController::class, 'forceDelete']);
+
+		Route::get('/funds-for-stack-run', [FundsForStackRunController::class, 'getTrashed']);
+		Route::patch('/funds-for-stack-run/restore/{id}', [FundsForStackRunController::class, 'restore']);
+		Route::delete('/funds-for-stack-run/{id}', [FundsForStackRunController::class, 'forceDelete']);
 	});
 
 	/*

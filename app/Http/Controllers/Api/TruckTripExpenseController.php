@@ -187,4 +187,34 @@ class TruckTripExpenseController extends BaseController
     {
         return parent::destroy($id);
     }
+
+    public function bulkDelete(Request $request)
+    {
+        return parent::bulkDelete($request);
+    }
+
+    public function getTrashed()
+    {
+        return parent::getTrashed();
+    }
+
+    public function restore($id)
+    {
+        return parent::restore($id);
+    }
+
+    public function bulkRestore(Request $request)
+    {
+        return parent::bulkRestore($request);
+    }
+
+    public function forceDelete($id)
+    {
+        return parent::forceDelete($id);
+    }
+
+    public function bulkForceDelete(Request $request)
+    {
+        return parent::bulkForceDelete($request);
+    }
 }
