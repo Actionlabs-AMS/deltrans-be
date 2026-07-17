@@ -76,7 +76,7 @@ class BudgetSummaryController
         $shift = $request->get('shift', 'All');
         $type = $request->get('type', 'All');
         $perPage = (int) $request->get('per_page', 10);
-        $dateFilter = $request->get('dateFilter', 'daily');
+        $dateFilter = $request->get('dateFilterType', 'daily');
 
         $result = $this->service->list($perPage, $shift, $type, $trash, $dateFilter);
 

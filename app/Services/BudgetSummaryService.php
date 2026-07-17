@@ -676,68 +676,82 @@ class BudgetSummaryService
     }
 
     /**
-     * COH carried into the filtered summary period from the shift immediately before
-     * the anchor shift (same rules as shift_budget_balances.carried_from_previous).
+     * Compute the carry-over balance for the selected period using only the relevant date range.
+     *
+     * Weekly mode uses the selected date range only and resets to zero at the start of a new week.
+     * Daily mode walks the shifts in the anchor week's chronological order and carries the balance
+     * forward through the same-day Day -> Night sequence and the previous day Night -> current day Day sequence.
      */
     private function computeTotalCarryOverCoh(?string $shiftFilter, Collection $sorted, string $dateFilter = 'daily'): float
     {
         $dateFilter = strtolower($dateFilter ?? 'daily');
 
-        // Weekly: reset the COH counter at a new Monday week boundary.
         if ($dateFilter === 'weekly') {
-            $from = request('transaction_date_from');
-            $to = request('transaction_date_to');
-            if (!$from || !$to) {
+            $dateFrom = request('transaction_date_from');
+            $dateTo = request('transaction_date_to');
+
+            if (!$dateFrom || !$dateTo) {
+                $dateFrom = $sorted->min('transaction_date');
+                $dateTo = $sorted->max('transaction_date');
+            }
+
+            if (!$dateFrom || !$dateTo) {
                 return 0.0;
             }
 
-            $selectedWeekStart = Carbon::parse($from)->startOfWeek(Carbon::MONDAY);
-            $selectedWeekEnd = Carbon::parse($from)->endOfWeek(Carbon::SUNDAY);
+            $rows = $this->collectUnifiedRowsForDateRange(
+                Carbon::parse($dateFrom)->format('Y-m-d'),
+                Carbon::parse($dateTo)->format('Y-m-d'),
+                'All'
+            );
 
-            // If this is a fresh weekly period starting on Monday, the counter resets to zero.
-            if (Carbon::parse($from)->format('Y-m-d') === $selectedWeekStart->format('Y-m-d')) {
-                return 0.0;
-            }
+            $rows = $rows->values()->filter(function (array $row): bool {
+                return isset($row['transaction_date']) && $row['transaction_date'] !== '';
+            });
 
-            $prevFrom = $selectedWeekStart->copy()->subWeek()->format('Y-m-d');
-            $prevTo = $selectedWeekEnd->copy()->subWeek()->format('Y-m-d');
-
-            $prevRows = $this->collectUnifiedRowsForDateRange($prevFrom, $prevTo, $shiftFilter ?? 'All');
-
-            $totalBudget = (float) $prevRows->where('type', self::TYPE_BUDGET)->sum('amount');
-            $totalExpense = (float) $prevRows->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
+            $totalBudget = (float) $rows->where('type', self::TYPE_BUDGET)->sum('amount');
+            $totalExpense = (float) $rows->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
 
             return round($totalBudget - $totalExpense, 2);
         }
 
-        // Daily (default): previous shift COH
         $anchor = $this->resolveSummaryAnchorShift($shiftFilter, $sorted);
         if ($anchor === null) {
             return 0.0;
         }
 
         [$anchorDate, $anchorShift] = $anchor;
-        $previous = ShiftChronology::previous($anchorDate, $anchorShift);
-        if ($previous === null) {
-            return 0.0;
+        $weekStart = Carbon::parse($anchorDate)->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+        $weekEnd = Carbon::parse($anchorDate)->endOfWeek(Carbon::SUNDAY)->format('Y-m-d');
+
+        $weekRows = $this->collectUnifiedRowsForDateRange($weekStart, $weekEnd, 'All');
+
+        $carry = 0.0;
+        $currentWeek = Carbon::parse($weekStart);
+        $endWeek = Carbon::parse($weekEnd);
+
+        while ($currentWeek->lessThanOrEqualTo($endWeek)) {
+            $day = $currentWeek->format('Y-m-d');
+
+            foreach (['Day', 'Night'] as $shift) {
+                if ($day === $anchorDate && $shift === $anchorShift) {
+                    return round($carry, 2);
+                }
+
+                $shiftRows = $weekRows->filter(function (array $row) use ($day, $shift): bool {
+                    return ($row['transaction_date'] ?? null) === $day
+                        && ($row['shift'] ?? null) === $shift;
+                });
+
+                $budget = (float) $shiftRows->where('type', self::TYPE_BUDGET)->sum('amount');
+                $expense = (float) $shiftRows->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
+                $carry = round($carry + $budget - $expense, 2);
+            }
+
+            $currentWeek->addDay();
         }
 
-        $prevBalance = ShiftBudgetBalance::query()
-            ->whereDate('transaction_date', $previous['date'])
-            ->where('shift', $previous['shift'])
-            ->first();
-
-        if ($prevBalance) {
-            return round((float) $prevBalance->remaining_coh, 2);
-        }
-
-        $preview = $this->shiftBudgetBalanceService->showForShift(
-            $previous['date'],
-            $previous['shift'],
-            false
-        );
-
-        return round((float) ($preview['remaining_coh'] ?? 0), 2);
+        return round($carry, 2);
     }
 
     /**
