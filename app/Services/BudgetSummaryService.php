@@ -280,6 +280,20 @@ class BudgetSummaryService
     /**
      * @return array<string, mixed>
      */
+    private function formatTruckExpenseDescription($model): ?string
+    {
+        $helperName = $model->helper
+            ? trim($model->helper->first_name . ' ' . $model->helper->last_name)
+            : null;
+        $plateNumber = $model->plate_number ?: ($model->truck?->plate_number ?? null);
+
+        if ($helperName && $plateNumber) {
+            return trim($helperName . ' (' . $plateNumber . ')');
+        }
+
+        return $helperName ?: $plateNumber;
+    }
+
     private function mapSourceModelToRow($model, string $sourceTable): array
     {
         return match ($sourceTable) {
@@ -302,10 +316,10 @@ class BudgetSummaryService
                 'transaction_date' => $model->transaction_date?->format('Y-m-d'),
                 'shift' => $model->shift,
                 'amount' => (float) $model->issued_cash_amount,
-                'description' => $model->helper ? trim($model->helper->first_name . ' ' . $model->helper->last_name) : null,
+                'description' => $this->formatTruckExpenseDescription($model),
                 'source_table' => 'truck_trip_expense',
                 'cash_on_hand' => (float) $model->cash_on_hand,
-                'issued_cash_amount' => (float) $model->issued_cash_amount,
+                'issued_cash_amount' => (float) $model->issued_cash_amount, 
                 'helper_id' => $model->helper_id,
                 'created_at' => $model->created_at?->format('Y-m-d H:i:s'),
                 'deleted_at' => $model->deleted_at?->format('Y-m-d H:i:s'),
@@ -419,7 +433,7 @@ class BudgetSummaryService
             $this->applyDateRangeFilters($truckQuery, 'transaction_date', $shift, $dateFrom, $dateTo);
         }
         foreach ($truckQuery->orderBy('transaction_date', 'desc')->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get() as $row) {
-            $desc = $row->helper ? trim($row->helper->first_name . ' ' . $row->helper->last_name) : null;
+            $desc = $this->formatTruckExpenseDescription($row);
             $amount = (float) $row->issued_cash_amount;
             $all->push([
                 'source_id' => $row->id,
@@ -428,6 +442,7 @@ class BudgetSummaryService
                 'transaction_date' => $row->transaction_date?->format('Y-m-d'),
                 'shift' => $row->shift,
                 'amount' => $amount,
+                'plate_number' => $row->plate_number,
                 'description' => $desc,
                 'source_table' => 'truck_trip_expense',
                 'cash_on_hand' => (float) $row->cash_on_hand,
@@ -594,9 +609,11 @@ class BudgetSummaryService
     /**
      * Collect all rows from the 6 tables, map to unified shape, sort, and compute totals.
      */
-    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type = null, bool $trash = false): array
+    public function list(int $perPage = 10, ?string $shift = 'All', ?string $type = null, bool $trash = false, ?string $dateFilter = 'daily'): array
     {
         $sorted = $this->sortUnifiedRowsNewestFirst(
+            //private function collectUnifiedRows( ?string $dateFrom, ?string $dateTo, string $shift,
+            //                                     ?string $typeFilter, bool $useCreatedAtFromRequest, bool $onlyTrashed = false)
             $this->collectUnifiedRows(null, null, $shift, $type, true, $trash)
         );
 
@@ -611,7 +628,7 @@ class BudgetSummaryService
         $totalBudget = $sorted->where('type', self::TYPE_BUDGET)->sum('amount');
         $totalExpense = (float) $sorted->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
         $cashOnHand = $totalBudget - $totalExpense;
-        $totalCarryOverCoh = $this->computeTotalCarryOverCoh($shift, $sorted);
+        $previousCashOnHand = $this->computeTotalCarryOverCoh($shift, $sorted, $dateFilter);
 
         $categoryTotals = $this->computeCategoryTotals($sorted);
 
@@ -646,7 +663,7 @@ class BudgetSummaryService
             'total_budget' => round($totalBudget, 2),
             'total_expense' => round($totalExpense, 2),
             'cash_on_hand' => round($cashOnHand, 2),
-            'total_carry_over_coh' => $totalCarryOverCoh,
+            'previous_cash_on_hand' => $previousCashOnHand,
             'category_totals' => $categoryTotals,
             'meta' => $meta,
         ];
@@ -659,38 +676,82 @@ class BudgetSummaryService
     }
 
     /**
-     * COH carried into the filtered summary period from the shift immediately before
-     * the anchor shift (same rules as shift_budget_balances.carried_from_previous).
+     * Compute the carry-over balance for the selected period using only the relevant date range.
+     *
+     * Weekly mode uses the selected date range only and resets to zero at the start of a new week.
+     * Daily mode walks the shifts in the anchor week's chronological order and carries the balance
+     * forward through the same-day Day -> Night sequence and the previous day Night -> current day Day sequence.
      */
-    private function computeTotalCarryOverCoh(?string $shiftFilter, Collection $sorted): float
+    private function computeTotalCarryOverCoh(?string $shiftFilter, Collection $sorted, string $dateFilter = 'daily'): float
     {
+        $dateFilter = strtolower($dateFilter ?? 'daily');
+
+        if ($dateFilter === 'weekly') {
+            $dateFrom = request('transaction_date_from');
+            $dateTo = request('transaction_date_to');
+
+            if (!$dateFrom || !$dateTo) {
+                $dateFrom = $sorted->min('transaction_date');
+                $dateTo = $sorted->max('transaction_date');
+            }
+
+            if (!$dateFrom || !$dateTo) {
+                return 0.0;
+            }
+
+            $rows = $this->collectUnifiedRowsForDateRange(
+                Carbon::parse($dateFrom)->format('Y-m-d'),
+                Carbon::parse($dateTo)->format('Y-m-d'),
+                'All'
+            );
+
+            $rows = $rows->values()->filter(function (array $row): bool {
+                return isset($row['transaction_date']) && $row['transaction_date'] !== '';
+            });
+
+            $totalBudget = (float) $rows->where('type', self::TYPE_BUDGET)->sum('amount');
+            $totalExpense = (float) $rows->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
+
+            return round($totalBudget - $totalExpense, 2);
+        }
+
         $anchor = $this->resolveSummaryAnchorShift($shiftFilter, $sorted);
         if ($anchor === null) {
             return 0.0;
         }
 
         [$anchorDate, $anchorShift] = $anchor;
-        $previous = ShiftChronology::previous($anchorDate, $anchorShift);
-        if ($previous === null) {
-            return 0.0;
+        $weekStart = Carbon::parse($anchorDate)->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+        $weekEnd = Carbon::parse($anchorDate)->endOfWeek(Carbon::SUNDAY)->format('Y-m-d');
+
+        $weekRows = $this->collectUnifiedRowsForDateRange($weekStart, $weekEnd, 'All');
+
+        $carry = 0.0;
+        $currentWeek = Carbon::parse($weekStart);
+        $endWeek = Carbon::parse($weekEnd);
+
+        while ($currentWeek->lessThanOrEqualTo($endWeek)) {
+            $day = $currentWeek->format('Y-m-d');
+
+            foreach (['Day', 'Night'] as $shift) {
+                if ($day === $anchorDate && $shift === $anchorShift) {
+                    return round($carry, 2);
+                }
+
+                $shiftRows = $weekRows->filter(function (array $row) use ($day, $shift): bool {
+                    return ($row['transaction_date'] ?? null) === $day
+                        && ($row['shift'] ?? null) === $shift;
+                });
+
+                $budget = (float) $shiftRows->where('type', self::TYPE_BUDGET)->sum('amount');
+                $expense = (float) $shiftRows->whereIn('type', self::EXPENSE_TYPES)->sum('amount');
+                $carry = round($carry + $budget - $expense, 2);
+            }
+
+            $currentWeek->addDay();
         }
 
-        $prevBalance = ShiftBudgetBalance::query()
-            ->whereDate('transaction_date', $previous['date'])
-            ->where('shift', $previous['shift'])
-            ->first();
-
-        if ($prevBalance) {
-            return round((float) $prevBalance->remaining_coh, 2);
-        }
-
-        $preview = $this->shiftBudgetBalanceService->showForShift(
-            $previous['date'],
-            $previous['shift'],
-            false
-        );
-
-        return round((float) ($preview['remaining_coh'] ?? 0), 2);
+        return round($carry, 2);
     }
 
     /**
