@@ -338,7 +338,7 @@
     </div>
 
     @php
-        $shippingLine = $invoice->statementOfAccount->shippingLine;
+        $shippingLine = $invoice->primaryStatementOfAccount()?->shippingLine;
         $addr = $shippingLine->address ?? '';
         $addrLines = preg_split('/\r\n|\n/', trim($addr), 2);
         if (count($addrLines) < 2 && $addr !== '' && strpos($addr, ',') !== false) {

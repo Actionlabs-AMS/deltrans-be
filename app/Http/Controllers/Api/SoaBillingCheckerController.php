@@ -17,8 +17,9 @@ use Illuminate\Http\JsonResponse;
  *     schema="BookingCheckerValidateInput",
  *     title="Validate Bookings for SOA/Billing/Invoice",
  *     required={"type"},
- *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs (preferred when provided; if present, statement_of_account_id will be ignored)"),
- *     @OA\Property(property="statement_of_account_id", type="integer", example=10, description="Statement of Account ID to validate against (used only when booking_ids is not provided)"),
+ *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs (preferred when provided; if present, SOA id fields will be ignored for booking resolution)"),
+ *     @OA\Property(property="statement_of_account_id", type="integer", example=10, description="Single Statement of Account ID (legacy; used when booking_ids is not provided)"),
+ *     @OA\Property(property="statement_of_account_ids", type="array", @OA\Items(type="integer"), example={10, 11}, description="Multiple Statement of Account IDs (preferred for invoice type 3 batch validate)"),
  *     @OA\Property(property="type", type="integer", example=2, description="1 = SOA, 2 = Billing, 3 = Invoice")
  * )
  * @OA\Schema(

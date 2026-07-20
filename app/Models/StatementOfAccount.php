@@ -59,6 +59,19 @@ class StatementOfAccount extends Model
     }
 
     /**
+     * Invoices linked to this statement of account (many-to-many).
+     */
+    public function invoices()
+    {
+        return $this->belongsToMany(
+            Invoice::class,
+            'invoice_statement_of_account',
+            'statement_of_account_id',
+            'invoice_id'
+        )->withTimestamps();
+    }
+
+    /**
      * Get the first booking ID (backward compatibility).
      */
     public function getBookingIdAttribute(): ?int
