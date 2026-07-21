@@ -73,21 +73,22 @@ class ShiftBudgetBalanceService
         $from = Carbon::parse($dateFrom)->startOfDay();
         $to = Carbon::parse($dateTo)->startOfDay();
 
+        $rangeStart = $from->copy();
+        $rangeEnd = $to->copy();
+
         if ($dateFilterType === 'weekly') {
-            $weekStart = $from->copy()->startOfWeek(Carbon::MONDAY);
-            $weekEnd = $to->copy()->endOfWeek(Carbon::SUNDAY);
-
-            return $this->summarizeRange($weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d'), $shift);
+            $rangeStart = $from->copy()->startOfWeek(Carbon::MONDAY);
+            $rangeEnd = $to->copy()->endOfWeek(Carbon::SUNDAY);
+        } elseif ($dateFilterType === 'monthly') {
+            $rangeStart = $from->copy()->startOfMonth();
+            $rangeEnd = $to->copy()->endOfMonth();
         }
 
-        if ($dateFilterType === 'monthly') {
-            $monthStart = $from->copy()->startOfMonth();
-            $monthEnd = $to->copy()->endOfMonth();
+        // Ensure the ledger is current by recalculating from the start of the range.
+        // This populates any missing shift_budget_balance rows and fixes stale carry values.
+        $this->recalculateFrom($rangeStart->format('Y-m-d'), 'Day');
 
-            return $this->summarizeRange($monthStart->format('Y-m-d'), $monthEnd->format('Y-m-d'), $shift);
-        }
-
-        return $this->summarizeRange($from->format('Y-m-d'), $to->format('Y-m-d'), $shift);
+        return $this->summarizeRange($rangeStart->format('Y-m-d'), $rangeEnd->format('Y-m-d'), $shift);
     }
 
     /**
@@ -102,12 +103,11 @@ class ShiftBudgetBalanceService
             [$start, $end] = [$end, $start];
         }
 
-        $summary = [
-            'total_budget' => 0.0,
-            'total_expense' => 0.0,
-            'cash_on_hand' => 0.0,
-            'previous_cash_on_hand' => 0.0,
-        ];
+        $totalIssuedBudget = 0.0;
+        $openingBalance = null;
+        $totalExpense = 0.0;
+        $cashOnHand = 0.0;
+        $previousCashOnHand = 0.0;
 
         $current = $start->copy();
         while ($current->lessThanOrEqualTo($end)) {
@@ -121,19 +121,32 @@ class ShiftBudgetBalanceService
                 $row = $this->buildUnpersistedPreview($date, $shift);
             }
 
-            $summary['total_budget'] += (float) $row->total_budget;
-            $summary['total_expense'] += (float) $row->total_expense;
-            $summary['cash_on_hand'] = (float) $row->remaining_coh;
-            $summary['previous_cash_on_hand'] = (float) $row->carried_from_previous;
+            // Capture the carry into the very first shift of the range only once.
+            // Every subsequent shift's carry is already embedded in the issued amounts
+            // that preceded it, so adding it again would double-count.
+            if ($openingBalance === null) {
+                $openingBalance = (float) $row->carried_from_previous;
+            }
+
+            $totalIssuedBudget += (float) $row->issued_budget;
+            $totalExpense += (float) $row->total_expense;
+            $cashOnHand = (float) $row->remaining_coh;
+            $previousCashOnHand = (float) $row->carried_from_previous;
 
             $current->addDay();
         }
 
+        // total_budget = money available at the start of the period
+        //               + all new issued budgets during the period.
+        // Using issued_budget (not total_budget) prevents counting
+        // the carry-over multiple times across multi-day ranges.
+        $totalBudget = ($openingBalance ?? 0.0) + $totalIssuedBudget;
+
         return [
-            'total_budget' => round($summary['total_budget'], 2),
-            'total_expense' => round($summary['total_expense'], 2),
-            'cash_on_hand' => round($summary['cash_on_hand'], 2),
-            'previous_cash_on_hand' => round($summary['previous_cash_on_hand'], 2),
+            'total_budget' => round($totalBudget, 2),
+            'total_expense' => round($totalExpense, 2),
+            'cash_on_hand' => round($cashOnHand, 2),
+            'previous_cash_on_hand' => round($previousCashOnHand, 2),
         ];
     }
 
