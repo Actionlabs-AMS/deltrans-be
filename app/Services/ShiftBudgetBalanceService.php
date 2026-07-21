@@ -62,6 +62,81 @@ class ShiftBudgetBalanceService
         return (new ShiftBudgetBalanceResource($balance))->resolve();
     }
 
+    /**
+     * @return array{total_budget: float, total_expense: float, cash_on_hand: float, previous_cash_on_hand: float}
+     */
+    public function getSummary(string $dateFrom, string $dateTo, string $shift, string $dateFilterType): array
+    {
+        $dateFilterType = strtolower($dateFilterType ?? 'daily');
+        $this->assertValidShift($shift);
+
+        $from = Carbon::parse($dateFrom)->startOfDay();
+        $to = Carbon::parse($dateTo)->startOfDay();
+
+        if ($dateFilterType === 'weekly') {
+            $weekStart = $from->copy()->startOfWeek(Carbon::MONDAY);
+            $weekEnd = $to->copy()->endOfWeek(Carbon::SUNDAY);
+
+            return $this->summarizeRange($weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d'), $shift);
+        }
+
+        if ($dateFilterType === 'monthly') {
+            $monthStart = $from->copy()->startOfMonth();
+            $monthEnd = $to->copy()->endOfMonth();
+
+            return $this->summarizeRange($monthStart->format('Y-m-d'), $monthEnd->format('Y-m-d'), $shift);
+        }
+
+        return $this->summarizeRange($from->format('Y-m-d'), $to->format('Y-m-d'), $shift);
+    }
+
+    /**
+     * @return array{total_budget: float, total_expense: float, cash_on_hand: float, previous_cash_on_hand: float}
+     */
+    private function summarizeRange(string $dateFrom, string $dateTo, string $shift): array
+    {
+        $start = Carbon::parse($dateFrom)->startOfDay();
+        $end = Carbon::parse($dateTo)->startOfDay();
+
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        $summary = [
+            'total_budget' => 0.0,
+            'total_expense' => 0.0,
+            'cash_on_hand' => 0.0,
+            'previous_cash_on_hand' => 0.0,
+        ];
+
+        $current = $start->copy();
+        while ($current->lessThanOrEqualTo($end)) {
+            $date = $current->format('Y-m-d');
+            $row = ShiftBudgetBalance::query()
+                ->whereDate('transaction_date', $date)
+                ->where('shift', $shift)
+                ->first();
+
+            if (!$row) {
+                $row = $this->buildUnpersistedPreview($date, $shift);
+            }
+
+            $summary['total_budget'] += (float) $row->total_budget;
+            $summary['total_expense'] += (float) $row->total_expense;
+            $summary['cash_on_hand'] = (float) $row->remaining_coh;
+            $summary['previous_cash_on_hand'] = (float) $row->carried_from_previous;
+
+            $current->addDay();
+        }
+
+        return [
+            'total_budget' => round($summary['total_budget'], 2),
+            'total_expense' => round($summary['total_expense'], 2),
+            'cash_on_hand' => round($summary['cash_on_hand'], 2),
+            'previous_cash_on_hand' => round($summary['previous_cash_on_hand'], 2),
+        ];
+    }
+
     public function recalculateFrom(string $date, string $shift): void
     {
         $this->assertValidShift($shift);
@@ -127,14 +202,18 @@ class ShiftBudgetBalanceService
         $previousDate = null;
         $previousShift = null;
 
-        if ($previous !== null) {
+        if (!$this->shouldResetCarry($date, $shift) && $previous !== null) {
             $previousDate = $previous['date'];
             $previousShift = $previous['shift'];
+
             $prevRow = ShiftBudgetBalance::query()
                 ->whereDate('transaction_date', $previousDate)
                 ->where('shift', $previousShift)
                 ->first();
-            $carried = $prevRow ? (float) $prevRow->remaining_coh : 0.0;
+
+            $carried = $prevRow
+                ? (float) $prevRow->remaining_coh
+                : 0.0;
         }
 
         $totalBudget = round($issued + $carried, 2);
@@ -168,7 +247,7 @@ class ShiftBudgetBalanceService
         $previousDate = null;
         $previousShift = null;
 
-        if ($previous !== null) {
+        if (!$this->shouldResetCarry($date, $shift) && $previous !== null) {
             $previousDate = $previous['date'];
             $previousShift = $previous['shift'];
             $prevRow = ShiftBudgetBalance::query()
@@ -192,6 +271,11 @@ class ShiftBudgetBalanceService
             'previous_shift' => $previousShift,
             'computed_at' => null,
         ]);
+    }
+
+    private function shouldResetCarry(string $date, string $shift): bool
+    {
+        return Carbon::parse($date)->isMonday() && $shift === 'Day';
     }
 
     private function resolveEndPosition(string $date, string $shift, int $startPosition): int
