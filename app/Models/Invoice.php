@@ -13,15 +13,17 @@ class Invoice extends Model
     protected $table = 'invoices';
 
     protected $fillable = [
-        'statement_of_account_id',
         'invoice_number',
         'date',
         'discount',
         'discount_id',
     ];
 
+    protected $appends = [
+        'statement_of_account_ids',
+    ];
+
     protected $casts = [
-        'statement_of_account_id' => 'integer',
         'date' => 'date',
         'discount' => 'decimal:2',
         'discount_id' => 'integer',
@@ -31,25 +33,61 @@ class Invoice extends Model
     ];
 
     /**
-     * Get the statement of account associated with the invoice.
+     * Statements of account linked to this invoice (many-to-many).
      */
-    public function statementOfAccount()
+    public function statementOfAccounts()
     {
-        return $this->belongsTo(StatementOfAccount::class, 'statement_of_account_id');
+        return $this->belongsToMany(
+            StatementOfAccount::class,
+            'invoice_statement_of_account',
+            'invoice_id',
+            'statement_of_account_id'
+        )->withTimestamps();
     }
 
     /**
-     * Get the shipping line via the statement of account.
+     * Array of linked SOA IDs (included in API responses via $appends).
+     *
+     * @return array<int>
      */
-    public function shippingLine()
+    public function getStatementOfAccountIdsAttribute(): array
     {
-        return $this->hasOneThrough(
-            ShippingLine::class,
-            StatementOfAccount::class,
-            'id',
-            'id',
-            'statement_of_account_id',
-            'shipping_line_id'
-        );
+        if ($this->relationLoaded('statementOfAccounts')) {
+            return $this->statementOfAccounts
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+        }
+
+        if (!$this->exists) {
+            return [];
+        }
+
+        return $this->statementOfAccounts()
+            ->pluck('statement_of_accounts.id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * First linked SOA (for shipping line / email recipient).
+     */
+    public function primaryStatementOfAccount(): ?StatementOfAccount
+    {
+        if ($this->relationLoaded('statementOfAccounts')) {
+            return $this->statementOfAccounts->first();
+        }
+
+        return $this->statementOfAccounts()->with('shippingLine')->first();
+    }
+
+    /**
+     * Shipping line via the first linked statement of account.
+     */
+    public function getShippingLineAttribute(): ?ShippingLine
+    {
+        return $this->primaryStatementOfAccount()?->shippingLine;
     }
 }

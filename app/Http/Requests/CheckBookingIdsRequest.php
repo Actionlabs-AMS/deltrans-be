@@ -36,6 +36,15 @@ class CheckBookingIdsRequest extends FormRequest
                 'integer',
                 'exists:statement_of_accounts,id',
             ],
+            'statement_of_account_ids' => [
+                'nullable',
+                'array',
+                'min:1',
+            ],
+            'statement_of_account_ids.*' => [
+                'integer',
+                'exists:statement_of_accounts,id',
+            ],
             'type' => [
                 'required',
                 'integer',
@@ -55,6 +64,8 @@ class CheckBookingIdsRequest extends FormRequest
             'booking_ids.min' => 'At least one booking is required.',
             'booking_ids.*.exists' => 'One or more selected bookings do not exist.',
             'statement_of_account_id.exists' => 'The selected statement of account does not exist.',
+            'statement_of_account_ids.min' => 'At least one statement of account is required.',
+            'statement_of_account_ids.*.exists' => 'One or more selected statements of account do not exist.',
             'type.required' => 'Type is required.',
             'type.in' => 'Type must be 1 (SOA), 2 (Billing), or 3 (Invoice).',
         ];
@@ -66,9 +77,14 @@ class CheckBookingIdsRequest extends FormRequest
             $bookingIds = $this->input('booking_ids');
             $hasBookingIds = is_array($bookingIds) && count($bookingIds) > 0;
             $hasSoaId = !is_null($this->input('statement_of_account_id')) && $this->input('statement_of_account_id') !== '';
+            $soaIds = $this->input('statement_of_account_ids');
+            $hasSoaIds = is_array($soaIds) && count($soaIds) > 0;
 
-            if (!$hasBookingIds && !$hasSoaId) {
-                $validator->errors()->add('booking_ids', 'Provide either booking_ids or statement_of_account_id.');
+            if (!$hasBookingIds && !$hasSoaId && !$hasSoaIds) {
+                $validator->errors()->add(
+                    'booking_ids',
+                    'Provide either booking_ids, statement_of_account_id, or statement_of_account_ids.'
+                );
             }
         });
     }

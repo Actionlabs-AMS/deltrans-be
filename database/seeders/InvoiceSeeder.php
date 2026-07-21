@@ -6,9 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Invoice;
 use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
-use App\Models\Container;
 use App\Services\InvoiceService;
-use Illuminate\Support\Facades\DB;
 
 class InvoiceSeeder extends Seeder
 {
@@ -30,8 +28,8 @@ class InvoiceSeeder extends Seeder
         }
 
         $invoiceService = app(InvoiceService::class);
-        $invoices = [];
         $invoiceCounter = 1;
+        $created = 0;
 
         foreach ($soas as $i => $soa) {
             $bookingIds = $soa->booking_ids ?? [];
@@ -67,26 +65,22 @@ class InvoiceSeeder extends Seeder
             $hasDiscount = $i % 3 === 0;
             $discount = $hasDiscount ? round($invoiceData['vatable_sales'] * 0.05, 2) : 0;
 
-            $invoices[] = [
-                'statement_of_account_id' => $soa->id,
-                'invoice_number' => $invoiceNumber,
-                'date' => $invoiceDate,
-                'discount' => $discount,
-                'discount_id' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            $invoice = Invoice::updateOrCreate(
+                ['invoice_number' => $invoiceNumber],
+                [
+                    'invoice_number' => $invoiceNumber,
+                    'date' => $invoiceDate,
+                    'discount' => $discount,
+                    'discount_id' => null,
+                ]
+            );
+
+            $invoice->statementOfAccounts()->sync([$soa->id]);
 
             $invoiceCounter++;
+            $created++;
         }
 
-        foreach ($invoices as $invoice) {
-            Invoice::updateOrCreate(
-                ['invoice_number' => $invoice['invoice_number']],
-                $invoice
-            );
-        }
-
-        $this->command->info('Invoices seeded successfully. Created ' . count($invoices) . ' invoices (one per SOA).');
+        $this->command->info('Invoices seeded successfully. Created ' . $created . ' invoices (one per SOA).');
     }
 }
