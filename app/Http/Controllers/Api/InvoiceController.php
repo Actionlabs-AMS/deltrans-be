@@ -19,9 +19,9 @@ use Illuminate\Http\Request;
  *     title="Invoice Model",
  *     description="An invoice resource",
  *     @OA\Property(property="id", type="integer", example=1),
- *     @OA\Property(property="statement_of_account_id", type="integer", example=1, description="Related statement of account ID"),
- *     @OA\Property(property="statement_of_account", type="object", nullable=true, description="Linked SOA"),
- *     @OA\Property(property="shipping_line", type="object", nullable=true, description="Shipping line from SOA when loaded"),
+ *     @OA\Property(property="statement_of_account_ids", type="array", @OA\Items(type="integer"), example={10, 11, 12}, description="Linked statement of account IDs"),
+ *     @OA\Property(property="statement_of_accounts", type="array", @OA\Items(type="object"), nullable=true, description="Linked SOAs when loaded"),
+ *     @OA\Property(property="shipping_line", type="object", nullable=true, description="Shipping line from first linked SOA when loaded"),
  *     @OA\Property(property="invoice_number", type="string", example="INV-0001"),
  *     @OA\Property(property="date", type="string", format="date", example="2024-01-15"),
  *     @OA\Property(property="discount", type="number", format="float", example=0.00),
@@ -40,8 +40,8 @@ use Illuminate\Http\Request;
  * @OA\Schema(
  *     schema="InvoiceGenerateInput",
  *     title="Generate Invoice Input",
- *     required={"statement_of_account_id"},
- *     @OA\Property(property="statement_of_account_id", type="integer", example=1, description="Statement of account ID"),
+ *     required={"statement_of_account_ids"},
+ *     @OA\Property(property="statement_of_account_ids", type="array", @OA\Items(type="integer"), example={10, 11, 12}, description="One or more statement of account IDs (min 1); all must share the same shipping line and must not already be invoiced"),
  *     @OA\Property(property="invoice_number", type="string", example="INV-0001", nullable=true, description="Auto-generated if not provided"),
  *     @OA\Property(property="date", type="string", format="date", example="2024-01-15", nullable=true, description="Defaults to current date if not provided"),
  *     @OA\Property(property="discount", type="number", format="float", example=0.00, nullable=true),
@@ -69,8 +69,8 @@ class InvoiceController extends BaseController
     /**
      * @OA\Post(
      *     path="/api/invoices/generate",
-     *     summary="Generate a new invoice from SOA",
-     *     description="Creates an invoice based on a statement of account. Automatically calculates quantity, unit_price, item_description, and financial fields from SOA's waybills and containers.",
+     *     summary="Generate a new invoice from one or more SOAs",
+     *     description="Creates a single invoice linked to one or more statements of account. Aggregates line items and totals across all selected SOAs. All SOAs must share the same shipping line and must not already be invoiced.",
      *     tags={"Invoice Management"},
      *     security={{"sanctum": {}}},
      *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/InvoiceGenerateInput")),
@@ -89,10 +89,7 @@ class InvoiceController extends BaseController
             $data = $request->validated();
             $invoice = $this->service->generateInvoice($data);
             $payload = $invoice->toArray();
-            $totals = $this->service->getComputedTotals(
-                (int) $invoice->statement_of_account_id,
-                (float) ($invoice->discount ?? 0)
-            );
+            $totals = $this->service->getComputedTotalsForInvoice($invoice);
             return response()->json([
                 'success' => true,
                 'data' => array_merge($payload, $totals),
@@ -128,10 +125,7 @@ class InvoiceController extends BaseController
             $data = $request->validated();
             $invoice = $this->service->updateInvoice($id, $data);
             $payload = $invoice->toArray();
-            $totals = $this->service->getComputedTotals(
-                (int) $invoice->statement_of_account_id,
-                (float) ($invoice->discount ?? 0)
-            );
+            $totals = $this->service->getComputedTotalsForInvoice($invoice);
             return response()->json([
                 'success' => true,
                 'data' => array_merge($payload, $totals),
@@ -161,7 +155,9 @@ class InvoiceController extends BaseController
     public function downloadBySoaId($soaId)
     {
         try {
-            $invoice = Invoice::where('statement_of_account_id', $soaId)->firstOrFail();
+            $invoice = Invoice::whereHas('statementOfAccounts', function ($q) use ($soaId) {
+                $q->where('statement_of_accounts.id', $soaId);
+            })->firstOrFail();
             return $this->download($invoice->id);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -358,10 +354,7 @@ class InvoiceController extends BaseController
             $metaExtra = $result['meta_extra'];
             $items = collect($paginator->items())->map(function ($invoice) {
                 $arr = $invoice->toArray();
-                $totals = $this->service->getComputedTotals(
-                    (int) $invoice->statement_of_account_id,
-                    (float) ($invoice->discount ?? 0)
-                );
+                $totals = $this->service->getComputedTotalsForInvoice($invoice);
                 return array_merge($arr, $totals);
             })->all();
 
@@ -433,10 +426,7 @@ class InvoiceController extends BaseController
         try {
             $invoice = $this->service->showInvoice($id);
             $data = $invoice->toArray();
-            $totals = $this->service->getComputedTotals(
-                (int) $invoice->statement_of_account_id,
-                (float) ($invoice->discount ?? 0)
-            );
+            $totals = $this->service->getComputedTotalsForInvoice($invoice);
             return response()->json([
                 'success' => true,
                 'data' => array_merge($data, $totals),

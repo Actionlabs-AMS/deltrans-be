@@ -20,12 +20,20 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class InvoiceService
 {
     /**
-     * Calculate invoice data from SOA
+     * Calculate invoice data from one or more SOAs (aggregated).
+     *
+     * @param int|array<int> $soaIds
      */
-    public function calculateInvoiceFromSoa($soaId)
+    public function calculateInvoiceFromSoa($soaIds)
     {
-        $soa = StatementOfAccount::with('shippingLine')->findOrFail($soaId);
-        $bookingIds = $soa->booking_ids ?? [];
+        $soaIds = $this->normalizeSoaIds($soaIds);
+        $soas = StatementOfAccount::with('shippingLine')->whereIn('id', $soaIds)->get();
+
+        if ($soas->isEmpty()) {
+            throw (new ModelNotFoundException())->setModel(StatementOfAccount::class, $soaIds);
+        }
+
+        $bookingIds = $this->collectBookingIds($soas);
 
         $waybills = WaybillDetail::whereIn('booking_id', $bookingIds)
             ->with([
@@ -105,7 +113,7 @@ class InvoiceService
         }
 
         // 3. Calculate QUANTITY: Total container count
-        $quantity = Container::whereIn('booking_id', $bookingIds)->count();
+        $quantity = empty($bookingIds) ? 0 : Container::whereIn('booking_id', $bookingIds)->count();
 
         // 4. Calculate ITEM_DESCRIPTION: Combined text for backward compatibility
         $descriptionParts = [];
@@ -125,7 +133,7 @@ class InvoiceService
         $totalAmount = $totalSalesInclusive - $lessWithdrawingTax;
 
         return [
-            'statement_of_account_id' => $soa->id,
+            'statement_of_account_ids' => $soaIds,
             'quantity' => $quantity,
             'unit_price' => 0,
             'item_description' => $itemDescription,
@@ -144,17 +152,17 @@ class InvoiceService
     }
 
     /**
-     * Get computed financial totals for an SOA (used for PDF and API).
+     * Get computed financial totals for one or more SOAs (used for PDF and API).
      * Formula: VATable Sales / Net of VAT = Total Sales (VAT Inclusive) − VAT.
      * Withholding Tax = 2% of Net of VAT. TOTAL AMOUNT DUE = Total Sales (VAT Inclusive) − Withholding − Discount.
      *
-     * @param int $soaId
+     * @param int|array<int> $soaIds
      * @param float $discount
      * @return array{vatable_sales: float, vat: float, total_sales: float, less_vat: float, net_of_vat: float, total_sales_inclusive: float, less_withdrawing_tax: float, total_amount: float}
      */
-    public function getComputedTotals(int $soaId, float $discount = 0): array
+    public function getComputedTotals(int|array $soaIds, float $discount = 0): array
     {
-        $data = $this->calculateInvoiceFromSoa($soaId);
+        $data = $this->calculateInvoiceFromSoa($soaIds);
         $totalSalesInclusive = $data['total_sales'] + $data['less_vat'];
         $totalAmount = $totalSalesInclusive - $data['less_withdrawing_tax'] - (float) $discount;
         $totalAmount = max(0, $totalAmount);
@@ -172,14 +180,39 @@ class InvoiceService
     }
 
     /**
-     * Calculate invoice items from SOA/Booking/Waybill data
+     * Computed totals for an invoice from all linked SOAs.
+     */
+    public function getComputedTotalsForInvoice(Invoice $invoice): array
+    {
+        $soaIds = $invoice->statement_of_account_ids;
+        if (empty($soaIds)) {
+            return [
+                'vatable_sales' => 0.0,
+                'vat' => 0.0,
+                'total_sales' => 0.0,
+                'less_vat' => 0.0,
+                'net_of_vat' => 0.0,
+                'total_sales_inclusive' => 0.0,
+                'less_withdrawing_tax' => 0.0,
+                'total_amount' => 0.0,
+            ];
+        }
+
+        return $this->getComputedTotals($soaIds, (float) ($invoice->discount ?? 0));
+    }
+
+    /**
+     * Calculate invoice items from SOA/Booking/Waybill data across one or more SOAs.
      * Returns array of items grouped by container size/type.
      * Unit price and amount are VAT-inclusive (same as Billing Statement) when waybill.has_vat is true.
+     *
+     * @param int|array<int> $soaIds
      */
-    private function calculateInvoiceItems($soaId)
+    private function calculateInvoiceItems($soaIds)
     {
-        $soa = StatementOfAccount::findOrFail($soaId);
-        $bookingIds = $soa->booking_ids ?? [];
+        $soaIds = $this->normalizeSoaIds($soaIds);
+        $soas = StatementOfAccount::whereIn('id', $soaIds)->get();
+        $bookingIds = $this->collectBookingIds($soas);
 
         $waybills = WaybillDetail::whereIn('booking_id', $bookingIds)
             ->with([
@@ -243,16 +276,31 @@ class InvoiceService
     }
 
     /**
-     * Generate invoice from SOA
+     * Generate one invoice from one or more SOAs.
      */
     public function generateInvoice($data)
     {
-        $soa = StatementOfAccount::findOrFail($data['statement_of_account_id']);
+        $soaIds = $this->normalizeSoaIds($data['statement_of_account_ids'] ?? []);
+        $soas = StatementOfAccount::whereIn('id', $soaIds)->get();
 
-        $invoice = DB::transaction(function () use ($data, $soa) {
-            // Only store minimal fields; totals are computed on download/send email
+        if ($soas->count() !== count($soaIds)) {
+            throw new \Exception('One or more selected statements of account do not exist.');
+        }
+
+        $shippingLineIds = $soas->pluck('shipping_line_id')->unique()->filter()->values();
+        if ($shippingLineIds->count() > 1) {
+            throw new \Exception('All selected statements of account must belong to the same shipping line.');
+        }
+
+        $alreadyLinked = DB::table('invoice_statement_of_account')
+            ->whereIn('statement_of_account_id', $soaIds)
+            ->exists();
+        if ($alreadyLinked) {
+            throw new \Exception('One or more selected statements of account are already linked to an invoice.');
+        }
+
+        $invoice = DB::transaction(function () use ($data, $soas, $soaIds) {
             $payload = [
-                'statement_of_account_id' => $soa->id,
                 'invoice_number' => $data['invoice_number'] ?? null,
                 'date' => $data['date'] ?? null,
                 'discount' => $data['discount'] ?? 0,
@@ -266,19 +314,20 @@ class InvoiceService
             }
 
             $invoice = Invoice::create($payload);
+            $invoice->statementOfAccounts()->attach($soaIds);
 
-            $bookingIds = $soa->booking_ids ?? [];
+            $bookingIds = $this->collectBookingIds($soas);
             if (!empty($bookingIds)) {
                 Booking::whereIn('id', $bookingIds)->update(['is_complete' => true]);
             }
 
-            BillingStatement::where('statement_of_account_id', $soa->id)
+            BillingStatement::whereIn('statement_of_account_id', $soaIds)
                 ->update(['is_paid' => true]);
 
             return $invoice;
         });
 
-        $invoice->load(['statementOfAccount.shippingLine']);
+        $invoice->load(['statementOfAccounts.shippingLine']);
 
         return $invoice;
     }
@@ -300,7 +349,7 @@ class InvoiceService
     {
         $invoice = Invoice::findOrFail($id);
         $invoice->update($data);
-        $invoice->load(['statementOfAccount.shippingLine']);
+        $invoice->load(['statementOfAccounts.shippingLine']);
         return $invoice;
     }
 
@@ -309,12 +358,10 @@ class InvoiceService
      */
     public function prepareInvoicePdfData(int $id): array
     {
-        $invoice = Invoice::with(['statementOfAccount.shippingLine'])->findOrFail($id);
-        $invoiceItems = $this->calculateInvoiceItems($invoice->statement_of_account_id);
-        $totals = $this->getComputedTotals(
-            (int) $invoice->statement_of_account_id,
-            (float) ($invoice->discount ?? 0)
-        );
+        $invoice = Invoice::with(['statementOfAccounts.shippingLine'])->findOrFail($id);
+        $soaIds = $invoice->statement_of_account_ids;
+        $invoiceItems = $this->calculateInvoiceItems($soaIds);
+        $totals = $this->getComputedTotalsForInvoice($invoice);
 
         return [
             'invoice' => $invoice,
@@ -351,7 +398,9 @@ class InvoiceService
      */
     public function exportInvoiceDocumentCsvBySoaId(int $soaId): StreamedResponse
     {
-        $invoice = Invoice::where('statement_of_account_id', $soaId)->firstOrFail();
+        $invoice = Invoice::whereHas('statementOfAccounts', function ($q) use ($soaId) {
+            $q->where('statement_of_accounts.id', $soaId);
+        })->firstOrFail();
 
         return $this->exportInvoiceDocumentCsv($invoice->id);
     }
@@ -362,7 +411,7 @@ class InvoiceService
     private function writeInvoiceDocumentCsv($handle, array $data): void
     {
         $invoice = $data['invoice'];
-        $shippingLine = $invoice->statementOfAccount->shippingLine;
+        $shippingLine = $invoice->primaryStatementOfAccount()?->shippingLine;
         $totals = $data['totals'];
 
         FinancialDocumentCsvHelper::writeSectionTitle($handle, 'Service Invoice');
@@ -459,11 +508,12 @@ class InvoiceService
     public function sendInvoiceEmail($id, ?int $attachmentUserId = null, bool $includeAttachments = false, $customEmail = null, $cc = [], ?string $subject = null, ?string $body = null)
     {
         try {
-            $invoice = Invoice::with(['statementOfAccount.shippingLine'])->findOrFail($id);
+            $invoice = Invoice::with(['statementOfAccounts.shippingLine'])->findOrFail($id);
             $emailService = app(EmailService::class);
+            $shippingLine = $invoice->primaryStatementOfAccount()?->shippingLine;
 
             // Use custom email if provided, otherwise use shipping line email
-            $recipientEmail = $customEmail ?? $invoice->statementOfAccount->shippingLine->email_address;
+            $recipientEmail = $customEmail ?? $shippingLine?->email_address;
 
             if (empty($recipientEmail)) {
                 throw new \Exception('No email address found for shipping line.');
@@ -476,7 +526,7 @@ class InvoiceService
             // Prepare email: use custom subject/body if provided and non-empty, otherwise standard
             $subject = trim((string) $subject) !== '' ? trim($subject) : 'Invoice - ' . $invoice->invoice_number;
             $defaultBody = '<h2>Invoice</h2>'
-                . '<p>Dear ' . ($invoice->statementOfAccount->shippingLine->name ?? 'Valued Customer') . ',</p>'
+                . '<p>Dear ' . ($shippingLine->name ?? 'Valued Customer') . ',</p>'
                 . '<p>Please find attached the Invoice for ' . $invoice->invoice_number . '.</p>'
                 . '<p>If you have any questions, please do not hesitate to contact us.</p>'
                 . '<p>Best regards,<br>Deltrans Logistics Inc.</p>';
@@ -511,7 +561,7 @@ class InvoiceService
             $allInvoices = Invoice::count();
             $trashedInvoices = Invoice::onlyTrashed()->count();
 
-            $query = $this->buildInvoicesQuery()->with(['statementOfAccount.shippingLine']);
+            $query = $this->buildInvoicesQuery()->with(['statementOfAccounts.shippingLine']);
 
             $paginator = $query->paginate($perPage)->withQueryString();
 
@@ -534,12 +584,12 @@ class InvoiceService
     {
         $headers = [
             'id',
-            'statement_of_account_id',
+            'statement_of_account_ids',
             'invoice_number',
             'date',
             'discount',
             'discount_id',
-            'dli_sa_number',
+            'dli_sa_numbers',
             'shipping_line_id',
             'shipping_line_name',
             'vatable_sales',
@@ -556,37 +606,34 @@ class InvoiceService
         ];
 
         $rows = function () {
-            $query = $this->buildInvoicesQuery()->with(['statementOfAccount.shippingLine']);
+            $query = $this->buildInvoicesQuery()->with(['statementOfAccounts.shippingLine']);
 
             foreach ($query->cursor() as $invoice) {
                 $data = array_merge(
                     $invoice->toArray(),
-                    $this->getComputedTotals(
-                        (int) $invoice->statement_of_account_id,
-                        (float) ($invoice->discount ?? 0)
-                    )
+                    $this->getComputedTotalsForInvoice($invoice)
                 );
 
-                $soa = $data['statement_of_account'] ?? [];
-                $shippingLine = $soa['shipping_line'] ?? [];
+                $soas = $invoice->statementOfAccounts;
+                $shippingLine = $invoice->primaryStatementOfAccount()?->shippingLine;
 
                 yield [
                     $data['id'],
-                    $data['statement_of_account_id'],
+                    implode(',', $invoice->statement_of_account_ids),
                     $data['invoice_number'],
                     $this->formatExportDate($data['date'] ?? null),
                     $data['discount'],
                     $data['discount_id'],
-                    $soa['dli_sa_number'] ?? '',
-                    $soa['shipping_line_id'] ?? '',
-                    $shippingLine['name'] ?? '',
+                    $soas->pluck('dli_sa_number')->filter()->implode(', '),
+                    $soas->first()?->shipping_line_id ?? '',
+                    $shippingLine->name ?? '',
                     $data['vatable_sales'],
                     $data['vat'],
                     $data['total_sales'],
                     $data['less_vat'],
                     $data['net_of_vat'],
                     $data['total_sales_inclusive'],
-                    $data['less_withholding_tax'],
+                    $data['less_withdrawing_tax'],
                     $data['total_amount'],
                     $this->formatExportDateTime($data['created_at'] ?? null),
                     $this->formatExportDateTime($data['updated_at'] ?? null),
@@ -612,20 +659,22 @@ class InvoiceService
         if (request('search')) {
             $query->where(function ($q) {
                 $q->where('invoice_number', 'LIKE', '%' . request('search') . '%')
-                    ->orWhereHas('statementOfAccount.shippingLine', function ($query) {
+                    ->orWhereHas('statementOfAccounts.shippingLine', function ($query) {
                         $query->where('name', 'LIKE', '%' . request('search') . '%');
                     });
             });
         }
 
         if (request('shipping_line_id')) {
-            $query->whereHas('statementOfAccount', function ($q) {
+            $query->whereHas('statementOfAccounts', function ($q) {
                 $q->where('shipping_line_id', request('shipping_line_id'));
             });
         }
 
         if (request('statement_of_account_id')) {
-            $query->where('statement_of_account_id', request('statement_of_account_id'));
+            $query->whereHas('statementOfAccounts', function ($q) {
+                $q->where('statement_of_accounts.id', request('statement_of_account_id'));
+            });
         }
 
         if (request('date_from')) {
@@ -677,10 +726,37 @@ class InvoiceService
     public function showInvoice($id)
     {
         try {
-            return Invoice::with(['statementOfAccount.shippingLine'])->findOrFail($id);
+            return Invoice::with(['statementOfAccounts.shippingLine'])->findOrFail($id);
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Invoice not found.');
         }
+    }
+
+    /**
+     * @param int|array<int> $soaIds
+     * @return array<int>
+     */
+    private function normalizeSoaIds(int|array $soaIds): array
+    {
+        if (!is_array($soaIds)) {
+            $soaIds = [$soaIds];
+        }
+
+        return array_values(array_unique(array_map('intval', $soaIds)));
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, StatementOfAccount> $soas
+     * @return array<int>
+     */
+    private function collectBookingIds($soas): array
+    {
+        return $soas
+            ->flatMap(fn (StatementOfAccount $soa) => $soa->booking_ids ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

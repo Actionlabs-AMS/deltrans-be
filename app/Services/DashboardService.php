@@ -323,15 +323,13 @@ class DashboardService
     {
         $invoices = Invoice::query()
             ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
-            ->get(['id', 'statement_of_account_id', 'date', 'discount']);
+            ->with('statementOfAccounts')
+            ->get(['id', 'date', 'discount']);
 
         $incomeByMonth = [];
 
         foreach ($invoices as $invoice) {
-            $totals = $this->invoiceService->getComputedTotals(
-                (int) $invoice->statement_of_account_id,
-                (float) ($invoice->discount ?? 0)
-            );
+            $totals = $this->invoiceService->getComputedTotalsForInvoice($invoice);
             $monthKey = $invoice->date ? $invoice->date->format('Y-m') : Carbon::now()->format('Y-m');
             $incomeByMonth[$monthKey] = ($incomeByMonth[$monthKey] ?? 0) + (float) ($totals['total_amount'] ?? 0);
         }
@@ -502,17 +500,14 @@ class DashboardService
     {
         $invoices = Invoice::query()
             ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
-            ->with(['statementOfAccount.shippingLine'])
-            ->get(['id', 'statement_of_account_id', 'date', 'discount']);
+            ->with(['statementOfAccounts.shippingLine'])
+            ->get(['id', 'date', 'discount']);
 
         $byName = [];
 
         foreach ($invoices as $invoice) {
-            $totals = $this->invoiceService->getComputedTotals(
-                (int) $invoice->statement_of_account_id,
-                (float) ($invoice->discount ?? 0)
-            );
-            $name = $invoice->statementOfAccount?->shippingLine?->name;
+            $totals = $this->invoiceService->getComputedTotalsForInvoice($invoice);
+            $name = $invoice->primaryStatementOfAccount()?->shippingLine?->name;
             $key = ($name !== null && $name !== '') ? $name : 'Unknown';
             $byName[$key] = ($byName[$key] ?? 0) + (float) ($totals['total_amount'] ?? 0);
         }
