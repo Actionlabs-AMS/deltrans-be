@@ -391,7 +391,7 @@ class ReportsService
     public function exportTruckExpenseCsv(string $startDate, string $endDate, string $filterType = 'weekly', ?string $searchTerm = null): StreamedResponse
     {
         $headers = [
-            'transaction_date', 'shift', 'helper_name',
+            'transaction_date', 'shift', 'helper_name', 'plate_number',
             'cash_on_hand', 'issued_cash_amount',
         ];
 
@@ -400,7 +400,14 @@ class ReportsService
 
             foreach ($query->get() as $row) {
                 $data = (new TruckTripExpenseResource($row))->toArray(request());
-                yield $this->resourceRowToCsv($data, $headers);
+                yield [
+                    $data['transaction_date'] ?? '',
+                    $data['shift'] ?? '',
+                    $data['helper_name'] ?? '',
+                    $data['plate_number'] ?? '',
+                    $data['cash_on_hand'] ?? '',
+                    $data['issued_cash_amount'] ?? '',
+                ];
             }
         };
 
@@ -549,18 +556,11 @@ class ReportsService
                 $data = (new CashAdvanceResource($model))->toArray(request());
 
                 yield [
-                    $data['type'] ?? '',
-                    $data['id'] ?? '',
-                    $data['amount'] ?? 0,
                     $data['transaction_date'] ?? '',
                     $data['shift'] ?? '',
-                    $data['driver_id'] ?? '',
                     $data['driver_name'] ?? '',
-                    $data['helper_id'] ?? '',
                     $data['helper_name'] ?? '',
-                    $data['created_at'] ?? '',
-                    $data['updated_at'] ?? '',
-                    $data['deleted_at'] ?? '',
+                    $data['amount'] ?? 0,
                 ];
             }
         };
