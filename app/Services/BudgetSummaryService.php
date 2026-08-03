@@ -77,8 +77,22 @@ class BudgetSummaryService
             $query->where($transactionDateColumn, '<=', $dateTo);
         }
         if ($shift && $shift !== 'All') {
-            $query->where('shift', $shift);
+            if (ShiftChronology::isValidShift($shift)) {
+                $query->whereIn('shift', $this->shiftsInRequestedSlot($shift));
+            } else {
+                $query->where('shift', $shift);
+            }
         }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function shiftsInRequestedSlot(string $shift): array
+    {
+        return ShiftChronology::shiftIndex($shift) === 0
+            ? ['Day', '1st']
+            : ['Night', '2nd'];
     }
 
     /**
@@ -637,6 +651,7 @@ class BudgetSummaryService
         $totalExpense = $summary['total_expense'];
         $cashOnHand = $summary['cash_on_hand'];
         $previousCashOnHand = $summary['previous_cash_on_hand'];
+        $previousCashOnHandDate = $summary['previous_cash_on_hand_date'] ?? null;
 
         $categoryTotals = $this->computeCategoryTotals($sorted);
 
@@ -672,6 +687,7 @@ class BudgetSummaryService
             'total_expense' => round($totalExpense, 2),
             'cash_on_hand' => round($cashOnHand, 2),
             'previous_cash_on_hand' => $previousCashOnHand,
+            'previous_cash_on_hand_date' => $previousCashOnHandDate,
             'category_totals' => $categoryTotals,
             'meta' => $meta,
         ];
