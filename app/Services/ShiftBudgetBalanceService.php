@@ -63,7 +63,7 @@ class ShiftBudgetBalanceService
     }
 
     /**
-     * @return array{total_budget: float, total_expense: float, cash_on_hand: float, previous_cash_on_hand: float}
+     * @return array{total_budget: float, total_expense: float, cash_on_hand: float, previous_cash_on_hand: float, previous_cash_on_hand_date: ?string}
      */
     public function getSummary(string $dateFrom, string $dateTo, string $shift, string $dateFilterType): array
     {
@@ -88,11 +88,79 @@ class ShiftBudgetBalanceService
         // This populates any missing shift_budget_balance rows and fixes stale carry values.
         $this->recalculateFrom($rangeStart->format('Y-m-d'), 'Day');
 
+        if ($dateFilterType === 'weekly') {
+            return $this->summarizeWeeklyRange(
+                $rangeStart->format('Y-m-d'),
+                $rangeEnd->format('Y-m-d'),
+                $shift
+            );
+        }
+
         return $this->summarizeRange($rangeStart->format('Y-m-d'), $rangeEnd->format('Y-m-d'), $shift);
     }
 
     /**
-     * @return array{total_budget: float, total_expense: float, cash_on_hand: float, previous_cash_on_hand: float}
+     * Weekly rule set:
+     * - total_budget = sum of issued budgets in range
+     * - total_expense = sum of all expenses in range
+     * - cash_on_hand = total_budget - total_expense
+     * - previous_cash_on_hand = remaining_coh of the previous shift
+     *   for the requested shift on the latest day in range
+    * - previous_cash_on_hand_date = transaction date used for previous_cash_on_hand
+     *
+    * @return array{total_budget: float, total_expense: float, cash_on_hand: float, previous_cash_on_hand: float, previous_cash_on_hand_date: ?string}
+     */
+    private function summarizeWeeklyRange(string $dateFrom, string $dateTo, string $shift): array
+    {
+        $start = Carbon::parse($dateFrom)->startOfDay();
+        $end = Carbon::parse($dateTo)->startOfDay();
+
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        $totalBudget = 0.0;
+        $totalExpense = 0.0;
+
+        $current = $start->copy();
+        while ($current->lessThanOrEqualTo($end)) {
+            $date = $current->format('Y-m-d');
+            $totalBudget += $this->amountsCalculator->sumIssuedBudget($date, $shift);
+            $totalExpense += $this->amountsCalculator->sumTotalExpense($date, $shift);
+            $current->addDay();
+        }
+
+        $cashOnHand = $totalBudget - $totalExpense;
+        $previousCashOnHand = 0.0;
+        $previousCashOnHandDate = null;
+
+        $latestDate = $end->format('Y-m-d');
+        $previousShift = ShiftChronology::previous($latestDate, $shift);
+        if ($previousShift !== null) {
+            $previousCashOnHandDate = $previousShift['date'];
+            $prevRow = ShiftBudgetBalance::query()
+                ->whereDate('transaction_date', $previousShift['date'])
+                ->where('shift', $previousShift['shift'])
+                ->first();
+
+            if (!$prevRow) {
+                $prevRow = $this->buildUnpersistedPreview($previousShift['date'], $previousShift['shift']);
+            }
+
+            $previousCashOnHand = (float) $prevRow->remaining_coh;
+        }
+
+        return [
+            'total_budget' => round($totalBudget, 2),
+            'total_expense' => round($totalExpense, 2),
+            'cash_on_hand' => round($cashOnHand, 2),
+            'previous_cash_on_hand' => round($previousCashOnHand, 2),
+            'previous_cash_on_hand_date' => $previousCashOnHandDate,
+        ];
+    }
+
+    /**
+     * @return array{total_budget: float, total_expense: float, cash_on_hand: float, previous_cash_on_hand: float, previous_cash_on_hand_date: ?string}
      */
     private function summarizeRange(string $dateFrom, string $dateTo, string $shift): array
     {
@@ -147,6 +215,7 @@ class ShiftBudgetBalanceService
             'total_expense' => round($totalExpense, 2),
             'cash_on_hand' => round($cashOnHand, 2),
             'previous_cash_on_hand' => round($previousCashOnHand, 2),
+            'previous_cash_on_hand_date' => null,
         ];
     }
 
