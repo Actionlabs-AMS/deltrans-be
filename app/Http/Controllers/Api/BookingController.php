@@ -179,6 +179,12 @@ class BookingController extends BaseController
      *         @OA\Schema(type="integer", example=0)
      *     ),
      *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Search by booking reference number only",
+     *         @OA\Schema(type="string", example="RF-483624")
+     *     ),
+     *     @OA\Parameter(
      *         name="page",
      *         in="query",
      *         description="Page number",
@@ -225,6 +231,7 @@ class BookingController extends BaseController
             'expected_date_from' => 'nullable|date',
             'expected_date_to' => 'nullable|date',
             'is_complete' => 'nullable|boolean',
+            'search' => 'nullable|string|max:255',
         ], [
             'expected_date_from.date' => 'The expected_date_from must be a valid date (Y-m-d).',
             'expected_date_to.date' => 'The expected_date_to must be a valid date (Y-m-d).',
@@ -248,13 +255,18 @@ class BookingController extends BaseController
         $expectedDateFrom = $validated['expected_date_from'] ?? null;
         $expectedDateTo = $validated['expected_date_to'] ?? null;
         $isComplete = array_key_exists('is_complete', $validated) ? (int) $validated['is_complete'] : null;
+        $search = isset($validated['search']) ? trim((string) $validated['search']) : null;
+        if ($search === '') {
+            $search = null;
+        }
 
         return $this->service->listByShippingLine(
             (int) $shipping_line_id,
             $expectedDateFrom,
             $expectedDateTo,
             (int) $perPage,
-            $isComplete
+            $isComplete,
+            $search
         );
     }
 

@@ -973,6 +973,15 @@
                         }
                     },
                     {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search by booking reference number only",
+                        "schema": {
+                            "type": "string",
+                            "example": "RF-483624"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "description": "Page number",
@@ -999,6 +1008,7 @@
                                 "schema": {
                                     "properties": {
                                         "data": {
+                                            "description": "Bookings include has_soa, soa_id, soa_dli_sa_number for badge display",
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/components/schemas/Booking"
@@ -9471,8 +9481,8 @@
                 "tags": [
                     "Invoice Management"
                 ],
-                "summary": "Generate a new invoice from SOA",
-                "description": "Creates an invoice based on a statement of account. Automatically calculates quantity, unit_price, item_description, and financial fields from SOA's waybills and containers.",
+                "summary": "Generate a new invoice from one or more SOAs",
+                "description": "Creates a single invoice linked to one or more statements of account. Aggregates line items and totals across all selected SOAs. All SOAs must share the same shipping line and must not already be invoiced.",
                 "operationId": "eaf2f23080d714e2792f705e8f756913",
                 "requestBody": {
                     "required": true,
@@ -26296,6 +26306,23 @@
                         "type": "integer",
                         "example": 5
                     },
+                    "has_soa": {
+                        "description": "Present on by-shipping-line: whether this booking is tagged in an active SOA",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "soa_id": {
+                        "description": "Present on by-shipping-line: linked SOA id when has_soa is true",
+                        "type": "integer",
+                        "example": 12,
+                        "nullable": true
+                    },
+                    "soa_dli_sa_number": {
+                        "description": "Present on by-shipping-line: SOA DLI SA number for badge display",
+                        "type": "string",
+                        "example": "001-A",
+                        "nullable": true
+                    },
                     "prepared_by": {
                         "description": "Display name of user who prepared (from users/user_meta; POST/PUT accept user ID)",
                         "type": "string",
@@ -27233,18 +27260,28 @@
                         "type": "integer",
                         "example": 1
                     },
-                    "statement_of_account_id": {
-                        "description": "Related statement of account ID",
-                        "type": "integer",
-                        "example": 1
+                    "statement_of_account_ids": {
+                        "description": "Linked statement of account IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            10,
+                            11,
+                            12
+                        ]
                     },
-                    "statement_of_account": {
-                        "description": "Linked SOA",
-                        "type": "object",
+                    "statement_of_accounts": {
+                        "description": "Linked SOAs when loaded",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
                         "nullable": true
                     },
                     "shipping_line": {
-                        "description": "Shipping line from SOA when loaded",
+                        "description": "Shipping line from first linked SOA when loaded",
                         "type": "object",
                         "nullable": true
                     },
@@ -27329,13 +27366,20 @@
             "InvoiceGenerateInput": {
                 "title": "Generate Invoice Input",
                 "required": [
-                    "statement_of_account_id"
+                    "statement_of_account_ids"
                 ],
                 "properties": {
-                    "statement_of_account_id": {
-                        "description": "Statement of account ID",
-                        "type": "integer",
-                        "example": 1
+                    "statement_of_account_ids": {
+                        "description": "One or more statement of account IDs (min 1); all must share the same shipping line and must not already be invoiced",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            10,
+                            11,
+                            12
+                        ]
                     },
                     "invoice_number": {
                         "description": "Auto-generated if not provided",
@@ -28582,7 +28626,7 @@
                 ],
                 "properties": {
                     "booking_ids": {
-                        "description": "Array of booking IDs (preferred when provided; if present, statement_of_account_id will be ignored)",
+                        "description": "Array of booking IDs (preferred when provided; if present, SOA id fields will be ignored for booking resolution)",
                         "type": "array",
                         "items": {
                             "type": "integer"
@@ -28594,9 +28638,20 @@
                         ]
                     },
                     "statement_of_account_id": {
-                        "description": "Statement of Account ID to validate against (used only when booking_ids is not provided)",
+                        "description": "Single Statement of Account ID (legacy; used when booking_ids is not provided)",
                         "type": "integer",
                         "example": 10
+                    },
+                    "statement_of_account_ids": {
+                        "description": "Multiple Statement of Account IDs (preferred for invoice type 3 batch validate)",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            10,
+                            11
+                        ]
                     },
                     "type": {
                         "description": "1 = SOA, 2 = Billing, 3 = Invoice",

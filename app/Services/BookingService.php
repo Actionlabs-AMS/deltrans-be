@@ -148,10 +148,10 @@ class BookingService extends BaseService
     }
 
     /**
-     * Get bookings by shipping line ID, optionally filtered by expected_date range.
+     * Get bookings by shipping line ID, optionally filtered by expected_date range and reference number.
      * Includes total_cost, remaining_balance, total_paid based on waybills (total_rate_per_client) in the filtered set.
      */
-    public function listByShippingLine(int $shippingLineId, ?string $expectedDateFrom = null, ?string $expectedDateTo = null, int $perPage = 10, ?int $isComplete = null)
+    public function listByShippingLine(int $shippingLineId, ?string $expectedDateFrom = null, ?string $expectedDateTo = null, int $perPage = 10, ?int $isComplete = null, ?string $search = null)
     {
         $baseQuery = Booking::query()
             ->where('shipping_line_id', $shippingLineId);
@@ -164,6 +164,9 @@ class BookingService extends BaseService
         }
         if (!is_null($isComplete)) {
             $baseQuery->where('is_complete', (int) $isComplete);
+        }
+        if ($search !== null && $search !== '') {
+            $baseQuery->where('reference_number', 'LIKE', '%' . $search . '%');
         }
 
         $filteredBookingIds = (clone $baseQuery)->pluck('id');
