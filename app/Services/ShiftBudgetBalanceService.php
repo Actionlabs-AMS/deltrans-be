@@ -124,6 +124,8 @@ class ShiftBudgetBalanceService
             ? $end
             : ($start->greaterThan($today) ? $start : $today);
 
+        $referenceDate = $this->resolveWeeklyReferenceDate($start, $cutoff, $shift);
+
         $totalBudget = 0.0;
         $totalExpense = 0.0;
 
@@ -139,7 +141,7 @@ class ShiftBudgetBalanceService
         $previousCashOnHand = 0.0;
         $previousCashOnHandDate = null;
 
-        $latestDate = $cutoff->format('Y-m-d');
+        $latestDate = $referenceDate->format('Y-m-d');
         $previousShift = ShiftChronology::previous($latestDate, $shift);
         if ($previousShift !== null) {
             $previousCashOnHandDate = $previousShift['date'];
@@ -363,6 +365,29 @@ class ShiftBudgetBalanceService
     private function shouldResetCarry(string $date, string $shift): bool
     {
         return Carbon::parse($date)->isMonday() && $shift === 'Day';
+    }
+
+    private function resolveWeeklyReferenceDate(Carbon $start, Carbon $cutoff, string $shift): Carbon
+    {
+        $current = $cutoff->copy();
+
+        while ($current->greaterThanOrEqualTo($start)) {
+            $date = $current->format('Y-m-d');
+            $hasBudget = $this->amountsCalculator->sumIssuedBudget($date, $shift) > 0;
+            $hasExpense = $this->amountsCalculator->sumTotalExpense($date, $shift) > 0;
+            $hasBalance = ShiftBudgetBalance::query()
+                ->whereDate('transaction_date', $date)
+                ->where('shift', $shift)
+                ->exists();
+
+            if ($hasBudget || $hasExpense || $hasBalance) {
+                return $current->copy();
+            }
+
+            $current->subDay();
+        }
+
+        return $cutoff->copy();
     }
 
     private function resolveEndPosition(string $date, string $shift, int $startPosition): int

@@ -17,7 +17,8 @@ class BudgetSummaryRequest extends FormRequest
         return [
             'shift' => ['nullable', 'string', Rule::in(['Day', 'Night', 'All'])],
             'type' => ['nullable', 'string'],
-            'dateFilter' => ['nullable', 'string', Rule::in(['daily', 'weekly'])],
+            'dateFilter' => ['nullable', 'string', Rule::in(['daily', 'weekly', 'monthly'])],
+            'dateFilterType' => ['nullable', 'string', Rule::in(['daily', 'weekly', 'monthly'])],
             'transaction_date_from' => 'nullable|date',
             'transaction_date_to' => 'nullable|date',
             'date_from' => 'nullable|date',
@@ -35,8 +36,13 @@ class BudgetSummaryRequest extends FormRequest
             $this->merge(['shift' => 'All']);
         }
 
-        // Align with dashboard date filters (GET /api/dashboard?date_from=&date_to=)
         $merge = [];
+
+        if (!$this->filled('dateFilterType') && $this->filled('dateFilter')) {
+            $merge['dateFilterType'] = $this->input('dateFilter');
+        }
+
+        // Align with dashboard date filters (GET /api/dashboard?date_from=&date_to=)
         if (!$this->filled('transaction_date_from') && $this->filled('date_from')) {
             $merge['transaction_date_from'] = $this->input('date_from');
         }
