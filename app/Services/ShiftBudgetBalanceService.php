@@ -114,16 +114,21 @@ class ShiftBudgetBalanceService
     {
         $start = Carbon::parse($dateFrom)->startOfDay();
         $end = Carbon::parse($dateTo)->startOfDay();
+        $today = Carbon::today()->startOfDay();
 
         if ($start->greaterThan($end)) {
             [$start, $end] = [$end, $start];
         }
 
+        $cutoff = $end->lessThan($today)
+            ? $end
+            : ($start->greaterThan($today) ? $start : $today);
+
         $totalBudget = 0.0;
         $totalExpense = 0.0;
 
         $current = $start->copy();
-        while ($current->lessThanOrEqualTo($end)) {
+        while ($current->lessThanOrEqualTo($cutoff)) {
             $date = $current->format('Y-m-d');
             $totalBudget += $this->amountsCalculator->sumIssuedBudget($date, $shift);
             $totalExpense += $this->amountsCalculator->sumTotalExpense($date, $shift);
@@ -134,7 +139,7 @@ class ShiftBudgetBalanceService
         $previousCashOnHand = 0.0;
         $previousCashOnHandDate = null;
 
-        $latestDate = $end->format('Y-m-d');
+        $latestDate = $cutoff->format('Y-m-d');
         $previousShift = ShiftChronology::previous($latestDate, $shift);
         if ($previousShift !== null) {
             $previousCashOnHandDate = $previousShift['date'];
