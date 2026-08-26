@@ -23,6 +23,14 @@ class Helper extends Model
     ];
 
     /**
+     * Persist missing contact numbers as an empty string (column is NOT NULL).
+     */
+    public function setContactNumberAttribute($value): void
+    {
+        $this->attributes['contact_number'] = $value ?? '';
+    }
+
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>

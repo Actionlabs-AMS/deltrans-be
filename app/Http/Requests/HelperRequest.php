@@ -45,7 +45,7 @@ class HelperRequest extends FormRequest
       'last_name' => 'required|string|max:191|' . self::NAME_CHAR_REGEX,
       //"contact_number" => "required|string|max:191|unique:helpers,contact_number,".$this->id,
       "contact_number" => [
-          "required",
+          "nullable",
           "string",
           "max:191",
           Rule::unique('helpers', 'contact_number')
