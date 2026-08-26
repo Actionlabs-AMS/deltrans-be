@@ -33,7 +33,7 @@ class RatePerClientRequest extends FormRequest
             'container_size' => [
                 'required',
                 'string',
-                Rule::in(['20ft', '40ft', '20ft(offhire)', '40ft(offhire)']),
+                Rule::in(['20ft', '40ft', '45ft', '20ft(offhire)', '40ft(offhire)']),
             ],
             'rate' => 'required|numeric|min:0',
             'tax_percent' => 'nullable|numeric|min:0|max:100',
@@ -51,7 +51,7 @@ class RatePerClientRequest extends FormRequest
                 'sometimes',
                 'required',
                 'string',
-                Rule::in(['20ft', '40ft', '20ft(offhire)', '40ft(offhire)']),
+                Rule::in(['20ft', '40ft', '45ft', '20ft(offhire)', '40ft(offhire)']),
             ];
             $rules['rate'] = 'sometimes|required|numeric|min:0';
             $rules['tax_percent'] = 'sometimes|nullable|numeric|min:0|max:100';
@@ -95,7 +95,7 @@ class RatePerClientRequest extends FormRequest
             'stack_run.numeric' => 'The stack run must be a valid number.',
             'stack_run.min' => 'The stack run amount must be at least 0.',
             'container_size.required' => 'The container size is required.',
-            'container_size.in' => 'The container size must be one of: 20ft, 40ft, 20ft(offhire), or 40ft(offhire).',
+            'container_size.in' => 'The container size must be one of: 20ft, 40ft, 45ft, 20ft(offhire), or 40ft(offhire).',
             'rate.required' => 'The rate is required.',
             'rate.numeric' => 'The rate must be a valid number.',
             'rate.min' => 'The rate must be at least 0.',
