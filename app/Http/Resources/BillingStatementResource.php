@@ -14,6 +14,8 @@ class BillingStatementResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $invoice = $this->latestInvoice();
+
         return [
             // Identity
             'id' => $this->id,
@@ -46,6 +48,11 @@ class BillingStatementResource extends JsonResource
                 $user = $this->preparedByUser;
                 return $user ? $user->getDisplayName() : null;
             }),
+
+            // Invoice tagging (badge display)
+            'has_invoice' => $invoice !== null,
+            'invoice_id' => $invoice?->id,
+            'invoice_number' => $invoice?->invoice_number,
 
             // Billing details
             'billing_statement_no' => $this->billing_statement_no,
