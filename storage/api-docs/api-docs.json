@@ -9644,6 +9644,57 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "delete": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Soft delete an invoice",
+                "description": "Soft deletes an invoice only. Does not soft delete the related SOA or billing statements.",
+                "operationId": "410b8a2e4b097016c3dea391349a789b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoice moved to trash",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been moved to trash."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/soa/{soaId}/invoice/download": {
@@ -17948,6 +17999,57 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "delete": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Soft delete a statement of account",
+                "description": "Soft deletes the SOA and related billing statements. Related invoices are soft-deleted only when this SOA is their last active link; otherwise the SOA is detached from the shared invoice. Bookings linked only to this SOA are re-opened (is_complete=false, auto_complete_at=null).",
+                "operationId": "9099500103202ed3181631f56d64f6ce",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "SOA ID (Statement of Account ID)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SOA and related billing/invoices moved to trash",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been moved to trash."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/soa/line-items": {
@@ -18589,6 +18691,57 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Soft delete a billing statement",
+                "description": "Soft deletes a billing statement only. Does not soft delete the related SOA or invoices.",
+                "operationId": "fcc1de5d1a6a11f55bad3905fbbbb524",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Billing Statement ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Billing statement moved to trash",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Resource has been moved to trash."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     },
                     "500": {
                         "$ref": "#/components/responses/GeneralError"

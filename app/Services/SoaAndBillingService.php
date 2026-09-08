@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\StatementOfAccount;
 use App\Models\BillingStatement;
+use App\Models\Invoice;
 use App\Models\SoaDataOption;
 use App\Http\Resources\SoaAndBillingResource;
 use App\Http\Resources\BillingStatementResource;
@@ -12,6 +13,7 @@ use App\Helpers\FinancialDocumentCsvHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -299,6 +301,71 @@ class SoaAndBillingService extends BaseService
             return SoaAndBillingResource::make($soa);
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Statement of account not found.');
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
+    }
+
+
+    /**
+     * Soft delete a statement of account and cascade soft delete to related
+     * billing statements. Related invoices are soft-deleted only when this SOA
+     * is their last active link; otherwise the SOA is detached from the invoice.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function destroy($id)
+    {
+        try {
+            return DB::transaction(function () use ($id) {
+                $soa = StatementOfAccount::with(['billingStatements', 'invoices'])->findOrFail($id);
+
+                foreach ($soa->billingStatements as $billingStatement) {
+                    $billingStatement->delete();
+                }
+
+                foreach ($soa->invoices as $invoice) {
+                    $lockedInvoice = Invoice::whereKey($invoice->id)->lockForUpdate()->first();
+                    if (!$lockedInvoice) {
+                        continue;
+                    }
+
+                    $otherActiveSoaCount = $lockedInvoice->statementOfAccounts()
+                        ->where('statement_of_accounts.id', '!=', $soa->id)
+                        ->count();
+
+                    if ($otherActiveSoaCount === 0) {
+                        $lockedInvoice->statementOfAccounts()->detach();
+                        $lockedInvoice->delete();
+                    } else {
+                        $lockedInvoice->statementOfAccounts()->detach($soa->id);
+                    }
+                }
+
+                return $soa->delete();
+            });
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Statement of account not found.');
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
+    }
+
+    /**
+     * Soft delete a billing statement by ID (does not cascade to SOA or invoices).
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function destroyBillingStatement($id)
+    {
+        try {
+            $billingStatement = BillingStatement::findOrFail($id);
+
+            return $billingStatement->delete();
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Billing statement not found.');
         } catch (\Exception $e) {
             throw new \Exception($e->getMessage());
         }

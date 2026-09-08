@@ -139,6 +139,37 @@ class InvoiceController extends BaseController
     }
 
     /**
+     * Soft delete an invoice (does not cascade to SOA or billing statements).
+     *
+     * @OA\Delete(
+     *     path="/api/invoices/{id}",
+     *     summary="Soft delete an invoice",
+     *     description="Soft deletes an invoice only. Does not soft delete the related SOA or billing statements.",
+     *     tags={"Invoice Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="Invoice ID", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Invoice moved to trash", @OA\JsonContent(
+     *         @OA\Property(property="message", type="string", example="Resource has been moved to trash.")
+     *     )),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function destroy($id)
+    {
+        try {
+            $this->service->destroyInvoice($id);
+            return response(['message' => 'Resource has been moved to trash.'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getMessage() === 'Invoice not found.' ? 404 : 500);
+        }
+    }
+
+    /**
      * @OA\Get(
      *     path="/api/soa/{soaId}/invoice/download",
      *     summary="Download Invoice PDF by SOA ID",

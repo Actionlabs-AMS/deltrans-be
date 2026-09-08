@@ -310,6 +310,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [SoaAndBillingController::class, 'index']);  // Retrieve all statement of accounts
 		Route::get('/{id}', [SoaAndBillingController::class, 'show']);  // Retrieve a single statement of account
 		Route::put('/{id}', [SoaAndBillingController::class, 'update']);  // Update a statement of account
+		Route::delete('/{id}', [SoaAndBillingController::class, 'destroy']);  // Soft delete SOA (+ related billing & invoices)
 	});
 
 	/*
@@ -338,6 +339,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [SoaAndBillingController::class, 'billingStatementsIndex']);  // Retrieve all billing statements
 		Route::get('/{id}', [SoaAndBillingController::class, 'billingStatementsShow']);  // Retrieve a single billing statement
 		Route::put('/{id}', [SoaAndBillingController::class, 'billingStatementsUpdate']);  // Update a billing statement
+		Route::delete('/{id}', [SoaAndBillingController::class, 'billingStatementsDestroy']);  // Soft delete billing statement
 	});
 
 	/*
@@ -388,6 +390,7 @@ Route::middleware('auth:sanctum')->group(function () {
 		Route::get('/', [InvoiceController::class, 'index']);  // Retrieve all invoices
 		Route::get('/{id}', [InvoiceController::class, 'show']);  // Retrieve a single invoice
 		Route::put('/{id}', [InvoiceController::class, 'update']);  // Update an invoice
+		Route::delete('/{id}', [InvoiceController::class, 'destroy']);  // Soft delete invoice
 	});
 
 	/*
