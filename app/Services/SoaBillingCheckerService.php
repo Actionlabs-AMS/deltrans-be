@@ -260,9 +260,11 @@ class SoaBillingCheckerService
             return [];
         }
 
-        return DB::table('invoice_statement_of_account')
-            ->whereIn('statement_of_account_id', $soaIds)
-            ->pluck('statement_of_account_id')
+        return DB::table('invoice_statement_of_account as isoa')
+            ->join('invoices', 'invoices.id', '=', 'isoa.invoice_id')
+            ->whereNull('invoices.deleted_at')
+            ->whereIn('isoa.statement_of_account_id', $soaIds)
+            ->pluck('isoa.statement_of_account_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()
@@ -362,8 +364,10 @@ class SoaBillingCheckerService
             return [];
         }
 
-        $invoicedSoaIds = DB::table('invoice_statement_of_account')
-            ->pluck('statement_of_account_id')
+        $invoicedSoaIds = DB::table('invoice_statement_of_account as isoa')
+            ->join('invoices', 'invoices.id', '=', 'isoa.invoice_id')
+            ->whereNull('invoices.deleted_at')
+            ->pluck('isoa.statement_of_account_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->all();

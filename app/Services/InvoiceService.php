@@ -292,8 +292,10 @@ class InvoiceService
             throw new \Exception('All selected statements of account must belong to the same shipping line.');
         }
 
-        $alreadyLinked = DB::table('invoice_statement_of_account')
-            ->whereIn('statement_of_account_id', $soaIds)
+        $alreadyLinked = DB::table('invoice_statement_of_account as isoa')
+            ->join('invoices', 'invoices.id', '=', 'isoa.invoice_id')
+            ->whereNull('invoices.deleted_at')
+            ->whereIn('isoa.statement_of_account_id', $soaIds)
             ->exists();
         if ($alreadyLinked) {
             throw new \Exception('One or more selected statements of account are already linked to an invoice.');
@@ -351,6 +353,28 @@ class InvoiceService
         $invoice->update($data);
         $invoice->load(['statementOfAccounts.shippingLine']);
         return $invoice;
+    }
+
+    /**
+     * Soft delete an invoice by ID (does not cascade to SOA or billing statements).
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function destroyInvoice($id)
+    {
+        try {
+            return DB::transaction(function () use ($id) {
+                $invoice = Invoice::findOrFail($id);
+                $invoice->statementOfAccounts()->detach();
+
+                return $invoice->delete();
+            });
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Invoice not found.');
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage());
+        }
     }
 
     /**

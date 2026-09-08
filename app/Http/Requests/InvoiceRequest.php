@@ -66,9 +66,11 @@ class InvoiceRequest extends FormRequest
                 );
             }
 
-            $alreadyLinked = DB::table('invoice_statement_of_account')
-                ->whereIn('statement_of_account_id', $soaIds)
-                ->pluck('statement_of_account_id')
+            $alreadyLinked = DB::table('invoice_statement_of_account as isoa')
+                ->join('invoices', 'invoices.id', '=', 'isoa.invoice_id')
+                ->whereNull('invoices.deleted_at')
+                ->whereIn('isoa.statement_of_account_id', $soaIds)
+                ->pluck('isoa.statement_of_account_id')
                 ->unique()
                 ->values()
                 ->all();

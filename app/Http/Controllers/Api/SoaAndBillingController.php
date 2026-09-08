@@ -342,6 +342,37 @@ class SoaAndBillingController extends BaseController
     }
 
     /**
+     * Soft delete a statement of account and cascade soft delete related billing statements and invoices.
+     *
+     * @OA\Delete(
+     *     path="/api/soa/{id}",
+     *     summary="Soft delete a statement of account",
+     *     description="Soft deletes the SOA and related billing statements. Related invoices are soft-deleted only when this SOA is their last active link; otherwise the SOA is detached from the shared invoice. Bookings linked only to this SOA are re-opened (is_complete=false, auto_complete_at=null).",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="SOA and related billing/invoices moved to trash", @OA\JsonContent(
+     *         @OA\Property(property="message", type="string", example="Resource has been moved to trash.")
+     *     )),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function destroy($id)
+    {
+        try {
+            $this->service->destroy($id);
+            return response(['message' => 'Resource has been moved to trash.'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getMessage() === 'Statement of account not found.' ? 404 : 500);
+        }
+    }
+
+    /**
      * @OA\Get(
      *     path="/api/soa/{id}/download",
      *     summary="Download Statement of Account PDF",
@@ -565,6 +596,37 @@ class SoaAndBillingController extends BaseController
                 'success' => false,
                 'message' => $e->getMessage(),
             ], $e->getMessage() === 'Billing statement not found.' ? 404 : 400);
+        }
+    }
+
+    /**
+     * Soft delete a billing statement (does not cascade to SOA or invoices).
+     *
+     * @OA\Delete(
+     *     path="/api/billing-statements/{id}",
+     *     summary="Soft delete a billing statement",
+     *     description="Soft deletes a billing statement only. Does not soft delete the related SOA or invoices.",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="Billing Statement ID", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Billing statement moved to trash", @OA\JsonContent(
+     *         @OA\Property(property="message", type="string", example="Resource has been moved to trash.")
+     *     )),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function billingStatementsDestroy($id)
+    {
+        try {
+            $this->service->destroyBillingStatement($id);
+            return response(['message' => 'Resource has been moved to trash.'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getMessage() === 'Billing statement not found.' ? 404 : 500);
         }
     }
 
