@@ -110,6 +110,16 @@ class BillingStatement extends Model
     }
 
     /**
+     * Newest invoice linked via this billing statement's SOA, if any.
+     */
+    public function latestInvoice(): ?Invoice
+    {
+        $soa = $this->statementOfAccount;
+
+        return $soa?->latestInvoice();
+    }
+
+    /**
      * Get the user who prepared the billing statement.
      */
     public function preparedByUser()

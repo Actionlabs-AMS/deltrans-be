@@ -29,7 +29,7 @@ class FixedExpenseRequest extends FormRequest
             'container_size' => [
                 'required',
                 'string',
-                Rule::in(['20ft', '40ft']),
+                Rule::in(['20ft', '40ft', '45ft']),
             ],
             'docs_fee' => 'nullable|numeric|min:0',
             'online_booking_fee' => 'nullable|numeric|min:0',
@@ -46,7 +46,7 @@ class FixedExpenseRequest extends FormRequest
                 'sometimes',
                 'required',
                 'string',
-                Rule::in(['20ft', '40ft']),
+                Rule::in(['20ft', '40ft', '45ft']),
             ];
         }
 
@@ -68,7 +68,7 @@ class FixedExpenseRequest extends FormRequest
             'cypa_id_to.required' => 'The CYPA ID (to) is required.',
             'cypa_id_to.exists' => 'The selected CYPA (to) does not exist.',
             'container_size.required' => 'The container size is required.',
-            'container_size.in' => 'The container size must be either 20ft or 40ft.',
+            'container_size.in' => 'The container size must be either 20ft, 40ft, or 45ft.',
             'docs_fee.numeric' => 'The docs fee must be a valid number.',
             'docs_fee.min' => 'The docs fee must be at least 0.',
             'stack_run.numeric' => 'The stack run must be a valid number.',

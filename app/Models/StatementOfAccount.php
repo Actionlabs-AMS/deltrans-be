@@ -72,6 +72,30 @@ class StatementOfAccount extends Model
     }
 
     /**
+     * Newest billing statement linked to this SOA (highest id), if any.
+     */
+    public function latestBillingStatement(): ?BillingStatement
+    {
+        if ($this->relationLoaded('billingStatements')) {
+            return $this->billingStatements->sortByDesc('id')->first();
+        }
+
+        return $this->billingStatements()->orderByDesc('id')->first();
+    }
+
+    /**
+     * Newest invoice linked to this SOA (highest id), if any.
+     */
+    public function latestInvoice(): ?Invoice
+    {
+        if ($this->relationLoaded('invoices')) {
+            return $this->invoices->sortByDesc('id')->first();
+        }
+
+        return $this->invoices()->orderByDesc('id')->first();
+    }
+
+    /**
      * Get the first booking ID (backward compatibility).
      */
     public function getBookingIdAttribute(): ?int

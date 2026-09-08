@@ -269,11 +269,16 @@ class HelperService extends BaseService
         // 1. Check if ANY trashed record exists with this Name OR this Contact Number
         $trashedHelper = Helper::onlyTrashed()
             ->where(function ($query) use ($data) {
-                $query->where('contact_number', $data['contact_number'])
-                    ->orWhere(function ($q) use ($data) {
-                        $q->where('first_name', $data['first_name'])
-                            ->where('last_name', $data['last_name']);
-                    });
+                if (!empty($data['contact_number'])) {
+                    $query->where('contact_number', $data['contact_number'])
+                        ->orWhere(function ($q) use ($data) {
+                            $q->where('first_name', $data['first_name'])
+                                ->where('last_name', $data['last_name']);
+                        });
+                } else {
+                    $query->where('first_name', $data['first_name'])
+                        ->where('last_name', $data['last_name']);
+                }
             })
             ->first();
 

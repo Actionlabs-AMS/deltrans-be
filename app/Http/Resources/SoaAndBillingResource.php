@@ -34,6 +34,9 @@ class SoaAndBillingResource extends JsonResource
             $vessel = $first ? $first->vessel : null;
         }
 
+        $billingStatement = $this->latestBillingStatement();
+        $invoice = $this->latestInvoice();
+
         return [
             // Identity
             'id' => $this->id,
@@ -45,6 +48,14 @@ class SoaAndBillingResource extends JsonResource
             'dli_sa_number' => $this->dli_sa_number,
             'booking_ids' => $this->booking_ids ?? [],
             'work_order' => $this->work_order ?? null,
+
+            // Billing / invoice tagging (badge display)
+            'has_billing_statement' => $billingStatement !== null,
+            'billing_statement_id' => $billingStatement?->id,
+            'billing_statement_number' => $billingStatement?->billing_statement_no,
+            'has_invoice' => $invoice !== null,
+            'invoice_id' => $invoice?->id,
+            'invoice_number' => $invoice?->invoice_number,
 
             // Computed (from waybills / first booking)
             'vessel' => $vessel,
