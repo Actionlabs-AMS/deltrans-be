@@ -17935,6 +17935,7 @@
                     "SOA and Billing Management"
                 ],
                 "summary": "Generate a new statement of account",
+                "description": "Creates a Statement of Account. The generated SOA PDF/CSV transaction table always starts with Booking Number (bookings.reference_number), even if that column is not in the shipping line template.",
                 "operationId": "6b83cd544e242ba105361182489af25f",
                 "requestBody": {
                     "required": true,
@@ -18169,7 +18170,7 @@
                     {
                         "name": "shipping_line_id",
                         "in": "query",
-                        "description": "Shipping line ID (columns come from its transaction_information_template; all bookings must belong to this shipping line)",
+                        "description": "Shipping line ID (columns come from its transaction_information_template; Booking Number is always included as the first column even if not in the shipping line template; all bookings must belong to this shipping line)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -18208,7 +18209,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Line items list (same data as SOA PDF table)",
+                        "description": "Line items list. Booking Number is always the first column; remaining columns follow the shipping line template.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -18216,16 +18217,18 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "description": "One object per row; keys match column names (Date, Booking Number, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, Amount, 12% VAT, Total Amount)",
+                                                "description": "One object per row; Booking Number is always first (bookings.reference_number), then keys match the shipping line transaction_information_template (Date, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, Amount, 12% VAT, Total Amount)",
                                                 "type": "object"
                                             }
                                         },
                                         "columns": {
+                                            "description": "Booking Number is always the first column.",
                                             "type": "array",
                                             "items": {
                                                 "properties": {
                                                     "id": {
-                                                        "type": "integer"
+                                                        "type": "integer",
+                                                        "nullable": true
                                                     },
                                                     "name": {
                                                         "type": "string"
@@ -18325,6 +18328,7 @@
                     "SOA and Billing Management"
                 ],
                 "summary": "Download Statement of Account PDF",
+                "description": "The PDF transaction table always starts with Booking Number, then the shipping line template columns in canonical order.",
                 "operationId": "dda95611020b83c3c2101138c674c82c",
                 "parameters": [
                     {
@@ -18349,7 +18353,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "PDF file download",
+                        "description": "PDF file download. The transaction table always starts with Booking Number.",
                         "content": {
                             "application/pdf": {
                                 "schema": {
@@ -18379,7 +18383,7 @@
                     "SOA and Billing Management"
                 ],
                 "summary": "Download Statement of Account CSV (document content)",
-                "description": "CSV export with the same content as the SOA PDF download (header, transaction lines, totals).",
+                "description": "CSV export with the same content as the SOA PDF download (header, transaction lines, totals). The transaction table always starts with Booking Number.",
                 "operationId": "4bf7f0d390946cea1b83d0ff36eec04e",
                 "parameters": [
                     {
@@ -18965,7 +18969,7 @@
                     "SOA and Billing Management"
                 ],
                 "summary": "Generate SOA and Billing Statement in one request",
-                "description": "Combined endpoint: creates Statement of Account first, then Billing Statement linked to it. One request body with SOA + Billing fields.",
+                "description": "Combined endpoint: creates Statement of Account first, then Billing Statement linked to it. One request body with SOA + Billing fields. The generated SOA PDF/CSV transaction table always starts with Booking Number (bookings.reference_number).",
                 "operationId": "24fbbd13fc5b35edad977ec717e7995a",
                 "requestBody": {
                     "required": true,
@@ -19082,7 +19086,7 @@
                     "SOA and Billing Management"
                 ],
                 "summary": "Download Billing + SOA combined (2-page PDF)",
-                "description": "Hierarchy: SOA is top-level; this endpoint uses SOA ID. Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. Uses the billing statement linked to this SOA (first by id if multiple). Use include_attachments=true to append the user's uploaded images as extra pages.",
+                "description": "Hierarchy: SOA is top-level; this endpoint uses SOA ID. Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. The SOA transaction table always starts with Booking Number. Uses the billing statement linked to this SOA (first by id if multiple). Use include_attachments=true to append the user's uploaded images as extra pages.",
                 "operationId": "774679560c2f64ca21ce3eb8875044ae",
                 "parameters": [
                     {
@@ -19137,7 +19141,7 @@
                     "SOA and Billing Management"
                 ],
                 "summary": "Download Billing + SOA combined CSV (document content)",
-                "description": "CSV export with the same content as the combined Billing + SOA PDF: billing section then SOA section. Uses SOA ID.",
+                "description": "CSV export with the same content as the combined Billing + SOA PDF: billing section then SOA section. The SOA transaction table always starts with Booking Number. Uses SOA ID.",
                 "operationId": "b354be6b2754d47302abb0d59a5ab8d0",
                 "parameters": [
                     {
