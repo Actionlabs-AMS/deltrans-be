@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\ContainerYardController;
 use App\Http\Controllers\Api\SoaAndBillingController;
 use App\Http\Controllers\Api\SoaBillingCheckerController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\EmailController;
 use App\Http\Controllers\Api\TruckMaintenanceController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ContainerController;
@@ -359,6 +360,18 @@ Route::middleware('auth:sanctum')->group(function () {
 	*/
 	Route::prefix('soa-billing-check')->group(function () {
 		Route::post('/validate', [SoaBillingCheckerController::class, 'validateBookings']);  // Validate bookings for type 1=SOA, 2=Billing, 3=Invoice
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Custom Email Routes
+	|--------------------------------------------------------------------------
+	|
+	| Send custom emails with optional file attachments (no SOA/billing/invoice)
+	|
+	*/
+	Route::prefix('emails')->group(function () {
+		Route::post('/send', [EmailController::class, 'send'])->middleware('throttle:10,1');  // Send custom email with optional attachment
 	});
 
 	/*

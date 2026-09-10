@@ -6727,6 +6727,112 @@
                 ]
             }
         },
+        "/api/emails/send": {
+            "post": {
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Send a custom email with optional attachment",
+                "description": "Sends an email using recipient, subject, and body provided by the client. Optional file attachment(s) can be uploaded in the same multipart request. Not tied to SOA, billing, or invoice.",
+                "operationId": "ddc21c92cbec27db0d1fa017b5ea7297",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "subject",
+                                    "body"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "description": "Recipient email address",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "client@example.com"
+                                    },
+                                    "subject": {
+                                        "description": "Email subject",
+                                        "type": "string",
+                                        "example": "Document request"
+                                    },
+                                    "body": {
+                                        "description": "Email body (HTML allowed)",
+                                        "type": "string",
+                                        "example": "<p>Please find the attached file.</p>"
+                                    },
+                                    "cc": {
+                                        "description": "Optional CC recipients",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "email"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "attachment": {
+                                        "description": "Optional single file attachment (max 5MB; pdf, office, images, csv, txt, zip)",
+                                        "type": "string",
+                                        "format": "binary",
+                                        "nullable": true
+                                    },
+                                    "attachments[]": {
+                                        "description": "Optional multiple file attachments (max 5 files total, 5MB each)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        },
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email sent successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/fixed-expenses": {
             "get": {
                 "tags": [
@@ -28576,6 +28682,40 @@
                         "example": "WO-001",
                         "nullable": true
                     },
+                    "has_billing_statement": {
+                        "description": "Whether a billing statement is attached to this SOA",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "billing_statement_id": {
+                        "description": "Linked billing statement id when generated",
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "billing_statement_number": {
+                        "description": "Linked billing statement number for badge display",
+                        "type": "string",
+                        "example": "BS-2024-001",
+                        "nullable": true
+                    },
+                    "has_invoice": {
+                        "description": "Whether an invoice is attached to this SOA",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "invoice_id": {
+                        "description": "Linked invoice id when generated",
+                        "type": "integer",
+                        "example": 8,
+                        "nullable": true
+                    },
+                    "invoice_number": {
+                        "description": "Linked invoice number for badge display",
+                        "type": "string",
+                        "example": "INV-0001",
+                        "nullable": true
+                    },
                     "total_amount": {
                         "type": "number",
                         "format": "float",
@@ -28678,6 +28818,23 @@
                     "billing_statement_no": {
                         "type": "string",
                         "example": "BS-2024-001"
+                    },
+                    "has_invoice": {
+                        "description": "Whether an invoice is attached via the linked SOA",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "invoice_id": {
+                        "description": "Linked invoice id when generated",
+                        "type": "integer",
+                        "example": 8,
+                        "nullable": true
+                    },
+                    "invoice_number": {
+                        "description": "Linked invoice number for badge display",
+                        "type": "string",
+                        "example": "INV-0001",
+                        "nullable": true
                     },
                     "payment_term": {
                         "type": "string",
@@ -29561,6 +29718,10 @@
         {
             "name": "Driver Management",
             "description": "API endpoints for driver management"
+        },
+        {
+            "name": "Email",
+            "description": "API endpoints for sending custom emails with optional file attachments"
         },
         {
             "name": "Fixed Expense Management",
