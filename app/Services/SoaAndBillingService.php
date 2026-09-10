@@ -483,7 +483,7 @@ class SoaAndBillingService extends BaseService
             ->get();
 
         if ($waybills->isEmpty()) {
-            $transactionColumns = collect();
+            $transactionColumns = $this->ensureBookingNumberColumnFirst(collect());
             $transactionData = [];
             $totalAmount = 0;
             $totalVat = 0;
@@ -514,6 +514,8 @@ class SoaAndBillingService extends BaseService
                     $transactionColumns = collect($columnsArray);
                 }
             }
+
+            $transactionColumns = $this->ensureBookingNumberColumnFirst($transactionColumns);
 
             $fallbackSoa = (object) ['work_order' => null];
             $soaPerWaybill = [];
@@ -629,6 +631,8 @@ class SoaAndBillingService extends BaseService
             }
         }
 
+        $transactionColumns = $this->ensureBookingNumberColumnFirst($transactionColumns);
+
         $built = $this->buildSoaTransactionData($waybills, $soa, $transactionColumns);
         $transactionData = $built['transactionData'];
         $total = count($transactionData);
@@ -710,6 +714,7 @@ class SoaAndBillingService extends BaseService
             }
         }
 
+        $transactionColumns = $this->ensureBookingNumberColumnFirst($transactionColumns);
         $transactionColumns = $this->orderTransactionColumnsForPdf($transactionColumns);
 
         $vatPercent = 12.00;
@@ -815,8 +820,48 @@ class SoaAndBillingService extends BaseService
     }
 
     /**
+     * Always include Booking Number as the first transaction column (multi-booking SOAs).
+     * Does not duplicate if the shipping line template already has Booking Number / Booking No.
+     *
+     * @param \Illuminate\Support\Collection $transactionColumns
+     * @return \Illuminate\Support\Collection
+     */
+    private function ensureBookingNumberColumnFirst(\Illuminate\Support\Collection $transactionColumns): \Illuminate\Support\Collection
+    {
+        $bookingNames = ['booking number', 'booking no'];
+        $existing = $transactionColumns->first(function ($col) use ($bookingNames) {
+            $name = strtolower(trim((string) ($col->name ?? '')));
+
+            return in_array($name, $bookingNames, true);
+        });
+
+        $without = $transactionColumns->reject(function ($col) use ($bookingNames) {
+            $name = strtolower(trim((string) ($col->name ?? '')));
+
+            return in_array($name, $bookingNames, true);
+        })->values();
+
+        if ($existing === null) {
+            $existing = SoaDataOption::query()
+                ->whereIn('name', ['Booking Number', 'Booking No'])
+                ->orderBy('id')
+                ->first(['id', 'name', 'description']);
+
+            if ($existing === null) {
+                $existing = (object) [
+                    'id' => null,
+                    'name' => 'Booking Number',
+                    'description' => 'Booking number',
+                ];
+            }
+        }
+
+        return collect([$existing])->concat($without)->values();
+    }
+
+    /**
      * Reorder transaction columns for SOA PDF and SOA + Billing PDF to canonical order:
-     * Date, Plate No, Waybill No, Container No, Origin, Destination, Remarks, Size, Amount, 12% VAT, Total Amount, Stack Run, Work Order, Booking No.
+     * Booking No, Date, Plate No, Waybill No, Container No, Origin, Destination, Remarks, Size, Amount, 12% VAT, Total Amount, Stack Run, Work Order.
      * Columns not in this list remain at the end in their current order.
      *
      * @param \Illuminate\Support\Collection $transactionColumns
@@ -825,20 +870,20 @@ class SoaAndBillingService extends BaseService
     private function orderTransactionColumnsForPdf(\Illuminate\Support\Collection $transactionColumns): \Illuminate\Support\Collection
     {
         $order = [
-            'date' => 0, 'bate' => 0,
-            'plate number' => 1, 'plate no' => 1, 'plt#' => 1, 'plt' => 1,
-            'waybill' => 2, 'waybill number' => 2, 'way bill#' => 2, 'way bill' => 2,
-            'container number' => 3, 'container no' => 3, 'container#' => 3,
-            'origin' => 4, 'from' => 4,
-            'destination' => 5, 'to' => 5,
-            'remarks' => 6,
-            'size' => 7,
-            'amount' => 8,
-            '12% vat' => 9, '12%vat' => 9, 'vat' => 9,
-            'total amount' => 10,
-            'stack run' => 11,
-            'work order' => 12,
-            'booking number' => 13, 'booking no' => 13,
+            'booking number' => 0, 'booking no' => 0,
+            'date' => 1, 'bate' => 1,
+            'plate number' => 2, 'plate no' => 2, 'plt#' => 2, 'plt' => 2,
+            'waybill' => 3, 'waybill number' => 3, 'way bill#' => 3, 'way bill' => 3,
+            'container number' => 4, 'container no' => 4, 'container#' => 4,
+            'origin' => 5, 'from' => 5,
+            'destination' => 6, 'to' => 6,
+            'remarks' => 7,
+            'size' => 8,
+            'amount' => 9,
+            '12% vat' => 10, '12%vat' => 10, 'vat' => 10,
+            'total amount' => 11,
+            'stack run' => 12,
+            'work order' => 13,
         ];
         $endOrder = 999;
         $indexed = $transactionColumns->values()->map(function ($col, $i) use ($order, $endOrder) {
@@ -987,7 +1032,7 @@ class SoaAndBillingService extends BaseService
                 return number_format($amount + ($amount * ($vatPercent / 100)), 2, '.', ',');
             case 'booking number':
             case 'booking no':
-                return $waybill->booking->reference_number ?? '-';
+                return $waybill->booking?->reference_number ?? '-';
             case 'work order':
                 return $soa->work_order ?? '-';
             case 'stack run':
@@ -1777,6 +1822,7 @@ class SoaAndBillingService extends BaseService
 
 //todo: SOA PDF and SOA + Billing PDF: remove grid in table
 //todo: Rearrange columns in table of SOA of SOA PDF and SOA of SOA + Billing PDF
+// Booking No
 // Date
 // Plate No
 // Waybill No
@@ -1790,6 +1836,5 @@ class SoaAndBillingService extends BaseService
 // Total Amount*
 // Stack Run*
 // Work Order*
-// Booking No
 
 //todo: in table of SOA of SOA PDF and SOA of SOA + Billing PDF, instead of cypa.name, use cypa.short_name

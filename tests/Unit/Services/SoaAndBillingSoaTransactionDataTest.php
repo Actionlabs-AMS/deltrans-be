@@ -117,4 +117,75 @@ class SoaAndBillingSoaTransactionDataTest extends TestCase
         $this->assertEqualsWithDelta(0.0, (float) $result['totalVat'], 0.001);
         $this->assertEqualsWithDelta(2000.0, (float) $result['grandTotal'], 0.001);
     }
+
+    private function invokeEnsureBookingNumberColumnFirst(Collection $transactionColumns): Collection
+    {
+        $service = app(SoaAndBillingService::class);
+        $method = new ReflectionMethod(SoaAndBillingService::class, 'ensureBookingNumberColumnFirst');
+        $method->setAccessible(true);
+
+        return $method->invoke($service, $transactionColumns);
+    }
+
+    public function test_ensure_booking_number_column_is_first_when_missing(): void
+    {
+        $columns = collect([
+            (object) ['id' => 2, 'name' => 'Date', 'description' => 'Date'],
+            (object) ['id' => 3, 'name' => 'Amount', 'description' => 'Amount'],
+        ]);
+
+        $result = $this->invokeEnsureBookingNumberColumnFirst($columns);
+
+        $this->assertGreaterThanOrEqual(3, $result->count());
+        $firstName = strtolower(trim((string) $result->first()->name));
+        $this->assertContains($firstName, ['booking number', 'booking no']);
+        $this->assertSame('Date', $result->get(1)->name);
+        $this->assertSame('Amount', $result->get(2)->name);
+        $bookingCount = $result->filter(function ($col) {
+            return in_array(strtolower(trim((string) ($col->name ?? ''))), ['booking number', 'booking no'], true);
+        })->count();
+        $this->assertSame(1, $bookingCount);
+    }
+
+    public function test_ensure_booking_number_column_is_not_duplicated(): void
+    {
+        $bookingCol = (object) ['id' => 9, 'name' => 'Booking Number', 'description' => 'Booking number'];
+        $columns = collect([
+            (object) ['id' => 2, 'name' => 'Date', 'description' => 'Date'],
+            $bookingCol,
+            (object) ['id' => 3, 'name' => 'Amount', 'description' => 'Amount'],
+        ]);
+
+        $result = $this->invokeEnsureBookingNumberColumnFirst($columns);
+
+        $this->assertCount(3, $result);
+        $this->assertSame('Booking Number', $result->first()->name);
+        $this->assertSame(9, $result->first()->id);
+        $this->assertSame('Date', $result->get(1)->name);
+        $this->assertSame('Amount', $result->get(2)->name);
+    }
+
+    public function test_booking_number_maps_reference_number(): void
+    {
+        $booking = new Booking();
+        $booking->reference_number = 'REF-999';
+        $booking->setRelation('containers', collect());
+
+        $waybill = new WaybillDetail([
+            'rate' => 0,
+            'total_rate_per_client' => 0,
+            'has_vat' => false,
+        ]);
+        $waybill->id = 1;
+        $waybill->setRelation('booking', $booking);
+
+        $result = $this->invokeBuildSoaTransactionData(
+            collect([$waybill]),
+            (object) ['work_order' => '-'],
+            collect([(object) ['id' => 1, 'name' => 'Booking Number']])
+        );
+
+        $this->assertCount(1, $result['transactionData']);
+        $this->assertSame('REF-999', $result['transactionData'][0]['Booking Number']);
+    }
 }

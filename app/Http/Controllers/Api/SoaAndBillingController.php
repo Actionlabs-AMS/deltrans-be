@@ -152,6 +152,7 @@ class SoaAndBillingController extends BaseController
      * @OA\Post(
      *     path="/api/soa/generate",
      *     summary="Generate a new statement of account",
+     *     description="Creates a Statement of Account. The generated SOA PDF/CSV transaction table always starts with Booking Number (bookings.reference_number), even if that column is not in the shipping line template.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/SoaAndBillingGenerateInput")),
@@ -207,13 +208,13 @@ class SoaAndBillingController extends BaseController
      *     summary="Get line items by booking ID(s) and shipping line (transaction table list, paginated)",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
-     *     @OA\Parameter(name="shipping_line_id", in="query", required=true, description="Shipping line ID (columns come from its transaction_information_template; all bookings must belong to this shipping line)", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="shipping_line_id", in="query", required=true, description="Shipping line ID (columns come from its transaction_information_template; Booking Number is always included as the first column even if not in the shipping line template; all bookings must belong to this shipping line)", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="booking_ids", in="query", required=true, description="Booking IDs (array). E.g. booking_ids[]=1&booking_ids[]=2 or single booking_ids[]=3", @OA\Schema(type="array", @OA\Items(type="integer"))),
      *     @OA\Parameter(name="page", in="query", description="Page number", @OA\Schema(type="integer", default=1)),
      *     @OA\Parameter(name="per_page", in="query", description="Items per page", @OA\Schema(type="integer", default=10)),
-     *     @OA\Response(response=200, description="Line items list (same data as SOA PDF table)", @OA\JsonContent(
-     *         @OA\Property(property="data", type="array", @OA\Items(type="object", description="One object per row; keys match column names (Date, Booking Number, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, Amount, 12% VAT, Total Amount)")),
-     *         @OA\Property(property="columns", type="array", @OA\Items(type="object", @OA\Property(property="id", type="integer"), @OA\Property(property="name", type="string"))),
+     *     @OA\Response(response=200, description="Line items list. Booking Number is always the first column; remaining columns follow the shipping line template.", @OA\JsonContent(
+     *         @OA\Property(property="data", type="array", @OA\Items(type="object", description="One object per row; Booking Number is always first (bookings.reference_number), then keys match the shipping line transaction_information_template (Date, Origin, Destination, Waybill, Remarks, Plate Number, Container Number, Size, Vessel, Work Order, Stack Run, Amount, 12% VAT, Total Amount)")),
+     *         @OA\Property(property="columns", type="array", description="Booking Number is always the first column.", @OA\Items(type="object", @OA\Property(property="id", type="integer", nullable=true), @OA\Property(property="name", type="string"))),
      *         @OA\Property(property="meta", type="object",
      *             @OA\Property(property="current_page", type="integer"),
      *             @OA\Property(property="from", type="integer", nullable=true),
@@ -385,11 +386,12 @@ class SoaAndBillingController extends BaseController
      * @OA\Get(
      *     path="/api/soa/{id}/download",
      *     summary="Download Statement of Account PDF",
+     *     description="The PDF transaction table always starts with Booking Number, then the shipping line template columns in canonical order.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="include_attachments", in="query", required=false, description="If true, append the authenticated user's uploaded attachment images as extra PDF pages (upload via POST /soa-and-billing/attachments); folder is deleted after download", @OA\Schema(type="boolean", default=false)),
-     *     @OA\Response(response=200, description="PDF file download", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
+     *     @OA\Response(response=200, description="PDF file download. The transaction table always starts with Booking Number.", @OA\MediaType(mediaType="application/pdf", @OA\Schema(type="string", format="binary"))),
      *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
      *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
      * )
@@ -426,7 +428,7 @@ class SoaAndBillingController extends BaseController
      * @OA\Get(
      *     path="/api/soa/{id}/download-csv",
      *     summary="Download Statement of Account CSV (document content)",
-     *     description="CSV export with the same content as the SOA PDF download (header, transaction lines, totals).",
+     *     description="CSV export with the same content as the SOA PDF download (header, transaction lines, totals). The transaction table always starts with Booking Number.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
@@ -714,7 +716,7 @@ class SoaAndBillingController extends BaseController
      * @OA\Post(
      *     path="/api/soa-and-billing/generate",
      *     summary="Generate SOA and Billing Statement in one request",
-     *     description="Combined endpoint: creates Statement of Account first, then Billing Statement linked to it. One request body with SOA + Billing fields.",
+     *     description="Combined endpoint: creates Statement of Account first, then Billing Statement linked to it. One request body with SOA + Billing fields. The generated SOA PDF/CSV transaction table always starts with Booking Number (bookings.reference_number).",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\RequestBody(required=true, @OA\JsonContent(
@@ -764,7 +766,7 @@ class SoaAndBillingController extends BaseController
      * @OA\Get(
      *     path="/api/soa/{id}/download-billing-and-soa",
      *     summary="Download Billing + SOA combined (2-page PDF)",
-     *     description="Hierarchy: SOA is top-level; this endpoint uses SOA ID. Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. Uses the billing statement linked to this SOA (first by id if multiple). Use include_attachments=true to append the user's uploaded images as extra pages.",
+     *     description="Hierarchy: SOA is top-level; this endpoint uses SOA ID. Returns a single PDF: Page 1 = Billing Statement, Page 2 = Statement of Account. The SOA transaction table always starts with Booking Number. Uses the billing statement linked to this SOA (first by id if multiple). Use include_attachments=true to append the user's uploaded images as extra pages.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
@@ -814,7 +816,7 @@ class SoaAndBillingController extends BaseController
      * @OA\Get(
      *     path="/api/soa/{id}/download-billing-and-soa-csv",
      *     summary="Download Billing + SOA combined CSV (document content)",
-     *     description="CSV export with the same content as the combined Billing + SOA PDF: billing section then SOA section. Uses SOA ID.",
+     *     description="CSV export with the same content as the combined Billing + SOA PDF: billing section then SOA section. The SOA transaction table always starts with Booking Number. Uses SOA ID.",
      *     tags={"SOA and Billing Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="SOA ID (Statement of Account ID)", @OA\Schema(type="integer")),
