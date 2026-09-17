@@ -192,7 +192,7 @@ class InvoiceController extends BaseController
      * @OA\Delete(
      *     path="/api/invoices/{id}",
      *     summary="Soft delete an invoice",
-     *     description="Soft deletes an invoice only. Does not soft delete the related SOA or billing statements.",
+     *     description="Soft deletes an invoice only. Does not soft delete the related SOA or billing statements. Bookings on the linked SOAs are re-opened (is_complete=false, auto_complete_at restarted) unless they remain covered by another active invoice. Related billing statements are marked unpaid.",
      *     tags={"Invoice Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="Invoice ID", @OA\Schema(type="integer")),
