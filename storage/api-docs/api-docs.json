@@ -620,12 +620,12 @@
                         }
                     },
                     {
-                        "name": "is_ship_in",
+                        "name": "remarks",
                         "in": "query",
-                        "description": "Filter by ship-in status (0=Ship Out, 1=Ship In)",
+                        "description": "Filter by booking remarks (partial match)",
                         "schema": {
-                            "type": "integer",
-                            "example": 1
+                            "type": "string",
+                            "example": "SHIP IN"
                         }
                     },
                     {
@@ -784,10 +784,11 @@
                                         "type": "boolean",
                                         "example": false
                                     },
-                                    "is_ship_in": {
-                                        "description": "Whether the booking is ship-in (optional)",
-                                        "type": "boolean",
-                                        "example": true
+                                    "remarks": {
+                                        "description": "Booking remarks (optional)",
+                                        "type": "string",
+                                        "example": "SHIP IN",
+                                        "nullable": true
                                     },
                                     "prepared_by": {
                                         "description": "User ID who prepared the booking",
@@ -859,10 +860,11 @@
                                                     "type": "boolean",
                                                     "example": false
                                                 },
-                                                "is_ship_in": {
-                                                    "description": "Whether the booking is ship-in",
-                                                    "type": "boolean",
-                                                    "example": true
+                                                "remarks": {
+                                                    "description": "Booking remarks",
+                                                    "type": "string",
+                                                    "example": "SHIP IN",
+                                                    "nullable": true
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -1229,10 +1231,11 @@
                                         "type": "boolean",
                                         "example": false
                                     },
-                                    "is_ship_in": {
-                                        "description": "Whether the booking is ship-in (optional)",
-                                        "type": "boolean",
-                                        "example": true
+                                    "remarks": {
+                                        "description": "Booking remarks (optional)",
+                                        "type": "string",
+                                        "example": "SHIP IN",
+                                        "nullable": true
                                     },
                                     "prepared_by": {
                                         "description": "User ID who prepared the booking",
@@ -1304,10 +1307,11 @@
                                                     "type": "boolean",
                                                     "example": false
                                                 },
-                                                "is_ship_in": {
-                                                    "description": "Whether the booking is ship-in",
-                                                    "type": "boolean",
-                                                    "example": true
+                                                "remarks": {
+                                                    "description": "Booking remarks",
+                                                    "type": "string",
+                                                    "example": "SHIP IN",
+                                                    "nullable": true
                                                 },
                                                 "created_at": {
                                                     "type": "string",
@@ -26559,10 +26563,11 @@
                         "type": "boolean",
                         "example": false
                     },
-                    "is_ship_in": {
-                        "description": "Whether the booking is ship-in (true=Ship In, false=Ship Out)",
-                        "type": "boolean",
-                        "example": true
+                    "remarks": {
+                        "description": "Booking remarks",
+                        "type": "string",
+                        "example": "SHIP IN",
+                        "nullable": true
                     },
                     "actual_no_of_waybill": {
                         "description": "Actual number of waybills created for this booking",

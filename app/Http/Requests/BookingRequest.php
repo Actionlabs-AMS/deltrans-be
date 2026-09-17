@@ -62,7 +62,7 @@ class BookingRequest extends FormRequest
             'expected_date' => 'nullable|date',
             'expected_container' => 'required|integer|min:0',
             'is_complete' => 'nullable|boolean',
-            'is_ship_in' => 'nullable|boolean',
+            'remarks' => 'nullable|string|max:255',
             'prepared_by' => 'nullable|integer|exists:users,id',
         ];
 
@@ -107,7 +107,7 @@ class BookingRequest extends FormRequest
             $rules['expected_date'] = 'sometimes|nullable|date';
             $rules['expected_container'] = 'sometimes|required|integer|min:0';
             $rules['is_complete'] = 'sometimes|nullable|boolean';
-            $rules['is_ship_in'] = 'sometimes|nullable|boolean';
+            $rules['remarks'] = 'sometimes|nullable|string|max:255';
             $rules['prepared_by'] = 'sometimes|nullable|integer|exists:users,id';
         }
 
@@ -136,7 +136,7 @@ class BookingRequest extends FormRequest
             'expected_container.min' => 'The expected container count must be 0 or greater.',
             'vessel.max' => 'The vessel must not exceed 255 characters.',
             'is_complete.boolean' => 'The is_complete field must be true or false.',
-            'is_ship_in.boolean' => 'The is_ship_in field must be true or false.',
+            'remarks.max' => 'The remarks must not exceed 255 characters.',
         ];
     }
 }

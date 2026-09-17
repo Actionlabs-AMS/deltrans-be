@@ -28,7 +28,7 @@ use App\Services\MessageService;
  *     @OA\Property(property="containers_count", type="integer", example=7, description="Number of containers currently added to the booking"),
  *     @OA\Property(property="remaining_container", type="integer", example=3, description="expected_container - actual containers count (may be negative)"),
  *     @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
- *     @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (true=Ship In, false=Ship Out)"),
+ *     @OA\Property(property="remarks", type="string", example="SHIP IN", nullable=true, description="Booking remarks"),
  *     @OA\Property(property="actual_no_of_waybill", type="integer", example=5, description="Actual number of waybills created for this booking"),
  *     @OA\Property(property="has_soa", type="boolean", example=true, description="Present on by-shipping-line: whether this booking is tagged in an active SOA"),
  *     @OA\Property(property="soa_id", type="integer", example=12, nullable=true, description="Present on by-shipping-line: linked SOA id when has_soa is true"),
@@ -97,10 +97,10 @@ class BookingController extends BaseController
      *         @OA\Schema(type="integer", example=0)
      *     ),
      *     @OA\Parameter(
-     *         name="is_ship_in",
+     *         name="remarks",
      *         in="query",
-     *         description="Filter by ship-in status (0=Ship Out, 1=Ship In)",
-     *         @OA\Schema(type="integer", example=1)
+     *         description="Filter by booking remarks (partial match)",
+     *         @OA\Schema(type="string", example="SHIP IN")
      *     ),
      *     @OA\Parameter(
      *         name="expected_date",
@@ -394,7 +394,7 @@ class BookingController extends BaseController
      *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
  *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (required)"),
      *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)"),
-     *             @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (optional)"),
+     *             @OA\Property(property="remarks", type="string", example="SHIP IN", nullable=true, description="Booking remarks (optional)"),
      *             @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the booking")
      *         )
      *     ),
@@ -414,7 +414,7 @@ class BookingController extends BaseController
  *                 @OA\Property(property="containers_count", type="integer", example=7),
  *                 @OA\Property(property="remaining_container", type="integer", example=3),
      *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
-     *                 @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in"),
+     *                 @OA\Property(property="remarks", type="string", example="SHIP IN", nullable=true, description="Booking remarks"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )
@@ -474,7 +474,7 @@ class BookingController extends BaseController
      *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
      *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (optional)"),
      *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)"),
-     *             @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in (optional)"),
+     *             @OA\Property(property="remarks", type="string", example="SHIP IN", nullable=true, description="Booking remarks (optional)"),
      *             @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the booking")
      *         )
      *     ),
@@ -494,7 +494,7 @@ class BookingController extends BaseController
  *                 @OA\Property(property="containers_count", type="integer", example=7),
  *                 @OA\Property(property="remaining_container", type="integer", example=3),
      *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
-     *                 @OA\Property(property="is_ship_in", type="boolean", example=true, description="Whether the booking is ship-in"),
+     *                 @OA\Property(property="remarks", type="string", example="SHIP IN", nullable=true, description="Booking remarks"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
      *                 @OA\Property(property="updated_at", type="string", example="2025-01-01 12:00:00")
      *             )

@@ -58,7 +58,7 @@ class BookingSeeder extends Seeder
                     'cypa_id_to' => $cypaTo,
                     'expected_date' => now()->addDays(7 + $idx * 3 + $v * 2)->toDateString(),
                     'is_complete' => ($idx + $v) % 3 !== 0,
-                    'is_ship_in' => true,
+                    'remarks' => 'SHIP IN',
                 ];
                 if ($firstUserId !== null) {
                     $row['prepared_by'] = $firstUserId;

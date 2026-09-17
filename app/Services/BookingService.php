@@ -122,9 +122,9 @@ class BookingService extends BaseService
                 $query->where('is_complete', request('is_complete'));
             }
 
-            // Filter by is_ship_in
-            if (request()->has('is_ship_in')) {
-                $query->where('is_ship_in', request('is_ship_in'));
+            // Filter by remarks
+            if (request()->filled('remarks')) {
+                $query->where('remarks', 'LIKE', '%' . request('remarks') . '%');
             }
 
             // Filter by expected_date
