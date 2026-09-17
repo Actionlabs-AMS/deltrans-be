@@ -386,6 +386,9 @@ Route::middleware('auth:sanctum')->group(function () {
 		// Generate Invoice
 		Route::post('/generate', [InvoiceController::class, 'generate']);  // Generate a new invoice
 
+		// Mark billing as paid and close bookings
+		Route::post('/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);  // Mark related billing paid + close bookings
+
 		// Download PDF / document CSV (must be before /{id} route)
 		Route::get('/{id}/download', [InvoiceController::class, 'download']);  // Download Invoice PDF
 		Route::get('/{id}/download-csv', [InvoiceController::class, 'downloadCsv']);  // Download Invoice CSV

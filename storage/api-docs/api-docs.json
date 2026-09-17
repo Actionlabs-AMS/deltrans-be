@@ -9637,6 +9637,109 @@
                 ]
             }
         },
+        "/api/invoices/{id}/mark-as-paid": {
+            "post": {
+                "tags": [
+                    "Invoice Management"
+                ],
+                "summary": "Mark invoice billing as paid and close bookings",
+                "description": "Uses invoice ID to mark all related billing statements as paid (is_paid=true) and close all bookings on the linked SOAs (is_complete=true). Idempotent.",
+                "operationId": "2635ea4f035fcd27f7edba626de8765a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invoice ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Billing marked as paid and bookings closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Billing marked as paid and bookings closed."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "invoice_number": {
+                                                    "type": "string",
+                                                    "example": "INV-0001"
+                                                },
+                                                "statement_of_account_ids": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        10,
+                                                        11
+                                                    ]
+                                                },
+                                                "booking_ids": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        21,
+                                                        22
+                                                    ]
+                                                },
+                                                "billing_statement_ids": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer"
+                                                    },
+                                                    "example": [
+                                                        5,
+                                                        6
+                                                    ]
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/invoices/{id}": {
             "get": {
                 "tags": [
