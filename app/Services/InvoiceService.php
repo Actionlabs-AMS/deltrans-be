@@ -394,6 +394,8 @@ class InvoiceService
 
     /**
      * Soft delete an invoice by ID (does not cascade to SOA or billing statements).
+     * Reopens bookings that are no longer covered by an active invoice and
+     * marks related billing statements unpaid.
      *
      * @param int $id
      * @return bool
@@ -402,10 +404,23 @@ class InvoiceService
     {
         try {
             return DB::transaction(function () use ($id) {
-                $invoice = Invoice::findOrFail($id);
-                $invoice->statementOfAccounts()->detach();
+                $invoice = Invoice::whereKey($id)->lockForUpdate()->first();
+                if (!$invoice) {
+                    throw (new ModelNotFoundException())->setModel(Invoice::class, [$id]);
+                }
 
-                return $invoice->delete();
+                $invoice->load('statementOfAccounts');
+                $soas = $invoice->statementOfAccounts;
+                $soaIds = $soas->pluck('id')->map(fn ($soaId) => (int) $soaId)->all();
+                $bookingIds = $this->collectBookingIds($soas);
+
+                $invoice->statementOfAccounts()->detach();
+                $deleted = (bool) $invoice->delete();
+
+                $this->reopenBookingsAfterInvoiceRemoval($bookingIds);
+                $this->unmarkBillingPaidAfterInvoiceRemoval($soaIds);
+
+                return $deleted;
             });
         } catch (ModelNotFoundException $e) {
             throw new \Exception('Invoice not found.');
@@ -814,6 +829,108 @@ class InvoiceService
     {
         return $soas
             ->flatMap(fn (StatementOfAccount $soa) => $soa->booking_ids ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Reopen bookings that are no longer linked to any active invoice.
+     * Restarts the SOA auto-complete timer because the SOA still exists.
+     *
+     * @param array<int> $bookingIds
+     */
+    private function reopenBookingsAfterInvoiceRemoval(array $bookingIds): void
+    {
+        $reopenIds = array_values(array_diff(
+            $bookingIds,
+            $this->getBookingIdsCoveredByActiveInvoices($bookingIds)
+        ));
+
+        if (empty($reopenIds)) {
+            return;
+        }
+
+        Booking::whereIn('id', $reopenIds)->update([
+            'is_complete' => false,
+            'auto_complete_at' => now()->addWeeks(Booking::AUTO_COMPLETE_WEEKS),
+        ]);
+    }
+
+    /**
+     * Mark billing statements unpaid when their SOA no longer has an active invoice.
+     *
+     * @param array<int> $soaIds
+     */
+    private function unmarkBillingPaidAfterInvoiceRemoval(array $soaIds): void
+    {
+        if (empty($soaIds)) {
+            return;
+        }
+
+        $stillInvoicedSoaIds = $this->getSoaIdsWithActiveInvoice($soaIds);
+        $unpaidSoaIds = array_values(array_diff($soaIds, $stillInvoicedSoaIds));
+
+        if (empty($unpaidSoaIds)) {
+            return;
+        }
+
+        BillingStatement::whereIn('statement_of_account_id', $unpaidSoaIds)
+            ->update(['is_paid' => false]);
+    }
+
+    /**
+     * @param array<int> $bookingIds
+     * @return array<int>
+     */
+    private function getBookingIdsCoveredByActiveInvoices(array $bookingIds): array
+    {
+        if (empty($bookingIds)) {
+            return [];
+        }
+
+        $invoicedSoaIds = $this->getSoaIdsWithActiveInvoice();
+        if (empty($invoicedSoaIds)) {
+            return [];
+        }
+
+        $covered = [];
+        $soas = StatementOfAccount::select('id', 'booking_ids')
+            ->whereIn('id', $invoicedSoaIds)
+            ->get();
+
+        foreach ($soas as $soa) {
+            foreach ($soa->booking_ids ?? [] as $bid) {
+                $bid = (int) $bid;
+                if (in_array($bid, $bookingIds, true)) {
+                    $covered[$bid] = true;
+                }
+            }
+        }
+
+        return array_keys($covered);
+    }
+
+    /**
+     * @param array<int>|null $soaIds
+     * @return array<int>
+     */
+    private function getSoaIdsWithActiveInvoice(?array $soaIds = null): array
+    {
+        $query = DB::table('invoice_statement_of_account as isoa')
+            ->join('invoices', 'invoices.id', '=', 'isoa.invoice_id')
+            ->whereNull('invoices.deleted_at');
+
+        if ($soaIds !== null) {
+            if (empty($soaIds)) {
+                return [];
+            }
+            $query->whereIn('isoa.statement_of_account_id', $soaIds);
+        }
+
+        return $query
+            ->pluck('isoa.statement_of_account_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()

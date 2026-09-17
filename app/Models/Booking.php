@@ -10,6 +10,8 @@ class Booking extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const AUTO_COMPLETE_WEEKS = 3;
+
     /**
      * The attributes that are mass assignable.
      *

@@ -7,7 +7,7 @@ use App\Models\StatementOfAccount;
 
 class StatementOfAccountObserver
 {
-    private const WEEKS_UNTIL_AUTO_COMPLETE = 3;
+    private const WEEKS_UNTIL_AUTO_COMPLETE = Booking::AUTO_COMPLETE_WEEKS;
 
     public function created(StatementOfAccount $soa): void
     {

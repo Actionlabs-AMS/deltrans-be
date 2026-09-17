@@ -17,6 +17,14 @@ Creating an invoice (`POST /api/invoices/generate`) does **not** close bookings 
   - All billing statements on those SOAs → `is_paid = true`.
 - No timer; completion is instant. The call is idempotent.
 
+### Invoice soft-delete (reopens bookings)
+
+- **What happens:** When a user soft-deletes an **Invoice** (`DELETE /api/invoices/{id}`).
+- **Result:** Bookings on the linked SOAs are set back to `is_complete = false`, and `auto_complete_at` is restarted (`now + 3 weeks`), because the SOA still exists.
+- A booking is **not** reopened if it is still covered by **another active invoice**.
+- Related billing statements on those SOAs are marked `is_paid = false`.
+- SOA and billing statement records themselves are **not** deleted.
+
 ---
 
 ## 2) Auto-complete after inactivity (scheduled)
@@ -76,6 +84,7 @@ The **bookings:auto-complete** command is scheduled in `app/Console/Kernel.php` 
 | Way to complete | Trigger | Result |
 |-----------------|--------|--------|
 | **Mark as paid** | User calls `POST /api/invoices/{id}/mark-as-paid` | All bookings on that invoice's SOAs → `is_complete = true`; related billing → `is_paid = true`. |
+| **Invoice trash** | User soft-deletes invoice | Bookings in those SOAs → `is_complete = false` unless another active invoice still covers them. Timer restarts (`now + 3 weeks`). Related billing → `is_paid = false`. |
 | **Auto-complete** | No activity for 3 weeks | Scheduled job sets `is_complete = true` when due date has passed. |
 
 - Timer **starts** when a booking is first added to an SOA (or when new bookings are added on SOA update).
