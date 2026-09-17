@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\SoaAndBillingRequest;
 use App\Http\Requests\GenerateSoaAndBillingRequest;
+use App\Http\Requests\FetchSoasByIdsRequest;
 use App\Http\Requests\UpdateSoaRequest;
 use App\Http\Requests\BillingStatementRequest;
 use App\Http\Requests\UpdateBillingStatementRequest;
 use App\Http\Requests\StoreTempAttachmentsRequest;
 use App\Services\SoaAndBillingService;
+use App\Services\FetchSoasByIdsService;
 use App\Services\MessageService;
 use App\Models\StatementOfAccount;
 use Illuminate\Support\Facades\Storage;
@@ -45,6 +47,12 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(property="dli_sa_number", type="string", example="SA-2024-001"),
  *     @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={1, 2}, description="Booking IDs (array)"),
  *     @OA\Property(property="work_order", type="string", example="WO-001", nullable=true)
+ * )
+ * @OA\Schema(
+ *     schema="FetchSoasByIdsInput",
+ *     title="Fetch SOAs by IDs Input",
+ *     required={"statement_of_account_ids"},
+ *     @OA\Property(property="statement_of_account_ids", type="array", @OA\Items(type="integer"), example={10, 11, 12}, description="One or more statement of account IDs. Aliases: ids, soa_ids.")
  * )
  * @OA\Schema(
  *     schema="BillingStatement",
@@ -87,8 +95,11 @@ use Illuminate\Support\Facades\Storage;
  */
 class SoaAndBillingController extends BaseController
 {
-    public function __construct(SoaAndBillingService $soaService, MessageService $messageService)
-    {
+    public function __construct(
+        SoaAndBillingService $soaService,
+        MessageService $messageService,
+        protected FetchSoasByIdsService $fetchSoasByIdsService
+    ) {
         parent::__construct($soaService, $messageService);
     }
 
@@ -173,6 +184,44 @@ class SoaAndBillingController extends BaseController
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 400);
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/soa/by-ids",
+     *     summary="Fetch statement of accounts by IDs with total gross",
+     *     description="Accepts an array of SOA IDs and returns those SOA details plus the combined gross amount (sum of each SOA total_amount from waybills).",
+     *     tags={"SOA and Billing Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/FetchSoasByIdsInput")),
+     *     @OA\Response(response=200, description="SOA list with total gross", @OA\JsonContent(
+     *         @OA\Property(property="success", type="boolean", example=true),
+     *         @OA\Property(property="soa", type="array", @OA\Items(ref="#/components/schemas/soa_and_billing")),
+     *         @OA\Property(property="total_gross", type="number", format="float", example=45000.00)
+     *     )),
+     *     @OA\Response(response=400, ref="#/components/responses/BadRequest"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function fetchByIds(FetchSoasByIdsRequest $request)
+    {
+        try {
+            $result = $this->fetchSoasByIdsService->fetchByIds($request->soaIds());
+
+            return response()->json([
+                'success' => true,
+                'soa' => $result['soa'],
+                'total_gross' => $result['total_gross'],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getMessage() === 'One or more selected statements of account do not exist.' ? 404 : 500);
         }
     }
 

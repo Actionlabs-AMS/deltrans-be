@@ -18078,6 +18078,75 @@
                 ]
             }
         },
+        "/api/soa/by-ids": {
+            "post": {
+                "tags": [
+                    "SOA and Billing Management"
+                ],
+                "summary": "Fetch statement of accounts by IDs with total gross",
+                "description": "Accepts an array of SOA IDs and returns those SOA details plus the combined gross amount (sum of each SOA total_amount from waybills).",
+                "operationId": "308dbaaef25c99951799f89684ced067",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FetchSoasByIdsInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "SOA list with total gross",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "soa": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/soa_and_billing"
+                                            }
+                                        },
+                                        "total_gross": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 45000
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/GeneralError"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/soa/{id}": {
             "get": {
                 "tags": [
@@ -28870,6 +28939,27 @@
                         "type": "string",
                         "example": "WO-001",
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "FetchSoasByIdsInput": {
+                "title": "Fetch SOAs by IDs Input",
+                "required": [
+                    "statement_of_account_ids"
+                ],
+                "properties": {
+                    "statement_of_account_ids": {
+                        "description": "One or more statement of account IDs. Aliases: ids, soa_ids.",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            10,
+                            11,
+                            12
+                        ]
                     }
                 },
                 "type": "object"
