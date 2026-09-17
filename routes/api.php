@@ -288,6 +288,7 @@ Route::middleware('auth:sanctum')->group(function () {
 	Route::prefix('soa')->group(function () {
 		// Generate SOA
 		Route::post('/generate', [SoaAndBillingController::class, 'generate']);  // Generate a new statement of account
+		Route::post('/by-ids', [SoaAndBillingController::class, 'fetchByIds']);  // Fetch SOAs by IDs with total_gross
 
 		// Download PDFs / document CSV (must be before /{id} route)
 		Route::get('/{id}/download', [SoaAndBillingController::class, 'download']);  // Download SOA PDF only
