@@ -103,6 +103,54 @@ class InvoiceController extends BaseController
     }
 
     /**
+     * @OA\Post(
+     *     path="/api/invoices/{id}/mark-as-paid",
+     *     summary="Mark invoice billing as paid and close bookings",
+     *     description="Uses invoice ID to mark all related billing statements as paid (is_paid=true) and close all bookings on the linked SOAs (is_complete=true). Idempotent.",
+     *     tags={"Invoice Management"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="Invoice ID", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Billing marked as paid and bookings closed", @OA\JsonContent(
+     *         @OA\Property(property="success", type="boolean", example=true),
+     *         @OA\Property(property="message", type="string", example="Billing marked as paid and bookings closed."),
+     *         @OA\Property(property="data", type="object",
+     *             @OA\Property(property="id", type="integer", example=1),
+     *             @OA\Property(property="invoice_number", type="string", example="INV-0001"),
+     *             @OA\Property(property="statement_of_account_ids", type="array", @OA\Items(type="integer"), example={10, 11}),
+     *             @OA\Property(property="booking_ids", type="array", @OA\Items(type="integer"), example={21, 22}),
+     *             @OA\Property(property="billing_statement_ids", type="array", @OA\Items(type="integer"), example={5, 6})
+     *         )
+     *     )),
+     *     @OA\Response(response=400, ref="#/components/responses/BadRequest"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=500, ref="#/components/responses/GeneralError")
+     * )
+     */
+    public function markAsPaid($id)
+    {
+        try {
+            $result = $this->service->markAsPaid($id);
+            $payload = $result['invoice']->toArray();
+            $totals = $this->service->getComputedTotalsForInvoice($result['invoice']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Billing marked as paid and bookings closed.',
+                'data' => array_merge($payload, $totals, [
+                    'booking_ids' => $result['booking_ids'],
+                    'billing_statement_ids' => $result['billing_statement_ids'],
+                ]),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getMessage() === 'Invoice not found.' ? 404 : 400);
+        }
+    }
+
+    /**
      * @OA\Put(
      *     path="/api/invoices/{id}",
      *     summary="Update an invoice",

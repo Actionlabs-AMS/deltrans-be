@@ -301,7 +301,7 @@ class InvoiceService
             throw new \Exception('One or more selected statements of account are already linked to an invoice.');
         }
 
-        $invoice = DB::transaction(function () use ($data, $soas, $soaIds) {
+        $invoice = DB::transaction(function () use ($data, $soaIds) {
             $payload = [
                 'invoice_number' => $data['invoice_number'] ?? null,
                 'date' => $data['date'] ?? null,
@@ -318,20 +318,57 @@ class InvoiceService
             $invoice = Invoice::create($payload);
             $invoice->statementOfAccounts()->attach($soaIds);
 
-            $bookingIds = $this->collectBookingIds($soas);
-            if (!empty($bookingIds)) {
-                Booking::whereIn('id', $bookingIds)->update(['is_complete' => true]);
-            }
-
-            BillingStatement::whereIn('statement_of_account_id', $soaIds)
-                ->update(['is_paid' => true]);
-
             return $invoice;
         });
 
         $invoice->load(['statementOfAccounts.shippingLine']);
 
         return $invoice;
+    }
+
+    /**
+     * Mark billing statements as paid and close bookings for an invoice.
+     *
+     * Uses the invoice's linked SOAs: all related billing statements get
+     * is_paid = true, and all bookings on those SOAs get is_complete = true.
+     */
+    public function markAsPaid($id)
+    {
+        try {
+            return DB::transaction(function () use ($id) {
+                $invoice = Invoice::with('statementOfAccounts')->lockForUpdate()->findOrFail($id);
+                $soas = $invoice->statementOfAccounts;
+                $soaIds = $soas->pluck('id')->map(fn ($soaId) => (int) $soaId)->values()->all();
+
+                if (empty($soaIds)) {
+                    throw new \Exception('Invoice has no linked statements of account.');
+                }
+
+                $bookingIds = $this->collectBookingIds($soas);
+                if (!empty($bookingIds)) {
+                    Booking::whereIn('id', $bookingIds)->update(['is_complete' => true]);
+                }
+
+                BillingStatement::whereIn('statement_of_account_id', $soaIds)
+                    ->update(['is_paid' => true]);
+
+                $billingIds = BillingStatement::whereIn('statement_of_account_id', $soaIds)
+                    ->pluck('id')
+                    ->map(fn ($billingId) => (int) $billingId)
+                    ->values()
+                    ->all();
+
+                $invoice->load(['statementOfAccounts.shippingLine']);
+
+                return [
+                    'invoice' => $invoice,
+                    'booking_ids' => $bookingIds,
+                    'billing_statement_ids' => $billingIds,
+                ];
+            });
+        } catch (ModelNotFoundException $e) {
+            throw new \Exception('Invoice not found.');
+        }
     }
 
     /**

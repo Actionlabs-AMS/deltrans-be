@@ -2,16 +2,20 @@
 
 A booking is marked **Complete** (`is_complete = true`) in one of two ways:
 
-1. **Invoice creation** — immediate.
+1. **Mark invoice as paid** — immediate, via `POST /api/invoices/{id}/mark-as-paid`.
 2. **Auto-complete after inactivity** — a 3-week countdown, then a scheduled job sets it complete.
+
+Creating an invoice (`POST /api/invoices/generate`) does **not** close bookings or mark billing as paid.
 
 ---
 
-## 1) Invoice creation (immediate)
+## 1) Mark invoice as paid (immediate)
 
-- **What happens:** When a user creates an **Invoice** from a **Statement of Account (SOA)**.
-- **Result:** The system immediately sets **all bookings** in that SOA to `is_complete = true`.
-- No timer; completion is instant.
+- **What happens:** When a user calls **POST /api/invoices/{id}/mark-as-paid**.
+- **Result:**
+  - All bookings on the invoice's linked SOAs → `is_complete = true`.
+  - All billing statements on those SOAs → `is_paid = true`.
+- No timer; completion is instant. The call is idempotent.
 
 ---
 
@@ -71,7 +75,7 @@ The **bookings:auto-complete** command is scheduled in `app/Console/Kernel.php` 
 
 | Way to complete | Trigger | Result |
 |-----------------|--------|--------|
-| **Invoice** | User creates invoice from SOA | All bookings in that SOA → `is_complete = true` right away. |
+| **Mark as paid** | User calls `POST /api/invoices/{id}/mark-as-paid` | All bookings on that invoice's SOAs → `is_complete = true`; related billing → `is_paid = true`. |
 | **Auto-complete** | No activity for 3 weeks | Scheduled job sets `is_complete = true` when due date has passed. |
 
 - Timer **starts** when a booking is first added to an SOA (or when new bookings are added on SOA update).

@@ -46,7 +46,7 @@ class StatementOfAccountObserver
 
         foreach ($bookingIds as $bid) {
             // Re-open booking when no other active SOA still references it
-            // (invoice generation marks bookings complete; SOA soft-delete must reverse that).
+            // (mark-as-paid closes bookings; SOA soft-delete must reverse that).
             if (!$this->isBookingReferencedByAnyActiveSoa($bid, $soa->id)) {
                 Booking::query()
                     ->where('id', $bid)
