@@ -24,7 +24,7 @@ class Booking extends Model
         'expected_date',
         'expected_container',
         'is_complete',
-        'is_ship_in',
+        'remarks',
         'prepared_by',
     ];
 
@@ -37,7 +37,6 @@ class Booking extends Model
         'expected_date' => 'date',
         'expected_container' => 'integer',
         'is_complete' => 'boolean',
-        'is_ship_in' => 'boolean',
         'auto_complete_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -59,7 +58,6 @@ class Booking extends Model
     protected $attributes = [
         'expected_container' => 0,
         'is_complete' => false,
-        'is_ship_in' => true,
     ];
 
     /**

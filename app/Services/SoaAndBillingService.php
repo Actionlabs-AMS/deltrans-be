@@ -1005,9 +1005,8 @@ class SoaAndBillingService extends BaseService
                     ? ($waybill->booking->cypaTo->short_name ?? $waybill->booking->cypaTo->name ?? '-')
                     : '-';
             case 'remarks':
-                return $waybill->booking
-                    ? ($waybill->booking->is_ship_in ? 'SHIP IN' : 'SHIP OUT')
-                    : '-';
+                $remarks = $waybill->booking?->remarks;
+                return ($remarks !== null && $remarks !== '') ? $remarks : '-';
             case 'size':
                 $size = trim(str_ireplace('ft', '', $waybill->container_size ?? ''));
                 $type = trim(str_ireplace('ft', '', $waybill->container_type ?? ''));

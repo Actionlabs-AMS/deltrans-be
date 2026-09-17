@@ -36,7 +36,7 @@ class BookingResource extends JsonResource
             'containers_count' => $containersCount,
             'remaining_container' => $expectedContainer - $containersCount,
             'is_complete' => (bool) $this->is_complete,
-            'is_ship_in' => (bool) $this->is_ship_in,
+            'remarks' => $this->remarks,
             'actual_no_of_waybill' => isset($this->actual_no_of_waybill) ? (int) $this->actual_no_of_waybill : 0,
 
             // SOA tagging (present on bookings/by-shipping-line when resolved server-side)
