@@ -90,4 +90,72 @@ class Invoice extends Model
     {
         return $this->primaryStatementOfAccount()?->shippingLine;
     }
+
+    /**
+     * True when the invoice has at least one linked billing statement
+     * and every linked billing statement is paid.
+     */
+    public function isPaid(): bool
+    {
+        $soaIds = $this->statement_of_account_ids;
+        if ($soaIds === []) {
+            return false;
+        }
+
+        $statuses = BillingStatement::query()
+            ->whereIn('statement_of_account_id', $soaIds)
+            ->pluck('is_paid');
+
+        return $statuses->isNotEmpty() && $statuses->every(fn ($paid) => (bool) $paid);
+    }
+
+    /**
+     * Paid status keyed by invoice id, using one billing query for the set.
+     *
+     * @param  iterable<Invoice>  $invoices
+     * @return array<int, bool>
+     */
+    public static function paidStatusMap(iterable $invoices): array
+    {
+        $invoices = collect($invoices);
+        $soaIds = $invoices
+            ->flatMap(fn (Invoice $invoice) => $invoice->statement_of_account_ids)
+            ->unique()
+            ->values()
+            ->all();
+
+        $soaIdsWithBilling = [];
+        $unpaidSoaIds = [];
+
+        if ($soaIds !== []) {
+            $rows = BillingStatement::query()
+                ->whereIn('statement_of_account_id', $soaIds)
+                ->get(['statement_of_account_id', 'is_paid']);
+
+            foreach ($rows as $row) {
+                $soaIdsWithBilling[(int) $row->statement_of_account_id] = true;
+                if (!$row->is_paid) {
+                    $unpaidSoaIds[(int) $row->statement_of_account_id] = true;
+                }
+            }
+        }
+
+        $map = [];
+        foreach ($invoices as $invoice) {
+            $hasBilling = false;
+            $hasUnpaid = false;
+            foreach ($invoice->statement_of_account_ids as $soaId) {
+                $soaId = (int) $soaId;
+                if (isset($soaIdsWithBilling[$soaId])) {
+                    $hasBilling = true;
+                }
+                if (isset($unpaidSoaIds[$soaId])) {
+                    $hasUnpaid = true;
+                }
+            }
+            $map[(int) $invoice->id] = $hasBilling && !$hasUnpaid;
+        }
+
+        return $map;
+    }
 }

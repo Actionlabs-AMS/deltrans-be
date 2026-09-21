@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use App\Models\BillingStatement;
 use App\Models\Booking;
 use App\Models\ContainerYard;
+use App\Models\Invoice;
 use App\Models\ShippingLine;
 use App\Models\StatementOfAccount;
 use App\Models\User;
@@ -77,6 +78,36 @@ class InvoiceServiceDestroyInvoiceTest extends TestCase
         $this->assertTrue((bool) $keepBooking->fresh()->is_complete);
         $this->assertFalse((bool) $dropBooking->fresh()->is_complete);
         $this->assertNull($keepInvoice->fresh()->deleted_at);
+    }
+
+    public function test_invoice_is_paid_is_false_until_billing_is_marked_paid(): void
+    {
+        $user = User::factory()->create();
+        $shipping = $this->createShippingLine();
+        [$from, $to] = $this->createYards();
+        $booking = $this->createBooking($shipping->id, $from->id, $to->id, 'PAID');
+        $soa = $this->createSoa($shipping->id, '2001', [$booking->id]);
+
+        BillingStatement::query()->create([
+            'statement_of_account_id' => $soa->id,
+            'prepared_by' => $user->id,
+            'billing_statement_no' => 'B-UNPAID-1',
+            'is_paid' => false,
+        ]);
+
+        $invoice = $this->service->generateInvoice([
+            'statement_of_account_ids' => [$soa->id],
+            'invoice_number' => 'INV-UNPAID-1',
+        ]);
+
+        $this->assertFalse($invoice->isPaid());
+        $this->assertSame([$invoice->id => false], Invoice::paidStatusMap([$invoice]));
+
+        $this->service->markAsPaid($invoice->id);
+        $invoice->refresh()->load('statementOfAccounts');
+
+        $this->assertTrue($invoice->isPaid());
+        $this->assertSame([$invoice->id => true], Invoice::paidStatusMap([$invoice]));
     }
 
     public function test_soft_delete_keeps_booking_complete_if_another_soa_still_invoices_it(): void
