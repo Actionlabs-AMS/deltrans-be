@@ -576,11 +576,22 @@
                         }
                     },
                     {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Booking page lookup value. Matches a booking reference number or related waybill number and returns bookings.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 255,
+                            "example": "WB-12345"
+                        }
+                    },
+                    {
                         "name": "search",
                         "in": "query",
-                        "description": "Search by reference number, shipping line name, or CYPA name",
+                        "description": "Legacy search alias. Searches booking details, related waybill number, shipping line, or CYPA name.",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "maxLength": 255
                         }
                     },
                     {
@@ -9863,7 +9874,7 @@
                     "Invoice Management"
                 ],
                 "summary": "Soft delete an invoice",
-                "description": "Soft deletes an invoice only. Does not soft delete the related SOA or billing statements.",
+                "description": "Soft deletes an invoice only. Does not soft delete the related SOA or billing statements. Bookings on the linked SOAs are re-opened (is_complete=false, auto_complete_at restarted) unless they remain covered by another active invoice. Related billing statements are marked unpaid.",
                 "operationId": "410b8a2e4b097016c3dea391349a789b",
                 "parameters": [
                     {
@@ -27791,6 +27802,11 @@
                         "type": "number",
                         "format": "float",
                         "example": 231000
+                    },
+                    "is_paid": {
+                        "description": "True when all billing statements on linked SOAs are paid",
+                        "type": "boolean",
+                        "example": false
                     },
                     "created_at": {
                         "type": "string",

@@ -175,9 +175,9 @@ class BookingController extends BaseController
      *     )
      * )
      */
-    public function index(Request $request)
+    public function index()
     {
-        $request->validate([
+        request()->validate([
             'id' => ['nullable', 'string', 'max:255'],
             'search' => ['nullable', 'string', 'max:255'],
         ]);
