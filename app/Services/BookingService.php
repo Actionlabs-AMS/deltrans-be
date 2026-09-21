@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\StatementOfAccount;
 use App\Models\WaybillDetail;
-use App\Http\Resources\BookingResource;
 use Illuminate\Support\Collection;
 
 class BookingService extends BaseService
@@ -13,7 +13,7 @@ class BookingService extends BaseService
     public function __construct()
     {
         // Pass the BookingResource class to the parent constructor
-        parent::__construct(new BookingResource(new Booking), new Booking());
+        parent::__construct(new BookingResource(new Booking), new Booking);
     }
 
     /**
@@ -55,6 +55,7 @@ class BookingService extends BaseService
     {
         $model = $this->model::findOrFail($id);
         $model->update($data);
+
         return $this->resource::make(
             $model->fresh()
                 ->load(['shippingLine', 'cypaFrom', 'cypaTo', 'containers', 'preparedByUser.getUserMetas'])
@@ -80,26 +81,47 @@ class BookingService extends BaseService
                 $query->onlyTrashed();
             }
 
-            // Then apply search conditions
-            if (request('search')) {
-                $query->where(function ($q) {
-                    $q->where('reference_number', 'LIKE', '%' . request('search') . '%')
-                        ->orWhere('vessel', 'LIKE', '%' . request('search') . '%')
-                        ->orWhereHas('shippingLine', function ($q) {
-                            $q->where('name', 'LIKE', '%' . request('search') . '%');
+            // Booking page lookup: find bookings by booking number or a related waybill number.
+            $bookingLookup = trim((string) request('id', ''));
+
+            if ($bookingLookup !== '') {
+                $query->where(function ($q) use ($bookingLookup) {
+                    $term = '%'.$bookingLookup.'%';
+
+                    $q->where('reference_number', 'LIKE', $term)
+                        ->orWhereHas('waybills', function ($q) use ($term) {
+                            $q->where('waybill_number', 'LIKE', $term);
+                        });
+                });
+            }
+
+            // Keep the existing broad search filter, now including related waybill numbers.
+            $search = trim((string) request('search', ''));
+
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $term = '%'.$search.'%';
+
+                    $q->where('reference_number', 'LIKE', $term)
+                        ->orWhere('vessel', 'LIKE', $term)
+                        ->orWhereHas('waybills', function ($q) use ($term) {
+                            $q->where('waybill_number', 'LIKE', $term);
                         })
-                        ->orWhereHas('cypaFrom', function ($q) {
-                            $q->where('name', 'LIKE', '%' . request('search') . '%');
+                        ->orWhereHas('shippingLine', function ($q) use ($term) {
+                            $q->where('name', 'LIKE', $term);
                         })
-                        ->orWhereHas('cypaTo', function ($q) {
-                            $q->where('name', 'LIKE', '%' . request('search') . '%');
+                        ->orWhereHas('cypaFrom', function ($q) use ($term) {
+                            $q->where('name', 'LIKE', $term);
+                        })
+                        ->orWhereHas('cypaTo', function ($q) use ($term) {
+                            $q->where('name', 'LIKE', $term);
                         });
                 });
             }
 
             // Filter by vessel
             if (request('vessel')) {
-                $query->where('vessel', 'LIKE', '%' . request('vessel') . '%');
+                $query->where('vessel', 'LIKE', '%'.request('vessel').'%');
             }
 
             // Filter by shipping_line_id
@@ -124,7 +146,7 @@ class BookingService extends BaseService
 
             // Filter by remarks
             if (request()->filled('remarks')) {
-                $query->where('remarks', 'LIKE', '%' . request('remarks') . '%');
+                $query->where('remarks', 'LIKE', '%'.request('remarks').'%');
             }
 
             // Filter by expected_date
@@ -143,7 +165,7 @@ class BookingService extends BaseService
                 $query->paginate($perPage)->withQueryString()
             )->additional(['meta' => ['all' => $allBookings, 'trashed' => $trashedBookings]]);
         } catch (\Exception $e) {
-            throw new \Exception('Failed to fetch bookings: ' . $e->getMessage());
+            throw new \Exception('Failed to fetch bookings: '.$e->getMessage());
         }
     }
 
@@ -162,11 +184,11 @@ class BookingService extends BaseService
         if ($expectedDateTo) {
             $baseQuery->whereDate('expected_date', '<=', $expectedDateTo);
         }
-        if (!is_null($isComplete)) {
+        if (! is_null($isComplete)) {
             $baseQuery->where('is_complete', (int) $isComplete);
         }
         if ($search !== null && $search !== '') {
-            $baseQuery->where('reference_number', 'LIKE', '%' . $search . '%');
+            $baseQuery->where('reference_number', 'LIKE', '%'.$search.'%');
         }
 
         $filteredBookingIds = (clone $baseQuery)->pluck('id');
@@ -250,7 +272,7 @@ class BookingService extends BaseService
             foreach ($soa->booking_ids ?? [] as $bookingId) {
                 $bookingId = (int) $bookingId;
 
-                if ($bookingId <= 0 || !in_array($bookingId, $bookingIds, true)) {
+                if ($bookingId <= 0 || ! in_array($bookingId, $bookingIds, true)) {
                     continue;
                 }
 

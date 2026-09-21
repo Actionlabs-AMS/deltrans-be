@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\BookingRequest;
 use App\Services\BookingService;
 use App\Services\MessageService;
+use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
  *     name="Booking Management",
  *     description="API endpoints for booking management"
  * )
+ *
  * @OA\Schema(
  *     schema="Booking",
  *     title="Booking Model",
  *     description="A booking resource",
+ *
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
  *     @OA\Property(property="vessel", type="string", example="MSC OSCAR", nullable=true),
@@ -48,76 +49,107 @@ class BookingController extends BaseController
 
     /**
      * Display a listing of bookings.
-     * 
+     *
      * @OA\Get(
      *     path="/api/bookings",
      *     summary="Get list of bookings",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
      *         description="Page number",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="per_page",
      *         in="query",
      *         description="Items per page",
+     *
      *         @OA\Schema(type="integer", example=10)
      *     ),
+     *
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="query",
+     *         description="Booking page lookup value. Matches a booking reference number or related waybill number and returns bookings.",
+     *
+     *         @OA\Schema(type="string", maxLength=255, example="WB-12345")
+     *     ),
+     *
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
-     *         description="Search by reference number, shipping line name, or CYPA name",
-     *         @OA\Schema(type="string")
+     *         description="Legacy search alias. Searches booking details, related waybill number, shipping line, or CYPA name.",
+     *
+     *         @OA\Schema(type="string", maxLength=255)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="shipping_line_id",
      *         in="query",
      *         description="Filter by shipping line ID",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="cypa_id_from",
      *         in="query",
      *         description="Filter by CYPA ID (from)",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="cypa_id_to",
      *         in="query",
      *         description="Filter by CYPA ID (to)",
+     *
      *         @OA\Schema(type="integer", example=2)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="is_complete",
      *         in="query",
      *         description="Filter by completion status (0=Incomplete, 1=Complete)",
+     *
      *         @OA\Schema(type="integer", example=0)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="remarks",
      *         in="query",
      *         description="Filter by booking remarks (partial match)",
+     *
      *         @OA\Schema(type="string", example="SHIP IN")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="expected_date",
      *         in="query",
      *         description="Filter by expected date",
+     *
      *         @OA\Schema(type="string", format="date", example="2025-02-10")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="vessel",
      *         in="query",
      *         description="Filter by vessel name (partial match)",
+     *
      *         @OA\Schema(type="string", example="MSC")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="List of bookings retrieved successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Booking")),
      *             @OA\Property(property="meta", type="object",
      *                 @OA\Property(property="all", type="integer", example=10),
@@ -131,17 +163,25 @@ class BookingController extends BaseController
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
+        $request->validate([
+            'id' => ['nullable', 'string', 'max:255'],
+            'search' => ['nullable', 'string', 'max:255'],
+        ]);
+
         return parent::index();
     }
 
@@ -153,53 +193,70 @@ class BookingController extends BaseController
      *     summary="Get bookings by shipping line",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="shipping_line_id",
      *         in="path",
      *         required=true,
      *         description="Shipping line ID",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="expected_date_from",
      *         in="query",
      *         description="Filter expected_date from (inclusive), format Y-m-d",
+     *
      *         @OA\Schema(type="string", format="date", example="2025-01-01")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="expected_date_to",
      *         in="query",
      *         description="Filter expected_date to (inclusive), format Y-m-d",
+     *
      *         @OA\Schema(type="string", format="date", example="2025-01-31")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="is_complete",
      *         in="query",
      *         description="Filter by completion status (0=Incomplete, 1=Complete)",
+     *
      *         @OA\Schema(type="integer", example=0)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
      *         description="Search by booking reference number only",
+     *
      *         @OA\Schema(type="string", example="RF-483624")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
      *         description="Page number",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="per_page",
      *         in="query",
      *         description="Items per page",
+     *
      *         @OA\Schema(type="integer", example=10)
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Bookings retrieved successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Booking"), description="Bookings include has_soa, soa_id, soa_dli_sa_number for badge display"),
      *             @OA\Property(property="meta", type="object"),
      *             @OA\Property(property="links", type="object"),
@@ -208,18 +265,24 @@ class BookingController extends BaseController
      *             @OA\Property(property="total_paid", type="number", format="float", example=75000.00, description="Sum of total_rate_per_client for waybills where booking is_complete=true")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Shipping line not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Shipping line not found."),
      *             @OA\Property(property="status_code", type="integer", example=404)
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -237,14 +300,14 @@ class BookingController extends BaseController
             'expected_date_to.date' => 'The expected_date_to must be a valid date (Y-m-d).',
         ]);
 
-        if (!empty($validated['expected_date_from']) && !empty($validated['expected_date_to']) && $validated['expected_date_from'] > $validated['expected_date_to']) {
+        if (! empty($validated['expected_date_from']) && ! empty($validated['expected_date_to']) && $validated['expected_date_from'] > $validated['expected_date_to']) {
             return response()->json([
                 'message' => 'The given data was invalid.',
                 'errors' => ['expected_date_to' => ['The expected_date_to must be on or after expected_date_from.']],
             ], 422);
         }
 
-        if (!\App\Models\ShippingLine::where('id', $shipping_line_id)->exists()) {
+        if (! \App\Models\ShippingLine::where('id', $shipping_line_id)->exists()) {
             return response()->json([
                 'message' => 'Shipping line not found.',
                 'status_code' => 404,
@@ -272,37 +335,48 @@ class BookingController extends BaseController
 
     /**
      * Display the specified booking.
-     * 
+     *
      * @OA\Get(
      *     path="/api/bookings/{id}",
      *     summary="Get a specific booking",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Booking ID",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Booking retrieved successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="data", type="object", ref="#/components/schemas/Booking")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Booking not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -321,17 +395,22 @@ class BookingController extends BaseController
      *     summary="Get remaining container breakdown for a booking",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Booking ID",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Remaining container breakdown retrieved successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="booking_id", type="integer", example=1),
      *                 @OA\Property(property="expected_container", type="integer", example=10),
@@ -340,17 +419,23 @@ class BookingController extends BaseController
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Booking not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -367,7 +452,7 @@ class BookingController extends BaseController
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Booking not found.'
+                'message' => 'Booking not found.',
             ], 404);
         } catch (\Exception $e) {
             return $this->messageService->responseError();
@@ -376,32 +461,38 @@ class BookingController extends BaseController
 
     /**
      * Store a newly created resource in storage.
-     * 
+     *
      * @OA\Post(
      *     path="/api/bookings",
      *     summary="Create a new booking",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
- *             required={"shipping_line_id", "cypa_id_from", "cypa_id_to", "expected_container"},
+     *             required={"shipping_line_id", "cypa_id_from", "cypa_id_to", "expected_container"},
+     *
      *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional, unique)"),
      *             @OA\Property(property="vessel", type="string", example="MSC OSCAR", description="Vessel name (optional)"),
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
      *             @OA\Property(property="cypa_id_from", type="integer", example=1, description="CYPA ID (from)"),
      *             @OA\Property(property="cypa_id_to", type="integer", example=2, description="CYPA ID (to)"),
      *             @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", description="Expected date (optional)"),
- *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (required)"),
+     *             @OA\Property(property="expected_container", type="integer", example=10, description="Expected number of containers (required)"),
      *             @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete (optional)"),
      *             @OA\Property(property="remarks", type="string", example="SHIP IN", nullable=true, description="Booking remarks (optional)"),
      *             @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the booking")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=201,
      *         description="Booking created successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
      *                 @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
@@ -410,9 +501,9 @@ class BookingController extends BaseController
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
- *                 @OA\Property(property="expected_container", type="integer", example=10),
- *                 @OA\Property(property="containers_count", type="integer", example=7),
- *                 @OA\Property(property="remaining_container", type="integer", example=3),
+     *                 @OA\Property(property="expected_container", type="integer", example=10),
+     *                 @OA\Property(property="containers_count", type="integer", example=7),
+     *                 @OA\Property(property="remaining_container", type="integer", example=3),
      *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
      *                 @OA\Property(property="remarks", type="string", example="SHIP IN", nullable=true, description="Booking remarks"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
@@ -420,18 +511,24 @@ class BookingController extends BaseController
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="The given data was invalid."),
      *             @OA\Property(property="errors", type="object")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -442,6 +539,7 @@ class BookingController extends BaseController
         try {
             $data = $request->validated();
             $booking = $this->service->store($data);
+
             return response($booking, 201);
         } catch (\Exception $e) {
             return $this->messageService->responseError();
@@ -450,22 +548,27 @@ class BookingController extends BaseController
 
     /**
      * Update the specified booking in storage.
-     * 
+     *
      * @OA\Put(
      *     path="/api/bookings/{id}",
      *     summary="Update a booking",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Booking ID",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="reference_number", type="string", example="RF-483624", description="Reference number (optional)"),
      *             @OA\Property(property="vessel", type="string", example="MSC OSCAR", description="Vessel name (optional)"),
      *             @OA\Property(property="shipping_line_id", type="integer", example=1, description="Shipping line ID"),
@@ -478,10 +581,13 @@ class BookingController extends BaseController
      *             @OA\Property(property="prepared_by", type="integer", example=1, nullable=true, description="User ID who prepared the booking")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Booking updated successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
      *                 @OA\Property(property="reference_number", type="string", example="RF-483624", nullable=true),
@@ -490,9 +596,9 @@ class BookingController extends BaseController
      *                 @OA\Property(property="cypa_id_from", type="integer", example=1),
      *                 @OA\Property(property="cypa_id_to", type="integer", example=2),
      *                 @OA\Property(property="expected_date", type="string", format="date", example="2025-02-10", nullable=true),
- *                 @OA\Property(property="expected_container", type="integer", example=10),
- *                 @OA\Property(property="containers_count", type="integer", example=7),
- *                 @OA\Property(property="remaining_container", type="integer", example=3),
+     *                 @OA\Property(property="expected_container", type="integer", example=10),
+     *                 @OA\Property(property="containers_count", type="integer", example=7),
+     *                 @OA\Property(property="remaining_container", type="integer", example=3),
      *                 @OA\Property(property="is_complete", type="boolean", example=false, description="Whether the booking is complete"),
      *                 @OA\Property(property="remarks", type="string", example="SHIP IN", nullable=true, description="Booking remarks"),
      *                 @OA\Property(property="created_at", type="string", example="2025-01-01 12:00:00"),
@@ -500,25 +606,34 @@ class BookingController extends BaseController
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Booking not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="The given data was invalid."),
      *             @OA\Property(property="errors", type="object")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -529,11 +644,12 @@ class BookingController extends BaseController
         try {
             $data = $request->validated();
             $booking = $this->service->update($data, $id);
+
             return response($booking, 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Booking not found.'
+                'message' => 'Booking not found.',
             ], 404);
         } catch (\Exception $e) {
             return $this->messageService->responseError();
@@ -542,37 +658,48 @@ class BookingController extends BaseController
 
     /**
      * Remove the specified booking from storage (soft delete).
-     * 
+     *
      * @OA\Delete(
      *     path="/api/bookings/{id}",
      *     summary="Delete a booking",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Booking ID",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Booking moved to trash successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Resource has been moved to trash.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Booking not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -585,38 +712,50 @@ class BookingController extends BaseController
 
     /**
      * Bulk delete multiple bookings.
-     * 
+     *
      * @OA\Post(
      *     path="/api/bookings/bulk/delete",
      *     summary="Bulk delete multiple bookings",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"ids"},
+     *
      *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Bookings deleted successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Resources have been deleted.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="The given data was invalid."),
      *             @OA\Property(property="errors", type="object")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -629,35 +768,45 @@ class BookingController extends BaseController
 
     /**
      * Get trashed bookings.
-     * 
+     *
      * @OA\Get(
      *     path="/api/archived/bookings",
      *     summary="Get trashed bookings",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
      *         description="Page number",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Parameter(
      *         name="per_page",
      *         in="query",
      *         description="Items per page",
+     *
      *         @OA\Schema(type="integer", example=10)
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Trashed bookings retrieved successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Booking"))
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -670,38 +819,49 @@ class BookingController extends BaseController
 
     /**
      * Restore a trashed booking.
-     * 
+     *
      * @OA\Patch(
      *     path="/api/archived/bookings/restore/{id}",
      *     summary="Restore a trashed booking",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Booking ID",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Booking restored successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Resource has been restored."),
      *             @OA\Property(property="resource", type="object", ref="#/components/schemas/Booking")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Booking not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -714,38 +874,50 @@ class BookingController extends BaseController
 
     /**
      * Bulk restore multiple trashed bookings.
-     * 
+     *
      * @OA\Post(
      *     path="/api/bookings/bulk/restore",
      *     summary="Bulk restore multiple trashed bookings",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"ids"},
+     *
      *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Bookings restored successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Resources have been restored.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="The given data was invalid."),
      *             @OA\Property(property="errors", type="object")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -758,37 +930,48 @@ class BookingController extends BaseController
 
     /**
      * Permanently delete a booking.
-     * 
+     *
      * @OA\Delete(
      *     path="/api/archived/bookings/{id}",
      *     summary="Permanently delete a booking",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Booking ID",
+     *
      *         @OA\Schema(type="integer", example=1)
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Booking permanently deleted successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Resource has been permanently deleted.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Booking not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Booking not found.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -801,38 +984,50 @@ class BookingController extends BaseController
 
     /**
      * Bulk permanently delete multiple bookings.
-     * 
+     *
      * @OA\Post(
      *     path="/api/bookings/bulk/force-delete",
      *     summary="Bulk permanently delete multiple bookings",
      *     tags={"Booking Management"},
      *     security={{"sanctum": {}}},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\JsonContent(
      *             required={"ids"},
+     *
      *             @OA\Property(property="ids", type="array", @OA\Items(type="integer"), example={1, 2, 3}, description="Array of booking IDs")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Bookings permanently deleted successfully",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Resources have been permanently deleted.")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="The given data was invalid."),
      *             @OA\Property(property="errors", type="object")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=401,
      *         description="Unauthenticated",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="message", type="string", example="Unauthenticated.")
      *         )
      *     )
@@ -842,5 +1037,4 @@ class BookingController extends BaseController
     {
         return parent::bulkForceDelete($request);
     }
-
 }
