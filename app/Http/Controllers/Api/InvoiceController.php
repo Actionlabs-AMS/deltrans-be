@@ -34,6 +34,7 @@ use Illuminate\Http\Request;
  *     @OA\Property(property="total_sales_inclusive", type="number", format="float", example=235200.00, description="Computed: VAT inclusive"),
  *     @OA\Property(property="less_withdrawing_tax", type="number", format="float", example=4200.00, description="Computed: 2% of net of VAT"),
  *     @OA\Property(property="total_amount", type="number", format="float", example=231000.00, description="Computed: total due"),
+ *     @OA\Property(property="is_paid", type="boolean", example=false, description="True when all billing statements on linked SOAs are paid"),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
  *     @OA\Property(property="updated_at", type="string", format="date-time")
  * )
@@ -431,10 +432,14 @@ class InvoiceController extends BaseController
             $result = $this->service->listInvoices($perPage);
             $paginator = $result['paginator'];
             $metaExtra = $result['meta_extra'];
-            $items = collect($paginator->items())->map(function ($invoice) {
+            $pageItems = collect($paginator->items());
+            $paidMap = Invoice::paidStatusMap($pageItems);
+            $items = $pageItems->map(function ($invoice) use ($paidMap) {
                 $arr = $invoice->toArray();
                 $totals = $this->service->getComputedTotalsForInvoice($invoice);
-                return array_merge($arr, $totals);
+                return array_merge($arr, $totals, [
+                    'is_paid' => $paidMap[$invoice->id] ?? false,
+                ]);
             })->all();
 
             $paginatorArray = $paginator->toArray();
@@ -508,7 +513,9 @@ class InvoiceController extends BaseController
             $totals = $this->service->getComputedTotalsForInvoice($invoice);
             return response()->json([
                 'success' => true,
-                'data' => array_merge($data, $totals),
+                'data' => array_merge($data, $totals, [
+                    'is_paid' => $invoice->isPaid(),
+                ]),
             ]);
         } catch (\Exception $e) {
             return response()->json([
