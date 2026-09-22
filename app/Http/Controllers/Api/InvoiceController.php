@@ -34,7 +34,7 @@ use Illuminate\Http\Request;
  *     @OA\Property(property="total_sales_inclusive", type="number", format="float", example=235200.00, description="Computed: VAT inclusive"),
  *     @OA\Property(property="less_withdrawing_tax", type="number", format="float", example=4200.00, description="Computed: 2% of net of VAT"),
  *     @OA\Property(property="total_amount", type="number", format="float", example=231000.00, description="Computed: total due"),
- *     @OA\Property(property="is_paid", type="boolean", example=false, description="True when all billing statements on linked SOAs are paid"),
+ *     @OA\Property(property="is_paid", type="boolean", example=false, description="Stored invoice payment status"),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
  *     @OA\Property(property="updated_at", type="string", format="date-time")
  * )
@@ -106,14 +106,14 @@ class InvoiceController extends BaseController
     /**
      * @OA\Post(
      *     path="/api/invoices/{id}/mark-as-paid",
-     *     summary="Mark invoice billing as paid and close bookings",
-     *     description="Uses invoice ID to mark all related billing statements as paid (is_paid=true) and close all bookings on the linked SOAs (is_complete=true). Idempotent.",
+     *     summary="Mark invoice as paid and close bookings",
+     *     description="Uses invoice ID to mark the invoice as paid (is_paid=true) and close all bookings on the linked SOAs (is_complete=true). Idempotent.",
      *     tags={"Invoice Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="Invoice ID", @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Billing marked as paid and bookings closed", @OA\JsonContent(
+     *     @OA\Response(response=200, description="Invoice marked as paid and bookings closed", @OA\JsonContent(
      *         @OA\Property(property="success", type="boolean", example=true),
-     *         @OA\Property(property="message", type="string", example="Billing marked as paid and bookings closed."),
+     *         @OA\Property(property="message", type="string", example="Invoice marked as paid and bookings closed."),
      *         @OA\Property(property="data", type="object",
      *             @OA\Property(property="id", type="integer", example=1),
      *             @OA\Property(property="invoice_number", type="string", example="INV-0001"),
@@ -137,7 +137,7 @@ class InvoiceController extends BaseController
 
             return response()->json([
                 'success' => true,
-                'message' => 'Billing marked as paid and bookings closed.',
+                'message' => 'Invoice marked as paid and bookings closed.',
                 'data' => array_merge($payload, $totals, [
                     'booking_ids' => $result['booking_ids'],
                     'billing_statement_ids' => $result['billing_statement_ids'],
@@ -193,7 +193,7 @@ class InvoiceController extends BaseController
      * @OA\Delete(
      *     path="/api/invoices/{id}",
      *     summary="Soft delete an invoice",
-     *     description="Soft deletes an invoice only. Does not soft delete the related SOA or billing statements. Bookings on the linked SOAs are re-opened (is_complete=false, auto_complete_at restarted) unless they remain covered by another active invoice. Related billing statements are marked unpaid.",
+     *     description="Soft deletes an invoice only. Does not soft delete the related SOA or billing statements. Bookings on the linked SOAs are re-opened (is_complete=false, auto_complete_at restarted) unless they remain covered by another active invoice. The invoice payment status is preserved.",
      *     tags={"Invoice Management"},
      *     security={{"sanctum": {}}},
      *     @OA\Parameter(name="id", in="path", required=true, description="Invoice ID", @OA\Schema(type="integer")),

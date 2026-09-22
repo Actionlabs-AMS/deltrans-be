@@ -133,7 +133,7 @@ class DashboardService
 
         // Part 1: SOAs with billing_statements — overdue when due_date < as_of and not paid
         $statements = BillingStatement::query()
-            ->where('is_paid', false)
+            ->whereLatestInvoicePaid(false)
             ->whereDate('due_date', '<', $asOfDate)
             ->whereNotNull('due_date')
             ->with(['statementOfAccount.shippingLine'])

@@ -9657,8 +9657,8 @@
                 "tags": [
                     "Invoice Management"
                 ],
-                "summary": "Mark invoice billing as paid and close bookings",
-                "description": "Uses invoice ID to mark all related billing statements as paid (is_paid=true) and close all bookings on the linked SOAs (is_complete=true). Idempotent.",
+                "summary": "Mark invoice as paid and close bookings",
+                "description": "Uses invoice ID to mark the invoice as paid (is_paid=true) and close all bookings on the linked SOAs (is_complete=true). Idempotent.",
                 "operationId": "2635ea4f035fcd27f7edba626de8765a",
                 "parameters": [
                     {
@@ -9673,7 +9673,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Billing marked as paid and bookings closed",
+                        "description": "Invoice marked as paid and bookings closed",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -9684,7 +9684,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Billing marked as paid and bookings closed."
+                                            "example": "Invoice marked as paid and bookings closed."
                                         },
                                         "data": {
                                             "properties": {
@@ -9874,7 +9874,7 @@
                     "Invoice Management"
                 ],
                 "summary": "Soft delete an invoice",
-                "description": "Soft deletes an invoice only. Does not soft delete the related SOA or billing statements. Bookings on the linked SOAs are re-opened (is_complete=false, auto_complete_at restarted) unless they remain covered by another active invoice. Related billing statements are marked unpaid.",
+                "description": "Soft deletes an invoice only. Does not soft delete the related SOA or billing statements. Bookings on the linked SOAs are re-opened (is_complete=false, auto_complete_at restarted) unless they remain covered by another active invoice. The invoice payment status is preserved.",
                 "operationId": "410b8a2e4b097016c3dea391349a789b",
                 "parameters": [
                     {
@@ -27804,7 +27804,7 @@
                         "example": 231000
                     },
                     "is_paid": {
-                        "description": "True when all billing statements on linked SOAs are paid",
+                        "description": "Stored invoice payment status",
                         "type": "boolean",
                         "example": false
                     },

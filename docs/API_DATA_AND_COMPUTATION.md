@@ -112,7 +112,7 @@ This document summarizes the **data returned** by key Deltrans API endpoints and
 **How we pull/compute:**
 
 - **"As of" date:** End of the dashboard date range from filters (same as `date_to` / year end / single date).
-- **Part 1 — SOAs with billing_statements:** **billing_statements** where `is_paid = false`, `due_date` is not null, and `due_date < as_of_date`, ordered by `due_date`, with `statementOfAccount.shippingLine`. Each row uses the billing statement’s due date and SOA amount.
+- **Part 1 — SOAs with billing_statements:** **billing_statements** without an active paid invoice, where `due_date` is not null and `due_date < as_of_date`, ordered by `due_date`, with `statementOfAccount.shippingLine`. Each row uses the billing statement’s due date and SOA amount.
 - **Part 2 — SOAs with no billing_statements:** **statement_of_accounts** that have no **billing_statements** (via `whereDoesntHave('billingStatements')`). For each such SOA, get waybills via SOA → Booking → **waybill_details** (using `booking_ids`). For each waybill, due date = `statement_of_account.created_at + waybill_details.no_of_days` (in days). If that due date is **before** the as_of date, the SOA is overdue. One row per such SOA: `transaction_no` = SOA `dli_sa_number` or `SOA-{id}`, `overdue_payment_date` = earliest such due date among its waybills, `billing_statement_id` = null.
 - **Amount:** For each row’s `statement_of_account_id`, amount = sum of **waybill_details** `total_rate_per_client` for bookings in that SOA’s `booking_ids` (same `getStatementOfAccountAmounts` logic as sales).
 - **overdue_count:** Number of items in the `overdue_payments` array.

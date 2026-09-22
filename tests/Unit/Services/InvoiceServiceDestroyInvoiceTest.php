@@ -33,12 +33,13 @@ class InvoiceServiceDestroyInvoiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_soft_delete_invoice_reopens_bookings_and_unmarks_billing_paid(): void
+    public function test_soft_delete_paid_invoice_reopens_bookings_without_changing_billing_payment_status(): void
     {
         ['booking' => $booking, 'billing' => $billing, 'invoice' => $invoice] = $this->seedInvoicedSoa();
 
         $this->assertTrue((bool) $booking->fresh()->is_complete);
-        $this->assertTrue((bool) $billing->fresh()->is_paid);
+        $this->assertTrue((bool) $invoice->fresh()->is_paid);
+        $this->assertFalse((bool) $billing->fresh()->is_paid);
 
         $this->service->destroyInvoice($invoice->id);
 
@@ -48,7 +49,9 @@ class InvoiceServiceDestroyInvoiceTest extends TestCase
             now()->addWeeks(Booking::AUTO_COMPLETE_WEEKS)
         ));
         $this->assertFalse((bool) $billing->fresh()->is_paid);
-        $this->assertNotNull($invoice->fresh()->deleted_at);
+        $deletedInvoice = Invoice::withTrashed()->findOrFail($invoice->id);
+        $this->assertTrue((bool) $deletedInvoice->is_paid);
+        $this->assertNotNull($deletedInvoice->deleted_at);
     }
 
     public function test_soft_delete_invoice_does_not_reopen_booking_still_covered_by_another_invoice(): void
@@ -80,7 +83,7 @@ class InvoiceServiceDestroyInvoiceTest extends TestCase
         $this->assertNull($keepInvoice->fresh()->deleted_at);
     }
 
-    public function test_invoice_is_paid_is_false_until_billing_is_marked_paid(): void
+    public function test_mark_as_paid_updates_invoice_only(): void
     {
         $user = User::factory()->create();
         $shipping = $this->createShippingLine();
@@ -106,8 +109,43 @@ class InvoiceServiceDestroyInvoiceTest extends TestCase
         $this->service->markAsPaid($invoice->id);
         $invoice->refresh()->load('statementOfAccounts');
 
+        $this->assertTrue((bool) $invoice->is_paid);
+        $this->assertFalse((bool) BillingStatement::query()
+            ->where('statement_of_account_id', $soa->id)
+            ->value('is_paid'));
         $this->assertTrue($invoice->isPaid());
         $this->assertSame([$invoice->id => true], Invoice::paidStatusMap([$invoice]));
+    }
+
+    public function test_new_invoice_without_billing_is_paid(): void
+    {
+        $shipping = $this->createShippingLine();
+        [$from, $to] = $this->createYards();
+        $booking = $this->createBooking($shipping->id, $from->id, $to->id, 'NO-BILLING');
+        $soa = $this->createSoa($shipping->id, '2002', [$booking->id]);
+
+        $invoice = $this->service->generateInvoice([
+            'statement_of_account_ids' => [$soa->id],
+            'invoice_number' => 'INV-NO-BILLING',
+        ]);
+
+        $this->assertTrue((bool) $invoice->fresh()->is_paid);
+        $this->assertTrue($invoice->isPaid());
+    }
+
+    public function test_invoice_payment_helpers_ignore_later_billing_changes(): void
+    {
+        $seeded = $this->seedInvoicedSoa();
+        $invoice = $seeded['invoice']->fresh();
+
+        $this->assertTrue($invoice->isPaid());
+
+        $seeded['billing']->update(['is_paid' => true]);
+        $invoice->update(['is_paid' => false]);
+        $invoice->refresh();
+
+        $this->assertFalse($invoice->isPaid());
+        $this->assertSame([$invoice->id => false], Invoice::paidStatusMap([$invoice]));
     }
 
     public function test_soft_delete_keeps_booking_complete_if_another_soa_still_invoices_it(): void
