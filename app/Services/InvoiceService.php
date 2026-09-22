@@ -302,17 +302,11 @@ class InvoiceService
         }
 
         $invoice = DB::transaction(function () use ($data, $soaIds) {
-            $billingStatuses = BillingStatement::query()
-                ->whereIn('statement_of_account_id', $soaIds)
-                ->pluck('is_paid');
-
             $payload = [
                 'invoice_number' => $data['invoice_number'] ?? null,
                 'date' => $data['date'] ?? null,
                 'discount' => $data['discount'] ?? 0,
                 'discount_id' => $data['discount_id'] ?? null,
-                'is_paid' => $billingStatuses->isEmpty()
-                    || $billingStatuses->every(fn ($isPaid) => (bool) $isPaid),
             ];
             if (empty($payload['invoice_number'])) {
                 $payload['invoice_number'] = $this->generateInvoiceNumber();

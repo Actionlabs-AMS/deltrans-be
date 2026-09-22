@@ -117,7 +117,7 @@ class InvoiceServiceDestroyInvoiceTest extends TestCase
         $this->assertSame([$invoice->id => true], Invoice::paidStatusMap([$invoice]));
     }
 
-    public function test_new_invoice_without_billing_is_paid(): void
+    public function test_new_invoice_without_billing_remains_unpaid_and_booking_open(): void
     {
         $shipping = $this->createShippingLine();
         [$from, $to] = $this->createYards();
@@ -129,8 +129,9 @@ class InvoiceServiceDestroyInvoiceTest extends TestCase
             'invoice_number' => 'INV-NO-BILLING',
         ]);
 
-        $this->assertTrue((bool) $invoice->fresh()->is_paid);
-        $this->assertTrue($invoice->isPaid());
+        $this->assertFalse((bool) $invoice->fresh()->is_paid);
+        $this->assertFalse($invoice->isPaid());
+        $this->assertFalse((bool) $booking->fresh()->is_complete);
     }
 
     public function test_invoice_payment_helpers_ignore_later_billing_changes(): void
