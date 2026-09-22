@@ -1245,7 +1245,7 @@ class SoaAndBillingService extends BaseService
         }
 
         if (request()->has('is_paid')) {
-            $query->where('is_paid', request('is_paid'));
+            $query->whereLatestInvoicePaid(filter_var(request('is_paid'), FILTER_VALIDATE_BOOLEAN));
         }
 
         if (request('order')) {

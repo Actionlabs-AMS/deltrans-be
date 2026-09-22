@@ -302,11 +302,17 @@ class InvoiceService
         }
 
         $invoice = DB::transaction(function () use ($data, $soaIds) {
+            $billingStatuses = BillingStatement::query()
+                ->whereIn('statement_of_account_id', $soaIds)
+                ->pluck('is_paid');
+
             $payload = [
                 'invoice_number' => $data['invoice_number'] ?? null,
                 'date' => $data['date'] ?? null,
                 'discount' => $data['discount'] ?? 0,
                 'discount_id' => $data['discount_id'] ?? null,
+                'is_paid' => $billingStatuses->isEmpty()
+                    || $billingStatuses->every(fn ($isPaid) => (bool) $isPaid),
             ];
             if (empty($payload['invoice_number'])) {
                 $payload['invoice_number'] = $this->generateInvoiceNumber();
@@ -327,10 +333,9 @@ class InvoiceService
     }
 
     /**
-     * Mark billing statements as paid and close bookings for an invoice.
+     * Mark an invoice as paid and close its bookings.
      *
-     * Uses the invoice's linked SOAs: all related billing statements get
-     * is_paid = true, and all bookings on those SOAs get is_complete = true.
+     * Uses the invoice's linked SOAs to find the bookings that must be closed.
      */
     public function markAsPaid($id)
     {
@@ -349,8 +354,8 @@ class InvoiceService
                     Booking::whereIn('id', $bookingIds)->update(['is_complete' => true]);
                 }
 
-                BillingStatement::whereIn('statement_of_account_id', $soaIds)
-                    ->update(['is_paid' => true]);
+                $invoice->is_paid = true;
+                $invoice->save();
 
                 $billingIds = BillingStatement::whereIn('statement_of_account_id', $soaIds)
                     ->pluck('id')
@@ -395,7 +400,7 @@ class InvoiceService
     /**
      * Soft delete an invoice by ID (does not cascade to SOA or billing statements).
      * Reopens bookings that are no longer covered by an active invoice and
-     * marks related billing statements unpaid.
+     * preserves the invoice's payment history.
      *
      * @param int $id
      * @return bool
@@ -411,14 +416,12 @@ class InvoiceService
 
                 $invoice->load('statementOfAccounts');
                 $soas = $invoice->statementOfAccounts;
-                $soaIds = $soas->pluck('id')->map(fn ($soaId) => (int) $soaId)->all();
                 $bookingIds = $this->collectBookingIds($soas);
 
                 $invoice->statementOfAccounts()->detach();
                 $deleted = (bool) $invoice->delete();
 
                 $this->reopenBookingsAfterInvoiceRemoval($bookingIds);
-                $this->unmarkBillingPaidAfterInvoiceRemoval($soaIds);
 
                 return $deleted;
             });
@@ -856,28 +859,6 @@ class InvoiceService
             'is_complete' => false,
             'auto_complete_at' => now()->addWeeks(Booking::AUTO_COMPLETE_WEEKS),
         ]);
-    }
-
-    /**
-     * Mark billing statements unpaid when their SOA no longer has an active invoice.
-     *
-     * @param array<int> $soaIds
-     */
-    private function unmarkBillingPaidAfterInvoiceRemoval(array $soaIds): void
-    {
-        if (empty($soaIds)) {
-            return;
-        }
-
-        $stillInvoicedSoaIds = $this->getSoaIdsWithActiveInvoice($soaIds);
-        $unpaidSoaIds = array_values(array_diff($soaIds, $stillInvoicedSoaIds));
-
-        if (empty($unpaidSoaIds)) {
-            return;
-        }
-
-        BillingStatement::whereIn('statement_of_account_id', $unpaidSoaIds)
-            ->update(['is_paid' => false]);
     }
 
     /**

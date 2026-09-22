@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\StatementOfAccount;
@@ -117,6 +118,26 @@ class BillingStatement extends Model
         $soa = $this->statementOfAccount;
 
         return $soa?->latestInvoice();
+    }
+
+    /**
+     * Filter by payment status on the latest active invoice.
+     */
+    public function scopeWhereLatestInvoicePaid(Builder $query, bool $isPaid): Builder
+    {
+        $paidLatestInvoiceExists = function ($subQuery) {
+            $subQuery->selectRaw('1')
+                ->from('invoice_statement_of_account as isoa')
+                ->join('invoices as i', 'i.id', '=', 'isoa.invoice_id')
+                ->whereColumn('isoa.statement_of_account_id', 'billing_statements.statement_of_account_id')
+                ->whereNull('i.deleted_at')
+                ->where('i.is_paid', true)
+                ->whereRaw('i.id = (SELECT MAX(i2.id) FROM invoice_statement_of_account AS isoa2 INNER JOIN invoices AS i2 ON i2.id = isoa2.invoice_id WHERE isoa2.statement_of_account_id = billing_statements.statement_of_account_id AND i2.deleted_at IS NULL)');
+        };
+
+        return $isPaid
+            ? $query->whereExists($paidLatestInvoiceExists)
+            : $query->whereNotExists($paidLatestInvoiceExists);
     }
 
     /**

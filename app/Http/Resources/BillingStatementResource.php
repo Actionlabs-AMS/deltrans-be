@@ -61,7 +61,7 @@ class BillingStatementResource extends JsonResource
             'due_date' => $this->due_date ? $this->due_date->format('Y-m-d') : null,
             'bus_style' => $this->bus_style,
             'has_details' => (bool) $this->has_details,
-            'is_paid' => (bool) $this->is_paid,
+            'is_paid' => (bool) ($invoice?->is_paid ?? false),
 
             // Timestamps
             'created_at' => $this->created_at ? $this->created_at->format('Y-m-d H:i:s') : null,
